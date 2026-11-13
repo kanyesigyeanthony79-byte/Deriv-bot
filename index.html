@@ -123,7 +123,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     latestSignals.slice().sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0)).forEach(s=>{
       lines.push([time(s.createdAt),s.market,s.direction,s.entry,s.score??"",outcomeLabel(s),s.signalId].map(quote).join(","));
     });
-    const blob=new Blob(["\\uFEFF"+lines.join("\\r\\n")],{type:"text/csv;charset=utf-8;"});
+    const blob=new Blob(["\uFEFF"+lines.join("\r\n")],{type:"text/csv;charset=utf-8;"});
     const url=URL.createObjectURL(blob);
     const link=document.createElement("a");
     link.href=url;
