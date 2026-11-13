@@ -23,7 +23,7 @@ function updateJournal(journal, markets, nowEpoch) {
         const record = {
           ...candidate, status: "pending", createdEpoch: nowEpoch,
           tp1Hit: false, tp1Epoch: null, tp2Epoch: null, stopEpoch: null,
-          outcomeCandles: 0
+          lastProcessedEpoch: candidate.entryCandleEpoch, outcomeCandles: 0
         };
         state.signals.push(record);
         byId.set(record.signalId, record);
@@ -31,10 +31,11 @@ function updateJournal(journal, markets, nowEpoch) {
     }
     for (const record of state.signals.filter(s => s.marketId === market.marketId && !TERMINAL.has(s.status))) {
       const frame = market.timeframes && market.timeframes[record.entryTimeframe] || [];
-      const later = frame.filter(c => c.epoch > record.entryCandleEpoch);
+      const later = frame.filter(c => c.epoch > (record.lastProcessedEpoch ?? record.entryCandleEpoch));
       for (const candle of later) {
         if (TERMINAL.has(record.status)) break;
         record.outcomeCandles++;
+        record.lastProcessedEpoch = candle.epoch;
         const hit = touchStatus(record, candle);
         if (hit === "ambiguous") {
           record.status = "ambiguous"; record.stopEpoch = candle.epoch;
