@@ -1,4 +1,3 @@
-
 name: Deriv Hosted Scanner
 
 on:
@@ -7,24 +6,38 @@ on:
     - cron: "*/5 * * * *"
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: deriv-hosted-scanner
+  cancel-in-progress: false
 
 jobs:
   scanner:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 4
 
     steps:
       - name: Download repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
+          node-version: "22"
 
-      - name: Install WebSocket library
-        run: pip install websocket-client
+      - name: Run signal-only Deriv scanner
+        run: node hosted_scanner.js
+        env:
+          TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
+          SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
 
-      - name: Run Deriv scanner
-        run: python scanner.py
+      - name: Save signal history
+        run: |
+          git config user.name "Deriv Scanner"
+          git config user.email "actions@users.noreply.github.com"
+          git add signal_state.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update Deriv signal history"
+            git push
+          fi
