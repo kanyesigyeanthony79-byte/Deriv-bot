@@ -227,7 +227,8 @@ async function sendOutcome(signal, outcome, candle) {
     tp2: signal.tp2,
     currentPrice: candle.close
   });
-  log("outcome_delivered", { signalId: signal.signalId, market: signal.market, outcome, candle_epoch: candle.epoch, observed_close: candle.close });\n  journalOutcome(signal.signalId, outcome, candle);
+  log("outcome_delivered", { signalId: signal.signalId, market: signal.market, outcome, candle_epoch: candle.epoch, observed_close: candle.close });
+  journalOutcome(signal.signalId, outcome, candle);
 }
 
 async function monitorSignals(marketId, candles, now) {
@@ -236,7 +237,8 @@ async function monitorSignals(marketId, candles, now) {
     if (now - signal.createdEpoch > MAX_MONITOR_AGE) {
       signal.closed = true;
       signal.closeReason = "expired_after_24_hours";
-      const je = findJournalSignal(signal.signalId); if (je) { je.finalOutcome = "EXPIRED"; je.statusReason = "expired_after_24_hours"; saveJournal(); }\n      log("signal_expired", { signalId: signal.signalId, market: signal.market });
+      const je = findJournalSignal(signal.signalId); if (je) { je.finalOutcome = "EXPIRED"; je.statusReason = "expired_after_24_hours"; saveJournal(); }
+      log("signal_expired", { signalId: signal.signalId, market: signal.market });
       continue;
     }
 
@@ -252,7 +254,8 @@ async function monitorSignals(marketId, candles, now) {
         signal.closed = true;
         signal.closeReason = "ambiguous_same_candle";
         signal.lastCheckedEpoch = candle.epoch;
-        journalOutcome(signal.signalId, "AMBIGUOUS", candle);\n        log("ambiguous_outcome_not_reported", { signalId: signal.signalId, market: signal.market, candle_epoch: candle.epoch });
+        journalOutcome(signal.signalId, "AMBIGUOUS", candle);
+        log("ambiguous_outcome_not_reported", { signalId: signal.signalId, market: signal.market, candle_epoch: candle.epoch });
         break;
       }
 
@@ -329,19 +332,22 @@ async function main() {
         });
         const previous = Number(state.lastSig[id] || 0);
         if (candleEpoch <= previous || candleEpoch - previous < DEF.cooldown * GRANULARITY) {
-          journalStatus(signalId, "suppressed", "duplicate_or_cooldown");\n          log("signal_suppressed", { market: name, direction: result.signal, reason: "duplicate_or_cooldown", candle_epoch: candleEpoch });
+          journalStatus(signalId, "suppressed", "duplicate_or_cooldown");
+          log("signal_suppressed", { market: name, direction: result.signal, reason: "duplicate_or_cooldown", candle_epoch: candleEpoch });
           continue;
         }
 
         const age = now - (candleEpoch + GRANULARITY);
         if (age > MAX_SIGNAL_AGE) {
-          journalStatus(signalId, "stale", "too_old_for_alert");\n          log("signal_skipped", { market: name, direction: result.signal, age_seconds: age, reason: "too_old_for_alert" });
+          journalStatus(signalId, "stale", "too_old_for_alert");
+          log("signal_skipped", { market: name, direction: result.signal, age_seconds: age, reason: "too_old_for_alert" });
           continue;
         }
 
         const levels = makeLevels(candles, result.signal);
         await postTelegram({ market: name, direction: result.signal, ...levels });
-        journalStatus(signalId, "sent");\n        state.lastSig[id] = candleEpoch;
+        journalStatus(signalId, "sent");
+        state.lastSig[id] = candleEpoch;
         state.activeSignals.push({
           signalId,
           marketId: id,
