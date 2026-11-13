@@ -46,11 +46,11 @@ function atr(candles, period = 14) {
 }
 
 function trendBias(candles) {
-  if (!validCandles(candles) || candles.length < 60) return { state: "warming", direction: "NEUTRAL" };
+  if (!validCandles(candles) || candles.length < 51) return { state: "warming", direction: "NEUTRAL" };
   const closes = candles.map(c => c.close);
   const fast = ema(closes, 20);
   const slow = ema(closes, 50);
-  const previousSlow = ema(closes.slice(0, -5), 50);
+  const previousSlow = ema(closes.slice(0, -1), 50);
   const volatility = atr(candles, 14);
   if (!(volatility > 0) || !Number.isFinite(fast) || !Number.isFinite(slow) || !Number.isFinite(previousSlow)) {
     return { state: "flat", direction: "NEUTRAL" };
@@ -90,7 +90,7 @@ function evaluateCategory(marketId, marketName, category, candlesByTimeframe) {
 
   if (!validCandles(entryCandles) || entryCandles.length < 60 ||
       !validCandles(confirmationCandles) || confirmationCandles.length < 60 ||
-      !validCandles(contextCandles) || contextCandles.length < 60 ||
+      !validCandles(contextCandles) || contextCandles.length < (config.context === "W1" ? 51 : 60) ||
       !validCandles(riskCandles) || riskCandles.length < 20) {
     return { state: "warming", category, label: config.label, reason: "Waiting for sufficient completed candles across required timeframes." };
   }
