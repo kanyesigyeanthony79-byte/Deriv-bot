@@ -51,7 +51,10 @@ function updateJournal(journal, markets, nowEpoch) {
       }
     }
   }
-  for (const record of state.signals) {\n    if (!TERMINAL.has(record.status) && nowEpoch - record.entryCandleEpoch > record.maxAgeSeconds) record.status = "expired";\n  }\n  state.updatedAt = new Date(nowEpoch * 1000).toISOString();
+  for (const record of state.signals) {
+    if (!TERMINAL.has(record.status) && nowEpoch - record.entryCandleEpoch > record.maxAgeSeconds) record.status = "expired";
+  }
+  state.updatedAt = new Date(nowEpoch * 1000).toISOString();
   // Keep a bounded observation history; preserve newest records.
   state.signals.sort((a, b) => b.createdEpoch - a.createdEpoch);
   state.signals = state.signals.slice(0, 500);
