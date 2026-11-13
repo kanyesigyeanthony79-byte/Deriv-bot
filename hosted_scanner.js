@@ -38,7 +38,75 @@ try {
   }
 } catch {}
 const log = (event, details = {}) => console.log(JSON.stringify({ time: new Date().toISOString(), event, ...details }));
-const saveState = () => fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2) + "\n");
+const saveState = () => fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2) + "\n");\n
+const JOURNAL_FILE = path.join(__dirname, "trade_journal.json");
+let journal = { version: 1, signals: [], dailyReports: {} };
+try {
+  const savedJournal = JSON.parse(fs.readFileSync(JOURNAL_FILE, "utf8"));
+  if (savedJournal && Array.isArray(savedJournal.signals)) journal = { version: 1, signals: savedJournal.signals, dailyReports: savedJournal.dailyReports || {} };
+} catch {}
+const saveJournal = () => fs.writeFileSync(JOURNAL_FILE, JSON.stringify(journal, null, 2) + "\\n");
+const localDate = epoch => new Intl.DateTimeFormat("en-CA", {timeZone:"Africa/Kampala",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(epoch * 1000));
+const findJournalSignal = id => journal.signals.find(s => s.signalId === id);
+function journalCandidate(entry) {
+  if (findJournalSignal(entry.signalId)) return;
+  journal.signals.push(entry);
+  saveJournal();
+}
+function journalOutcome(signal, outcome, candle) {
+  const entry = findJournalSignal(signal.signalId);
+  if (!entry) return;
+  entry.events = Array.isArray(entry.events) ? entry.events : [];
+  entry.events.push({outcome, observedAt:new Date().toISOString(), candleEpoch:candle.epoch, candle:{open:candle.open,high:candle.high,low:candle.low,close:candle.close}});
+  if (outcome === "TP1_HIT") entry.tp1Hit = true;
+  if (outcome === "TP2_HIT") { entry.tp2Hit = true; entry.finalOutcome = "TP2"; }
+  if (outcome === "SL_HIT") entry.finalOutcome = entry.tp1Hit ? "SL_AFTER_TP1" : "SL";
+  if (outcome === "AMBIGUOUS") entry.finalOutcome = "AMBIGUOUS";
+  saveJournal();
+}
+function journalStatus(signalId, status, reason) {
+  const entry = findJournalSignal(signalId);
+  if (entry) { entry.status = status; if (reason) entry.statusReason = reason; saveJournal(); }
+}
+function dailySummary(day) {
+  const rows = journal.signals.filter(s => s.localDate === day);
+  const sent = rows.filter(s => s.status === "sent").length;
+  const missed = rows.filter(s => ["suppressed","stale","delivery_failed"].includes(s.status)).length;
+  const tp1 = rows.filter(s => s.tp1Hit).length;
+  const tp2 = rows.filter(s => s.tp2Hit).length;
+  const sl = rows.filter(s => s.finalOutcome === "SL" || s.finalOutcome === "SL_AFTER_TP1").length;
+  const expired = rows.filter(s => s.finalOutcome === "EXPIRED").length;
+  const ambiguous = rows.filter(s => s.finalOutcome === "AMBIGUOUS").length;
+  const unresolved = rows.filter(s => s.status === "sent" && !s.finalOutcome).length;
+  const byMarket = MARKETS.map(([id,name]) => {
+    const m = rows.filter(s => s.marketId === id);
+    return name + ": " + m.length + " generated, " + m.filter(s=>s.finalOutcome==="TP2").length + " TP2, " + m.filter(s=>s.finalOutcome==="SL"||s.finalOutcome==="SL_AFTER_TP1").length + " SL";
+  }).filter((_,i)=>rows.some(s=>s.marketId===MARKETS[i][0]));
+  return {day,generated:rows.length,sent,missed,tp1,tp2,sl,expired,ambiguous,unresolved,byMarket};
+}
+async function maybeSendDailySummary(now) {
+  const localNow = new Date(now * 1000).toLocaleString("en-GB",{timeZone:"Africa/Kampala",hour:"2-digit",minute:"2-digit",hour12:false});
+  const [hour,minute] = localNow.split(":").map(Number);
+  if (hour !== 0 || minute > 9) return;
+  const today = localDate(now);
+  const yesterday = new Date(new Date(today + "T00:00:00+03:00").getTime() - 86400000).toISOString().slice(0,10);
+  if (journal.dailyReports[yesterday]) return;
+  const s = dailySummary(yesterday);
+  const message = "DAILY DERIV SIGNAL REPORT (" + yesterday + ")\\n" +
+    "Generated: " + s.generated + "\\nSent to Telegram: " + s.sent + "\\nMissed / not sent: " + s.missed +
+    "\\nTP1 hit: " + s.tp1 + "\\nTP2 hit: " + s.tp2 + "\\nSL hit: " + s.sl +
+    "\\nExpired: " + s.expired + "\\nAmbiguous: " + s.ambiguous + "\\nStill open/unresolved: " + s.unresolved +
+    (s.byMarket.length ? "\\n\\nBY MARKET\\n" + s.byMarket.join("\\n") : "");
+  try {
+    await postTelegram({event:"daily_summary", message, text:message});
+    journal.dailyReports[yesterday] = {attemptedAt:new Date(now*1000).toISOString(), delivered:true, stats:s};
+    saveJournal();
+    log("daily_summary_delivered",{day:yesterday,generated:s.generated,sent:s.sent,tp1:s.tp1,tp2:s.tp2,sl:s.sl});
+  } catch(error) {
+    log("daily_summary_delivery_failed",{day:yesterday,message:error.message,note:"Telegram Worker may need daily_summary event support"});
+  }
+}
+
 
 function connect(url) {
   return new Promise((resolve, reject) => {
@@ -159,7 +227,7 @@ async function sendOutcome(signal, outcome, candle) {
     tp2: signal.tp2,
     currentPrice: candle.close
   });
-  log("outcome_delivered", { signalId: signal.signalId, market: signal.market, outcome, candle_epoch: candle.epoch, observed_close: candle.close });
+  log("outcome_delivered", { signalId: signal.signalId, market: signal.market, outcome, candle_epoch: candle.epoch, observed_close: candle.close });\n  journalOutcome(signal.signalId, outcome, candle);
 }
 
 async function monitorSignals(marketId, candles, now) {
@@ -168,7 +236,7 @@ async function monitorSignals(marketId, candles, now) {
     if (now - signal.createdEpoch > MAX_MONITOR_AGE) {
       signal.closed = true;
       signal.closeReason = "expired_after_24_hours";
-      log("signal_expired", { signalId: signal.signalId, market: signal.market });
+      journalStatus(signal.signalId, "expired", "expired_after_24_hours");\n      const je = findJournalSignal(signal.signalId); if (je) { je.finalOutcome = "EXPIRED"; saveJournal(); }\n      log("signal_expired", { signalId: signal.signalId, market: signal.market });
       continue;
     }
 
@@ -184,7 +252,7 @@ async function monitorSignals(marketId, candles, now) {
         signal.closed = true;
         signal.closeReason = "ambiguous_same_candle";
         signal.lastCheckedEpoch = candle.epoch;
-        log("ambiguous_outcome_not_reported", { signalId: signal.signalId, market: signal.market, candle_epoch: candle.epoch });
+        journalOutcome(signal.signalId, "AMBIGUOUS", candle);\n        log("ambiguous_outcome_not_reported", { signalId: signal.signalId, market: signal.market, candle_epoch: candle.epoch });
         break;
       }
 
@@ -252,22 +320,29 @@ async function main() {
         }
 
         const candleEpoch = result.c.epoch;
+        const signalId = id + "-" + candleEpoch;
+        journalCandidate({
+          signalId, marketId:id, market:name, direction:result.signal, localDate:localDate(candleEpoch),
+          createdAt:new Date(candleEpoch*1000).toISOString(), candleEpoch, score:result.score,
+          entry:candle.close, metrics:result.metrics || {}, checks:result.checks || [],
+          status:"detected", tp1Hit:false, tp2Hit:false, finalOutcome:null, events:[]
+        });
         const previous = Number(state.lastSig[id] || 0);
         if (candleEpoch <= previous || candleEpoch - previous < DEF.cooldown * GRANULARITY) {
-          log("signal_suppressed", { market: name, direction: result.signal, reason: "duplicate_or_cooldown", candle_epoch: candleEpoch });
+          journalStatus(signalId, "suppressed", "duplicate_or_cooldown");\n          log("signal_suppressed", { market: name, direction: result.signal, reason: "duplicate_or_cooldown", candle_epoch: candleEpoch });
           continue;
         }
 
         const age = now - (candleEpoch + GRANULARITY);
         if (age > MAX_SIGNAL_AGE) {
-          log("signal_skipped", { market: name, direction: result.signal, age_seconds: age, reason: "too_old_for_alert" });
+          journalStatus(signalId, "stale", "too_old_for_alert");\n          log("signal_skipped", { market: name, direction: result.signal, age_seconds: age, reason: "too_old_for_alert" });
           continue;
         }
 
         const levels = makeLevels(candles, result.signal);
         const signalId = id + "-" + candleEpoch;
         await postTelegram({ market: name, direction: result.signal, ...levels });
-        state.lastSig[id] = candleEpoch;
+        journalStatus(signalId, "sent");\n        state.lastSig[id] = candleEpoch;
         state.activeSignals.push({
           signalId,
           marketId: id,
