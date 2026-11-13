@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#10251d">
-<title>Deriv Signal Assistant V1 - Telegram Connected</title>
+<title>Deriv Signal Assistant V2 - Telegram Alerts</title>
 <style>
 :root{color-scheme:dark;--bg:#0b1712;--panel:#14251d;--panel2:#1b3026;--line:#2c4939;--txt:#eef5ef;--muted:#a8b9ad;--gold:#d5a83d;--green:#55c58b;--red:#f07878}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#10251d,#09120e 70%);color:var(--txt);font:15px system-ui,-apple-system,Segoe UI,sans-serif}
@@ -27,12 +27,12 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <body>
 <main>
   <div class="top">
-    <div><div class="brand">DERIV SIGNAL ASSISTANT</div><div class="sub">V1 · Android-friendly market scanner</div></div>
+    <div><div class="brand">DERIV SIGNAL ASSISTANT</div><div class="sub">V2 · Android-friendly market scanner</div></div>
     <div class="pill">DEMO / SIGNALS ONLY</div>
   </div>
   <div class="hero">
     <h1>15-minute market monitor</h1>
-    <p>Scans Volatility 10, 25, 50 and 75 using completed candles. No account login, deposits, or trade execution.</p>
+    <p>Scans Volatility 10, 25, 50, 75 and Jump 100 using completed candles. No account login, deposits, or trade execution.</p>
     <div class="row">
       <button class="btn primary" id="connect">Connect & scan</button>
       <button class="btn" id="stop" disabled>Stop</button>
@@ -43,10 +43,10 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 
   <section class="card" id="telegramPanel">
     <h2>Telegram alerts</h2>
-    <p class="muted" style="margin:0 0 10px">Paste your Cloudflare Worker URL and private SIGNAL_API_KEY. The API key is used only for requests from this open page and is not saved in local storage. Your Telegram bot token stays on the server.</p>
+    <p class="muted" style="margin:0 0 10px">Paste your Cloudflare Worker URL and private SIGNAL_API_KEY. Your API key is kept only for this browser tab session so automatic alerts continue after a page refresh. Your Telegram bot token stays on the server.</p>
     <label for="telegramWorker" class="muted">Cloudflare Worker URL</label>
     <input id="telegramWorker" type="url" placeholder="https://your-worker.workers.dev" autocomplete="url" style="display:block;width:100%;margin:6px 0 10px;padding:11px;border-radius:10px;border:1px solid var(--line);background:#0b1712;color:var(--txt)">
-    <label for="signalApiKey" class="muted">Private SIGNAL_API_KEY (not saved in this page)</label>
+    <label for="signalApiKey" class="muted">Private SIGNAL_API_KEY (session only)</label>
     <input id="signalApiKey" type="password" placeholder="Paste your Cloudflare SIGNAL_API_KEY" autocomplete="off" spellcheck="false" style="display:block;width:100%;margin:6px 0 10px;padding:11px;border-radius:10px;border:1px solid var(--line);background:#0b1712;color:var(--txt)">
     <div class="row" style="margin-top:8px">
       <button class="btn primary" id="saveTelegram">Save alert settings</button>
@@ -99,6 +99,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   let ws=null, timer=null, running=false, req=0, pending={}, symbols={}, latestEpoch=JSON.parse(localStorage.getItem("dsa_signal_epochs") || "{}"), marketState={};
   let journal = JSON.parse(localStorage.getItem("dsa_v1_journal") || "[]");
   let telegramWorker = localStorage.getItem("dsa_telegram_worker") || "https://deriv-telegram-alerts.kanyesigyeanthony79-451.workers.dev/";
+  const savedSessionKey = sessionStorage.getItem("dsa_signal_api_key") || "";
   const TELEGRAM_ENABLED_KEY = "dsa_telegram_enabled";
   const $ = id => document.getElementById(id);
   const setStatus = (s,on=false) => { $("status").textContent=s; $("dot").className="dot"+(on?" on":""); };
@@ -134,8 +135,11 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   }
   async function sendTelegramSignal(setup){
     if(!telegramWorker){$("telegramStatus").textContent="Add and save your Cloudflare Worker URL to enable Telegram.";return false;}
-    const apiKey=$("signalApiKey").value.trim();
-    if(!apiKey){$("telegramStatus").textContent="Enter your private SIGNAL_API_KEY to send alerts.";return false;}
+    const apiKey=$("signalApiKey").value.trim() || sessionStorage.getItem("dsa_signal_api_key") || "";
+    if(!apiKey){$("telegramStatus").textContent="Automatic Telegram alert NOT sent: API key is missing. Enter it and save alert settings.";return false;}
+    $("signalApiKey").value=apiKey;
+    const automatic = setup.source === "Deriv Signal Assistant";
+    if(automatic) $("telegramStatus").textContent=`New ${setup.signal} signal detected for ${setup.market}. Sending Telegram alert…`;
     const payload={
       market:setup.market,
       direction:String(setup.signal || "").toUpperCase(),
@@ -157,10 +161,10 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       });
       const result=await response.json().catch(()=>({}));
       if(!response.ok || !result.success) throw new Error(result.error || `HTTP ${response.status}`);
-      $("telegramStatus").textContent="Telegram alert sent successfully.";
+      $("telegramStatus").textContent=(automatic?"Automatic signal alert delivered to Telegram: ":"Telegram test alert delivered: ")+setup.market+" · "+(setup.signal||"");
       return true;
     }catch(err){
-      $("telegramStatus").textContent="Telegram send failed: "+err.message;
+      $("telegramStatus").textContent=(automatic?"Automatic Telegram alert FAILED: ":"Telegram test failed: ")+err.message;
       return false;
     }
   }
@@ -171,7 +175,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     if("Notification" in window && Notification.permission==="granted"){
       new Notification(`Deriv ${signal}: ${name}`,{body:`Entry ${setup.entry} · SL ${setup.sl} · TP1 ${setup.tp1} · TP2 ${setup.tp2}`});
     }
-    sendTelegramSignal({market:name,signal,time:new Date(candle.epoch*1000).toISOString(),timeframe:"M15",entry:setup.entry,sl:setup.sl,tp1:setup.tp1,tp2:setup.tp2,rsi:Number(rv.toFixed(2)),atr:setup.atr,source:"Deriv Signal Assistant"});
+    void sendTelegramSignal({market:name,signal,time:new Date(candle.epoch*1000).toISOString(),timeframe:"M15",entry:setup.entry,sl:setup.sl,tp1:setup.tp1,tp2:setup.tp2,rsi:Number(rv.toFixed(2)),atr:setup.atr,source:"Deriv Signal Assistant"});
   }
   function analyse(name, raw){
     const now=Math.floor(Date.now()/1000);
@@ -261,11 +265,15 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     alert(p==="granted"?"Notifications enabled while this page is allowed to run.":"Notifications were not enabled.");
   });
   $("telegramWorker").value=telegramWorker;
+  $("signalApiKey").value=savedSessionKey;
+  if(savedSessionKey) $("telegramStatus").textContent="API key restored for this browser tab. Automatic alerts are ready while this page remains open.";
   $("saveTelegram").addEventListener("click",()=>{
     const value=$("telegramWorker").value.trim();
     if(value && !/^https:\/\//i.test(value)){alert("Enter your HTTPS Cloudflare Worker URL.");return;}
     telegramWorker=value;localStorage.setItem("dsa_telegram_worker",telegramWorker);
-    $("telegramStatus").textContent=telegramWorker?"Worker URL saved on this device. Send a test alert to verify Telegram.":"Telegram alerts are not configured.";
+    const key=$("signalApiKey").value.trim();
+    if(key) sessionStorage.setItem("dsa_signal_api_key",key);
+    $("telegramStatus").textContent=telegramWorker?(key?"Worker URL and API key saved for this tab. Automatic alerts are ready; keep this page open while scanning.":"Worker URL saved. Enter the private API key and save again."):"Telegram alerts are not configured.";
   });
   $("testTelegram").addEventListener("click",async()=>{
     if(!telegramWorker){alert("Save your Cloudflare Worker URL first.");return;}
