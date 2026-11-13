@@ -3,7 +3,8 @@
 // Does not send Telegram messages, place trades, or modify production signal state.
 const fs = require("node:fs");
 const path = require("node:path");
-const { aggregateWeeklyCandles, validCandles, evaluateAllCategories } = require("./multi_timeframe_engine");\nconst { updateJournal, summarizeJournal } = require("./multi_timeframe_journal");
+const { aggregateWeeklyCandles, validCandles, evaluateAllCategories } = require("./multi_timeframe_engine");
+const { updateJournal, summarizeJournal } = require("./multi_timeframe_journal");\nconst { updateJournal, summarizeJournal } = require("./multi_timeframe_journal");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const MARKETS = [
@@ -16,7 +17,8 @@ const FRAMES = [
   ["M1", 60, 240], ["M5", 300, 240], ["M15", 900, 240],
   ["H1", 3600, 240], ["H4", 14400, 240], ["D1", 86400, 520]
 ];
-const OUTPUT = path.join(__dirname, "multi_timeframe_data.json");\nconst JOURNAL = path.join(__dirname, "multi_timeframe_journal.json");
+const OUTPUT = path.join(__dirname, "multi_timeframe_data.json");
+const JOURNAL = path.join(__dirname, "multi_timeframe_journal.json");\nconst JOURNAL = path.join(__dirname, "multi_timeframe_journal.json");
 const log = (event, details = {}) => console.log(JSON.stringify({ time: new Date().toISOString(), event, ...details }));
 
 function connect(url) {
@@ -135,6 +137,9 @@ async function main() {
       output.markets[marketId] = marketData;
     }
 
+    const priorJournal = fs.existsSync(JOURNAL) ? JSON.parse(fs.readFileSync(JOURNAL, "utf8")) : { version: 1, signals: [] };
+    const journal = updateJournal(priorJournal, output.markets, now);
+    fs.writeFileSync(JOURNAL, JSON.stringify(journal, null, 2) + "\n");
     fs.writeFileSync(OUTPUT, JSON.stringify(output, null, 2) + "\n");
     const total = Object.values(output.markets).reduce((sum, m) =>
       sum + Object.values(m.timeframes).reduce((n, candles) => n + candles.length, 0), 0);
