@@ -11,7 +11,10 @@ const MARKETS = [
   ["R_25", "Volatility 25 Index"],
   ["R_50", "Volatility 50 Index"],
   ["R_75", "Volatility 75 Index"],
-  ["JD100", "Jump 100 Index"]
+  ["JD100", "Jump 100 Index"],
+  ["frxXAUUSD", "Gold/USD"],
+  ["CRASH500", "Crash 500 Index"],
+  ["BOOM500", "Boom 500 Index"]
 ];
 const STATE_FILE = path.join(__dirname, "signal_state.json");
 const WORKER_URL = process.env.TELEGRAM_WORKER_URL;
