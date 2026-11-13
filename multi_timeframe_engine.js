@@ -80,15 +80,19 @@ function makeLevels(entryPrice, riskCandles, direction, config) {
   };
 }
 
-function evaluateCategory(marketId, marketName, category, candlesByTimeframe) {
+function evaluateCategory(marketId, marketName, category, candlesByTimeframe, entryIndex = null) {
   const config = CATEGORIES[category];
   if (!config) throw new Error("Unknown signal category: " + category);
-  const entryCandles = candlesByTimeframe[config.entry] || [];
-  const confirmationCandles = candlesByTimeframe[config.confirmation] || [];
-  const contextCandles = candlesByTimeframe[config.context] || [];
-  const riskCandles = candlesByTimeframe[config.risk] || [];
+  const rawEntryCandles = candlesByTimeframe[config.entry] || [];
+  const chosenIndex = Number.isInteger(entryIndex) ? Math.min(entryIndex, rawEntryCandles.length - 1) : rawEntryCandles.length - 1;
+  const entryCandles = rawEntryCandles.slice(0, chosenIndex + 1);
+  const entryCandle = entryCandles[entryCandles.length - 1];
+  const cutoffEpoch = entryCandle ? entryCandle.epoch + TIMEFRAMES[config.entry] : 0;
+  const confirmationCandles = (candlesByTimeframe[config.confirmation] || []).filter(c => c.epoch + TIMEFRAMES[config.confirmation] <= cutoffEpoch);
+  const contextCandles = (candlesByTimeframe[config.context] || []).filter(c => c.epoch + TIMEFRAMES[config.context] <= cutoffEpoch);
+  const riskCandles = (candlesByTimeframe[config.risk] || []).filter(c => c.epoch + TIMEFRAMES[config.risk] <= cutoffEpoch);
 
-  if (!validCandles(entryCandles) || entryCandles.length < 60 ||
+  if (!validCandles(entryCandles) || entryCandles.length < 65 ||
       !validCandles(confirmationCandles) || confirmationCandles.length < 60 ||
       !validCandles(contextCandles) || contextCandles.length < (config.context === "W1" ? 51 : 60) ||
       !validCandles(riskCandles) || riskCandles.length < 20) {
@@ -112,7 +116,6 @@ function evaluateCategory(marketId, marketName, category, candlesByTimeframe) {
     };
   }
 
-  const entryCandle = entryCandles[entryCandles.length - 1];
   const levels = makeLevels(entryCandle.close, riskCandles, entryResult.signal, config);
   if (!levels) return { state: "warming", category, label: config.label, reason: "Risk timeframe ATR is unavailable." };
 
@@ -147,6 +150,21 @@ function evaluateAllCategories(marketId, marketName, candlesByTimeframe) {
   );
 }
 
+// Recover recent completed entry bars between scheduled scans. Higher-timeframe
+// confirmation/context candles are cut off at each entry bar's close to avoid look-ahead.
+function evaluateRecentSignals(marketId, marketName, candlesByTimeframe, recentBars = 6) {
+  const found = [];
+  for (const category of Object.keys(CATEGORIES)) {
+    const entry = candlesByTimeframe[CATEGORIES[category].entry] || [];
+    const start = Math.max(64, entry.length - Math.max(1, recentBars));
+    for (let index = start; index < entry.length; index++) {
+      const result = evaluateCategory(marketId, marketName, category, candlesByTimeframe, index);
+      if (result.state === "signal") found.push(result);
+    }
+  }
+  return found;
+}
+
 // Deriv candle history may be requested as daily candles and safely aggregated into
 // completed UTC weeks. The current, incomplete week is deliberately excluded.
 function aggregateWeeklyCandles(dailyCandles, nowEpoch = Math.floor(Date.now() / 1000)) {
@@ -173,5 +191,5 @@ function aggregateWeeklyCandles(dailyCandles, nowEpoch = Math.floor(Date.now() /
 
 module.exports = {
   TIMEFRAMES, CATEGORIES, validCandles, trendBias, makeLevels,
-  evaluateCategory, evaluateAllCategories, aggregateWeeklyCandles
+  evaluateCategory, evaluateAllCategories, evaluateRecentSignals, aggregateWeeklyCandles
 };
