@@ -80,8 +80,13 @@ async function main() {
   try {
     const timeReply = await client.ask({ time: 1 });
     const now = Number(timeReply.time) || Math.floor(Date.now() / 1000);
-    const symbolsReply = await client.ask({ active_symbols: "brief" });
-    const symbols = symbolsReply.active_symbols || [];
+    let symbolsReply = await client.ask({ active_symbols: "brief" });
+    let symbols = symbolsReply.active_symbols || [];
+    const unresolved = MARKETS.filter(([id, name]) => !resolveSymbol(symbols, id, name));
+    if (unresolved.length) {
+      symbolsReply = await client.ask({ active_symbols: "full" });
+      symbols = [...symbols, ...(symbolsReply.active_symbols || [])];
+    }
     const output = {
       version: 1,
       generatedAt: new Date(now * 1000).toISOString(),
