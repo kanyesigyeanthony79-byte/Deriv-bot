@@ -96,7 +96,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     "Jump 100 Index":"JD100"
   };
   const GRANULARITY = 900, COUNT = 150, REFRESH_MS = 60000;
-  let ws=null, timer=null, running=false, req=0, pending={}, symbols={}, latestEpoch=JSON.parse(localStorage.getItem("dsa_signal_epochs") || "{}"), marketState={};
+  let ws=null, timer=null, reconnectTimer=null, reconnectAttempt=0, running=false, req=0, pending={}, symbols={}, latestEpoch=JSON.parse(localStorage.getItem("dsa_signal_epochs") || "{}"), marketState={};
   let journal = JSON.parse(localStorage.getItem("dsa_v1_journal") || "[]");
   let telegramWorker = localStorage.getItem("dsa_telegram_worker") || "https://deriv-telegram-alerts.kanyesigyeanthony79-451.workers.dev/";
   const savedSessionKey = sessionStorage.getItem("dsa_signal_api_key") || "";
@@ -224,7 +224,9 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     setStatus("Connecting to Deriv public market data…");
     try{ws=new WebSocket(ENDPOINT);}catch(e){setStatus("Connection failed: "+e.message);running=false;return;}
     ws.onopen=()=>{
-      setStatus("Connected · finding the four requested indices",true);
+      reconnectAttempt=0;
+      clearTimeout(reconnectTimer); reconnectTimer=null;
+      setStatus("Connected · finding the requested indices",true);
       send({active_symbols:"brief"},data=>{
         if(data.error){setStatus("Deriv symbol-list response: "+data.error.message);TARGETS.forEach(n=>{symbols[n]=FALLBACK_SYMBOLS[n];});scanAll();return;}
         const list=Array.isArray(data.active_symbols)?data.active_symbols:[];
@@ -249,12 +251,23 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       if(data.req_id && pending[data.req_id]){const cb=pending[data.req_id];delete pending[data.req_id];cb(data);}
       if(data.error && !data.req_id)setStatus("Deriv error: "+data.error.message);
     };
-    ws.onerror=()=>setStatus("Connection error. Check internet and reconnect.");
-    ws.onclose=()=>{if(running)setStatus("Connection closed. Tap Connect & scan to reconnect.");running=false;clearInterval(timer);$("connect").disabled=false;$("stop").disabled=true;};
+    ws.onerror=()=>{setStatus("Connection interrupted · preparing to reconnect…");};
+    ws.onclose=()=>{
+      clearInterval(timer); timer=null; pending={}; ws=null;
+      if(running){
+        const delay=Math.min(30000,1000*Math.pow(2,reconnectAttempt++));
+        setStatus("Connection lost · retrying automatically in "+Math.round(delay/1000)+"s…");
+        reconnectTimer=setTimeout(()=>{if(running){running=false;connect();}},delay);
+      } else {
+        setStatus("Scanner stopped.");
+        $("connect").disabled=false; $("stop").disabled=true;
+      }
+    };
   }
   function stop(){
-    running=false;clearInterval(timer);timer=null;
-    if(ws){try{ws.close();}catch(e){}ws=null;}
+    running=false;clearTimeout(reconnectTimer);reconnectTimer=null;reconnectAttempt=0;
+    clearInterval(timer);timer=null;
+    if(ws){const current=ws;ws=null;try{current.close();}catch(e){}}
     pending={};$("connect").disabled=false;$("stop").disabled=true;setStatus("Scanner stopped.");
   }
   $("connect").addEventListener("click",connect);
