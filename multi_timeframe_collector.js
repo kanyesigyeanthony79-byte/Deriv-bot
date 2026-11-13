@@ -3,7 +3,7 @@
 // Does not send Telegram messages, place trades, or modify production signal state.
 const fs = require("node:fs");
 const path = require("node:path");
-const { TIMEFRAMES, aggregateWeeklyCandles, validCandles, evaluateAllCategories } = require("./multi_timeframe_engine");
+const { aggregateWeeklyCandles, validCandles, evaluateAllCategories } = require("./multi_timeframe_engine");\nconst { updateJournal, summarizeJournal } = require("./multi_timeframe_journal");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const MARKETS = [
@@ -16,7 +16,7 @@ const FRAMES = [
   ["M1", 60, 240], ["M5", 300, 240], ["M15", 900, 240],
   ["H1", 3600, 240], ["H4", 14400, 240], ["D1", 86400, 520]
 ];
-const OUTPUT = path.join(__dirname, "multi_timeframe_data.json");
+const OUTPUT = path.join(__dirname, "multi_timeframe_data.json");\nconst JOURNAL = path.join(__dirname, "multi_timeframe_journal.json");
 const log = (event, details = {}) => console.log(JSON.stringify({ time: new Date().toISOString(), event, ...details }));
 
 function connect(url) {
@@ -142,7 +142,7 @@ async function main() {
     const signalCounts = Object.fromEntries(["signal", "no_signal", "timeframe_conflict", "warming"].map(state =>
       [state, allSignals.filter(s => s.state === state).length]
     ));
-    output.summary = { markets: Object.keys(output.markets).length, signalCounts };
+    output.summary = { markets: Object.keys(output.markets).length, signalCounts, journal: summarizeJournal(journal) };
     log("collection_complete", {
       markets: Object.keys(output.markets).length,
       candles: total,
