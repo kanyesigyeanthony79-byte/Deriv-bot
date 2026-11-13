@@ -15,7 +15,7 @@ const MARKETS = [
 ];
 const FRAMES = [
   ["M1", 60, 240], ["M5", 300, 240], ["M15", 900, 240],
-  ["H1", 3600, 240], ["H4", 14400, 240], ["D1", 86400, 520]
+  ["H1", 3600, 240], ["H4", 14400, 240], ["D1", 86400, 520], ["W1", 604800, 120]
 ];
 const OUTPUT = path.join(__dirname, "multi_timeframe_data.json");
 const JOURNAL = path.join(__dirname, "multi_timeframe_journal.json");
@@ -128,8 +128,10 @@ async function main() {
         }
       }
       const daily = marketData.timeframes.D1 || [];
-      const weekly = aggregateWeeklyCandles(daily, now);
-      marketData.timeframes.W1 = weekly;
+      const aggregatedWeekly = aggregateWeeklyCandles(daily, now);
+      const directWeekly = marketData.timeframes.W1 || [];
+      if (directWeekly.length < 60 && aggregatedWeekly.length > directWeekly.length) marketData.timeframes.W1 = aggregatedWeekly;
+      const weekly = marketData.timeframes.W1 || [];
       if (weekly.length < 60) {
         marketData.errors.push({ timeframe: "W1", message: "Fewer than 60 completed weekly candles available; position signals will remain warming." });
       }
