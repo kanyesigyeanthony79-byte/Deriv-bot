@@ -4,28 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#10251d">
-<title>Deriv Signal Assistant V1</title>
+<title>Deriv Signal Assistant V1 - Telegram Connected</title>
 <style>
 :root{color-scheme:dark;--bg:#0b1712;--panel:#14251d;--panel2:#1b3026;--line:#2c4939;--txt:#eef5ef;--muted:#a8b9ad;--gold:#d5a83d;--green:#55c58b;--red:#f07878}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#10251d,#09120e 70%);color:var(--txt);font:15px system-ui,-apple-system,Segoe UI,sans-serif}
 main{max-width:850px;margin:auto;padding:18px 14px 40px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center}.brand{font-weight:800;letter-spacing:.2px;font-size:19px}.sub,.muted{color:var(--muted);font-size:12px}.pill{border:1px solid var(--line);padding:6px 10px;border-radius:30px;color:var(--gold);font-size:11px;white-space:nowrap}
 .hero{margin:18px 0;padding:17px;border:1px solid var(--line);border-radius:18px;background:rgba(20,37,29,.92)}
 h1{font-size:25px;margin:0 0 5px}.hero p{margin:0;color:var(--muted);line-height:1.5;font-size:13px}
-.row{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.btn{border:1px solid var(--line);background:var(--panel2);color:var(--txt);border-radius:11px;padding:11px 14px;font-weight:650;cursor:pointer;font-family:inherit;font-size:14px}.btn.primary{background:var(--gold);color:#17170f;border-color:var(--gold)}.btn:disabled{opacity:.45}
-.status{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.5}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#9a9a9a;margin-right:7px}.dot.on{background:var(--green)}.dot.warn{background:var(--gold)}
+.row{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.btn{border:1px solid var(--line);background:var(--panel2);color:var(--txt);border-radius:11px;padding:11px 14px;font-weight:650;cursor:pointer}.btn.primary{background:var(--gold);color:#17170f;border-color:var(--gold)}.btn:disabled{opacity:.45}
+.status{font-size:12px;color:var(--muted);margin-top:12px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#9a9a9a;margin-right:7px}.dot.on{background:var(--green)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin:12px 0}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:13px;min-width:0}.card.stale{opacity:.65}
-.cardhead{display:flex;justify-content:space-between;gap:6px;align-items:flex-start}.tog{font-size:11px;color:var(--muted);display:flex;gap:4px;align-items:center;white-space:nowrap}.tog input{width:18px;height:18px}
-.name{font-weight:700;font-size:13px}.signal{font-size:17px;font-weight:850;margin:10px 0 4px;overflow-wrap:anywhere}.buy{color:var(--green)}.sell{color:var(--red)}.none{color:var(--gold)}
-.detail{font-size:11px;color:var(--muted);line-height:1.5;overflow-wrap:anywhere}.info{white-space:pre-line}.err{color:var(--red);font-size:11px;margin-top:4px;overflow-wrap:anywhere}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:13px;min-width:0}
+.name{font-weight:700;font-size:13px}.signal{font-size:19px;font-weight:850;margin:10px 0 4px}.buy{color:var(--green)}.sell{color:var(--red)}.none{color:var(--gold)}
+.detail{font-size:11px;color:var(--muted);line-height:1.5;overflow-wrap:anywhere}
 section{margin-top:20px}h2{font-size:16px;margin:0 0 9px}
 table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:600}
 .notice{border-left:3px solid var(--gold);background:#1a281e;padding:11px 12px;border-radius:8px;color:#d8e2da;font-size:12px;line-height:1.55;margin-top:15px}
 .smallbtn{font-size:12px;padding:8px 10px}.foot{margin-top:22px;color:var(--muted);font-size:11px;line-height:1.6}
-.toast{position:sticky;top:8px;z-index:5;background:#2b2a14;border:1px solid var(--gold);color:var(--txt);padding:11px 12px;border-radius:10px;font-size:13px;margin-bottom:10px}
-details{margin-top:14px}summary{color:var(--muted);font-size:12px;cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;color:var(--muted);margin:8px 0 0}
-.bt{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.bt label{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:4px}.bt input,.bt select{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:9px;padding:9px;font:inherit;min-width:0}
-[hidden]{display:none!important}
 @media(max-width:420px){.brand{font-size:16px}.hero{padding:14px}h1{font-size:22px}}
 </style>
 </head>
@@ -35,564 +30,255 @@ details{margin-top:14px}summary{color:var(--muted);font-size:12px;cursor:pointer
     <div><div class="brand">DERIV SIGNAL ASSISTANT</div><div class="sub">V1 · Android-friendly market scanner</div></div>
     <div class="pill">DEMO / SIGNALS ONLY</div>
   </div>
-  <div class="toast" id="toast" hidden></div>
-  <div class="toast" id="storewarn" hidden>Browser storage is unavailable here. Records will be lost when this tab closes. Open the app from an https:// or http:// address instead of a local file.</div>
   <div class="hero">
     <h1>15-minute market monitor</h1>
-    <p>Scans Volatility 10, 25, 50, 75 and Jump 100 on completed candles with strict rules. NO TRADE is the normal result; signals are rare by design. No account login, deposits, or trade execution.</p>
+    <p>Scans Volatility 10, 25, 50 and 75 using completed candles. No account login, deposits, or trade execution.</p>
     <div class="row">
-      <button class="btn primary" id="connect">Connect &amp; scan</button>
+      <button class="btn primary" id="connect">Connect & scan</button>
       <button class="btn" id="stop" disabled>Stop</button>
       <button class="btn" id="notify">Enable notifications</button>
-      <button class="btn" id="wake">Keep screen on: off</button>
     </div>
-    <div class="status"><span class="dot" id="dot"></span><span id="status">Not connected. Tap Connect &amp; scan.</span></div>
-    <div class="status" id="last">Last successful market update: none yet</div>
+    <div class="status"><span class="dot" id="dot"></span><span id="status">Not connected. Tap Connect & scan.</span></div>
   </div>
+
+  <section class="card" id="telegramPanel">
+    <h2>Telegram alerts</h2>
+    <p class="muted" style="margin:0 0 10px">Paste your Cloudflare Worker URL and private SIGNAL_API_KEY. The API key is used only for requests from this open page and is not saved in local storage. Your Telegram bot token stays on the server.</p>
+    <label for="telegramWorker" class="muted">Cloudflare Worker URL</label>
+    <input id="telegramWorker" type="url" placeholder="https://your-worker.workers.dev" autocomplete="url" style="display:block;width:100%;margin:6px 0 10px;padding:11px;border-radius:10px;border:1px solid var(--line);background:#0b1712;color:var(--txt)">
+    <label for="signalApiKey" class="muted">Private SIGNAL_API_KEY (not saved in this page)</label>
+    <input id="signalApiKey" type="password" placeholder="Paste your Cloudflare SIGNAL_API_KEY" autocomplete="off" spellcheck="false" style="display:block;width:100%;margin:6px 0 10px;padding:11px;border-radius:10px;border:1px solid var(--line);background:#0b1712;color:var(--txt)">
+    <div class="row" style="margin-top:8px">
+      <button class="btn primary" id="saveTelegram">Save alert settings</button>
+      <button class="btn" id="testTelegram">Send test alert</button>
+    </div>
+    <div class="status" id="telegramStatus">Telegram is not configured.</div>
+  </section>
 
   <section>
     <h2>Live analysis</h2>
-    <div class="grid" id="markets"></div>
-  </section>
-
-  <section>
-    <div class="row" style="justify-content:space-between;align-items:center;margin-top:0">
-      <h2 style="margin:0">Signal journal</h2>
-      <div class="row" style="margin:0"><button class="btn smallbtn" id="export">Export CSV</button><button class="btn smallbtn" id="clear">Clear</button></div>
-    </div>
-    <div class="card" style="overflow-x:auto;margin-top:9px">
-      <table><thead><tr><th>Time</th><th>Market</th><th>Signal</th><th>Score</th><th>Close</th><th>RSI</th><th>Result</th></tr></thead><tbody id="journal"></tbody></table>
-      <div class="muted" id="count" style="margin-top:8px"></div>
+    <div class="grid" id="markets">
+      <div class="card"><div class="name">Volatility 10 Index</div><div class="signal none">WAITING</div><div class="detail">Connect to load candles.</div></div>
+      <div class="card"><div class="name">Volatility 25 Index</div><div class="signal none">WAITING</div><div class="detail">Connect to load candles.</div></div>
+      <div class="card"><div class="name">Volatility 50 Index</div><div class="signal none">WAITING</div><div class="detail">Connect to load candles.</div></div>
+      <div class="card"><div class="name">Volatility 75 Index</div><div class="signal none">WAITING</div><div class="detail">Connect to load candles.</div></div>
+      <div class="card"><div class="name">Jump 100 Index</div><div class="signal none">WAITING</div><div class="detail">Connect to load candles.</div></div>
     </div>
   </section>
 
   <section>
-    <h2>Paper statistics by market</h2>
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h2>Signal journal</h2>
+      <button class="btn smallbtn" id="export">Export CSV</button>
+    </div>
     <div class="card" style="overflow-x:auto">
-      <table><thead><tr><th>Market</th><th>Signals</th><th>Resolved</th><th>Hit rate</th><th>Avg move (ATR)</th></tr></thead><tbody id="stats"></tbody></table>
-      <div class="muted" style="margin-top:8px;line-height:1.5">Each signal is checked once, 4 completed candles (60 min) later: a hit means price closed further in the signal direction than the signal candle's close. No stop-loss, payout, spread or contract rules are modelled, so this is not a profit figure. * = fewer than 30 resolved signals, too few to conclude anything.<span id="legacy"></span></div>
+      <table><thead><tr><th>Time</th><th>Market</th><th>Signal</th><th>Entry</th><th>SL</th><th>TP1</th><th>TP2</th></tr></thead><tbody id="journal"><tr><td colspan="7" class="muted">No signals recorded yet.</td></tr></tbody></table>
+      <div class="muted" id="count" style="margin-top:8px">0 recorded signals · Stored on this device</div>
     </div>
   </section>
 
-  <section>
-    <h2>Historical backtest <span class="pill">SIMULATED</span></h2>
-    <div class="card">
-      <div class="notice" style="margin:0 0 10px"><b>Simulated results only.</b> These are calculated on past candles. They are not actual Deriv trades, balances or payouts, and past results do not predict future ones. Payout and cost are your assumptions, not Deriv quotes.</div>
-      <div class="bt">
-        <label>Market<select id="btMarket"></select></label>
-        <label>From (UTC date)<input type="date" id="btFrom"></label>
-        <label>To (UTC date)<input type="date" id="btTo"></label>
-        <label>Trade duration (15m candles)<input type="number" id="btDur" min="1" max="96" value="4"></label>
-        <label>Payout on win (% of stake)<input type="number" id="btPay" min="1" max="500" value="80"></label>
-        <label>Extra cost per trade (% of stake)<input type="number" id="btCost" min="0" max="50" step="0.1" value="0"></label>
-      </div>
-      <label class="tog" style="margin-top:10px"><input type="checkbox" id="btOverlap" checked>Skip new signals while a simulated trade is still open</label>
-      <div class="row"><button class="btn primary" id="btRun">Run backtest</button><button class="btn" id="btCancel" disabled>Cancel</button><button class="btn smallbtn" id="btTrades" disabled>Export trades CSV</button><button class="btn smallbtn" id="btSummary" disabled>Export summary CSV</button></div>
-      <div class="status" id="btStatus">Not run yet.</div>
-      <div id="btOut"></div>
-      <div class="detail" style="margin-top:10px;line-height:1.6"><b>Rules.</b> Signals: the live engine, unchanged, evaluated on each completed candle using only that candle and earlier ones (the same 199-candle window the live scanner sees), with the same 1-hour cooldown. Entry: close of the signal candle. Exit: close of the candle <i>duration</i> candles later. BUY wins if exit is above entry, SELL wins if exit is below; a tie counts as a loss. Flat stake of 1 unit, no martingale. Win pays the payout % minus cost; a loss costs the stake plus cost. Drawdown is the largest peak-to-trough fall in cumulative result. Real entries come seconds after candle close, and real payouts vary by market and duration, so real results would differ.</div>
-    </div>
-  </section>
-
-  <details id="diagbox"><summary>Diagnostics</summary><pre id="diag"></pre></details>
-
-  <div class="notice"><b>Important:</b> BUY and SELL are research alerts, not instructions or guaranteed outcomes. V1 does not set contract duration, stop-loss or take-profit for Deriv contracts and cannot place trades. Synthetic indices may not behave like conventional exchange markets. Test signals without staking money. Nothing here shows this strategy is profitable; the score is a heuristic, not a probability of winning.</div>
+  <div class="notice"><b>Important:</b> Signals are research alerts, not instructions or guaranteed outcomes. Entry is the completed signal-candle close (reference entry), not a guaranteed executable fill. SL/TP are ATR-based reference levels (SL 1.5× ATR, TP1 2R, TP2 3R). Price may move before you can act. Telegram alerts are sent only while this page is open and scanning. Test without staking money.</div>
   <div class="foot">
-    Engine v2: a signal needs every gate to pass (EMA 20/50 trend and gap, EMA 50 slope, RSI 14 band, candle direction and body, higher-low/lower-high structure, not extended, no spike candle) plus a minimum heuristic score. Only closed 15-minute candles are used. One signal per candle, then a 1-hour cooldown per market. Thresholds are starting values chosen by judgement, not tuned or backtested. No martingale, no recovery sizing, no automatic execution.<br>
-    Data: Deriv public market-data WebSocket (no login). An internet connection and an open, visible browser tab are required; Android may pause the page when the screen is off.
+    Strategy filter: EMA 20 / EMA 50 trend alignment, RSI 14 momentum range, and candle direction. Only closed 15-minute candles are evaluated. No martingale, no recovery sizing, and no automatic execution. ATR(14) sets reference risk levels: SL 1.5× ATR, TP1 2R and TP2 3R.<br>
+    Data connection: Deriv public market-data WebSocket. An internet connection and an open browser tab are required. Keep this page open while scanning.
   </div>
 </main>
 <script>
 (() => {
-  "use strict";
-  // Current Deriv public market-data endpoint (developers.deriv.com, no auth/OTP needed).
   const ENDPOINT = "wss://api.derivws.com/trading/v1/options/ws/public";
-  const GRAN = 900, COUNT = 200, MIN_CANDLES = 60, POLL_MS = 30000, LIVE_MS = 100000;
-  const PING_MS = 25000, SILENT_MS = 65000, REQ_TIMEOUT = 15000;
-  const ENGINE = 2, HORIZON = 4, COOLDOWN = 4, MIN_SCORE = 55, MIN_SEP = 0.2, MIN_BODY = 0.4, MAX_EXT = 1.5, MAX_RANGE = 3;
-  const JKEY = "dsa_v1_journal", MKEY = "dsa_v2_meta", OKEY = "dsa_v2_enabled";
-  // code = expected Deriv symbol, only USED after it is confirmed in active_symbols.
-  // fallback = may use the documented code if the symbol list itself cannot be loaded.
-  const MARKETS = [
-    {id:"R_10", name:"Volatility 10 Index", code:"R_10", fallback:true},
-    {id:"R_25", name:"Volatility 25 Index", code:"R_25", fallback:true},
-    {id:"R_50", name:"Volatility 50 Index", code:"R_50", fallback:true},
-    {id:"R_75", name:"Volatility 75 Index", code:"R_75", fallback:true},
-    {id:"JD100", name:"Jump 100 Index", code:"JD100", fallback:false}
-  ];
-
+  const TARGETS = ["Volatility 10 Index","Volatility 25 Index","Volatility 50 Index","Volatility 75 Index","Jump 100 Index"];
+  // Standard (non-1s) Deriv synthetic-index symbols.
+  const FALLBACK_SYMBOLS = {
+    "Volatility 10 Index":"R_10",
+    "Volatility 25 Index":"R_25",
+    "Volatility 50 Index":"R_50",
+    "Volatility 75 Index":"R_75",
+    "Jump 100 Index":"JD100"
+  };
+  const GRANULARITY = 900, COUNT = 150, REFRESH_MS = 60000;
+  let ws=null, timer=null, running=false, req=0, pending={}, symbols={}, latestEpoch=JSON.parse(localStorage.getItem("dsa_signal_epochs") || "{}"), marketState={};
+  let journal = JSON.parse(localStorage.getItem("dsa_v1_journal") || "[]");
+  let telegramWorker = localStorage.getItem("dsa_telegram_worker") || "https://deriv-telegram-alerts.kanyesigyeanthony79-451.workers.dev/";
+  const TELEGRAM_ENABLED_KEY = "dsa_telegram_enabled";
   const $ = id => document.getElementById(id);
-  const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const norm = s => String(s || "").toLowerCase().replace(/\s+/g, " ").trim();
-  const hm = ep => new Date(ep * 1000).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
-  const hms = ms => new Date(ms).toLocaleTimeString();
-  const ago = ms => { const s = Math.max(0, Math.round((Date.now() - ms) / 1000)); return s < 90 ? s + "s ago" : Math.round(s / 60) + "m ago"; };
-  const nm = s => s.underlying_symbol_name || s.display_name || s.name || "";
-  const cd = s => s.underlying_symbol || s.symbol || "";
-
-  // ---- storage (falls back to memory and warns if the browser blocks it) ----
-  const mem = {};
-  let storeOK = true;
-  try { localStorage.setItem("__t", "1"); localStorage.removeItem("__t"); } catch (e) { storeOK = false; $("storewarn").hidden = false; }
-  const sget = (k, d) => { try { if (storeOK) { const v = localStorage.getItem(k); if (v != null) return JSON.parse(v); } } catch (e) {} return k in mem ? mem[k] : d; };
-  const sset = (k, v) => { mem[k] = v; if (storeOK) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { storeOK = false; $("storewarn").hidden = false; } } };
-
-  let journal = sget(JKEY, []); if (!Array.isArray(journal)) journal = [];
-  let meta = sget(MKEY, {}); if (!meta || typeof meta !== "object") meta = {};
-  meta.lastOK = meta.lastOK || {}; meta.lastSig = meta.lastSig || {};
-  const enabled = sget(OKEY, {});
-
-  // ---- connection state ----
-  let ws = null, running = false, conn = "idle", req = 0, pending = {}, attempt = 0, rcAt = 0;
-  let scanTimer = null, bTimer = null, rcTimer = null, hb = null;
-  let lastMsg = 0, lastDataAt = 0, off = 0, syncedAt = 0, symOK = false;
-  const diag = {};
-  const srvNow = () => Math.floor(Date.now() / 1000) + off;
-
-  MARKETS.forEach(m => { m.on = enabled[m.id] !== false; m.sym = null; m.symNote = ""; m.symChecked = false; m.res = null; m.err = ""; m.busy = false; m.lastOK = meta.lastOK[m.id] || 0; m.dec = 3; });
-
-  // ---- cards (built once; only text is updated afterwards) ----
-  MARKETS.forEach(m => {
-    const d = document.createElement("div"); d.className = "card";
-    d.innerHTML = '<div class="cardhead"><div class="name">' + esc(m.name) + '</div><label class="tog"><input type="checkbox"' + (m.on ? " checked" : "") + '>Monitor</label></div>' +
-      '<div class="detail sym"></div><div class="signal none">WAITING</div><div class="detail info"></div><div class="err"></div><div class="detail upd"></div>' +
-      '<button class="btn smallbtn" style="margin-top:8px;width:100%">Scan now</button>';
-    $("markets").appendChild(d);
-    const q = s => d.querySelector(s);
-    m.el = {card:d, sym:q(".sym"), sig:q(".signal"), info:q(".info"), err:q(".err"), upd:q(".upd")};
-    q("input").addEventListener("change", e => { m.on = e.target.checked; enabled[m.id] = m.on; sset(OKEY, enabled); renderCard(m); if (m.on) scanMarket(m, false); });
-    q("button").addEventListener("click", () => scanMarket(m, true));
-  });
-
-  const isLive = m => running && ws && ws.readyState === 1 && m.fresh && Date.now() - m.lastOK < LIVE_MS;
-
-  function renderCard(m) {
-    const e = m.el, r = m.res;
-    let sig = "WAITING", cls = "none", info = "Connect to load candles.";
-    if (!m.on) { sig = "PAUSED"; info = "Monitoring switched off."; }
-    else if (!m.sym) { if (m.symChecked) sig = "SYMBOL NOT CONFIRMED"; info = m.symNote || info; }
-    else if (r) { sig = r.signal; cls = r.cls; info = r.text; }
-    else if (m.busy) { sig = "LOADING"; info = "Requesting 15-minute candles…"; }
-    e.sym.textContent = m.sym ? m.sym + " · " + m.symNote : "";
-    e.sig.textContent = sig; e.sig.className = "signal " + cls;
-    e.info.textContent = info;
-    e.err.textContent = m.err ? "⚠ " + m.err : "";
-    const stale = !!r && !isLive(m);
-    e.card.classList.toggle("stale", stale);
-    e.upd.textContent = m.lastOK ? "Last update " + hms(m.lastOK) + " (" + ago(m.lastOK) + ")" + (m.fresh ? "" : " · earlier session") + (stale ? " · STALE" : "") : "No market data received yet.";
-    e.card.querySelector("button").disabled = !m.sym || m.busy;
+  const setStatus = (s,on=false) => { $("status").textContent=s; $("dot").className="dot"+(on?" on":""); };
+  const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const send = (payload, callback) => {
+    const id=++req; payload.req_id=id;
+    pending[id]=callback;
+    ws.send(JSON.stringify(payload));
+  };
+  const ema = (values, period) => {
+    const k=2/(period+1); let out=values[0];
+    for(let i=1;i<values.length;i++) out=values[i]*k+out*(1-k);
+    return out;
+  };
+  const rsi = (closes, period=14) => {
+    let gains=0, losses=0;
+    for(let i=closes.length-period;i<closes.length;i++){
+      const d=closes[i]-closes[i-1]; if(d>0)gains+=d; else losses-=d;
+    }
+    if(losses===0)return 100;
+    const rs=(gains/period)/(losses/period);
+    return 100-(100/(1+rs));
+  };
+  function renderMarket(name, signal, details, cls="none") {
+    const key=TARGETS.indexOf(name); if(key<0)return;
+    marketState[name]={signal,details,cls};
+    const cards=[...$("markets").children];
+    cards[key].innerHTML=`<div class="name">${esc(name)}</div><div class="signal ${cls}">${esc(signal)}</div><div class="detail">${esc(details)}</div>`;
   }
-
-  function renderStatus() {
-    const age = lastDataAt ? Date.now() - lastDataAt : Infinity;
-    let txt, dot = "";
-    if (!running) txt = lastDataAt ? "Scanner stopped. Data shown is no longer live." : "Not connected. Tap Connect & scan.";
-    else if (conn === "wait") { txt = "Connection lost. Reconnecting in " + Math.max(0, Math.ceil((rcAt - Date.now()) / 1000)) + "s (attempt " + attempt + ")…"; dot = "warn"; }
-    else if (conn === "connecting") { txt = "Connecting to Deriv…"; dot = "warn"; }
-    else if (age < LIVE_MS) { txt = "Live: market data received " + ago(lastDataAt) + "."; dot = "on"; }
-    else { txt = lastDataAt ? "Socket open but no recent market data. Not live." : "Socket open. Waiting for first market data (not confirmed live yet)."; dot = "warn"; }
-    $("status").textContent = txt; $("dot").className = "dot " + dot;
-    const best = lastDataAt || Math.max(0, ...MARKETS.map(m => m.lastOK));
-    $("last").textContent = best ? "Last successful market update: " + hms(best) + " (" + ago(best) + ")" + (lastDataAt ? "" : " · from an earlier session, not live") : "Last successful market update: none yet";
-    if ($("diagbox").open) renderDiag();
+  function renderJournal(){
+    $("count").textContent=`${journal.length} recorded signals · Stored on this device`;
+    $("journal").innerHTML=journal.length ? journal.slice(0,30).map(x=>`<tr><td>${esc(x.time)}</td><td>${esc(x.market.replace(" Index",""))}</td><td class="${x.signal==="BUY"?"buy":"sell"}">${x.signal}</td><td>${Number(x.entry).toFixed(3)}</td><td>${Number(x.sl).toFixed(3)}</td><td>${Number(x.tp1).toFixed(3)}</td><td>${Number(x.tp2).toFixed(3)}</td></tr>`).join("") : `<tr><td colspan="7" class="muted">No signals recorded yet.</td></tr>`;
   }
-
-  function renderDiag() {
-    $("diag").textContent = ["Endpoint: " + ENDPOINT, "State: " + (running ? conn : "stopped") + " · reconnect attempts since last data: " + attempt,
-      "Server clock offset: " + (diag.off === undefined ? "not synced" : diag.off + "s"),
-      "Symbols in Deriv list: " + (diag.total === undefined ? "not loaded" : diag.total) + (diag.fields ? " · fields: " + diag.fields : ""),
-      ...MARKETS.map(m => m.name + ": " + (m.sym ? m.sym + " (" + m.symNote + ")" : (m.symNote || "unchecked"))),
-      "Jump symbols seen: " + (diag.jump && diag.jump.length ? diag.jump.join("; ") : "none"),
-      "Last error: " + (diag.err || "none"), "Storage: " + (storeOK ? "persistent (localStorage)" : "memory only")].join("\n");
-  }
-
-  function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 15000); }
-  $("toast").addEventListener("click", () => $("toast").hidden = true);
-
-  // ---- journal ----
-  function renderJournal() {
-    renderStats();
-    $("count").textContent = journal.length + " recorded signals · " + (storeOK ? "Stored on this device" : "NOT persisted (storage blocked)");
-    $("journal").innerHTML = journal.length ? journal.slice(0, 30).map(x => {
-      const t = x.ts ? new Date(x.ts).toLocaleString([], {month:"short", day:"numeric", hour:"2-digit", minute:"2-digit"}) : x.time;
-      return "<tr><td>" + esc(t) + "</td><td>" + esc(String(x.market).replace(" Index", "")) + '</td><td class="' + (x.signal === "BUY" ? "buy" : "sell") + '">' + esc(x.signal) + "</td><td>" + (x.score === undefined ? "–" : x.score) + "</td><td>" + Number(x.close).toFixed(x.dec || 3) + "</td><td>" + Number(x.rsi).toFixed(1) + "</td><td>" + esc(x.v === ENGINE ? ({win:"hit", loss:"miss", flat:"flat", unresolved:"n/a"}[x.status] || "pending") : "legacy") + "</td></tr>";
-    }).join("") : '<tr><td colspan="7" class="muted">No signals recorded yet.</td></tr>';
-  }
-  const isDup = (m, c) => (meta.lastSig[m.id] || 0) >= c.epoch || journal.some(x => x.market === m.name && Number(x.epoch) === c.epoch);
-  const lastSigEpoch = m => Math.max(meta.lastSig[m.id] || 0, ...journal.filter(x => x.market === m.name).map(x => Number(x.epoch) || 0));
-
-  function record(m, sig, c, r) {
-    journal.unshift({time:new Date().toLocaleString(), ts:Date.now(), market:m.name, symbol:m.sym, signal:sig, close:c.close, rsi:r.rsi, ema20:r.e20, ema50:r.e50, epoch:c.epoch, dec:m.dec, score:r.score, atr:r.atr, reasons:r.why.join("; "), v:ENGINE, status:"pending"});
-    journal = journal.slice(0, 500); sset(JKEY, journal);
-    meta.lastSig[m.id] = c.epoch; sset(MKEY, meta); renderJournal();
-    toast(sig + " · " + m.name + " · 15m close " + c.close.toFixed(m.dec) + " · heuristic score " + r.score + "/100 (not a win probability). Research alert only.");
-    try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
-    try { if ("Notification" in window && Notification.permission === "granted") new Notification("Deriv " + sig + ": " + m.name, {body:"15m close " + c.close + " · RSI " + r.rsi.toFixed(1)}); } catch (e) {}
-  }
-
-  // ---- indicators (SMA-seeded EMA, Wilder RSI, full series) ----
-  function ema(v, p) { const k = 2 / (p + 1); let e = v.slice(0, p).reduce((a, b) => a + b, 0) / p; for (let i = p; i < v.length; i++) e = v[i] * k + e * (1 - k); return e; }
-  function rsi(v, p) {
-    let g = 0, l = 0;
-    for (let i = 1; i <= p; i++) { const d = v[i] - v[i - 1]; if (d >= 0) g += d; else l -= d; }
-    g /= p; l /= p;
-    for (let i = p + 1; i < v.length; i++) { const d = v[i] - v[i - 1]; g = (g * (p - 1) + Math.max(d, 0)) / p; l = (l * (p - 1) + Math.max(-d, 0)) / p; }
-    return l === 0 ? (g === 0 ? 50 : 100) : 100 - 100 / (1 + g / l);
-  }
-
-  // ---- analysis engine v2: every gate must pass, then a minimum heuristic score. NO TRADE is the normal result. ----
-  const tr = (cs, i) => Math.max(cs[i].high - cs[i].low, Math.abs(cs[i].high - cs[i - 1].close), Math.abs(cs[i].low - cs[i - 1].close));
-  function atr(cs, p) {
-    let a = 0; for (let i = 1; i <= p; i++) a += tr(cs, i); a /= p;
-    for (let i = p + 1; i < cs.length; i++) a = (a * (p - 1) + tr(cs, i)) / p;
-    return a;
-  }
-  const clamp = (x, y) => Math.max(0, Math.min(1, x / y));
-
-  // evaluate(): the pure signal rules, shared by the live scanner and the backtester. It sees ONLY the candles it is given.
-  function evaluate(cs) {
-    if (cs.length < MIN_CANDLES) return {state:"warming"};
-    const c = cs[cs.length - 1], closes = cs.map(x => x.close);
-    const e20 = ema(closes, 20), e50 = ema(closes, 50), e50b = ema(closes.slice(0, -5), 50), rv = rsi(closes, 14), a = atr(cs, 14);
-    if (!(a > 0)) return {state:"flat"};
-    const side = e20 > e50 ? "BUY" : "SELL", d = side === "BUY" ? 1 : -1, up = d > 0;
-    const range = c.high - c.low, bodyR = range > 0 ? Math.abs(c.close - c.open) / range : 0, loc = range > 0 ? (up ? c.close - c.low : c.high - c.close) / range : 0;
-    const sep = d * (e20 - e50) / a, slope = d * (e50 - e50b) / a, ext = Math.abs(c.close - e20) / a;
-    const rec = cs.slice(-6), pri = cs.slice(-12, -6);
-    const swing = (up ? Math.min(...rec.map(x => x.low)) - Math.min(...pri.map(x => x.low)) : Math.max(...pri.map(x => x.high)) - Math.max(...rec.map(x => x.high))) / a;
-    const lo = up ? 50 : 32, hi = up ? 68 : 50, dirOK = up ? c.close > c.open : c.close < c.open, pc = Math.round(bodyR * 100);
-    const G = [
-      [sep >= MIN_SEP, "EMA20/EMA50 trend " + (up ? "up" : "down") + ", gap " + sep.toFixed(2) + " ATR", "No clear trend: EMA gap " + sep.toFixed(2) + " ATR (needs " + MIN_SEP + "+)"],
-      [d * (c.close - e20) > 0, "Close on the trend side of EMA20", "Close " + (up ? "below" : "above") + " EMA20"],
-      [slope > 0, "EMA50 sloping with the trend", "EMA50 flat or against the trend"],
-      [rv >= lo && rv <= hi, "RSI " + rv.toFixed(1) + " inside " + lo + "–" + hi, "RSI " + rv.toFixed(1) + " outside " + lo + "–" + hi],
-      [dirOK && bodyR >= MIN_BODY, (up ? "Bullish" : "Bearish") + " candle, body " + pc + "% of range", dirOK ? "Weak candle body (" + pc + "% of range)" : "Candle closed against the trade direction"],
-      [swing > 0, up ? "Higher low formed" : "Lower high formed", up ? "No higher low (structure not bullish)" : "No lower high (structure not bearish)"],
-      [ext <= MAX_EXT, "Not extended from EMA20 (" + ext.toFixed(1) + " ATR)", "Price " + ext.toFixed(1) + " ATR from EMA20 (would be chasing)"],
-      [range <= MAX_RANGE * a, "No spike candle", "Spike candle (" + (range / a).toFixed(1) + " ATR range)"]
-    ];
-    const rsiQ = up ? (rv < 55 ? (rv - 50) / 5 : rv > 65 ? (68 - rv) / 3 : 1) : (rv > 45 ? (50 - rv) / 5 : rv < 35 ? (rv - 32) / 3 : 1);
-    // Heuristic quality score (0-100): trend gap 25, EMA50 slope 15, RSI placement 20, candle quality 20, structure margin 20.
-    const score = Math.round(25 * clamp(sep, 1) + 15 * clamp(slope, 0.5) + 20 * clamp(rsiQ, 1) + 20 * (clamp(bodyR, 0.7) + clamp(loc, 1)) / 2 + 20 * clamp(swing, 0.5));
-    const pass = G.filter(g => g[0]).map(g => g[1]), fail = G.filter(g => !g[0]).map(g => g[2]);
-    return {state:"ok", signal:(!fail.length && score >= MIN_SCORE) ? side : "NO TRADE", side, up, score, atr:a, pass, fail, c, e20, e50, rsi:rv};
-  }
-
-  function analyse(m, data) {
-    if (Number.isInteger(data.pip_size) && data.pip_size >= 0 && data.pip_size <= 8) m.dec = data.pip_size;
-    const now = srvNow(), f = x => x.toFixed(m.dec);
-    const all = data.candles.map(c => ({epoch:+c.epoch, open:+c.open, high:+c.high, low:+c.low, close:+c.close})).filter(c => [c.epoch, c.open, c.high, c.low, c.close].every(isFinite)).sort((a, b) => a.epoch - b.epoch);
-    const cs = all.filter(c => c.epoch + GRAN <= now); // the forming candle is excluded
-    m.closed = cs;
-    const r = evaluate(cs);
-    if (r.state === "warming") return {signal:"WARMING UP", cls:"none", text:cs.length + "/" + MIN_CANDLES + " completed candles received."};
-    if (r.state === "flat") return {signal:"NO TRADE", cls:"none", text:"No trade. Price range data is flat, so volatility cannot be measured."};
-    const c = r.c;
-    const info = "RSI " + r.rsi.toFixed(1) + " · EMA20 " + f(r.e20) + " · EMA50 " + f(r.e50) + " · ATR " + f(r.atr) + "\nClose " + f(c.close) + " · Candle " + hm(c.epoch) + "–" + hm(c.epoch + GRAN);
-    const stale = now - (c.epoch + GRAN) > 1200 ? "\nLatest completed candle is " + Math.round((now - c.epoch - GRAN) / 60) + "m old (feed may be stalled)." : "";
-    if (r.signal !== "NO TRADE")
-      return {signal:r.side, cls:r.up ? "buy" : "sell", score:r.score, atr:r.atr, why:r.pass, c, e20:r.e20, e50:r.e50, rsi:r.rsi, text:"Heuristic score " + r.score + "/100 (not a win probability)\n" + r.pass.map(x => "✓ " + x).join("\n") + "\n" + info + stale};
-    const why = r.fail.length ? r.fail.map(x => "✗ " + x).join("\n") : "✗ Heuristic score " + r.score + " is below the minimum " + MIN_SCORE;
-    return {signal:"NO TRADE", cls:"none", text:"No trade. Potential " + r.side + " rejected:\n" + why + "\n" + info + stale};
-  }
-
-  // Paper check only: compare close 4 completed candles after the signal candle with the signal close.
-  function resolveOutcomes(m) {
-    const cl = m.closed || []; let ch = false;
-    journal.forEach(x => {
-      if (x.v !== ENGINE || x.status !== "pending" || x.market !== m.name) return;
-      const at = Number(x.epoch) + HORIZON * GRAN, ex = cl.find(c => c.epoch === at);
-      if (ex) { const mv = (ex.close - x.close) * (x.signal === "BUY" ? 1 : -1); x.exitClose = ex.close; x.moveAtr = x.atr > 0 ? mv / x.atr : null; x.status = mv > 0 ? "win" : mv < 0 ? "loss" : "flat"; ch = true; }
-      else if (cl.length && at < cl[0].epoch) { x.status = "unresolved"; ch = true; }
-    });
-    if (ch) { sset(JKEY, journal); renderJournal(); }
-  }
-  function renderStats() {
-    $("stats").innerHTML = MARKETS.map(m => {
-      const E = journal.filter(x => x.v === ENGINE && x.market === m.name), R = E.filter(x => x.status === "win" || x.status === "loss" || x.status === "flat");
-      const w = R.filter(x => x.status === "win").length, mv = R.filter(x => typeof x.moveAtr === "number" && isFinite(x.moveAtr));
-      return "<tr><td>" + esc(m.name.replace(" Index", "")) + "</td><td>" + E.length + "</td><td>" + R.length + "</td><td>" + (R.length ? Math.round(100 * w / R.length) + "%" + (R.length < 30 ? " *" : "") : "–") + "</td><td>" + (mv.length ? (mv.reduce((t, x) => t + x.moveAtr, 0) / mv.length).toFixed(2) : "–") + "</td></tr>";
-    }).join("");
-    const old = journal.filter(x => x.v !== ENGINE).length;
-    $("legacy").textContent = old ? " " + old + " earlier-version records stay in the journal and CSV but are excluded here." : "";
-  }
-
-  // ---- websocket plumbing ----
-  function send(payload, cb, timeout) {
-    if (!ws || ws.readyState !== 1) { cb({error:{message:"Not connected"}}); return; }
-    const id = ++req; payload.req_id = id;
-    pending[id] = {cb, t:setTimeout(() => { if (pending[id]) { delete pending[id]; cb({error:{message:"Request timed out"}}); } }, timeout || REQ_TIMEOUT)};
-    try { ws.send(JSON.stringify(payload)); } catch (e) { clearTimeout(pending[id].t); delete pending[id]; cb({error:{message:e.message}}); }
-  }
-  function flush(msg) { Object.keys(pending).forEach(k => { const p = pending[k]; clearTimeout(p.t); delete pending[k]; if (msg) p.cb({error:{message:msg}}); }); }
-
-  function syncTime(cb) {
-    send({time:1}, d => {
-      if (typeof d.time === "number") { off = d.time - Math.floor(Date.now() / 1000); syncedAt = Date.now(); diag.off = off; }
-      else diag.off = "sync failed, using device clock";
-      if (cb) cb();
-    });
-  }
-
-  function loadSymbols(mode, cb) {
-    send({active_symbols:mode}, d => {
-      if (d.error || !Array.isArray(d.active_symbols) || !d.active_symbols.length) {
-        symOK = false; diag.err = "active_symbols: " + ((d.error && d.error.message) || "empty list");
-        MARKETS.forEach(m => { if (m.sym) return; if (m.fallback) { m.sym = m.code; m.symNote = "documented code, not yet confirmed by Deriv"; } else m.symNote = "Cannot confirm symbol yet (symbol list unavailable). Retrying."; });
-        MARKETS.forEach(renderCard); cb(); return;
-      }
-      const L = d.active_symbols; symOK = true;
-      diag.total = L.length; diag.fields = Object.keys(L[0]).join(", ");
-      diag.jump = L.filter(s => /jump/i.test(nm(s))).map(s => cd(s) + " = " + nm(s));
-      let missing = 0;
-      MARKETS.forEach(m => {
-        const byName = L.find(s => norm(nm(s)) === norm(m.name)), h = byName || L.find(s => cd(s) === m.code);
-        m.symChecked = true;
-        if (h) { m.sym = cd(h); m.symNote = "confirmed by Deriv" + (byName ? "" : " (by code)") + ((h.exchange_is_open === 0 || h.is_trading_suspended === 1) ? " · market closed/suspended" : ""); }
-        else { m.sym = null; m.symNote = "Not in Deriv's active symbol list, so it is not being guessed."; missing++; }
-      });
-      if (missing && mode === "brief") { loadSymbols("full", cb); return; }
-      MARKETS.forEach(renderCard); cb();
-    });
-  }
-
-  function scanMarket(m, manual) {
-    if (!ws || ws.readyState !== 1) { if (manual) toast("Not connected. Tap Connect & scan first."); return; }
-    if (!m.sym || m.busy) return;
-    m.busy = true; renderCard(m);
-    send({ticks_history:m.sym, adjust_start_time:1, count:COUNT, end:"latest", granularity:GRAN, style:"candles"}, d => {
-      m.busy = false;
-      if (d.error) { m.err = d.error.message || "Request failed"; renderCard(m); return; }
-      if (!Array.isArray(d.candles) || !d.candles.length) { m.err = "No candle data returned"; renderCard(m); return; }
-      m.err = ""; m.res = analyse(m, d); m.lastOK = lastDataAt = Date.now(); m.fresh = true; attempt = 0;
-      meta.lastOK[m.id] = m.lastOK; sset(MKEY, meta);
-      resolveOutcomes(m);
-      const r = m.res;
-      if (r.signal === "BUY" || r.signal === "SELL") {
-        const last = lastSigEpoch(m);
-        if (isDup(m, r.c)) r.text += "\nAlready recorded for this candle. No duplicate created.";
-        else if (r.c.epoch - last < COOLDOWN * GRAN) {
-          r.text = "Suppressed by cooldown, not recorded (would have been " + r.signal + ").\nLast signal candle " + hm(last) + "; next signal allowed on the candle closing at " + hm(last + (COOLDOWN + 1) * GRAN) + ".\n" + r.text;
-          r.signal = "NO TRADE"; r.cls = "none";
-        } else { record(m, r.signal, r.c, r); r.text += "\nSignal recorded in journal."; }
-      }
-      renderCard(m); renderStatus();
-    });
-  }
-  const scanMarkets = () => MARKETS.forEach(m => { if (m.on) scanMarket(m, false); });
-  function scanAll() {
-    if (!running || !ws || ws.readyState !== 1) return;
-    if (Date.now() - syncedAt > 600000) syncTime();
-    if (!symOK) loadSymbols("brief", scanMarkets); else scanMarkets();
-  }
-  function scheduleBoundary() { clearTimeout(bTimer); bTimer = setTimeout(() => { scanAll(); scheduleBoundary(); }, (GRAN - srvNow() % GRAN) * 1000 + 2500); }
-
-  function heartbeat() {
-    if (!ws || ws.readyState !== 1) return;
-    if (Date.now() - lastMsg > SILENT_MS) { drop(ws); return; }
-    send({ping:1}, () => {}, 10000);
-  }
-  function drop(sock) {
-    if (ws !== sock) return;
-    ws = null; clearInterval(hb); try { sock.close(); } catch (e) {}
-    flush("Connection lost"); MARKETS.forEach(m => m.busy = false);
-    if (running) retry();
-    MARKETS.forEach(renderCard); renderStatus();
-  }
-  function retry() {
-    conn = "wait"; attempt++;
-    const d = Math.min(30000, 1000 * Math.pow(2, Math.min(attempt, 5))) + Math.random() * 500;
-    rcAt = Date.now() + d; clearTimeout(rcTimer); rcTimer = setTimeout(openSocket, d); renderStatus();
-  }
-  function openSocket() {
-    clearTimeout(rcTimer); conn = "connecting"; renderStatus();
-    let sock;
-    try { sock = new WebSocket(ENDPOINT); } catch (e) { diag.err = "WebSocket: " + e.message; retry(); return; }
-    ws = sock;
-    sock.onopen = () => { if (ws !== sock) return; conn = "open"; lastMsg = Date.now(); clearInterval(hb); hb = setInterval(heartbeat, PING_MS); renderStatus(); syncTime(() => loadSymbols("brief", scanMarkets)); };
-    sock.onmessage = ev => {
-      if (ws !== sock) return; lastMsg = Date.now();
-      let d; try { d = JSON.parse(ev.data); } catch (e) { return; }
-      const p = d.req_id && pending[d.req_id];
-      if (p) { clearTimeout(p.t); delete pending[d.req_id]; p.cb(d); } else if (d.error) diag.err = d.error.message;
+  async function sendTelegramSignal(setup){
+    if(!telegramWorker){$("telegramStatus").textContent="Add and save your Cloudflare Worker URL to enable Telegram.";return false;}
+    const apiKey=$("signalApiKey").value.trim();
+    if(!apiKey){$("telegramStatus").textContent="Enter your private SIGNAL_API_KEY to send alerts.";return false;}
+    const payload={
+      market:setup.market,
+      direction:String(setup.signal || "").toUpperCase(),
+      entry:Number(setup.entry),
+      stopLoss:Number(setup.sl),
+      tp1:Number(setup.tp1),
+      tp2:Number(setup.tp2)
     };
-    sock.onerror = () => { diag.err = "WebSocket error"; };
-    sock.onclose = () => drop(sock);
+    if(!["BUY","SELL"].includes(payload.direction) ||
+       ![payload.entry,payload.stopLoss,payload.tp1,payload.tp2].every(Number.isFinite)){
+      $("telegramStatus").textContent="Signal data is incomplete or invalid; alert not sent.";
+      return false;
+    }
+    try{
+      const response=await fetch(telegramWorker,{
+        method:"POST",
+        headers:{"Content-Type":"application/json","X-API-Key":apiKey},
+        body:JSON.stringify(payload)
+      });
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok || !result.success) throw new Error(result.error || `HTTP ${response.status}`);
+      $("telegramStatus").textContent="Telegram alert sent successfully.";
+      return true;
+    }catch(err){
+      $("telegramStatus").textContent="Telegram send failed: "+err.message;
+      return false;
+    }
   }
-
-  function connect() {
-    if (running) return; running = true; attempt = 0;
-    $("connect").disabled = true; $("stop").disabled = false;
-    openSocket(); clearInterval(scanTimer); scanTimer = setInterval(scanAll, POLL_MS); scheduleBoundary();
+  function record(name, signal, candle, rv, setup){
+    const entry={time:new Date().toLocaleString(),market:name,signal,close:candle.close,entry:setup.entry,sl:setup.sl,tp1:setup.tp1,tp2:setup.tp2,rsi:rv,epoch:candle.epoch};
+    journal.unshift(entry); journal=journal.slice(0,500);
+    localStorage.setItem("dsa_v1_journal",JSON.stringify(journal)); renderJournal();
+    if("Notification" in window && Notification.permission==="granted"){
+      new Notification(`Deriv ${signal}: ${name}`,{body:`Entry ${setup.entry} · SL ${setup.sl} · TP1 ${setup.tp1} · TP2 ${setup.tp2}`});
+    }
+    sendTelegramSignal({market:name,signal,time:new Date(candle.epoch*1000).toISOString(),timeframe:"M15",entry:setup.entry,sl:setup.sl,tp1:setup.tp1,tp2:setup.tp2,rsi:Number(rv.toFixed(2)),atr:setup.atr,source:"Deriv Signal Assistant"});
   }
-  function stop() {
-    running = false; clearInterval(scanTimer); clearTimeout(bTimer); clearTimeout(rcTimer); clearInterval(hb);
-    const s = ws; ws = null; if (s) { try { s.close(); } catch (e) {} }
-    flush(null); conn = "idle"; MARKETS.forEach(m => m.busy = false);
-    $("connect").disabled = false; $("stop").disabled = true;
-    MARKETS.forEach(renderCard); renderStatus();
+  function analyse(name, raw){
+    const now=Math.floor(Date.now()/1000);
+    const closed=raw.filter(c=>Number(c.epoch)+GRANULARITY<=now).sort((a,b)=>a.epoch-b.epoch);
+    if(closed.length<60){renderMarket(name,"WARMING UP",`${closed.length}/60 completed candles received.`);return;}
+    const c=closed[closed.length-1];
+    const closes=closed.map(x=>Number(x.close));
+    const e20=ema(closes.slice(-80),20), e50=ema(closes.slice(-120),50), rv=rsi(closes,14);
+    const recent=closed.slice(-15);
+    const tr=recent.slice(1).map((bar,i)=>Math.max(Number(bar.high)-Number(bar.low),Math.abs(Number(bar.high)-Number(recent[i].close)),Math.abs(Number(bar.low)-Number(recent[i].close))));
+    const atr=tr.reduce((a,b)=>a+b,0)/Math.max(1,tr.length);
+    const bullish=Number(c.close)>Number(c.open), bearish=Number(c.close)<Number(c.open);
+    let signal="NO TRADE", cls="none", reason="Conditions not aligned";
+    if(e20>e50 && Number(c.close)>e20 && rv>=50 && rv<=68 && bullish){
+      signal="BUY"; cls="buy"; reason="EMA20 above EMA50 · bullish close · RSI in range";
+    } else if(e20<e50 && Number(c.close)<e20 && rv>=32 && rv<=50 && bearish){
+      signal="SELL"; cls="sell"; reason="EMA20 below EMA50 · bearish close · RSI in range";
+    }
+    let setup=null;
+    if((signal==="BUY"||signal==="SELL") && atr>0){
+      const entry=Number(c.close), risk=atr*1.5;
+      const sl=signal==="BUY"?entry-risk:entry+risk;
+      const tp1=signal==="BUY"?entry+risk*2:entry-risk*2;
+      const tp2=signal==="BUY"?entry+risk*3:entry-risk*3;
+      const digits=Math.max(2,Math.min(8,(String(c.close).split(".")[1]||"").length));
+      setup={entry:Number(entry.toFixed(digits)),sl:Number(sl.toFixed(digits)),tp1:Number(tp1.toFixed(digits)),tp2:Number(tp2.toFixed(digits)),atr:Number(atr.toFixed(digits))};
+      reason+=` · Ref entry ${setup.entry} · SL ${setup.sl} · TP1 ${setup.tp1} · TP2 ${setup.tp2}`;
+    }
+    renderMarket(name,signal,`${reason} · RSI ${rv.toFixed(1)} · Close ${Number(c.close).toFixed(3)} · Candle ${new Date(c.epoch*1000).toLocaleTimeString()}`,cls);
+    if((signal==="BUY"||signal==="SELL") && setup && latestEpoch[name]!==c.epoch){
+      latestEpoch[name]=c.epoch; localStorage.setItem("dsa_signal_epochs",JSON.stringify(latestEpoch)); record(name,signal,c,rv,setup);
+    }
   }
-
-  $("connect").addEventListener("click", connect);
-  $("stop").addEventListener("click", stop);
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState !== "visible" || !running) return;
-    if (!ws) { clearTimeout(rcTimer); openSocket(); }
-    else if (Date.now() - lastMsg > SILENT_MS) drop(ws);
-    else scanAll();
-    scheduleBoundary();
-  });
-  window.addEventListener("online", () => { if (running && !ws) { attempt = 0; clearTimeout(rcTimer); openSocket(); } });
-  $("diagbox").addEventListener("toggle", renderDiag);
-
-  $("notify").addEventListener("click", async () => {
-    if (!("Notification" in window)) { toast("This browser does not support notifications. In-app alerts and vibration are used instead."); return; }
-    const p = await Notification.requestPermission();
-    toast(p === "granted" ? "Notifications allowed. Some Android browsers only show the in-app alert and vibration." : "Notifications were not enabled.");
-  });
-  let wl = null;
-  $("wake").addEventListener("click", async () => {
-    try {
-      if (wl) { await wl.release(); return; }
-      wl = await navigator.wakeLock.request("screen");
-      $("wake").textContent = "Keep screen on: ON";
-      wl.addEventListener("release", () => { wl = null; $("wake").textContent = "Keep screen on: off"; });
-    } catch (e) { toast("Screen wake lock is not available here (it needs https:// or localhost)."); }
-  });
-  $("export").addEventListener("click", () => {
-    const rows = [["detected_at","market","symbol","signal","close","rsi","ema20","ema50","candle_open_epoch","candle_open_utc","engine","score","atr","paper_result_60min","exit_close","move_atr","reasons"],
-      ...journal.map(x => [x.ts ? new Date(x.ts).toISOString() : x.time, x.market, x.symbol || "", x.signal, x.close, x.rsi, x.ema20 === undefined ? "" : x.ema20, x.ema50 === undefined ? "" : x.ema50, x.epoch, x.epoch ? new Date(x.epoch * 1000).toISOString() : "", x.v || "legacy", x.score === undefined ? "" : x.score, x.atr === undefined ? "" : x.atr, x.status || "", x.exitClose === undefined ? "" : x.exitClose, typeof x.moveAtr === "number" ? x.moveAtr : "", x.reasons || ""])];
-    const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(",")).join("\n");
-    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"})); a.download = "deriv_signal_journal.csv";
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-  });
-  $("clear").addEventListener("click", () => {
-    if (!journal.length || !confirm("Delete all " + journal.length + " journal records on this device? Export CSV first if you need them.")) return;
-    journal = []; sset(JKEY, journal); renderJournal();
-  });
-
-  // ---- historical backtest (SIMULATED; never mixes with the live journal) ----
-  const WINDOW = COUNT - 1, BKEY = "dsa_bt_cfg", iso = ep => new Date(ep * 1000).toISOString();
-  let btRows = [], btSum = [], btCancel = false;
-  const btMsg = t => { $("btStatus").textContent = t; };
-  $("btMarket").innerHTML = MARKETS.map(m => '<option value="' + m.id + '">' + esc(m.name) + "</option>").join("") + '<option value="ALL">All five (results shown separately)</option>';
-  const cfg0 = sget(BKEY, {});
-  ["btMarket", "btDur", "btPay", "btCost"].forEach(id => { if (cfg0[id] !== undefined) $(id).value = cfg0[id]; });
-  $("btOverlap").checked = cfg0.ov !== false;
-  $("btTo").value = new Date().toISOString().slice(0, 10); $("btFrom").value = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
-
-  function btSocket() { // dedicated connection, independent of the live scanner
-    return new Promise((res, rej) => {
-      const sk = new WebSocket(ENDPOINT), q = {}; let n = 0;
-      const t = setTimeout(() => { rej(new Error("Connection timed out")); try { sk.close(); } catch (e) {} }, 15000);
-      sk.onopen = () => { clearTimeout(t); res({
-        ask: p => new Promise((rs, rj) => { const id = ++n; p.req_id = id; const to = setTimeout(() => { delete q[id]; rj(new Error("Request timed out")); }, 20000); q[id] = d => { clearTimeout(to); rs(d); }; sk.send(JSON.stringify(p)); }),
-        close: () => { try { sk.close(); } catch (e) {} } }); };
-      sk.onmessage = ev => { try { const d = JSON.parse(ev.data); if (d.req_id && q[d.req_id]) { const f = q[d.req_id]; delete q[d.req_id]; f(d); } } catch (e) {} };
-      sk.onerror = () => rej(new Error("WebSocket error"));
-      sk.onclose = () => Object.keys(q).forEach(k => q[k]({error:{message:"Connection closed"}}));
+  function requestCandles(name){
+    const symbol=symbols[name]; if(!symbol || !ws || ws.readyState!==1)return;
+    send({ticks_history:symbol,adjust_start_time:1,count:COUNT,end:"latest",granularity:GRANULARITY,style:"candles"},data=>{
+      if(data.error){renderMarket(name,"DATA ERROR",data.error.message);return;}
+      if(Array.isArray(data.candles)) analyse(name,data.candles);
+      else renderMarket(name,"WAITING","No candle data returned.");
     });
   }
-  async function btSymbol(sock, m) {
-    if (m.sym) return m.sym; // already confirmed (or documented code for R_*) by the live scanner
-    for (const mode of ["brief", "full"]) {
-      const d = await sock.ask({active_symbols:mode}), L = Array.isArray(d.active_symbols) ? d.active_symbols : [];
-      const h = L.find(x => norm(nm(x)) === norm(m.name)) || L.find(x => cd(x) === m.code);
-      if (h) return cd(h);
-    }
-    throw new Error("symbol not confirmed in Deriv's active symbol list, so it is not guessed");
+  function scanAll(){TARGETS.forEach(requestCandles);setStatus("Connected · refreshing completed 15-minute candles",true);}
+  function connect(){
+    if(running)return; running=true;
+    $("connect").disabled=true; $("stop").disabled=false;
+    setStatus("Connecting to Deriv public market data…");
+    try{ws=new WebSocket(ENDPOINT);}catch(e){setStatus("Connection failed: "+e.message);running=false;return;}
+    ws.onopen=()=>{
+      setStatus("Connected · finding the four requested indices",true);
+      send({active_symbols:"brief"},data=>{
+        if(data.error){setStatus("Deriv symbol-list response: "+data.error.message);TARGETS.forEach(n=>{symbols[n]=FALLBACK_SYMBOLS[n];});scanAll();return;}
+        const list=Array.isArray(data.active_symbols)?data.active_symbols:[];
+        TARGETS.forEach(name=>{
+          const wanted=FALLBACK_SYMBOLS[name];
+          const found=list.find(s=>{
+            const label=(s.display_name||s.name||"").toLowerCase().replace(/\\s+/g," ").trim();
+            return label===name.toLowerCase() || s.symbol===wanted;
+          });
+          // If the brief symbol list omits display names, try the documented
+          // standard symbol code directly and let the candle request verify it.
+          const symbol=(found && found.symbol) || wanted;
+          symbols[name]=symbol;
+          renderMarket(name,"LOADING",`Checking Deriv symbol ${symbol}…`);
+        });
+        scanAll();
+        timer=setInterval(scanAll,REFRESH_MS);
+      });
+    };
+    ws.onmessage=event=>{
+      let data;try{data=JSON.parse(event.data);}catch(e){return;}
+      if(data.req_id && pending[data.req_id]){const cb=pending[data.req_id];delete pending[data.req_id];cb(data);}
+      if(data.error && !data.req_id)setStatus("Deriv error: "+data.error.message);
+    };
+    ws.onerror=()=>setStatus("Connection error. Check internet and reconnect.");
+    ws.onclose=()=>{if(running)setStatus("Connection closed. Tap Connect & scan to reconnect.");running=false;clearInterval(timer);$("connect").disabled=false;$("stop").disabled=true;};
   }
-  async function fetchHist(sock, sym, needStart, endEp, note) { // pages backwards, 1000 candles per request
-    const got = new Map(); let end = endEp, pages = 0;
-    while (pages++ < 40 && !btCancel) {
-      const d = await sock.ask({ticks_history:sym, style:"candles", granularity:GRAN, end:String(end), count:1000});
-      if (d.error) { if (got.size) break; throw new Error(d.error.message || "candle request failed"); }
-      const cs = (d.candles || []).map(c => ({epoch:+c.epoch, open:+c.open, high:+c.high, low:+c.low, close:+c.close})).filter(c => [c.epoch, c.open, c.high, c.low, c.close].every(isFinite));
-      if (!cs.length) break;
-      const first = Math.min(...cs.map(c => c.epoch)), before = got.size;
-      cs.forEach(c => got.set(c.epoch, c)); note(got.size);
-      if (first <= needStart || got.size === before) break;
-      end = first - 1;
-    }
-    return [...got.values()].sort((a, b) => a.epoch - b.epoch);
+  function stop(){
+    running=false;clearInterval(timer);timer=null;
+    if(ws){try{ws.close();}catch(e){}ws=null;}
+    pending={};$("connect").disabled=false;$("stop").disabled=true;setStatus("Scanner stopped.");
   }
-
-  // Signals use cs[0..i] only. Entry = close of candle i. Exit = close of candle i+dur (strictly later data, used only to score the trade).
-  function simulate(cs, startEp, endEp, p) {
-    const R = {signals:0, skipped:0, open:0, trades:[]}; let lastSig = 0, busyUntil = 0;
-    for (let i = 0; i < cs.length; i++) {
-      const c = cs[i]; if (c.epoch < startEp || c.epoch >= endEp) continue;
-      const r = evaluate(cs.slice(Math.max(0, i - WINDOW + 1), i + 1));
-      if (r.state !== "ok" || r.signal === "NO TRADE") continue;
-      if (c.epoch - lastSig < COOLDOWN * GRAN) continue; // same cooldown as the live scanner
-      lastSig = c.epoch; R.signals++;
-      if (p.skip && c.epoch + GRAN < busyUntil) { R.skipped++; continue; }
-      const x = cs[i + p.dur];
-      if (!x || x.epoch !== c.epoch + p.dur * GRAN) { R.open++; continue; }
-      const win = r.signal === "BUY" ? x.close > c.close : x.close < c.close;
-      busyUntil = x.epoch + GRAN;
-      R.trades.push({signal:r.signal, win, entryEp:c.epoch + GRAN, entry:c.close, exitEp:x.epoch + GRAN, exit:x.close, pnl:(win ? p.pay : -1) - p.cost, score:r.score, why:r.pass.join("; ")});
-    }
-    return R;
-  }
-  function tally(T, p) {
-    let eq = 0, peak = 0, dd = 0, run = 0, maxRun = 0, w = 0;
-    T.forEach(t => { eq += t.pnl; peak = Math.max(peak, eq); dd = Math.max(dd, peak - eq); if (t.win) { w++; run = 0; } else { run++; maxRun = Math.max(maxRun, run); } });
-    const n = T.length; return {n, w, l:n - w, wr:n ? w / n : 0, net:eq, avg:n ? eq / n : 0, dd, maxRun, be:(1 + p.cost) / (1 + p.pay)};
-  }
-  const pct = x => (100 * x).toFixed(1) + "%", sgn = x => (x >= 0 ? "+" : "") + x.toFixed(2);
-  function btCard(title, S, R, note) {
-    const rows = S ? [["Signals generated (after cooldown)", R.signals], ["Trades taken", S.n], ["Skipped (a simulated trade was open)", R.skipped], ["Unresolved (exit after available data)", R.open], ["Wins / losses", S.w + " / " + S.l], ["Win rate / loss rate", S.n ? pct(S.wr) + " / " + pct(1 - S.wr) : "–"], ["Break-even win rate at this payout", pct(S.be)], ["Net result (stake units)", sgn(S.net)], ["Average per trade", sgn(S.avg)], ["Max losing streak", S.maxRun], ["Max drawdown (stake units)", S.dd.toFixed(2)]] : [];
-    return '<div class="card" style="margin-top:10px"><div class="cardhead"><div class="name">' + esc(title) + '</div><span class="pill">SIMULATED</span></div><div class="detail">' + esc(note) + (S && S.n < 30 ? " Fewer than 30 trades: too few to conclude anything." : "") + "</div>" + (rows.length ? "<table><tbody>" + rows.map(r => "<tr><td>" + esc(r[0]) + "</td><td>" + esc(r[1]) + "</td></tr>").join("") + "</tbody></table>" : "") + "</div>";
-  }
-
-  async function runBT() {
-    const sel = $("btMarket").value, list = sel === "ALL" ? MARKETS : MARKETS.filter(m => m.id === sel);
-    const dur = Math.round(+$("btDur").value), pay = +$("btPay").value / 100, cost = +$("btCost").value / 100, skip = $("btOverlap").checked;
-    const from = Date.parse($("btFrom").value + "T00:00:00Z") / 1000, to = Date.parse($("btTo").value + "T00:00:00Z") / 1000 + 86400;
-    if (!(dur >= 1 && dur <= 96) || !(pay > 0) || !(cost >= 0) || !isFinite(from) || !isFinite(to) || to <= from) { btMsg("Check the inputs: dates, duration 1-96, payout above 0, cost 0 or more."); return; }
-    if (to - from > 366 * 86400) { btMsg("Range too long. Use 366 days or fewer."); return; }
-    sset(BKEY, {btMarket:sel, btDur:dur, btPay:$("btPay").value, btCost:$("btCost").value, ov:skip});
-    btCancel = false; btRows = []; btSum = []; $("btOut").innerHTML = "";
-    $("btRun").disabled = true; $("btCancel").disabled = false; $("btTrades").disabled = $("btSummary").disabled = true;
-    let sock;
-    try {
-      btMsg("Connecting to Deriv…"); sock = await btSocket();
-      const tm = await sock.ask({time:1}), now = typeof tm.time === "number" ? tm.time : Math.floor(Date.now() / 1000);
-      for (const m of list) {
-        if (btCancel) break;
-        try {
-          const sym = await btSymbol(sock, m), need = from - WINDOW * GRAN;
-          const all = await fetchHist(sock, sym, need, Math.floor(Math.min(to + dur * GRAN, now)), n => btMsg(m.name + ": " + n + " candles loaded…"));
-          if (btCancel) break;
-          const cs = all.filter(c => c.epoch + GRAN <= now); // completed candles only
-          if (!cs.length) throw new Error("no candles returned for this range");
-          btMsg(m.name + ": simulating…"); await new Promise(r => setTimeout(r, 30));
-          const p = {dur, pay, cost, skip}, R = simulate(cs, from, to, p), S = tally(R.trades, p);
-          const note = cs.length + " candles, " + iso(cs[0].epoch).slice(0, 16) + " to " + iso(cs[cs.length - 1].epoch).slice(0, 16) + " UTC." + (cs[0].epoch > from ? " Deriv history starts after your start date, so part of the range is unavailable." : "");
-          $("btOut").insertAdjacentHTML("beforeend", btCard(m.name + " · " + sym, S, R, note));
-          R.trades.forEach(t => btRows.push(["SIMULATED", m.name, sym, t.signal, iso(t.entryEp), t.entry, iso(t.exitEp), t.exit, dur, t.win ? "win" : "loss", t.pnl.toFixed(4), t.score, t.why]));
-          btSum.push(["SIMULATED", m.name, sym, iso(from), iso(to), dur, +(pay * 100).toFixed(2), +(cost * 100).toFixed(2), skip, cs.length, iso(cs[0].epoch), iso(cs[cs.length - 1].epoch), R.signals, S.n, R.skipped, R.open, S.w, S.l, S.n ? S.wr.toFixed(4) : "", S.n ? (1 - S.wr).toFixed(4) : "", S.be.toFixed(4), S.net.toFixed(4), S.avg.toFixed(4), S.maxRun, S.dd.toFixed(4), "engine v" + ENGINE + " score>=" + MIN_SCORE + " cooldown=" + COOLDOWN + "c window=" + WINDOW]);
-        } catch (e) { $("btOut").insertAdjacentHTML("beforeend", btCard(m.name, null, null, "Backtest failed for this market: " + e.message)); }
-      }
-      btMsg(btCancel ? "Cancelled. Results shown are for markets that finished." : "Done. SIMULATED results only; they are not actual Deriv trading results.");
-    } catch (e) { btMsg("Could not run: " + e.message); }
-    if (sock) sock.close();
-    $("btRun").disabled = false; $("btCancel").disabled = true; $("btTrades").disabled = !btRows.length; $("btSummary").disabled = !btSum.length;
-  }
-  function dl(rows, name) {
-    const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(",")).join("\n");
-    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"})); a.download = name;
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-  }
-  $("btRun").addEventListener("click", runBT);
-  $("btCancel").addEventListener("click", () => { btCancel = true; });
-  $("btTrades").addEventListener("click", () => dl([["result_type","market","symbol","signal","entry_time_utc","entry_price","exit_time_utc","exit_price","duration_candles","result","pnl_stake_units","heuristic_score","accepted_reasons"], ...btRows], "deriv_backtest_SIMULATED_trades.csv"));
-  $("btSummary").addEventListener("click", () => dl([["result_type","market","symbol","range_from_utc","range_to_utc","duration_candles","payout_pct","cost_pct","skip_overlap","candles_loaded","history_first_utc","history_last_utc","signals","trades","skipped","unresolved","wins","losses","win_rate","loss_rate","breakeven_win_rate","net_stake_units","avg_per_trade","max_losing_streak","max_drawdown_units","engine_rules"], ...btSum], "deriv_backtest_SIMULATED_summary.csv"));
-
-  MARKETS.forEach(renderCard); renderJournal(); renderStatus();
-  setInterval(() => { renderStatus(); MARKETS.forEach(renderCard); }, 1000);
-  window.addEventListener("pagehide", () => { if (ws) { try { ws.close(); } catch (e) {} } });
+  $("connect").addEventListener("click",connect);
+  $("stop").addEventListener("click",stop);
+  $("notify").addEventListener("click",async()=>{
+    if(!("Notification" in window)){alert("This browser does not support notifications.");return;}
+    const p=await Notification.requestPermission();
+    alert(p==="granted"?"Notifications enabled while this page is allowed to run.":"Notifications were not enabled.");
+  });
+  $("telegramWorker").value=telegramWorker;
+  $("saveTelegram").addEventListener("click",()=>{
+    const value=$("telegramWorker").value.trim();
+    if(value && !/^https:\/\//i.test(value)){alert("Enter your HTTPS Cloudflare Worker URL.");return;}
+    telegramWorker=value;localStorage.setItem("dsa_telegram_worker",telegramWorker);
+    $("telegramStatus").textContent=telegramWorker?"Worker URL saved on this device. Send a test alert to verify Telegram.":"Telegram alerts are not configured.";
+  });
+  $("testTelegram").addEventListener("click",async()=>{
+    if(!telegramWorker){alert("Save your Cloudflare Worker URL first.");return;}
+    const ok=await sendTelegramSignal({market:"TELEGRAM CONNECTION TEST (DEMO)",signal:"BUY",entry:1000,sl:990,tp1:1010,tp2:1020});
+    if(ok) alert("Test message sent. Check your Telegram chat.");
+  });
+  $("export").addEventListener("click",()=>{
+    const rows=[["time","market","signal","entry_reference","stop_loss","take_profit_1","take_profit_2","rsi","candle_epoch"],...journal.map(x=>[x.time,x.market,x.signal,x.entry,x.sl,x.tp1,x.tp2,x.rsi,x.epoch])];
+    const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\n");
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="deriv_signal_journal.csv";a.click();URL.revokeObjectURL(a.href);
+  });
+  renderJournal();
+  window.addEventListener("beforeunload",stop);
 })();
 </script>
 </body>
