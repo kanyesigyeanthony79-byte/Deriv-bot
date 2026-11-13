@@ -1,6 +1,13 @@
 name: Multi-Timeframe Data Collector
 
 on:
+  push:
+    branches:
+      - feature/multi-timeframe-engine
+    paths:
+      - "multi_timeframe_collector.js"
+      - "multi_timeframe_engine.js"
+      - ".github/workflows/multi-timeframe-collector.yml"
   workflow_dispatch:
   schedule:
     - cron: "*/5 * * * *"
@@ -20,7 +27,7 @@ jobs:
       - name: Checkout development branch
         uses: actions/checkout@v4
         with:
-          ref: feature/multi-timeframe-engine
+          ref: ${{ github.ref_name == 'main' && 'main' || 'feature/multi-timeframe-engine' }}
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
