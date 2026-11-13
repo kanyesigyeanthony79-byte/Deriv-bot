@@ -1,0 +1,36 @@
+name: Multi-Timeframe Data Collector
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: multi-timeframe-observation-collector
+  cancel-in-progress: true
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout development branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/multi-timeframe-engine
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Collect completed candles for all eight markets
+        run: node multi_timeframe_collector.js
+      - name: Upload observation data
+        uses: actions/upload-artifact@v4
+        with:
+          name: multi-timeframe-observation-data
+          path: multi_timeframe_data.json
+          if-no-files-found: error
+          retention-days: 7
