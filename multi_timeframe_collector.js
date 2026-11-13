@@ -19,6 +19,7 @@ const FRAMES = [
 ];
 const OUTPUT = path.join(__dirname, "multi_timeframe_data.json");
 const JOURNAL = path.join(__dirname, "multi_timeframe_journal.json");
+const DASHBOARD = path.join(__dirname, "multi_timeframe_dashboard.json");
 const log = (event, details = {}) => console.log(JSON.stringify({ time: new Date().toISOString(), event, ...details }));
 
 function connect(url) {
@@ -148,6 +149,16 @@ async function main() {
       [state, allSignals.filter(s => s.state === state).length]
     ));
     output.summary = { markets: Object.keys(output.markets).length, signalCounts, journal: summarizeJournal(journal) };
+    const dashboard = {
+      version: 1, generatedAt: output.generatedAt, generatedEpoch: now,
+      mode: "observation_only", summary: output.summary,
+      markets: Object.values(output.markets).map(m => ({
+        marketId: m.marketId, marketName: m.marketName, signals: m.signals,
+        timeframeCounts: Object.fromEntries(Object.entries(m.timeframes).map(([tf, candles]) => [tf, candles.length])),
+        errors: m.errors
+      }))
+    };
+    fs.writeFileSync(DASHBOARD, JSON.stringify(dashboard, null, 2) + "\n");
     log("collection_complete", {
       markets: Object.keys(output.markets).length,
       candles: total,
