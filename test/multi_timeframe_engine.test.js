@@ -106,3 +106,24 @@ test("continuity validation catches missing synthetic-market candles", () => {
 test("continuity validation accepts normal contiguous candles", () => {
   assert.equal(validateCandleContinuity(candles(10, 300), 300, "R_25").valid, true);
 });
+
+test("continuity validation allows the scheduled Gold/USD weekend closure", () => {
+  const fridayClose = Date.UTC(2026, 10, 13, 21, 0, 0) / 1000; // Friday 21:00 UTC
+  const sundayReopen = Date.UTC(2026, 10, 15, 22, 0, 0) / 1000; // Sunday 22:00 UTC
+  const gold = [
+    { epoch: fridayClose, open: 4000, high: 4002, low: 3998, close: 4001 },
+    { epoch: sundayReopen, open: 4001, high: 4004, low: 4000, close: 4003 }
+  ];
+  assert.equal(validateCandleContinuity(gold, 3600, "frxXAUUSD").valid, true);
+});
+
+test("continuity validation does not apply the Gold/USD weekend exception to synthetic markets", () => {
+  const fridayClose = Date.UTC(2026, 10, 13, 21, 0, 0) / 1000;
+  const sundayReopen = Date.UTC(2026, 10, 15, 22, 0, 0) / 1000;
+  const synthetic = [
+    { epoch: fridayClose, open: 100, high: 101, low: 99, close: 100 },
+    { epoch: sundayReopen, open: 100, high: 101, low: 99, close: 100 }
+  ];
+  assert.equal(validateCandleContinuity(synthetic, 3600, "R_25").valid, false);
+});
+
