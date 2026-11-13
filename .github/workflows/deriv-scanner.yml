@@ -6,11 +6,25 @@ on:
   schedule:
     - cron: "*/5 * * * *"
 
+permissions:
+  contents: read
+
 jobs:
   scanner:
     runs-on: ubuntu-latest
+    timeout-minutes: 2
+
     steps:
-      - name: Confirm scanner is running
-        run: |
-          echo "Deriv scanner workflow started"
-          date -u
+      - name: Download repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install WebSocket library
+        run: pip install websocket-client
+
+      - name: Run Deriv scanner
+        run: python scanner.py
