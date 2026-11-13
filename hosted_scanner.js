@@ -67,7 +67,7 @@ function journalOutcome(signal, outcome, candle) {
 }
 function journalStatus(signalId, status, reason) {
   const entry = findJournalSignal(signalId);
-  if (entry) { entry.status = status; if (reason) entry.statusReason = reason; saveJournal(); }
+  if (entry && entry.status === "detected") { entry.status = status; if (reason) entry.statusReason = reason; saveJournal(); }
 }
 function dailySummary(day) {
   const rows = journal.signals.filter(s => s.localDate === day);
