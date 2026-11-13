@@ -4,7 +4,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { aggregateWeeklyCandles, validCandles, evaluateAllCategories } = require("./multi_timeframe_engine");
-const { updateJournal, summarizeJournal } = require("./multi_timeframe_journal");\nconst { updateJournal, summarizeJournal } = require("./multi_timeframe_journal");
+const { updateJournal, summarizeJournal } = require("./multi_timeframe_journal");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const MARKETS = [
@@ -18,7 +18,7 @@ const FRAMES = [
   ["H1", 3600, 240], ["H4", 14400, 240], ["D1", 86400, 520]
 ];
 const OUTPUT = path.join(__dirname, "multi_timeframe_data.json");
-const JOURNAL = path.join(__dirname, "multi_timeframe_journal.json");\nconst JOURNAL = path.join(__dirname, "multi_timeframe_journal.json");
+const JOURNAL = path.join(__dirname, "multi_timeframe_journal.json");
 const log = (event, details = {}) => console.log(JSON.stringify({ time: new Date().toISOString(), event, ...details }));
 
 function connect(url) {
