@@ -43,3 +43,8 @@ Run with Node.js 22:
 node --check multi_timeframe_engine.js
 node --test test/multi_timeframe_engine.test.js
 ```
+
+
+### Scheduled-scan recovery and look-ahead control
+
+The collector evaluates the latest completed candidate for dashboard display and re-evaluates up to the six most recent completed entry candles in each category for the separate outcome journal. This overlap helps recover M1 entries between five-minute GitHub Actions runs. Each historical candidate is evaluated only with confirmation, context, and risk candles that had fully closed by that candidate's entry-candle close, preventing higher-timeframe look-ahead. A five-minute scheduler still cannot guarantee capture of every fast M1 move; continuous streaming would be needed for that.
