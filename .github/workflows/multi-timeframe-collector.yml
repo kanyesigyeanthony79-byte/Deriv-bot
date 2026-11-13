@@ -1,0 +1,58 @@
+name: Multi-Timeframe Data Collector
+
+on:
+  push:
+    branches:
+      - feature/multi-timeframe-engine
+    paths:
+      - "multi_timeframe_collector.js"
+      - "multi_timeframe_engine.js"
+      - ".github/workflows/multi-timeframe-collector.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: multi-timeframe-observation-collector
+  cancel-in-progress: true
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout development branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name == 'main' && 'main' || 'feature/multi-timeframe-engine' }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Collect completed candles for all eight markets
+        run: node multi_timeframe_collector.js
+      - name: Persist isolated observation journal
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add multi_timeframe_journal.json multi_timeframe_dashboard.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update multi-timeframe observation journal"
+            for attempt in 1 2 3; do
+              git fetch origin "$GITHUB_REF_NAME"
+              git rebase "origin/$GITHUB_REF_NAME"
+              if git push origin "HEAD:$GITHUB_REF_NAME"; then exit 0; fi
+              sleep 2
+            done
+            exit 1
+          fi
+      - name: Upload observation data
+        uses: actions/upload-artifact@v4
+        with:
+          name: multi-timeframe-observation-data
+          path: multi_timeframe_data.json
+          if-no-files-found: error
+          retention-days: 7

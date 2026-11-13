@@ -1,0 +1,28 @@
+name: Multi-Timeframe Engine Tests
+
+on:
+  push:
+    branches:
+      - feature/multi-timeframe-engine
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout development branch
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax check
+        run: node --check multi_timeframe_engine.js
+      - name: Run unit tests
+        run: node --test test/multi_timeframe_engine.test.js test/multi_timeframe_journal.test.js test/dashboard_syntax.test.js

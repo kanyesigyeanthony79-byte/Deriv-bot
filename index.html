@@ -20,7 +20,16 @@ h1{font-size:25px;margin:0 0 5px}.hero p{margin:0;color:var(--muted);line-height
 section{margin-top:20px}h2{font-size:16px;margin:0 0 9px}
 table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:600}
 .notice{border-left:3px solid var(--gold);background:#1a281e;padding:11px 12px;border-radius:8px;color:#d8e2da;font-size:12px;line-height:1.55;margin-top:15px}
-.smallbtn{font-size:12px;padding:8px 10px}.foot{margin-top:22px;color:var(--muted);font-size:11px;line-height:1.6}
+.smallbtn{font-size:12px;padding:8px 10px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.filters select{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:9px;padding:9px;min-width:145px}
+.mtf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin:10px 0}
+.mtf-card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:11px;min-width:0}
+.mtf-head{display:flex;justify-content:space-between;gap:6px;align-items:center;font-size:12px;font-weight:750}
+.mtf-tag{font-size:10px;color:var(--gold);border:1px solid var(--line);padding:3px 6px;border-radius:20px}
+.mtf-state{font-size:17px;font-weight:850;margin:9px 0 4px}
+.mtf-table-wrap{overflow-x:auto}
+.foot{margin-top:22px;color:var(--muted);font-size:11px;line-height:1.6}
 @media(max-width:420px){.brand{font-size:16px}.hero{padding:14px}h1{font-size:22px}}
 </style>
 </head>
@@ -47,6 +56,34 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <div class="card" data-market="frxXAUUSD"><div class="name">Gold/USD</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="CRASH500"><div class="name">Crash 500 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="BOOM500"><div class="name">Boom 500 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div></div>
+  </section>
+
+  <section id="multi-timeframe">
+    <h2>Multi-timeframe signals · 4 horizons</h2>
+    <div class="muted">Separate analysis for Scalping, Short-term, Swing and Position. All eight markets are assessed independently.</div>
+    <div class="filters">
+      <select id="mtfCategory" aria-label="Filter signal category">
+        <option value="ALL">All categories</option><option value="SCALP">Scalping · M1</option>
+        <option value="SHORT_TERM">Short-term · M5</option><option value="SWING">Swing · H1</option>
+        <option value="POSITION">Position · H4</option>
+      </select>
+      <select id="mtfMarket" aria-label="Filter market">
+        <option value="ALL">All markets</option>
+        <option value="R_10">Volatility 10</option><option value="R_25">Volatility 25</option>
+        <option value="R_50">Volatility 50</option><option value="R_75">Volatility 75</option>
+        <option value="JD100">Jump 100</option><option value="frxXAUUSD">Gold/USD</option>
+        <option value="CRASH500">Crash 500</option><option value="BOOM500">Boom 500</option>
+      </select>
+      <button class="btn smallbtn" id="mtfRefresh">Refresh horizons</button>
+    </div>
+    <div class="status" id="mtfStatus">Loading multi-timeframe analysis…</div>
+    <div class="grid" id="mtfSummary"></div>
+    <div class="mtf-grid" id="mtfSignals"><div class="card">Waiting for multi-timeframe data…</div></div>
+    <h2 style="margin-top:18px">Multi-timeframe outcome journal</h2>
+    <div class="card mtf-table-wrap">
+      <table><thead><tr><th>Time</th><th>Market</th><th>Category</th><th>Direction</th><th>Entry</th><th>SL</th><th>TP1 / TP2</th><th>Outcome</th></tr></thead>
+      <tbody id="mtfJournal"><tr><td colspan="8" class="muted">No multi-timeframe observations recorded yet.</td></tr></tbody></table>
+    </div>
   </section>
 
   <section>
@@ -134,6 +171,43 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     URL.revokeObjectURL(url);
     $("status").textContent="CSV export prepared · "+latestSignals.length+" records";
   }
+
+  const MTF_URL="./multi_timeframe_dashboard.json";
+  const MTF_JOURNAL_URL="./multi_timeframe_journal.json";
+  let mtfSnapshot=null, mtfJournal=[];
+  const categoryNames={SCALP:"Scalping",SHORT_TERM:"Short-term",SWING:"Swing",POSITION:"Position"};
+  const fmtTime=epoch=>epoch?new Date(epoch*1000).toLocaleString():"—";
+  function renderMtf(){
+    if(!mtfSnapshot)return;
+    const cat=$("mtfCategory").value, market=$("mtfMarket").value;
+    const all=(mtfSnapshot.markets||[]).flatMap(m=>(m.signals||[]).map(s=>({...s,marketId:m.marketId,marketName:m.marketName})));
+    const filtered=all.filter(s=>(cat==="ALL"||s.category===cat)&&(market==="ALL"||s.marketId===market));
+    $("mtfSignals").innerHTML=filtered.map(s=>{
+      const active=s.state==="signal", cls=active?(s.direction==="BUY"?"buy":"sell"):"none";
+      const state=active?s.direction+" SIGNAL":String(s.state||"UNKNOWN").replaceAll("_"," ").toUpperCase();
+      const levels=active?'<br>Entry: '+fmt(s.entry)+' · SL: '+fmt(s.stopLoss)+'<br>TP1: '+fmt(s.tp1)+' · TP2: '+fmt(s.tp2)+'<br>Score: '+esc(s.score??"—"):'<br>'+esc(s.reason||"Waiting for alignment");
+      return '<div class="mtf-card"><div class="mtf-head"><span>'+esc(s.marketName)+'</span><span class="mtf-tag">'+esc(categoryNames[s.category]||s.category)+'</span></div><div class="mtf-state '+cls+'">'+esc(state)+'</div><div class="detail">Entry '+esc(s.entryTimeframe||"—")+' · Confirm '+esc(s.confirmationTimeframe||"—")+' · Context '+esc(s.contextTimeframe||"—")+levels+'</div></div>';
+    }).join("")||'<div class="card muted">No matching market/category records.</div>';
+    const counts=mtfSnapshot.summary?.signalCounts||{};
+    $("mtfSummary").innerHTML=['signal','timeframe_conflict','warming','no_signal'].map(k=>'<div class="card"><div class="detail">'+esc(k.replaceAll("_"," ").toUpperCase())+'</div><div class="signal">'+esc(counts[k]??0)+'</div></div>').join("");
+    const rows=mtfJournal.slice().sort((a,b)=>(b.entryCandleEpoch||0)-(a.entryCandleEpoch||0)).slice(0,40);
+    $("mtfJournal").innerHTML=rows.map(s=>'<tr><td>'+esc(fmtTime(s.entryCandleEpoch))+'</td><td>'+esc(s.market||s.marketId)+'</td><td>'+esc(categoryNames[s.category]||s.category)+'</td><td class="'+(s.direction==="BUY"?"buy":"sell")+'">'+esc(s.direction)+'</td><td>'+fmt(s.entry)+'</td><td>'+fmt(s.stopLoss)+'</td><td>'+fmt(s.tp1)+' / '+fmt(s.tp2)+'</td><td>'+esc(String(s.status||"pending").replaceAll("_"," ").toUpperCase())+'</td></tr>').join("")||'<tr><td colspan="8" class="muted">No qualifying signals recorded yet.</td></tr>';
+  }
+  async function refreshMtf(){
+    $("mtfStatus").textContent="Refreshing multi-timeframe snapshot…";
+    try{
+      const [a,b]=await Promise.all([fetch(MTF_URL+"?v="+Date.now(),{cache:"no-store"}),fetch(MTF_JOURNAL_URL+"?v="+Date.now(),{cache:"no-store"})]);
+      if(!a.ok)throw new Error("Snapshot HTTP "+a.status);
+      mtfSnapshot=await a.json(); mtfJournal=b.ok?(await b.json()).signals||[]:[];
+      renderMtf();
+      $("mtfStatus").textContent="Observation-only · "+esc(mtfSnapshot.markets?.length||0)+" markets · Updated "+esc(time(mtfSnapshot.generatedAt));
+    }catch(e){$("mtfStatus").textContent="Multi-timeframe data not published yet: "+e.message;}
+  }
+  $("mtfCategory").addEventListener("change",renderMtf);
+  $("mtfMarket").addEventListener("change",renderMtf);
+  $("mtfRefresh").addEventListener("click",refreshMtf);
+  refreshMtf(); setInterval(refreshMtf,60000);
+
   $("export").addEventListener("click",exportCsv);
   $("refresh").addEventListener("click",refresh);
   refresh();
