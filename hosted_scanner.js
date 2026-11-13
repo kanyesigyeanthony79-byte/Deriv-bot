@@ -1,6 +1,5 @@
 "use strict";
-// One-shot GitHub Actions scanner. Reuses the repository's engine.js rules.
-// Signal-only: this file contains no Deriv order/buy code.
+// Hosted signal scanner and outcome monitor. Signal-only: no order execution.
 const fs = require("node:fs");
 const path = require("node:path");
 const { evaluate, DEF } = require("./engine");
@@ -17,7 +16,8 @@ const MARKETS = [
 const STATE_FILE = path.join(__dirname, "signal_state.json");
 const WORKER_URL = process.env.TELEGRAM_WORKER_URL;
 const API_KEY = process.env.SIGNAL_API_KEY;
-const MAX_SIGNAL_AGE = 360; // scheduled runs are five minutes apart
+const MAX_SIGNAL_AGE = 360;
+const MAX_MONITOR_AGE = 96 * GRANULARITY; // expire unresolved signals after 24 hours
 
 if (!WORKER_URL || !API_KEY) {
   console.error("Missing TELEGRAM_WORKER_URL or SIGNAL_API_KEY GitHub Actions secret.");
@@ -27,12 +27,18 @@ let parsedUrl;
 try { parsedUrl = new URL(WORKER_URL); } catch { throw new Error("TELEGRAM_WORKER_URL is not a valid URL."); }
 if (parsedUrl.protocol !== "https:") throw new Error("Telegram Worker URL must use HTTPS.");
 
-let state = { lastSig: {} };
+let state = { lastSig: {}, activeSignals: [] };
 try {
   const saved = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
-  if (saved && typeof saved === "object" && saved.lastSig) state = saved;
+  if (saved && typeof saved === "object") {
+    state = {
+      lastSig: saved.lastSig && typeof saved.lastSig === "object" ? saved.lastSig : {},
+      activeSignals: Array.isArray(saved.activeSignals) ? saved.activeSignals : []
+    };
+  }
 } catch {}
 const log = (event, details = {}) => console.log(JSON.stringify({ time: new Date().toISOString(), event, ...details }));
+const saveState = () => fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2) + "\n");
 
 function connect(url) {
   return new Promise((resolve, reject) => {
@@ -61,7 +67,6 @@ function connect(url) {
         }
       });
       resolve({
-        ws,
         ask(payload, timeoutMs = 20000) {
           return new Promise((res, rej) => {
             const id = ++nextId;
@@ -113,30 +118,106 @@ function calculateAtr(candles, period = 14) {
   return value;
 }
 
-async function sendTelegram(market, direction, candles) {
+function makeLevels(candles, direction) {
   const candle = candles[candles.length - 1];
   const atr = calculateAtr(candles, 14);
   if (!(atr > 0)) throw new Error("ATR unavailable; refusing to send incomplete levels.");
   const entry = candle.close;
   const risk = atr * 1.5;
   const digits = Math.max(2, Math.min(8, (String(candle.close).split(".")[1] || "").length));
-  const levels = {
+  return {
     entry: Number(entry.toFixed(digits)),
     stopLoss: Number((direction === "BUY" ? entry - risk : entry + risk).toFixed(digits)),
     tp1: Number((direction === "BUY" ? entry + risk * 2 : entry - risk * 2).toFixed(digits)),
     tp2: Number((direction === "BUY" ? entry + risk * 3 : entry - risk * 3).toFixed(digits))
   };
+}
+
+async function postTelegram(payload) {
   const response = await fetch(WORKER_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-API-Key": API_KEY },
-    body: JSON.stringify({ market, direction, ...levels }),
+    body: JSON.stringify(payload),
     signal: AbortSignal.timeout(15000)
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok || result.success !== true) {
     throw new Error(result.error || ("Telegram Worker returned HTTP " + response.status));
   }
-  log("telegram_delivered", { market, direction, candle_epoch: candle.epoch, ...levels });
+}
+
+async function sendOutcome(signal, outcome, candle) {
+  await postTelegram({
+    event: "outcome",
+    outcome,
+    signalId: signal.signalId,
+    market: signal.market,
+    direction: signal.direction,
+    entry: signal.entry,
+    stopLoss: signal.stopLoss,
+    tp1: signal.tp1,
+    tp2: signal.tp2,
+    currentPrice: candle.close
+  });
+  log("outcome_delivered", { signalId: signal.signalId, market: signal.market, outcome, candle_epoch: candle.epoch, observed_close: candle.close });
+}
+
+async function monitorSignals(marketId, candles, now) {
+  const active = state.activeSignals.filter(s => s.marketId === marketId && !s.closed);
+  for (const signal of active) {
+    if (now - signal.createdEpoch > MAX_MONITOR_AGE) {
+      signal.closed = true;
+      signal.closeReason = "expired_after_24_hours";
+      log("signal_expired", { signalId: signal.signalId, market: signal.market });
+      continue;
+    }
+
+    const laterCandles = candles.filter(c => c.epoch > Number(signal.lastCheckedEpoch || signal.createdEpoch));
+    for (const candle of laterCandles) {
+      const isBuy = signal.direction === "BUY";
+      const slTouched = isBuy ? candle.low <= signal.stopLoss : candle.high >= signal.stopLoss;
+      const tp1Touched = isBuy ? candle.high >= signal.tp1 : candle.low <= signal.tp1;
+      const tp2Touched = isBuy ? candle.high >= signal.tp2 : candle.low <= signal.tp2;
+
+      // OHLC candles cannot tell us which level came first if both sides were touched.
+      if (slTouched && (tp1Touched || tp2Touched)) {
+        signal.closed = true;
+        signal.closeReason = "ambiguous_same_candle";
+        signal.lastCheckedEpoch = candle.epoch;
+        log("ambiguous_outcome_not_reported", { signalId: signal.signalId, market: signal.market, candle_epoch: candle.epoch });
+        break;
+      }
+
+      if (slTouched) {
+        await sendOutcome(signal, "SL_HIT", candle);
+        signal.closed = true;
+        signal.closeReason = signal.tp1Hit ? "sl_after_tp1" : "sl_hit";
+        signal.lastCheckedEpoch = candle.epoch;
+        break;
+      }
+
+      if (tp1Touched && !signal.tp1Hit) {
+        await sendOutcome(signal, "TP1_HIT", candle);
+        signal.tp1Hit = true;
+      }
+
+      if (tp2Touched && !signal.tp2Hit) {
+        if (!signal.tp1Hit) {
+          await sendOutcome(signal, "TP1_HIT", candle);
+          signal.tp1Hit = true;
+        }
+        await sendOutcome(signal, "TP2_HIT", candle);
+        signal.tp2Hit = true;
+        signal.closed = true;
+        signal.closeReason = "tp2_hit";
+        signal.lastCheckedEpoch = candle.epoch;
+        break;
+      }
+
+      signal.lastCheckedEpoch = candle.epoch;
+    }
+  }
+  state.activeSignals = state.activeSignals.filter(s => !s.closed);
 }
 
 async function main() {
@@ -146,6 +227,7 @@ async function main() {
     if (timeReply.error) throw new Error("Deriv time: " + timeReply.error.message);
     const now = Number(timeReply.time) || Math.floor(Date.now() / 1000);
     const symbols = await resolveSymbols(client);
+
     for (const [id, name] of MARKETS) {
       const symbol = symbols[id];
       if (!symbol) continue;
@@ -160,30 +242,51 @@ async function main() {
           .filter(x => [x.epoch, x.open, x.high, x.low, x.close].every(Number.isFinite))
           .sort((a, b) => a.epoch - b.epoch)
           .filter(x => x.epoch + GRANULARITY <= now);
+
+        await monitorSignals(id, candles, now);
+
         const result = evaluate(candles);
         if (result.state !== "ok" || result.signal === "NO TRADE") {
           log("no_signal", { market: name, state: result.state || "unknown" });
           continue;
         }
+
         const candleEpoch = result.c.epoch;
         const previous = Number(state.lastSig[id] || 0);
         if (candleEpoch <= previous || candleEpoch - previous < DEF.cooldown * GRANULARITY) {
           log("signal_suppressed", { market: name, direction: result.signal, reason: "duplicate_or_cooldown", candle_epoch: candleEpoch });
           continue;
         }
-        state.lastSig[id] = candleEpoch;
-        fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2) + "\n");
+
         const age = now - (candleEpoch + GRANULARITY);
         if (age > MAX_SIGNAL_AGE) {
           log("signal_skipped", { market: name, direction: result.signal, age_seconds: age, reason: "too_old_for_alert" });
           continue;
         }
-        log("signal_detected", { market: name, direction: result.signal, score: result.score, close: result.c.close, candle_epoch: candleEpoch, age_seconds: age, checks_passed: result.pass });
-        await sendTelegram(name, result.signal, candles);
+
+        const levels = makeLevels(candles, result.signal);
+        const signalId = id + "-" + candleEpoch;
+        await postTelegram({ market: name, direction: result.signal, ...levels });
+        state.lastSig[id] = candleEpoch;
+        state.activeSignals.push({
+          signalId,
+          marketId: id,
+          market: name,
+          direction: result.signal,
+          ...levels,
+          createdEpoch: candleEpoch,
+          lastCheckedEpoch: candleEpoch,
+          tp1Hit: false,
+          tp2Hit: false,
+          closed: false
+        });
+        saveState();
+        log("telegram_delivered", { signalId, market: name, direction: result.signal, candle_epoch: candleEpoch, ...levels });
       } catch (error) {
         log("market_scan_error", { market: name, message: error.message });
       }
     }
+    saveState();
   } finally {
     client.close();
   }
