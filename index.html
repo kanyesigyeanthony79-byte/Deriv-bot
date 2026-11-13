@@ -32,38 +32,21 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   </div>
   <div class="hero">
     <h1>15-minute market monitor</h1>
-    <p>Scans Volatility 10, 25, 50, 75 and Jump 100 using completed candles. No account login, deposits, or trade execution.</p>
-    <div class="row">
-      <button class="btn primary" id="connect">Connect & scan</button>
-      <button class="btn" id="stop" disabled>Stop</button>
-      <button class="btn" id="notify">Enable notifications</button>
-    </div>
-    <div class="status"><span class="dot" id="dot"></span><span id="status">Not connected. Tap Connect & scan.</span></div>
+    <p>Displays the same hosted 15-minute signal history used by Telegram alerts across eight markets. The GitHub Actions scanner runs every five minutes. No account login or trade execution.</p>
+    <div class="row"><button class="btn primary" id="refresh">Refresh hosted signals</button></div>
+    <div class="status"><span class="dot on" id="dot"></span><span id="status">Loading hosted scanner history…</span></div>
   </div>
-
-  <section class="card" id="telegramPanel">
-    <h2>Telegram alerts</h2>
-    <p class="muted" style="margin:0 0 10px">Paste your Cloudflare Worker URL and private SIGNAL_API_KEY. Your API key is kept only for this browser tab session so automatic alerts continue after a page refresh. Your Telegram bot token stays on the server.</p>
-    <label for="telegramWorker" class="muted">Cloudflare Worker URL</label>
-    <input id="telegramWorker" type="url" placeholder="https://your-worker.workers.dev" autocomplete="url" style="display:block;width:100%;margin:6px 0 10px;padding:11px;border-radius:10px;border:1px solid var(--line);background:#0b1712;color:var(--txt)">
-    <label for="signalApiKey" class="muted">Private SIGNAL_API_KEY (session only)</label>
-    <input id="signalApiKey" type="password" placeholder="Paste your Cloudflare SIGNAL_API_KEY" autocomplete="off" spellcheck="false" style="display:block;width:100%;margin:6px 0 10px;padding:11px;border-radius:10px;border:1px solid var(--line);background:#0b1712;color:var(--txt)">
-    <div class="row" style="margin-top:8px">
-      <button class="btn primary" id="saveTelegram">Save alert settings</button>
-      <button class="btn" id="testTelegram">Send test alert</button>
-    </div>
-    <div class="status" id="telegramStatus">Telegram is not configured.</div>
-  </section>
 
   <section>
     <h2>Live analysis</h2>
-    <div class="grid" id="markets">
-      <div class="card"><div class="name">Volatility 10 Index</div><div class="signal none">WAITING</div><div class="detail">Connect to load candles.</div></div>
-      <div class="card"><div class="name">Volatility 25 Index</div><div class="signal none">WAITING</div><div class="detail">Connect to load candles.</div></div>
-      <div class="card"><div class="name">Volatility 50 Index</div><div class="signal none">WAITING</div><div class="detail">Connect to load candles.</div></div>
-      <div class="card"><div class="name">Volatility 75 Index</div><div class="signal none">WAITING</div><div class="detail">Connect to load candles.</div></div>
-      <div class="card"><div class="name">Jump 100 Index</div><div class="signal none">WAITING</div><div class="detail">Connect to load candles.</div></div>
-    </div>
+    <div class="grid" id="markets"><div class="card" data-market="R_10"><div class="name">Volatility 10 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
+      <div class="card" data-market="R_25"><div class="name">Volatility 25 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
+      <div class="card" data-market="R_50"><div class="name">Volatility 50 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
+      <div class="card" data-market="R_75"><div class="name">Volatility 75 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
+      <div class="card" data-market="JD100"><div class="name">Jump 100 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
+      <div class="card" data-market="frxXAUUSD"><div class="name">Gold/USD</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
+      <div class="card" data-market="CRASH500"><div class="name">Crash 500 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
+      <div class="card" data-market="BOOM500"><div class="name">Boom 500 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div></div>
   </section>
 
   <section>
@@ -73,233 +56,63 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     </div>
     <div class="card" style="overflow-x:auto">
       <table><thead><tr><th>Time</th><th>Market</th><th>Signal</th><th>Entry</th><th>SL</th><th>TP1</th><th>TP2</th></tr></thead><tbody id="journal"><tr><td colspan="7" class="muted">No signals recorded yet.</td></tr></tbody></table>
-      <div class="muted" id="count" style="margin-top:8px">0 recorded signals · Stored on this device</div>
+      <div class="muted" id="count" style="margin-top:8px">Hosted journal · Loading…</div>
     </div>
   </section>
 
-  <div class="notice"><b>Important:</b> Signals are research alerts, not instructions or guaranteed outcomes. Entry is the completed signal-candle close (reference entry), not a guaranteed executable fill. SL/TP are ATR-based reference levels (SL 1.5× ATR, TP1 2R, TP2 3R). Price may move before you can act. Telegram alerts are sent only while this page is open and scanning. Test without staking money.</div>
-  <div class="foot">
-    Strategy filter: EMA 20 / EMA 50 trend alignment, RSI 14 momentum range, and candle direction. Only closed 15-minute candles are evaluated. No martingale, no recovery sizing, and no automatic execution. ATR(14) sets reference risk levels: SL 1.5× ATR, TP1 2R and TP2 3R.<br>
-    Data connection: Deriv public market-data WebSocket. An internet connection and an open browser tab are required. Keep this page open while scanning.
-  </div>
+  <div class="notice"><b>Important:</b> This dashboard displays signals recorded by the hosted scanner and their reported outcomes. A signal is a research alert, not a guaranteed result or instruction to trade. Historical outcomes do not establish future profitability. Use demo observation only.</div>
+  <div class="foot">Hosted scanner: eight markets · completed 15-minute candles · scheduled every five minutes. Dashboard refreshes the public signal journal automatically. Telegram delivery and outcome monitoring remain on the server; no private API key is required in this page.</div>
 </main>
 <script>
 (() => {
-  const ENDPOINT = "wss://api.derivws.com/trading/v1/options/ws/public";
-  const TARGETS = ["Volatility 10 Index","Volatility 25 Index","Volatility 50 Index","Volatility 75 Index","Jump 100 Index"];
-  // Standard (non-1s) Deriv synthetic-index symbols.
-  const FALLBACK_SYMBOLS = {
-    "Volatility 10 Index":"R_10",
-    "Volatility 25 Index":"R_25",
-    "Volatility 50 Index":"R_50",
-    "Volatility 75 Index":"R_75",
-    "Jump 100 Index":"JD100"
-  };
-  const GRANULARITY = 900, COUNT = 150, REFRESH_MS = 60000;
-  let ws=null, timer=null, reconnectTimer=null, reconnectAttempt=0, running=false, req=0, pending={}, symbols={}, latestEpoch=JSON.parse(localStorage.getItem("dsa_signal_epochs") || "{}"), marketState={};
-  let journal = JSON.parse(localStorage.getItem("dsa_v1_journal") || "[]");
-  let telegramWorker = localStorage.getItem("dsa_telegram_worker") || "https://deriv-telegram-alerts.kanyesigyeanthony79-451.workers.dev/";
-  const savedSessionKey = sessionStorage.getItem("dsa_signal_api_key") || "";
-  const TELEGRAM_ENABLED_KEY = "dsa_telegram_enabled";
+  const MARKETS = [["R_10","Volatility 10 Index"],["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],["R_75","Volatility 75 Index"],["JD100","Jump 100 Index"],["frxXAUUSD","Gold/USD"],["CRASH500","Crash 500 Index"],["BOOM500","Boom 500 Index"]];
+  const JOURNAL_URL = "./trade_journal.json";
   const $ = id => document.getElementById(id);
-  const setStatus = (s,on=false) => { $("status").textContent=s; $("dot").className="dot"+(on?" on":""); };
-  const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const send = (payload, callback) => {
-    const id=++req; payload.req_id=id;
-    pending[id]=callback;
-    ws.send(JSON.stringify(payload));
-  };
-  const ema = (values, period) => {
-    const k=2/(period+1); let out=values[0];
-    for(let i=1;i<values.length;i++) out=values[i]*k+out*(1-k);
-    return out;
-  };
-  const rsi = (closes, period=14) => {
-    let gains=0, losses=0;
-    for(let i=closes.length-period;i<closes.length;i++){
-      const d=closes[i]-closes[i-1]; if(d>0)gains+=d; else losses-=d;
-    }
-    if(losses===0)return 100;
-    const rs=(gains/period)/(losses/period);
-    return 100-(100/(1+rs));
-  };
-  function renderMarket(name, signal, details, cls="none") {
-    const key=TARGETS.indexOf(name); if(key<0)return;
-    marketState[name]={signal,details,cls};
-    const cards=[...$("markets").children];
-    cards[key].innerHTML=`<div class="name">${esc(name)}</div><div class="signal ${cls}">${esc(signal)}</div><div class="detail">${esc(details)}</div>`;
+  const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const fmt = v => Number.isFinite(Number(v)) ? Number(v).toFixed(2) : "—";
+  const time = s => { const d=new Date(s); return Number.isNaN(d.getTime())? "—" : d.toLocaleString(); };
+  function outcomeLabel(s) {
+    if (s.finalOutcome) return s.finalOutcome.replaceAll("_"," ");
+    if (s.tp2Hit) return "TP2 HIT";
+    if (s.tp1Hit) return "TP1 HIT · OPEN";
+    return s.status==="sent" ? "SENT · MONITORING" : String(s.status||"UNKNOWN").toUpperCase();
   }
-  function renderJournal(){
-    $("count").textContent=`${journal.length} recorded signals · Stored on this device`;
-    $("journal").innerHTML=journal.length ? journal.slice(0,30).map(x=>`<tr><td>${esc(x.time)}</td><td>${esc(x.market.replace(" Index",""))}</td><td class="${x.signal==="BUY"?"buy":"sell"}">${x.signal}</td><td>${Number(x.entry).toFixed(3)}</td><td>${Number(x.sl).toFixed(3)}</td><td>${Number(x.tp1).toFixed(3)}</td><td>${Number(x.tp2).toFixed(3)}</td></tr>`).join("") : `<tr><td colspan="7" class="muted">No signals recorded yet.</td></tr>`;
-  }
-  async function sendTelegramSignal(setup){
-    if(!telegramWorker){$("telegramStatus").textContent="Add and save your Cloudflare Worker URL to enable Telegram.";return false;}
-    const apiKey=$("signalApiKey").value.trim() || sessionStorage.getItem("dsa_signal_api_key") || "";
-    if(!apiKey){$("telegramStatus").textContent="Automatic Telegram alert NOT sent: API key is missing. Enter it and save alert settings.";return false;}
-    $("signalApiKey").value=apiKey;
-    const automatic = setup.source === "Deriv Signal Assistant";
-    if(automatic) $("telegramStatus").textContent=`New ${setup.signal} signal detected for ${setup.market}. Sending Telegram alert…`;
-    const payload={
-      market:setup.market,
-      direction:String(setup.signal || "").toUpperCase(),
-      entry:Number(setup.entry),
-      stopLoss:Number(setup.sl),
-      tp1:Number(setup.tp1),
-      tp2:Number(setup.tp2)
-    };
-    if(!["BUY","SELL"].includes(payload.direction) ||
-       ![payload.entry,payload.stopLoss,payload.tp1,payload.tp2].every(Number.isFinite)){
-      $("telegramStatus").textContent="Signal data is incomplete or invalid; alert not sent.";
-      return false;
-    }
-    try{
-      const response=await fetch(telegramWorker,{
-        method:"POST",
-        headers:{"Content-Type":"application/json","X-API-Key":apiKey},
-        body:JSON.stringify(payload)
-      });
-      const result=await response.json().catch(()=>({}));
-      if(!response.ok || !result.success) throw new Error(result.error || `HTTP ${response.status}`);
-      $("telegramStatus").textContent=(automatic?"Automatic signal alert delivered to Telegram: ":"Telegram test alert delivered: ")+setup.market+" · "+(setup.signal||"");
-      return true;
-    }catch(err){
-      $("telegramStatus").textContent=(automatic?"Automatic Telegram alert FAILED: ":"Telegram test failed: ")+err.message;
-      return false;
-    }
-  }
-  function record(name, signal, candle, rv, setup){
-    const entry={time:new Date().toLocaleString(),market:name,signal,close:candle.close,entry:setup.entry,sl:setup.sl,tp1:setup.tp1,tp2:setup.tp2,rsi:rv,epoch:candle.epoch};
-    journal.unshift(entry); journal=journal.slice(0,500);
-    localStorage.setItem("dsa_v1_journal",JSON.stringify(journal)); renderJournal();
-    if("Notification" in window && Notification.permission==="granted"){
-      new Notification(`Deriv ${signal}: ${name}`,{body:`Entry ${setup.entry} · SL ${setup.sl} · TP1 ${setup.tp1} · TP2 ${setup.tp2}`});
-    }
-    void sendTelegramSignal({market:name,signal,time:new Date(candle.epoch*1000).toISOString(),timeframe:"M15",entry:setup.entry,sl:setup.sl,tp1:setup.tp1,tp2:setup.tp2,rsi:Number(rv.toFixed(2)),atr:setup.atr,source:"Deriv Signal Assistant"});
-  }
-  function analyse(name, raw){
-    const now=Math.floor(Date.now()/1000);
-    const closed=raw.filter(c=>Number(c.epoch)+GRANULARITY<=now).sort((a,b)=>a.epoch-b.epoch);
-    if(closed.length<60){renderMarket(name,"WARMING UP",`${closed.length}/60 completed candles received.`);return;}
-    const c=closed[closed.length-1];
-    const closes=closed.map(x=>Number(x.close));
-    const e20=ema(closes.slice(-80),20), e50=ema(closes.slice(-120),50), rv=rsi(closes,14);
-    const recent=closed.slice(-15);
-    const tr=recent.slice(1).map((bar,i)=>Math.max(Number(bar.high)-Number(bar.low),Math.abs(Number(bar.high)-Number(recent[i].close)),Math.abs(Number(bar.low)-Number(recent[i].close))));
-    const atr=tr.reduce((a,b)=>a+b,0)/Math.max(1,tr.length);
-    const bullish=Number(c.close)>Number(c.open), bearish=Number(c.close)<Number(c.open);
-    let signal="NO TRADE", cls="none", reason="Conditions not aligned";
-    if(e20>e50 && Number(c.close)>e20 && rv>=50 && rv<=68 && bullish){
-      signal="BUY"; cls="buy"; reason="EMA20 above EMA50 · bullish close · RSI in range";
-    } else if(e20<e50 && Number(c.close)<e20 && rv>=32 && rv<=50 && bearish){
-      signal="SELL"; cls="sell"; reason="EMA20 below EMA50 · bearish close · RSI in range";
-    }
-    let setup=null;
-    if((signal==="BUY"||signal==="SELL") && atr>0){
-      const entry=Number(c.close), risk=atr*1.5;
-      const sl=signal==="BUY"?entry-risk:entry+risk;
-      const tp1=signal==="BUY"?entry+risk*2:entry-risk*2;
-      const tp2=signal==="BUY"?entry+risk*3:entry-risk*3;
-      const digits=Math.max(2,Math.min(8,(String(c.close).split(".")[1]||"").length));
-      setup={entry:Number(entry.toFixed(digits)),sl:Number(sl.toFixed(digits)),tp1:Number(tp1.toFixed(digits)),tp2:Number(tp2.toFixed(digits)),atr:Number(atr.toFixed(digits))};
-      reason+=` · Ref entry ${setup.entry} · SL ${setup.sl} · TP1 ${setup.tp1} · TP2 ${setup.tp2}`;
-    }
-    renderMarket(name,signal,`${reason} · RSI ${rv.toFixed(1)} · Close ${Number(c.close).toFixed(3)} · Candle ${new Date(c.epoch*1000).toLocaleTimeString()}`,cls);
-    if((signal==="BUY"||signal==="SELL") && setup && latestEpoch[name]!==c.epoch){
-      latestEpoch[name]=c.epoch; localStorage.setItem("dsa_signal_epochs",JSON.stringify(latestEpoch)); record(name,signal,c,rv,setup);
-    }
-  }
-  function requestCandles(name){
-    const symbol=symbols[name]; if(!symbol || !ws || ws.readyState!==1)return;
-    send({ticks_history:symbol,adjust_start_time:1,count:COUNT,end:"latest",granularity:GRANULARITY,style:"candles"},data=>{
-      if(data.error){renderMarket(name,"DATA ERROR",data.error.message);return;}
-      if(Array.isArray(data.candles)) analyse(name,data.candles);
-      else renderMarket(name,"WAITING","No candle data returned.");
-    });
-  }
-  function scanAll(){TARGETS.forEach(requestCandles);setStatus("Connected · refreshing completed 15-minute candles",true);}
-  function connect(){
-    if(running)return; running=true;
-    $("connect").disabled=true; $("stop").disabled=false;
-    setStatus("Connecting to Deriv public market data…");
-    try{ws=new WebSocket(ENDPOINT);}catch(e){setStatus("Connection failed: "+e.message);running=false;return;}
-    ws.onopen=()=>{
-      reconnectAttempt=0;
-      clearTimeout(reconnectTimer); reconnectTimer=null;
-      setStatus("Connected · finding the requested indices",true);
-      send({active_symbols:"brief"},data=>{
-        if(data.error){setStatus("Deriv symbol-list response: "+data.error.message);TARGETS.forEach(n=>{symbols[n]=FALLBACK_SYMBOLS[n];});scanAll();return;}
-        const list=Array.isArray(data.active_symbols)?data.active_symbols:[];
-        TARGETS.forEach(name=>{
-          const wanted=FALLBACK_SYMBOLS[name];
-          const found=list.find(s=>{
-            const label=(s.display_name||s.name||"").toLowerCase().replace(/\\s+/g," ").trim();
-            return label===name.toLowerCase() || s.symbol===wanted;
-          });
-          // If the brief symbol list omits display names, try the documented
-          // standard symbol code directly and let the candle request verify it.
-          const symbol=(found && found.symbol) || wanted;
-          symbols[name]=symbol;
-          renderMarket(name,"LOADING",`Checking Deriv symbol ${symbol}…`);
-        });
-        scanAll();
-        timer=setInterval(scanAll,REFRESH_MS);
-      });
-    };
-    ws.onmessage=event=>{
-      let data;try{data=JSON.parse(event.data);}catch(e){return;}
-      if(data.req_id && pending[data.req_id]){const cb=pending[data.req_id];delete pending[data.req_id];cb(data);}
-      if(data.error && !data.req_id)setStatus("Deriv error: "+data.error.message);
-    };
-    ws.onerror=()=>{setStatus("Connection interrupted · preparing to reconnect…");};
-    ws.onclose=()=>{
-      clearInterval(timer); timer=null; pending={}; ws=null;
-      if(running){
-        const delay=Math.min(30000,1000*Math.pow(2,reconnectAttempt++));
-        setStatus("Connection lost · retrying automatically in "+Math.round(delay/1000)+"s…");
-        reconnectTimer=setTimeout(()=>{if(running){running=false;connect();}},delay);
-      } else {
-        setStatus("Scanner stopped.");
-        $("connect").disabled=false; $("stop").disabled=true;
+  function render(data) {
+    const signals=Array.isArray(data.signals)?data.signals:[];
+    for (const [id,name] of MARKETS) {
+      const card=document.querySelector('[data-market="'+id+'"]');
+      const sent=signals.filter(s=>s.marketId===id && s.status==="sent").sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0));
+      const s=sent[0];
+      if (!s) {
+        card.innerHTML='<div class="name">'+esc(name)+'</div><div class="signal none">NO SENT SIGNAL</div><div class="detail">No delivered signal recorded yet.</div>';
+        continue;
       }
-    };
+      const cls=s.direction==="BUY"?"buy":"sell";
+      const outcome=outcomeLabel(s);
+      const lastEvent=Array.isArray(s.events)&&s.events.length?s.events[s.events.length-1]:null;
+      card.innerHTML='<div class="name">'+esc(name)+'</div><div class="signal '+cls+'">'+esc(s.direction)+'</div><div class="detail">Entry: '+fmt(s.entry)+'<br>Score: '+esc(s.score??"—")+'<br>Status: '+esc(outcome)+'<br>Signal time: '+esc(time(s.createdAt))+(lastEvent?'<br>Last update: '+esc(lastEvent.outcome.replaceAll("_"," ")): "")+'</div>';
+    }
+    const rows=signals.slice().sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0)).slice(0,50);
+    $("journal").innerHTML=rows.length?rows.map(s=>'<tr><td>'+esc(time(s.createdAt))+'</td><td>'+esc(s.market)+'</td><td class="'+(s.direction==="BUY"?"buy":s.direction==="SELL"?"sell":"")+'">'+esc(s.direction)+'</td><td>'+fmt(s.entry)+'</td><td>'+esc(outcomeLabel(s))+'</td></tr>').join(""):'<tr><td colspan="5" class="muted">No signals recorded yet.</td></tr>';
+    $("count").textContent=signals.length+' hosted records · '+signals.filter(s=>s.status==="sent").length+' delivered · Updated '+new Date().toLocaleTimeString();
   }
-  function stop(){
-    running=false;clearTimeout(reconnectTimer);reconnectTimer=null;reconnectAttempt=0;
-    clearInterval(timer);timer=null;
-    if(ws){const current=ws;ws=null;try{current.close();}catch(e){}}
-    pending={};$("connect").disabled=false;$("stop").disabled=true;setStatus("Scanner stopped.");
+  async function refresh() {
+    $("status").textContent="Refreshing hosted signal history…";
+    try {
+      const response=await fetch(JOURNAL_URL+"?v="+Date.now(),{cache:"no-store"});
+      if(!response.ok) throw new Error("Journal request failed (HTTP "+response.status+")");
+      const data=await response.json();
+      render(data);
+      $("status").textContent="Connected to hosted journal · auto-refreshing every 60 seconds";
+      $("dot").className="dot on";
+    } catch(error) {
+      $("status").textContent="Could not load hosted journal: "+error.message+" · Retry shortly";
+      $("dot").className="dot";
+    }
   }
-  $("connect").addEventListener("click",connect);
-  $("stop").addEventListener("click",stop);
-  $("notify").addEventListener("click",async()=>{
-    if(!("Notification" in window)){alert("This browser does not support notifications.");return;}
-    const p=await Notification.requestPermission();
-    alert(p==="granted"?"Notifications enabled while this page is allowed to run.":"Notifications were not enabled.");
-  });
-  $("telegramWorker").value=telegramWorker;
-  $("signalApiKey").value=savedSessionKey;
-  if(savedSessionKey) $("telegramStatus").textContent="API key restored for this browser tab. Automatic alerts are ready while this page remains open.";
-  $("saveTelegram").addEventListener("click",()=>{
-    const value=$("telegramWorker").value.trim();
-    if(value && !/^https:\/\//i.test(value)){alert("Enter your HTTPS Cloudflare Worker URL.");return;}
-    telegramWorker=value;localStorage.setItem("dsa_telegram_worker",telegramWorker);
-    const key=$("signalApiKey").value.trim();
-    if(key) sessionStorage.setItem("dsa_signal_api_key",key);
-    $("telegramStatus").textContent=telegramWorker?(key?"Worker URL and API key saved for this tab. Automatic alerts are ready; keep this page open while scanning.":"Worker URL saved. Enter the private API key and save again."):"Telegram alerts are not configured.";
-  });
-  $("testTelegram").addEventListener("click",async()=>{
-    if(!telegramWorker){alert("Save your Cloudflare Worker URL first.");return;}
-    const ok=await sendTelegramSignal({market:"TELEGRAM CONNECTION TEST (DEMO)",signal:"BUY",entry:1000,sl:990,tp1:1010,tp2:1020});
-    if(ok) alert("Test message sent. Check your Telegram chat.");
-  });
-  $("export").addEventListener("click",()=>{
-    const rows=[["time","market","signal","entry_reference","stop_loss","take_profit_1","take_profit_2","rsi","candle_epoch"],...journal.map(x=>[x.time,x.market,x.signal,x.entry,x.sl,x.tp1,x.tp2,x.rsi,x.epoch])];
-    const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\n");
-    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="deriv_signal_journal.csv";a.click();URL.revokeObjectURL(a.href);
-  });
-  renderJournal();
-  window.addEventListener("beforeunload",stop);
+  $("refresh").addEventListener("click",refresh);
+  refresh();
+  setInterval(refresh,60000);
 })();
 </script>
 </body>
