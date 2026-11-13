@@ -1,0 +1,17 @@
+name: Deriv Market Discovery
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Query Deriv active symbols and M15 candles
+        run: node market_discovery.js
