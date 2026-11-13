@@ -2,6 +2,7 @@
 // Multi-timeframe analysis layer. This module is intentionally separate from hosted_scanner.js.
 // Inputs must be completed candles, oldest first. It never places trades or sends alerts.
 const { evaluate, DEF } = require("./engine");
+const { classifyMarketRegime, validateCandleContinuity } = require("./market_quality");
 
 const TIMEFRAMES = Object.freeze({
   M1: 60, M5: 300, M15: 900, H1: 3600, H4: 14400, D1: 86400, W1: 604800
@@ -99,6 +100,21 @@ function evaluateCategory(marketId, marketName, category, candlesByTimeframe, en
     return { state: "warming", category, label: config.label, reason: "Waiting for sufficient completed candles across required timeframes." };
   }
 
+  // Reject data gaps before indicators are trusted. Gold/USD weekend closures are exempted.
+  const candlesUsed = { [config.entry]: entryCandles, [config.confirmation]: confirmationCandles, [config.context]: contextCandles, [config.risk]: riskCandles };
+  for (const tf of [config.entry, config.confirmation, config.context, config.risk]) {
+    const continuity = validateCandleContinuity(candlesUsed[tf] || [], TIMEFRAMES[tf], marketId);
+    if (!continuity.valid) return { state: "data_gap", category, label: config.label, timeframe: tf, gaps: continuity.gaps.slice(0, 5), reason: "Missing candle intervals detected; indicators are withheld until data quality is restored." };
+  }
+
+  const confirmationRegime = classifyMarketRegime(confirmationCandles);
+  const contextRegime = classifyMarketRegime(contextCandles);
+  for (const [timeframe, regime] of [[config.confirmation, confirmationRegime], [config.context, contextRegime]]) {
+    if (regime.state === "ranging" || regime.state === "high_volatility" || regime.state === "transitioning" || regime.state === "warming" || regime.state === "uncertain") {
+      return { state: "market_filtered", category, label: config.label, timeframe, regime, reason: "Market conditions are not suitable for this trend-following setup." };
+    }
+  }
+
   const entryResult = evaluate(entryCandles);
   const confirmation = trendBias(confirmationCandles);
   const context = trendBias(contextCandles);
@@ -112,7 +128,7 @@ function evaluateCategory(marketId, marketName, category, candlesByTimeframe, en
     return {
       state: "timeframe_conflict", category, label: config.label,
       direction: entryResult.signal, confirmationBias: confirmation.direction,
-      contextBias: context.direction, reason: "Entry, confirmation and higher-timeframe context are not aligned."
+      contextBias: context.direction, confirmationRegime, contextRegime, reason: "Entry, confirmation and higher-timeframe context are not aligned."
     };
   }
 
@@ -190,6 +206,6 @@ function aggregateWeeklyCandles(dailyCandles, nowEpoch = Math.floor(Date.now() /
 }
 
 module.exports = {
-  TIMEFRAMES, CATEGORIES, validCandles, trendBias, makeLevels,
+  TIMEFRAMES, CATEGORIES, validCandles, trendBias, makeLevels, classifyMarketRegime, validateCandleContinuity,
   evaluateCategory, evaluateAllCategories, evaluateRecentSignals, aggregateWeeklyCandles
 };
