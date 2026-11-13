@@ -28,7 +28,12 @@ test("journal keeps market and category signal IDs separate and updates outcomes
   }, 250);
   assert.equal(second.signals[0].status, "tp1_hit");
   assert.equal(second.signals[0].tp1Hit, true);
-  assert.deepEqual(summarizeJournal(second), { tp1_hit: 1 });
+  assert.equal(second.signals[0].outcomeCandles, 1);
+  const third = updateJournal(second, {
+    JD100: { marketId: "JD100", signals: [{ ...signal, state: "signal" }], timeframes: { H1: [candle(100, 105, 95), candle(200, 112, 99)] } }
+  }, 350);
+  assert.equal(third.signals[0].outcomeCandles, 1);
+  assert.deepEqual(summarizeJournal(third), { tp1_hit: 1 });
 });
 
 test("journal expires an unclosed observation after its category age limit", () => {
