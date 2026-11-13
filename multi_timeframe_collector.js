@@ -3,7 +3,7 @@
 // Does not send Telegram messages, place trades, or modify production signal state.
 const fs = require("node:fs");
 const path = require("node:path");
-const { TIMEFRAMES, aggregateWeeklyCandles, validCandles } = require("./multi_timeframe_engine");
+const { TIMEFRAMES, aggregateWeeklyCandles, validCandles, evaluateAllCategories } = require("./multi_timeframe_engine");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const MARKETS = [
@@ -130,15 +130,23 @@ async function main() {
       if (weekly.length < 60) {
         marketData.errors.push({ timeframe: "W1", message: "Fewer than 60 completed weekly candles available; position signals will remain warming." });
       }
+      // Generate observation-only candidates. No alerts or trade execution.
+      marketData.signals = evaluateAllCategories(marketId, marketName, marketData.timeframes);
       output.markets[marketId] = marketData;
     }
 
     fs.writeFileSync(OUTPUT, JSON.stringify(output, null, 2) + "\n");
     const total = Object.values(output.markets).reduce((sum, m) =>
       sum + Object.values(m.timeframes).reduce((n, candles) => n + candles.length, 0), 0);
+    const allSignals = Object.values(output.markets).flatMap(m => m.signals || []);
+    const signalCounts = Object.fromEntries(["signal", "no_signal", "timeframe_conflict", "warming"].map(state =>
+      [state, allSignals.filter(s => s.state === state).length]
+    ));
+    output.summary = { markets: Object.keys(output.markets).length, signalCounts };
     log("collection_complete", {
       markets: Object.keys(output.markets).length,
       candles: total,
+      signalCounts,
       errors: output.errors.length + Object.values(output.markets).reduce((n, m) => n + m.errors.length, 0),
       output: "multi_timeframe_data.json"
     });
