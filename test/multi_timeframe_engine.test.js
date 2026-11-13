@@ -3,7 +3,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   TIMEFRAMES, CATEGORIES, validCandles, trendBias,
-  evaluateCategory, evaluateAllCategories, evaluateRecentSignals, aggregateWeeklyCandles
+  evaluateCategory, evaluateAllCategories, evaluateRecentSignals, aggregateWeeklyCandles,
+  classifyMarketRegime, validateCandleContinuity
 } = require("../multi_timeframe_engine");
 
 function candles(count, stepSeconds, start = 1_700_000_000, startPrice = 100) {
@@ -78,4 +79,30 @@ test("recent-signal recovery returns only candidates with unique entry-candle ID
   assert.ok(results.length <= 24, "at most six recent entries per each of four categories");
   assert.ok(results.every(s => s.state === "signal" && s.signalId.includes("-")));
   assert.equal(new Set(results.map(s => s.signalId)).size, results.length);
+});
+
+
+test("market regime filter distinguishes a clean directional trend", () => {
+  const rising = candles(120, 60);
+  assert.equal(classifyMarketRegime(rising).state, "trending");
+  assert.equal(classifyMarketRegime(rising).direction, "BUY");
+});
+
+test("market regime filter identifies a flat sideways market", () => {
+  const flat = Array.from({ length: 120 }, (_, i) => ({
+    epoch: 1_700_000_000 + i * 60,
+    open: 100 + (i % 2) * 0.01, high: 100.05, low: 99.95,
+    close: 100 + (i % 2) * 0.01
+  }));
+  assert.equal(classifyMarketRegime(flat).state, "ranging");
+});
+
+test("continuity validation catches missing synthetic-market candles", () => {
+  const data = candles(5, 60);
+  data[3].epoch += 120;
+  assert.equal(validateCandleContinuity(data, 60, "JD100").valid, false);
+});
+
+test("continuity validation accepts normal contiguous candles", () => {
+  assert.equal(validateCandleContinuity(candles(10, 300), 300, "R_25").valid, true);
 });
