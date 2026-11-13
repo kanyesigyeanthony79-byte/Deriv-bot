@@ -369,7 +369,9 @@ async function main() {
         log("market_scan_error", { market: name, message: error.message });
       }
     }
+    await maybeSendDailySummary(now);
     saveState();
+    saveJournal();
   } finally {
     client.close();
   }
