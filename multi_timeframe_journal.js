@@ -17,7 +17,7 @@ function updateJournal(journal, markets, nowEpoch) {
     ? journal : { version: 1, updatedAt: null, signals: [] };
   const byId = new Map(state.signals.map(s => [s.signalId, s]));
   for (const market of Object.values(markets || {})) {
-    const candidates = (market.signals || []).filter(s => s.state === "signal" && s.signalId);
+    const candidates = [...(market.signals || []), ...(market.recentSignals || [])].filter(s => s.state === "signal" && s.signalId);
     for (const candidate of candidates) {
       if (!byId.has(candidate.signalId)) {
         const record = {
