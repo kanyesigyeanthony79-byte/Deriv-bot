@@ -130,8 +130,8 @@ async function main() {
       const daily = marketData.timeframes.D1 || [];
       const weekly = aggregateWeeklyCandles(daily, now);
       marketData.timeframes.W1 = weekly;
-      if (weekly.length < 60) {
-        marketData.errors.push({ timeframe: "W1", message: "Fewer than 60 completed weekly candles available; position signals will remain warming." });
+      if (weekly.length < 51) {
+        marketData.errors.push({ timeframe: "W1", message: "Fewer than 51 completed weekly candles available; position signals will remain warming." });
       }
       // Generate observation-only candidates. No alerts or trade execution.
       marketData.signals = evaluateAllCategories(marketId, marketName, marketData.timeframes);
