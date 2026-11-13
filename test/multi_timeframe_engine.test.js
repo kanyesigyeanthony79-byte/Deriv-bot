@@ -3,7 +3,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   TIMEFRAMES, CATEGORIES, validCandles, trendBias,
-  evaluateCategory, evaluateAllCategories, aggregateWeeklyCandles
+  evaluateCategory, evaluateAllCategories, evaluateRecentSignals, aggregateWeeklyCandles
 } = require("../multi_timeframe_engine");
 
 function candles(count, stepSeconds, start = 1_700_000_000, startPrice = 100) {
@@ -60,4 +60,21 @@ test("weekly aggregation excludes the current incomplete week and aggregates OHL
   assert.equal(result[0].low, 99);
   assert.equal(result[0].close, 107);
   assert.equal(result[1].open, 107);
+});
+
+test("historical entry evaluation excludes higher-timeframe candles that had not closed yet", () => {
+  const m1 = candles(100, 60);
+  const m5 = candles(100, 300);
+  const m15 = candles(100, 900);
+  const result = evaluateCategory("JD100", "Jump 100 Index", "SCALP", { M1: m1, M5: m5, M15: m15 }, 70);
+  assert.equal(result.state, "warming");
+  assert.match(result.reason, /completed candles/);
+});
+
+test("recent-signal recovery returns only candidates with unique entry-candle IDs", () => {
+  const frames = { M1: candles(100, 60), M5: candles(100, 300), M15: candles(100, 900), H1: candles(100, 3600), H4: candles(100, 14400), D1: candles(100, 86400), W1: candles(100, 604800) };
+  const results = evaluateRecentSignals("JD100", "Jump 100 Index", frames, 6);
+  assert.ok(Array.isArray(results));
+  assert.ok(results.every(s => s.state === "signal" && s.signalId.includes("-")));
+  assert.equal(new Set(results.map(s => s.signalId)).size, results.length);
 });
