@@ -3,7 +3,7 @@
 // Does not send Telegram messages, place trades, or modify production signal state.
 const fs = require("node:fs");
 const path = require("node:path");
-const { aggregateWeeklyCandles, validCandles, evaluateAllCategories } = require("./multi_timeframe_engine");
+const { aggregateWeeklyCandles, validCandles, evaluateAllCategories, evaluateRecentSignals } = require("./multi_timeframe_engine");
 const { updateJournal, summarizeJournal } = require("./multi_timeframe_journal");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
@@ -135,6 +135,7 @@ async function main() {
       }
       // Generate observation-only candidates. No alerts or trade execution.
       marketData.signals = evaluateAllCategories(marketId, marketName, marketData.timeframes);
+      marketData.recentSignals = evaluateRecentSignals(marketId, marketName, marketData.timeframes, 6);
       output.markets[marketId] = marketData;
     }
 
