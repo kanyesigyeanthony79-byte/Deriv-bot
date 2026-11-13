@@ -39,6 +39,6 @@ function evaluate(cs, C = DEF) {
   const rsiQ = up ? (rv < lo + 5 ? (rv - lo) / 5 : rv > hi - 3 ? (hi - rv) / 3 : 1) : (rv > hi - 5 ? (hi - rv) / 5 : rv < lo + 3 ? (rv - lo) / 3 : 1);
   const score = Math.round(25 * clamp(sep, 1) + 15 * clamp(slope, 0.5) + 20 * clamp(rsiQ, 1) + 20 * (clamp(bodyR, 0.7) + clamp(loc, 1)) / 2 + 20 * clamp(swing, 0.5));
   const fail = G.filter(g => !g[0]).length;
-  return {state:"ok", signal:(!fail && score >= C.minScore) ? side : "NO TRADE", side, score, c, rsi:rv, pass:G.filter(g => g[0]).map(g => g[1])};
+  return {state:"ok", signal:(!fail && score >= C.minScore) ? side : "NO TRADE", side, score, c, rsi:rv, metrics:{ema20:e20,ema50:e50,ema50Previous:e50b,atr:a,emaSeparationAtr:sep,emaSlopeAtr:slope,bodyRatio:bodyR,closeLocation:loc,extensionAtr:ext,swingAtr:swing,candleRange:range}, checks:G.map(g=>({passed:g[0],reason:g[1]})), pass:G.filter(g => g[0]).map(g => g[1])};
 }
 module.exports = {evaluate, DEF};
