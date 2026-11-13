@@ -11,7 +11,7 @@ test("dashboard includes the four-horizon controls and journal", () => {
 });
 
 test("dashboard inline JavaScript parses", () => {
-  const scripts = [...html.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)];
+  const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
   assert.ok(scripts.length > 0, "no inline dashboard script found");
   for (const match of scripts) assert.doesNotThrow(() => new Function(match[1]));
 });
