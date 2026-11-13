@@ -1,0 +1,16 @@
+
+name: Deriv Hosted Scanner
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+jobs:
+  scanner:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm scanner is running
+        run: |
+          echo "Deriv scanner workflow started"
+          date -u
