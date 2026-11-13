@@ -58,6 +58,34 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <div class="card" data-market="BOOM500"><div class="name">Boom 500 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div></div>
   </section>
 
+  <section id="multi-timeframe">
+    <h2>Multi-timeframe signals · 4 horizons</h2>
+    <div class="muted">Separate analysis for Scalping, Short-term, Swing and Position. All eight markets are assessed independently.</div>
+    <div class="filters">
+      <select id="mtfCategory" aria-label="Filter signal category">
+        <option value="ALL">All categories</option><option value="SCALP">Scalping · M1</option>
+        <option value="SHORT_TERM">Short-term · M5</option><option value="SWING">Swing · H1</option>
+        <option value="POSITION">Position · H4</option>
+      </select>
+      <select id="mtfMarket" aria-label="Filter market">
+        <option value="ALL">All markets</option>
+        <option value="R_10">Volatility 10</option><option value="R_25">Volatility 25</option>
+        <option value="R_50">Volatility 50</option><option value="R_75">Volatility 75</option>
+        <option value="JD100">Jump 100</option><option value="frxXAUUSD">Gold/USD</option>
+        <option value="CRASH500">Crash 500</option><option value="BOOM500">Boom 500</option>
+      </select>
+      <button class="btn smallbtn" id="mtfRefresh">Refresh horizons</button>
+    </div>
+    <div class="status" id="mtfStatus">Loading multi-timeframe analysis…</div>
+    <div class="grid" id="mtfSummary"></div>
+    <div class="mtf-grid" id="mtfSignals"><div class="card">Waiting for multi-timeframe data…</div></div>
+    <h2 style="margin-top:18px">Multi-timeframe outcome journal</h2>
+    <div class="card mtf-table-wrap">
+      <table><thead><tr><th>Time</th><th>Market</th><th>Category</th><th>Direction</th><th>Entry</th><th>SL</th><th>TP1 / TP2</th><th>Outcome</th></tr></thead>
+      <tbody id="mtfJournal"><tr><td colspan="8" class="muted">No multi-timeframe observations recorded yet.</td></tr></tbody></table>
+    </div>
+  </section>
+
   <section>
     <div class="row" style="justify-content:space-between;align-items:center">
       <h2>Signal journal</h2>
