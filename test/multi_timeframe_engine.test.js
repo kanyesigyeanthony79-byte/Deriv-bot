@@ -72,9 +72,10 @@ test("historical entry evaluation excludes higher-timeframe candles that had not
 });
 
 test("recent-signal recovery returns only candidates with unique entry-candle IDs", () => {
-  const frames = { M1: candles(100, 60), M5: candles(100, 300), M15: candles(100, 900), H1: candles(100, 3600), H4: candles(100, 14400), D1: candles(100, 86400), W1: candles(100, 604800) };
+  const frames = { M1: candles(240, 60), M5: candles(240, 300), M15: candles(240, 900), H1: candles(240, 3600), H4: candles(240, 14400), D1: candles(365, 86400), W1: candles(52, 604800) };
   const results = evaluateRecentSignals("JD100", "Jump 100 Index", frames, 6);
   assert.ok(Array.isArray(results));
+  assert.ok(results.length <= 24, "at most six recent entries per each of four categories");
   assert.ok(results.every(s => s.state === "signal" && s.signalId.includes("-")));
   assert.equal(new Set(results.map(s => s.signalId)).size, results.length);
 });
