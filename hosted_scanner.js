@@ -340,7 +340,6 @@ async function main() {
         }
 
         const levels = makeLevels(candles, result.signal);
-        const signalId = id + "-" + candleEpoch;
         await postTelegram({ market: name, direction: result.signal, ...levels });
         journalStatus(signalId, "sent");\n        state.lastSig[id] = candleEpoch;
         state.activeSignals.push({
@@ -358,6 +357,8 @@ async function main() {
         saveState();
         log("telegram_delivered", { signalId, market: name, direction: result.signal, candle_epoch: candleEpoch, ...levels });
       } catch (error) {
+        const pending = [...journal.signals].reverse().find(entry => entry.marketId === id && entry.status === "detected");
+        if (pending) journalStatus(pending.signalId, "delivery_failed", error.message);
         log("market_scan_error", { market: name, message: error.message });
       }
     }
