@@ -328,7 +328,7 @@ async function main() {
         journalCandidate({
           signalId, marketId:id, market:name, direction:result.signal, localDate:localDate(candleEpoch),
           createdAt:new Date(candleEpoch*1000).toISOString(), candleEpoch, score:result.score,
-          entry:candle.close, metrics:result.metrics || {}, checks:result.checks || [],
+          entry:result.c.close, metrics:result.metrics || {}, checks:result.checks || [],
           status:"detected", tp1Hit:false, tp2Hit:false, finalOutcome:null, events:[]
         });
         const previous = Number(state.lastSig[id] || 0);
