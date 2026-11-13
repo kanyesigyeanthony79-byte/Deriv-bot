@@ -82,30 +82,37 @@ function dailySummary(day) {
   const expired = rows.filter(s => s.finalOutcome === "EXPIRED").length;
   const ambiguous = rows.filter(s => s.finalOutcome === "AMBIGUOUS").length;
   const unresolved = rows.filter(s => s.status === "sent" && !s.finalOutcome).length;
+  const wins = rows.filter(s => s.finalOutcome === "TP2").length;
+  const losses = sl;
+  const resolved = wins + losses;
+  const winRate = resolved ? Number((wins / resolved * 100).toFixed(1)) : null;
+  const netSignalOutcomes = wins - losses;
   const byMarket = MARKETS.map(([id,name]) => {
     const m = rows.filter(s => s.marketId === id);
-    return name + ": " + m.length + " generated, " + m.filter(s=>s.finalOutcome==="TP2").length + " TP2, " + m.filter(s=>s.finalOutcome==="SL"||s.finalOutcome==="SL_AFTER_TP1").length + " SL";
+    return name + ": " + m.length + " generated, " + m.filter(s=>s.finalOutcome==="TP2").length + " wins (TP2), " + m.filter(s=>s.finalOutcome==="SL"||s.finalOutcome==="SL_AFTER_TP1").length + " losses (SL)";
   }).filter((_,i)=>rows.some(s=>s.marketId===MARKETS[i][0]));
-  return {day,generated:rows.length,sent,missed,tp1,tp2,sl,expired,ambiguous,unresolved,byMarket};
+  return {day,generated:rows.length,sent,missed,tp1,tp2,sl,expired,ambiguous,unresolved,wins,losses,resolved,winRate,netSignalOutcomes,byMarket};
 }
 async function maybeSendDailySummary(now) {
-  const localNow = new Date(now * 1000).toLocaleString("en-GB",{timeZone:"Africa/Kampala",hour:"2-digit",minute:"2-digit",hour12:false});
-  const [hour,minute] = localNow.split(":").map(Number);
-  if (hour !== 0 || minute > 9) return;
+  // Retry the previous Uganda calendar day's report on every scanner cycle until delivery succeeds.
+  // This avoids losing the report when a scheduled GitHub Actions run is delayed or missed.
   const today = localDate(now);
   const yesterday = new Date(Date.parse(today + "T00:00:00Z") - 86400000).toISOString().slice(0,10);
   if (journal.dailyReports[yesterday]) return;
   const s = dailySummary(yesterday);
   const message = "DAILY DERIV SIGNAL REPORT (" + yesterday + ")\n" +
     "Generated: " + s.generated + "\nSent to Telegram: " + s.sent + "\nMissed / not sent: " + s.missed +
-    "\nTP1 hit: " + s.tp1 + "\nTP2 hit: " + s.tp2 + "\nSL hit: " + s.sl +
-    "\nExpired: " + s.expired + "\nAmbiguous: " + s.ambiguous + "\nStill open/unresolved: " + s.unresolved +
+    "\nWins (TP2): " + s.wins + "\nLosses (SL): " + s.losses +
+    "\nWin rate (resolved wins/losses): " + (s.winRate === null ? "N/A" : s.winRate + "%") +
+    "\nNet signal outcomes (wins - losses): " + (s.netSignalOutcomes > 0 ? "+" : "") + s.netSignalOutcomes +
+    "\nTP1 reached: " + s.tp1 + "\nExpired: " + s.expired + "\nAmbiguous: " + s.ambiguous + "\nStill open/unresolved: " + s.unresolved +
+    "\n\nNote: Signal outcomes only; this is not actual account profit/loss." +
     (s.byMarket.length ? "\n\nBY MARKET\n" + s.byMarket.join("\n") : "");
   try {
     await postTelegram({event:"daily_summary", message, text:message});
     journal.dailyReports[yesterday] = {attemptedAt:new Date(now*1000).toISOString(), delivered:true, stats:s};
     saveJournal();
-    log("daily_summary_delivered",{day:yesterday,generated:s.generated,sent:s.sent,tp1:s.tp1,tp2:s.tp2,sl:s.sl});
+    log("daily_summary_delivered",{day:yesterday,generated:s.generated,sent:s.sent,wins:s.wins,losses:s.losses,winRate:s.winRate});
   } catch(error) {
     log("daily_summary_delivery_failed",{day:yesterday,message:error.message,note:"Telegram Worker may need daily_summary event support"});
   }
