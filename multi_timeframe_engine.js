@@ -101,8 +101,9 @@ function evaluateCategory(marketId, marketName, category, candlesByTimeframe, en
   }
 
   // Reject data gaps before indicators are trusted. Gold/USD weekend closures are exempted.
+  const candlesUsed = { [config.entry]: entryCandles, [config.confirmation]: confirmationCandles, [config.context]: contextCandles, [config.risk]: riskCandles };
   for (const tf of [config.entry, config.confirmation, config.context, config.risk]) {
-    const continuity = validateCandleContinuity(candlesByTimeframe[tf] || [], TIMEFRAMES[tf], marketId);
+    const continuity = validateCandleContinuity(candlesUsed[tf] || [], TIMEFRAMES[tf], marketId);
     if (!continuity.valid) return { state: "data_gap", category, label: config.label, timeframe: tf, gaps: continuity.gaps.slice(0, 5), reason: "Missing candle intervals detected; indicators are withheld until data quality is restored." };
   }
 
