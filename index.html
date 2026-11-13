@@ -55,7 +55,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <button class="btn smallbtn" id="export">Export CSV</button>
     </div>
     <div class="card" style="overflow-x:auto">
-      <table><thead><tr><th>Time</th><th>Market</th><th>Signal</th><th>Entry</th><th>SL</th><th>TP1</th><th>TP2</th></tr></thead><tbody id="journal"><tr><td colspan="7" class="muted">No signals recorded yet.</td></tr></tbody></table>
+      <table><thead><tr><th>Time</th><th>Market</th><th>Signal</th><th>Entry</th><th>Score</th><th>Outcome / Status</th></tr></thead><tbody id="journal"><tr><td colspan="6" class="muted">No signals recorded yet.</td></tr></tbody></table>
       <div class="muted" id="count" style="margin-top:8px">Hosted journal · Loading…</div>
     </div>
   </section>
@@ -67,6 +67,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 (() => {
   const MARKETS = [["R_10","Volatility 10 Index"],["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],["R_75","Volatility 75 Index"],["JD100","Jump 100 Index"],["frxXAUUSD","Gold/USD"],["CRASH500","Crash 500 Index"],["BOOM500","Boom 500 Index"]];
   const JOURNAL_URL = "./trade_journal.json";
+  let latestSignals = [];
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const fmt = v => Number.isFinite(Number(v)) ? Number(v).toFixed(2) : "—";
@@ -79,6 +80,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   }
   function render(data) {
     const signals=Array.isArray(data.signals)?data.signals:[];
+    latestSignals=signals.slice();
     for (const [id,name] of MARKETS) {
       const card=document.querySelector('[data-market="'+id+'"]');
       const sent=signals.filter(s=>s.marketId===id && s.status==="sent").sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0));
@@ -93,7 +95,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       card.innerHTML='<div class="name">'+esc(name)+'</div><div class="signal '+cls+'">'+esc(s.direction)+'</div><div class="detail">Entry: '+fmt(s.entry)+'<br>Score: '+esc(s.score??"—")+'<br>Status: '+esc(outcome)+'<br>Signal time: '+esc(time(s.createdAt))+(lastEvent?'<br>Last update: '+esc(lastEvent.outcome.replaceAll("_"," ")): "")+'</div>';
     }
     const rows=signals.slice().sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0)).slice(0,50);
-    $("journal").innerHTML=rows.length?rows.map(s=>'<tr><td>'+esc(time(s.createdAt))+'</td><td>'+esc(s.market)+'</td><td class="'+(s.direction==="BUY"?"buy":s.direction==="SELL"?"sell":"")+'">'+esc(s.direction)+'</td><td>'+fmt(s.entry)+'</td><td>'+esc(outcomeLabel(s))+'</td></tr>').join(""):'<tr><td colspan="5" class="muted">No signals recorded yet.</td></tr>';
+    $("journal").innerHTML=rows.length?rows.map(s=>'<tr><td>'+esc(time(s.createdAt))+'</td><td>'+esc(s.market)+'</td><td class="'+(s.direction==="BUY"?"buy":s.direction==="SELL"?"sell":"")+'">'+esc(s.direction)+'</td><td>'+fmt(s.entry)+'</td><td>'+esc(s.score??"—")+'</td><td>'+esc(outcomeLabel(s))+'</td></tr>').join(""):'<tr><td colspan="6" class="muted">No signals recorded yet.</td></tr>';
     $("count").textContent=signals.length+' hosted records · '+signals.filter(s=>s.status==="sent").length+' delivered · Updated '+new Date().toLocaleTimeString();
   }
   async function refresh() {
@@ -110,6 +112,29 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       $("dot").className="dot";
     }
   }
+  function exportCsv() {
+    if (!latestSignals.length) {
+      $("status").textContent="No journal records available to export yet.";
+      return;
+    }
+    const columns=["Time","Market","Signal","Entry","Score","Outcome / Status","Signal ID"];
+    const quote=value=>'"'+String(value??"").replace(/"/g,'""')+'"';
+    const lines=[columns.map(quote).join(",")];
+    latestSignals.slice().sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0)).forEach(s=>{
+      lines.push([time(s.createdAt),s.market,s.direction,s.entry,s.score??"",outcomeLabel(s),s.signalId].map(quote).join(","));
+    });
+    const blob=new Blob(["\\uFEFF"+lines.join("\\r\\n")],{type:"text/csv;charset=utf-8;"});
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement("a");
+    link.href=url;
+    link.download="deriv-signal-journal.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    $("status").textContent="CSV export prepared · "+latestSignals.length+" records";
+  }
+  $("export").addEventListener("click",exportCsv);
   $("refresh").addEventListener("click",refresh);
   refresh();
   setInterval(refresh,60000);
