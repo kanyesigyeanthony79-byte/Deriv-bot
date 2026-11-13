@@ -89,7 +89,7 @@ async function maybeSendDailySummary(now) {
   const [hour,minute] = localNow.split(":").map(Number);
   if (hour !== 0 || minute > 9) return;
   const today = localDate(now);
-  const yesterday = new Date(new Date(today + "T00:00:00+03:00").getTime() - 86400000).toISOString().slice(0,10);
+  const yesterday = new Date(Date.parse(today + "T00:00:00Z") - 86400000).toISOString().slice(0,10);
   if (journal.dailyReports[yesterday]) return;
   const s = dailySummary(yesterday);
   const message = "DAILY DERIV SIGNAL REPORT (" + yesterday + ")\\n" +
@@ -236,7 +236,7 @@ async function monitorSignals(marketId, candles, now) {
     if (now - signal.createdEpoch > MAX_MONITOR_AGE) {
       signal.closed = true;
       signal.closeReason = "expired_after_24_hours";
-      journalStatus(signal.signalId, "expired", "expired_after_24_hours");\n      const je = findJournalSignal(signal.signalId); if (je) { je.finalOutcome = "EXPIRED"; saveJournal(); }\n      log("signal_expired", { signalId: signal.signalId, market: signal.market });
+      const je = findJournalSignal(signal.signalId); if (je) { je.finalOutcome = "EXPIRED"; je.statusReason = "expired_after_24_hours"; saveJournal(); }\n      log("signal_expired", { signalId: signal.signalId, market: signal.market });
       continue;
     }
 
