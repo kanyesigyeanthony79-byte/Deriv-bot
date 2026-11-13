@@ -13,7 +13,7 @@ on:
     - cron: "*/5 * * * *"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: multi-timeframe-observation-collector
@@ -34,7 +34,16 @@ jobs:
           node-version: "22"
       - name: Collect completed candles for all eight markets
         run: node multi_timeframe_collector.js
-      - name: Persist isolated observation journal\n        run: |\n          git config user.name "github-actions[bot]"\n          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"\n          git add multi_timeframe_journal.json\n          if ! git diff --cached --quiet; then\n            git commit -m "Update multi-timeframe observation journal"\n            git push\n          fi\n      - name: Upload observation data
+      - name: Persist isolated observation journal\n        run: |\n          git config user.name "github-actions[bot]"\n          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"\n          git add multi_timeframe_journal.json\n          if ! git diff --cached --quiet; then\n            git commit -m "Update multi-timeframe observation journal"\n            git push\n          fi\n      - name: Persist isolated observation journal
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add multi_timeframe_journal.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update multi-timeframe observation journal"
+            git push
+          fi
+      - name: Upload observation data
         uses: actions/upload-artifact@v4
         with:
           name: multi-timeframe-observation-data
