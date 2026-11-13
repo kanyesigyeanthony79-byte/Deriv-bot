@@ -38,14 +38,15 @@ try {
   }
 } catch {}
 const log = (event, details = {}) => console.log(JSON.stringify({ time: new Date().toISOString(), event, ...details }));
-const saveState = () => fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2) + "\n");\n
+const saveState = () => fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2) + "\n");
+
 const JOURNAL_FILE = path.join(__dirname, "trade_journal.json");
 let journal = { version: 1, signals: [], dailyReports: {} };
 try {
   const savedJournal = JSON.parse(fs.readFileSync(JOURNAL_FILE, "utf8"));
   if (savedJournal && Array.isArray(savedJournal.signals)) journal = { version: 1, signals: savedJournal.signals, dailyReports: savedJournal.dailyReports || {} };
 } catch {}
-const saveJournal = () => fs.writeFileSync(JOURNAL_FILE, JSON.stringify(journal, null, 2) + "\\n");
+const saveJournal = () => fs.writeFileSync(JOURNAL_FILE, JSON.stringify(journal, null, 2) + "\n");
 const localDate = epoch => new Intl.DateTimeFormat("en-CA", {timeZone:"Africa/Kampala",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(epoch * 1000));
 const findJournalSignal = id => journal.signals.find(s => s.signalId === id);
 function journalCandidate(entry) {
@@ -92,11 +93,11 @@ async function maybeSendDailySummary(now) {
   const yesterday = new Date(Date.parse(today + "T00:00:00Z") - 86400000).toISOString().slice(0,10);
   if (journal.dailyReports[yesterday]) return;
   const s = dailySummary(yesterday);
-  const message = "DAILY DERIV SIGNAL REPORT (" + yesterday + ")\\n" +
-    "Generated: " + s.generated + "\\nSent to Telegram: " + s.sent + "\\nMissed / not sent: " + s.missed +
-    "\\nTP1 hit: " + s.tp1 + "\\nTP2 hit: " + s.tp2 + "\\nSL hit: " + s.sl +
-    "\\nExpired: " + s.expired + "\\nAmbiguous: " + s.ambiguous + "\\nStill open/unresolved: " + s.unresolved +
-    (s.byMarket.length ? "\\n\\nBY MARKET\\n" + s.byMarket.join("\\n") : "");
+  const message = "DAILY DERIV SIGNAL REPORT (" + yesterday + ")\n" +
+    "Generated: " + s.generated + "\nSent to Telegram: " + s.sent + "\nMissed / not sent: " + s.missed +
+    "\nTP1 hit: " + s.tp1 + "\nTP2 hit: " + s.tp2 + "\nSL hit: " + s.sl +
+    "\nExpired: " + s.expired + "\nAmbiguous: " + s.ambiguous + "\nStill open/unresolved: " + s.unresolved +
+    (s.byMarket.length ? "\n\nBY MARKET\n" + s.byMarket.join("\n") : "");
   try {
     await postTelegram({event:"daily_summary", message, text:message});
     journal.dailyReports[yesterday] = {attemptedAt:new Date(now*1000).toISOString(), delivered:true, stats:s};
