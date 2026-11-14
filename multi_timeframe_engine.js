@@ -136,7 +136,13 @@ function evaluateCategory(marketId, marketName, category, candlesByTimeframe, en
   }
 
   const confirmationRegime = classifyMarketRegime(confirmationCandles);
-  const contextRegime = classifyMarketRegime(contextCandles);
+  // Deriv currently supplies about 52 completed W1 bars from its available
+  // daily history. A 50-week EMA plus a two-week slope comparison is the
+  // longest defensible weekly regime check available from that snapshot.
+  const contextRegime = classifyMarketRegime(
+    contextCandles,
+    config.context === "W1" ? { minCandles: 52, slopeLookback: 2 } : undefined
+  );
   const swingHigherRegime = category === "SWING" ? classifyMarketRegime(swingHigherCandles) : null;
   const regimesToCheck = [[config.confirmation, confirmationRegime], [config.context, contextRegime]];
   if (category === "SWING") regimesToCheck.push(["D1", swingHigherRegime]);

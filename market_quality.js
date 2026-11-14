@@ -19,13 +19,16 @@ function atr(candles, period = 14) {
   for (let i = period; i < ranges.length; i++) value = (value * (period - 1) + ranges[i]) / period;
   return value;
 }
-function classifyMarketRegime(candles) {
-  if (!Array.isArray(candles) || candles.length < 70) {
-    return { state: "warming", reason: "Need at least 70 completed candles for regime analysis." };
+function classifyMarketRegime(candles, options = {}) {
+  const minCandles = Number.isInteger(options.minCandles) ? options.minCandles : 70;
+  const slopeLookback = Number.isInteger(options.slopeLookback) ? options.slopeLookback : 5;
+  const requiredCandles = Math.max(minCandles, 50 + slopeLookback);
+  if (!Array.isArray(candles) || candles.length < requiredCandles) {
+    return { state: "warming", reason: "Need at least " + requiredCandles + " completed candles for regime analysis." };
   }
   const closes = candles.map(c => c.close);
   const fast = ema(closes, 20), slow = ema(closes, 50);
-  const previousSlow = ema(closes.slice(0, -5), 50);
+  const previousSlow = ema(closes.slice(0, -slopeLookback), 50);
   const currentAtr = atr(candles, 14);
   if (!(currentAtr > 0) || !Number.isFinite(fast) || !Number.isFinite(slow) || !Number.isFinite(previousSlow)) {
     return { state: "uncertain", reason: "Insufficient volatility or trend measurements." };
@@ -38,7 +41,9 @@ function classifyMarketRegime(candles) {
   const medianAtr = baseline.length ? baseline[Math.floor(baseline.length / 2)] : currentAtr;
   const volatilityRatio = medianAtr > 0 ? currentAtr / medianAtr : 1;
   const separationAtr = Math.abs(fast - slow) / currentAtr;
-  const slopeAtr = (slow - previousSlow) / currentAtr;
+  // Normalize the slope to a five-candle equivalent so shorter, explicitly
+  // configured context windows remain comparable with the default filter.
+  const slopeAtr = (slow - previousSlow) / currentAtr * (5 / slopeLookback);
   const latest = candles[candles.length - 1];
   const previous = candles[candles.length - 2];
   const latestRangeAtr = Math.max(latest.high - latest.low, Math.abs(latest.high - previous.close), Math.abs(latest.low - previous.close)) / currentAtr;
