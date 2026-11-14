@@ -23,7 +23,21 @@ test("latestCandidates keeps only the newest candidate per market and horizon", 
   const newer = candidate({ signalId: "new", entryCandleEpoch: 1000 });
   const swing = candidate({ signalId: "swing", category: "SWING" });
   const found = latestCandidates({ R_50: { signals: [older], recentSignals: [newer, swing] } });
-  assert.deepEqual(found.map(s => s.signalId).sort(), ["new", "swing"]);
+  assert.deepEqual(found.map(s => s.signalId).sort(), ["new"]);
+});
+
+test("swing candidates remain observation-only and are excluded from Telegram alerts", async () => {
+  const swing = candidate({ category: "SWING", signalId: "R_50-SWING-1000" });
+  const { markets, journal } = fixture([swing]);
+  let calls = 0;
+  const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
+  const result = await sendCandidateAlerts(markets, journal, 1010, env, {
+    fetchImpl: async () => { calls++; return { ok: true, json: async () => ({ success: true }) }; }
+  });
+  assert.equal(result.considered, 0);
+  assert.equal(result.sent, 0);
+  assert.equal(calls, 0);
+  assert.equal(journal.signals[0].telegramStatus, null);
 });
 
 test("feature flag off never calls Telegram", async () => {
