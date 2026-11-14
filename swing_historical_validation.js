@@ -7,6 +7,7 @@ const { evaluateCategory, validCandles, TIMEFRAMES, cooldownAllows } = require("
 const { validateCandleContinuity } = require("./market_quality");
 const { evaluateRefinedSwing } = require("./swing_h4_d1_m15_m5");
 const { simulateFixedPlanOutcome, simulateManagedOutcome, summarizeManaged } = require("./swing_trade_management_replay");
+const { diagnoseTradePath } = require("./swing_trade_management_diagnostics");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 // Initial historical validation focuses on Volatility 25, the instrument
@@ -85,6 +86,27 @@ function simulateOutcome(signal, candles, signalIndex, horizonBars = MAX_HOLD_BA
     }
   }
   return { status: tp1Seen ? "tp1_only_by_horizon" : "no_barrier_by_horizon", barsHeld: horizonBars };
+}
+
+function summarizeTradeDiagnostics(results) {
+  const measured = results.map(x => x.pathDiagnostics).filter(x => x && x.diagnosticStatus === "measured");
+  const average = key => {
+    const values = measured.map(x => x[key]).filter(Number.isFinite);
+    return values.length ? Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(4)) : null;
+  };
+  const early = measured.map(x => x.afterEarlyExit).filter(Boolean);
+  return {
+    measuredSignals: measured.length,
+    averageMaxFavorableR: average("maxFavorableR"),
+    averageMaxAdverseR: average("maxAdverseR"),
+    averageTimeTo1RBars: average("timeTo1RBars"),
+    averagePeakToExitGivebackR: average("peakToExitGivebackR"),
+    earlyExitCounterfactuals: early.length,
+    earlyExitLaterReachedTP1: early.filter(x => x.reachedOriginalTP1).length,
+    earlyExitLaterReachedTP2: early.filter(x => x.reachedOriginalTP2).length,
+    earlyExitLaterReachedOriginalStop: early.filter(x => x.reachedOriginalStop).length,
+    earlyExitFullHorizonObserved: early.filter(x => x.fullHorizonObserved).length
+  };
 }
 
 function summarize(results) {
@@ -295,15 +317,19 @@ async function run() {
                 entry: signal.entry, stopLoss: signal.stopLoss, tp1: signal.tp1, tp2: signal.tp2,
                 ...outcome
               });
+              const fixedResult = simulateFixedPlanOutcome(signal, segmentFrames, i);
               fixedPlanOutcomes.push({
                 signalId: signal.signalId, direction: signal.direction,
                 signalTime: new Date(signal.candleEpoch * 1000).toISOString(),
-                ...simulateFixedPlanOutcome(signal, segmentFrames, i)
+                ...fixedResult,
+                pathDiagnostics: diagnoseTradePath(signal, m5, i, fixedResult)
               });
+              const managedResult = simulateManagedOutcome(signal, segmentFrames, i);
               managedOutcomes.push({
                 signalId: signal.signalId, direction: signal.direction,
                 signalTime: new Date(signal.candleEpoch * 1000).toISOString(),
-                ...simulateManagedOutcome(signal, segmentFrames, i)
+                ...managedResult,
+                pathDiagnostics: diagnoseTradePath(signal, m5, i, managedResult)
               });
             }
 
@@ -318,15 +344,19 @@ async function run() {
                 entry: refined.entry, stopLoss: refined.stopLoss, tp1: refined.tp1, tp2: refined.tp2,
                 ...refinedOutcome
               });
+              const refinedFixedResult = simulateFixedPlanOutcome(refined, segmentFrames, i);
               refinedFixedPlanOutcomes.push({
                 signalId: refined.signalId, direction: refined.direction,
                 signalTime: new Date(refined.candleEpoch * 1000).toISOString(),
-                ...simulateFixedPlanOutcome(refined, segmentFrames, i)
+                ...refinedFixedResult,
+                pathDiagnostics: diagnoseTradePath(refined, m5, i, refinedFixedResult)
               });
+              const refinedManagedResult = simulateManagedOutcome(refined, segmentFrames, i);
               refinedManagedOutcomes.push({
                 signalId: refined.signalId, direction: refined.direction,
                 signalTime: new Date(refined.candleEpoch * 1000).toISOString(),
-                ...simulateManagedOutcome(refined, segmentFrames, i)
+                ...refinedManagedResult,
+                pathDiagnostics: diagnoseTradePath(refined, m5, i, refinedManagedResult)
               });
             }
           }
@@ -342,12 +372,16 @@ async function run() {
           refinedPerformance: summarize(refinedOutcomes),
           refinedSignals: refinedOutcomes,
           fixedPlanPerformance: summarizeManaged(fixedPlanOutcomes),
+          fixedPlanDiagnostics: summarizeTradeDiagnostics(fixedPlanOutcomes),
           fixedPlanSignals: fixedPlanOutcomes,
           refinedFixedPlanPerformance: summarizeManaged(refinedFixedPlanOutcomes),
+          refinedFixedPlanDiagnostics: summarizeTradeDiagnostics(refinedFixedPlanOutcomes),
           refinedFixedPlanSignals: refinedFixedPlanOutcomes,
           managedPerformance: summarizeManaged(managedOutcomes),
+          managedDiagnostics: summarizeTradeDiagnostics(managedOutcomes),
           managedSignals: managedOutcomes,
           refinedManagedPerformance: summarizeManaged(refinedManagedOutcomes),
+          refinedManagedDiagnostics: summarizeTradeDiagnostics(refinedManagedOutcomes),
           refinedManagedSignals: refinedManagedOutcomes
         };
       } catch (error) {
