@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { TF, validCandles, completed, confirmedPivots, structure, evaluateTopDown, managementAdvisories } = require("../top_down_swing_engine");
+const { TF, validCandles, completed, validateContinuity, confirmedPivots, structure, evaluateTopDown, managementAdvisories } = require("../top_down_swing_engine");
 
 function bars(n, step, fn, start = 1_700_000_000) {
   return Array.from({ length: n }, (_, i) => {
@@ -94,4 +94,21 @@ test("all three entry variants preserve an H4/H1 thesis even when D1 context is 
     assert.equal(result.direction,"BUY");
     assert.equal(result.d1Alignment,"counter_trend");
   }
+});
+
+test("unexplained synthetic candle gaps suppress the analysis", () => {
+  const data=bars(4,300,i=>100+i).filter((_,i)=>i!==2);
+  const result=validateContinuity(data,"M5","R_25");
+  assert.equal(result.valid,false);
+  assert.equal(result.gaps.length,1);
+});
+test("normal Gold weekend closure is accepted without weakening synthetic continuity", () => {
+  const friday=Date.UTC(2026,10,13,21)/1000;
+  const sunday=Date.UTC(2026,10,15,22)/1000;
+  const data=[
+    {epoch:friday,open:4000,high:4002,low:3998,close:4001},
+    {epoch:sunday,open:4001,high:4004,low:4000,close:4003}
+  ];
+  assert.equal(validateContinuity(data,"H1","frxXAUUSD").valid,true);
+  assert.equal(validateContinuity(data,"H1","R_25").valid,false);
 });
