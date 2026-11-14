@@ -27,9 +27,9 @@ test("sizes a new position from current equity and per-position risk", () => {
 });
 
 test("resizes down when account equity falls", () => {
-  const result = assessNewPosition(account({ balance: 40, equity: 40, dayStartEquity: 40, sessionPeakEquity: 40 }), makePolicy(), NOW);
+  const result = assessNewPosition(account({ balance: 80, equity: 80, dayStartEquity: 80, sessionPeakEquity: 80 }), makePolicy(), NOW);
   assert.equal(result.allowed, true);
-  assert.equal(result.stake, 0.2);
+  assert.equal(result.stake, 0.4);
 });
 
 test("reserves risk for existing positions before allowing another", () => {
