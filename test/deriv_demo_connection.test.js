@@ -54,7 +54,7 @@ test("correlates concurrent WebSocket replies by request id", async () => {
 });
 
 test("refuses to open a real endpoint", async () => {
-  await assert.rejects(() => connectWebSocket(
+  assert.throws(() => connectWebSocket(
     "wss://api.derivws.com/trading/v1/options/ws/real?otp=x",
     { WebSocketImpl: class {} }
   ), /demo_websocket_required/);
