@@ -54,6 +54,10 @@ class DerivDemoAdapter {
   async getBalance() {
     const result = await this.request({ balance: 1 }, "balance");
     if (!Number.isFinite(Number(result.balance))) throw new Error("balance_value_invalid");
+    const returnedAccountId = String(result.loginid || "").toUpperCase();
+    if (!returnedAccountId || returnedAccountId !== this.accountId) {
+      throw new Error("demo_account_identity_mismatch");
+    }
     return result;
   }
 
