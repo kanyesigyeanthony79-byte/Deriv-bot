@@ -98,3 +98,16 @@ If historical snapshots do not contain enough D1/H4/H1/M15/M5 history, report th
 - No production scanner/dashboard/Telegram integration.
 - No claim that synthetic indices are predictable or that any setup guarantees profit.
 - No merging or activation based only on a promising backtest.
+
+
+## Implementation progress — 2026-11-14
+
+- Added `top_down_swing_engine.js`: confirmed D1/H4/H1 structure, three comparable entry variants (H1 control, M15 refinement, M15+M5 refinement), H4 structural invalidation with ATR buffer/risk ceiling, and advisory-only hold/break-even/trailing/partial-profit/structure-deterioration/early-loss events.
+- All timeframe inputs are re-cut at the candidate entry candle close. Pivots are not available until their right-hand confirmation candles have closed.
+- Added `top_down_swing_replay.js`: seven-day forward outcomes, fixed-exit and 50%-at-TP1 comparison, MFE/MAE, censored-window handling, and ambiguous same-candle handling. No spread, slippage or fees are modelled; reports must disclose this.
+- Added deterministic tests and a dedicated GitHub Actions workflow. Latest run: 10/10 experiment tests passed; syntax checks passed for the engine, backfill and replay scripts. Existing multi-timeframe tests also passed.
+- Added `top_down_swing_backfill.js` and a manual-only workflow to request longer M5/M15/H1/H4/D1 OHLC history and upload it as a research artifact. It does not change the production collector or send alerts.
+
+### Data limitation and next gate
+
+The latest existing observation artifact (2026-11-14 13:55 UTC) contains 239 M5 candles per synthetic market (about 20 hours), 239 M15 candles (about 2.5 days), 239 H1 candles (about 10 days), 239 H4 candles (about 40 days), and 365 D1 candles. That snapshot is not long enough to score a seven-day holding horizon with adequate independent entries. The manual backfill workflow must be run and its artifact inspected before the comparative historical replay can be treated as evidence. Until then, no claim of improved performance is justified.
