@@ -223,8 +223,30 @@ async function fetchFrame(client, legacyClient, symbol, granularity, startEpoch,
     console.log(`${symbol} M${granularity / 60}: reconstructed ${reconstructed.length} missing candles from actual ticks`);
   }
   const candles = [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch);
-  const coverage = validateCoverage(candles, symbol, granularity, startEpoch, snapshotEpoch);
-  return { candles, coverage };
+  try {
+    const coverage = validateCoverage(candles, symbol, granularity, startEpoch, snapshotEpoch);
+    return { candles, coverage: { ...coverage, actualCount: candles.length, complete: true }, complete: true };
+  } catch (error) {
+    const expectedCount = Math.floor((lastExpected - firstExpected) / granularity) + 1;
+    const actualEpochs = new Set(candles.map(candle => candle.epoch));
+    const missingEpochs = [];
+    for (let epoch = firstExpected; epoch <= lastExpected; epoch += granularity) {
+      if (!actualEpochs.has(epoch)) missingEpochs.push(epoch);
+    }
+    return {
+      candles,
+      complete: false,
+      coverage: {
+        expectedCount,
+        actualCount: candles.length,
+        gapCount: missingEpochs.length,
+        firstEpoch: firstExpected,
+        lastEpoch: lastExpected,
+        firstMissing: missingEpochs.slice(0, 12).map(epoch => new Date(epoch * 1000).toISOString()),
+        error: error.message
+      }
+    };
+  }
 }
 
 async function main() {
@@ -265,19 +287,22 @@ async function main() {
           const result = await fetchFrame(client, legacyClient, market, granularity, startEpoch, snapshotEpoch);
           frames[frame] = result.candles;
           coverage[frame] = result.coverage;
-          console.log(`${market} ${frame}: ${result.candles.length}/${result.coverage.expectedCount} candles; gaps=0`);
+          if (!result.complete) {
+            frameErrors[frame] = result.coverage.error;
+            console.error(`${market} ${frame} incomplete: ${result.coverage.actualCount}/${result.coverage.expectedCount}; gaps=${result.coverage.gapCount}`);
+          } else {
+            console.log(`${market} ${frame}: ${result.candles.length}/${result.coverage.expectedCount} candles; gaps=0`);
+          }
         } catch (error) {
           frameErrors[frame] = error.message;
           console.error(`${market} ${frame} capture failed: ${error.message}`);
         }
       }
-      if (Object.keys(frameErrors).length > 0) {
-        summary.failedMarkets[market] = { frameErrors };
-        continue;
-      }
+      const marketComplete = Object.keys(frameErrors).length === 0;
       const payload = {
-        schemaVersion: 2,
+        schemaVersion: 3,
         market,
+        complete: marketComplete,
         source: "Deriv public ticks_history candles; missing intervals reconstructed only from returned ticks",
         endpoint: ENDPOINT,
         capturedAt: new Date(snapshotEpoch * 1000).toISOString(),
@@ -285,10 +310,12 @@ async function main() {
         startEpoch,
         snapshotEpoch,
         coverage,
+        frameErrors,
         frames
       };
       fs.writeFileSync(path.join(OUT, `${market}.json`), JSON.stringify(payload, null, 2) + "\n");
-      summary.capturedMarkets.push(market);
+      if (marketComplete) summary.capturedMarkets.push(market);
+      else summary.failedMarkets[market] = { frameErrors, savedPartialData: true };
     }
     fs.writeFileSync(path.join(OUT, "capture-summary.json"), JSON.stringify(summary, null, 2) + "\n");
     if (Object.keys(summary.failedMarkets).length > 0) {
