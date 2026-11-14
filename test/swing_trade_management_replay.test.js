@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { completedTail, simulateManagedOutcome } = require("../swing_trade_management_replay");
+const { completedTail, simulateFixedPlanOutcome, simulateManagedOutcome, summarizeManaged } = require("../swing_trade_management_replay");
 
 function series(count, step, end, direction = "up", startPrice = 100) {
   const start = end - count * step;
