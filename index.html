@@ -183,7 +183,9 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     const cat=$("mtfCategory").value, market=$("mtfMarket").value;
     const all=(mtfSnapshot.markets||[]).flatMap(m=>(m.signals||[]).map(s=>({...s,marketId:m.marketId,marketName:m.marketName})));
     const filtered=all.filter(s=>(cat==="ALL"||s.category===cat)&&(market==="ALL"||s.marketId===market));
-    $("mtfSignals").innerHTML=filtered.map(s=>{
+    // Keep actionable signal cards at the top; show every non-signal state underneath.
+    const ordered=filtered.slice().sort((a,b)=>Number(b.state==="signal")-Number(a.state==="signal"));
+    $("mtfSignals").innerHTML=ordered.map(s=>{
       const active=s.state==="signal", cls=active?(s.direction==="BUY"?"buy":"sell"):"none";
       const state=active?s.direction+" SIGNAL":String(s.state||"UNKNOWN").replaceAll("_"," ").toUpperCase();
       const levels=active?'<br>Entry: '+fmt(s.entry)+' · SL: '+fmt(s.stopLoss)+'<br>TP1: '+fmt(s.tp1)+' · TP2: '+fmt(s.tp2)+'<br>Score: '+esc(s.score??"—"):'<br>'+esc(s.reason||"Waiting for alignment");
