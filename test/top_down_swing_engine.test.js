@@ -60,3 +60,18 @@ test("management is advisory-only and does not mutate the signal", () => {
 test("unknown entry variants are rejected rather than silently substituted", () => {
   assert.throws(() => evaluateTopDown("JD100", {}, 2_000_000_000, "M1_SCALP"), /Unknown entry variant/);
 });
+
+test("malformed higher-timeframe candles suppress the candidate", () => {
+  const h1=bars(20,3600,i=>100+i);
+  const d1=bars(20,86400,i=>100+i);
+  d1[10]={...d1[10],high:d1[10].open-1};
+  const result=evaluateTopDown("R_25",{H1:h1,D1:d1,H4:bars(20,14400,i=>100+i),M15:bars(20,900,i=>100+i),M5:bars(20,300,i=>100+i)},h1.at(-1).epoch+3600,"H1_CONTROL");
+  assert.equal(result.state,"invalid_data");
+  assert.equal(result.timeframe,"D1");
+});
+test("early loss warning is not delayed while waiting for a completed H4 candle", () => {
+  const signal={direction:"BUY",entry:100,stopLoss:99,riskDistance:1,entryEpoch:0,decisionEpoch:1};
+  const h1=bars(3,3600,i=>100-i*.6);
+  const events=managementAdvisories(signal,{H1:h1,H4:[]},h1.at(-1).epoch+3600);
+  assert.ok(events.some(e=>e.type==="EARLY_LOSS_REVIEW"));
+});
