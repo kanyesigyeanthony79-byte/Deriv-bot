@@ -106,21 +106,34 @@ function validateCoverage(candles, symbol, granularity, startEpoch, snapshotEpoc
 }
 
 async function fetchFrame(client, symbol, granularity, startEpoch, snapshotEpoch) {
+  const firstExpected = Math.ceil(startEpoch / granularity) * granularity;
+  const lastExpected = Math.floor(snapshotEpoch / granularity) * granularity - granularity;
   const byEpoch = new Map();
-  let end = "latest";
-  let oldestSeen = Infinity;
-  for (let page = 0; page < 20; page++) {
+
+  // Request explicit, non-overlapping time windows. This avoids relying on
+  // server-side backward-cursor behavior, which previously left an initial gap.
+  for (let chunkStart = firstExpected; chunkStart <= lastExpected;) {
+    const chunkEnd = Math.min(
+      chunkStart + (PAGE_SIZE - 1) * granularity,
+      lastExpected
+    );
+    const expectedInChunk = Math.floor((chunkEnd - chunkStart) / granularity) + 1;
     const reply = await client.ask({
       ticks_history: symbol,
       style: "candles",
       granularity,
-      count: PAGE_SIZE,
-      end,
+      count: expectedInChunk,
+      start: chunkStart,
+      end: String(chunkEnd),
       adjust_start_time: 1
     });
-    if (!Array.isArray(reply.candles) || reply.candles.length === 0) break;
+    if (!Array.isArray(reply.candles) || reply.candles.length === 0) {
+      throw new Error(
+        `Empty ${symbol} M${granularity / 60} response for requested window ` +
+        `${new Date(chunkStart * 1000).toISOString()} to ${new Date(chunkEnd * 1000).toISOString()}.`
+      );
+    }
 
-    let pageOldest = Infinity;
     for (const raw of reply.candles) {
       const epoch = Number(raw.epoch);
       const candle = {
@@ -141,13 +154,16 @@ async function fetchFrame(client, symbol, granularity, startEpoch, snapshotEpoch
       if (epoch % granularity !== 0) {
         throw new Error(`Unaligned candle timestamp returned for ${symbol} M${granularity / 60}: ${epoch}.`);
       }
-      pageOldest = Math.min(pageOldest, epoch);
-      if (epoch >= startEpoch && epoch + granularity <= snapshotEpoch) byEpoch.set(epoch, candle);
+      if (epoch >= chunkStart && epoch <= chunkEnd && epoch + granularity <= snapshotEpoch) {
+        byEpoch.set(epoch, candle);
+      }
     }
 
-    if (!Number.isFinite(pageOldest) || pageOldest <= startEpoch || pageOldest >= oldestSeen) break;
-    oldestSeen = pageOldest;
-    end = String(pageOldest - 1);
+    console.log(
+      `${symbol} M${granularity / 60} window ${new Date(chunkStart * 1000).toISOString()}: ` +
+      `${reply.candles.length}/${expectedInChunk} returned`
+    );
+    chunkStart = chunkEnd + granularity;
     await sleep(250);
   }
 
