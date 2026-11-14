@@ -10,9 +10,9 @@ function makeAdapter(overrides = {}) {
   return {
     calls,
     policy: { maxHoldingMinutes: 60 },
-    async getAccountSnapshot() {
+    async getAccountSnapshot({ dayStartEquity, sessionPeakEquity } = {}) {
       return { mode: "demo", accountId: "VRTC123", currency: "USD", equity: 100,
-        balance: 100, fetchedAtMs: NOW, openPositions: [], ...overrides.snapshot };
+        balance: 100, dayStartEquity, sessionPeakEquity, fetchedAtMs: NOW, openPositions: [], ...overrides.snapshot };
     },
     async closeContract(id, reason) { calls.push({ close: id, reason }); return { closed: true, contractId: id }; },
     async openPosition(args) { calls.push({ open: args }); return { opened: true, contractId: 77 }; }
