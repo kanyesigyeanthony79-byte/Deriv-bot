@@ -6,6 +6,7 @@ const path = require("node:path");
 const { aggregateWeeklyCandles, validCandles, evaluateAllCategories, evaluateRecentSignals } = require("./multi_timeframe_engine");
 const { updateJournal, summarizeJournal } = require("./multi_timeframe_journal");
 const { sendCandidateAlerts } = require("./multi_timeframe_alerts");
+const { reviewSignal } = require("./signal_review");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const MARKETS = [
@@ -21,6 +22,7 @@ const FRAMES = [
 const OUTPUT = path.join(__dirname, "multi_timeframe_data.json");
 const JOURNAL = path.join(__dirname, "multi_timeframe_journal.json");
 const DASHBOARD = path.join(__dirname, "multi_timeframe_dashboard.json");
+const REVIEW_DATA = path.join(__dirname, "signal_review_data.json");
 const log = (event, details = {}) => console.log(JSON.stringify({ time: new Date().toISOString(), event, ...details }));
 
 function connect(url) {
@@ -148,6 +150,14 @@ async function main() {
     });
     fs.writeFileSync(JOURNAL, JSON.stringify(journal, null, 2) + "\n");
     fs.writeFileSync(OUTPUT, JSON.stringify(output, null, 2) + "\n");
+    const reviewRecords = journal.signals.filter(s => s.status === "pending" || s.status === "tp1_hit").map(signal => {
+      const market = output.markets[signal.marketId];
+      return { signalId: signal.signalId, marketId: signal.marketId, market: signal.market, category: signal.category,
+        direction: signal.direction, entry: signal.entry, stopLoss: signal.stopLoss, tp1: signal.tp1, tp2: signal.tp2,
+        entryTimeframe: signal.entryTimeframe, entryCandleEpoch: signal.entryCandleEpoch,
+        review: market ? reviewSignal(signal, market.timeframes, now) : { signalId: signal.signalId, status: "INSUFFICIENT_DATA", headline: "REVIEW UNAVAILABLE", reason: "Market data unavailable." } };
+    });
+    fs.writeFileSync(REVIEW_DATA, JSON.stringify({ version: 1, generatedAt: output.generatedAt, generatedEpoch: now, advisoryOnly: true, reviews: reviewRecords }, null, 2) + "\\n");
     const total = Object.values(output.markets).reduce((sum, m) =>
       sum + Object.values(m.timeframes).reduce((n, candles) => n + candles.length, 0), 0);
     const allSignals = Object.values(output.markets).flatMap(m => m.signals || []);
