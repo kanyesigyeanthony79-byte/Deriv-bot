@@ -138,7 +138,7 @@ async function fetchHistory(client, symbol, granularity, requestedCount, now) {
     for (const candle of batch) byEpoch.set(candle.epoch, candle);
     if (byEpoch.size === previousSize) break;
     const oldest = batch[0].epoch;
-    const nextEnd = oldest - 1;
+    const nextEnd = oldest;
     if (typeof end === "number" && nextEnd >= end) break;
     end = nextEnd;
     pages++;
@@ -191,7 +191,7 @@ async function run() {
         for (const [tf, granularity] of REQUESTS) {
           const data = frames[tf] || [];
           const check = validateCandleContinuity(data, granularity, marketId);
-          continuity[tf] = { candles: data.length, valid: check.valid, gaps: check.gaps?.length || 0 };
+          continuity[tf] = { candles: data.length, valid: check.valid, gaps: check.gaps?.length || 0, gapSamples: (check.gaps || []).slice(0, 3) };
           if (data.length < 60 || !check.valid) dataReady = false;
         }
         if (!dataReady) {
@@ -243,7 +243,7 @@ async function run() {
       errors: report.errors.length
     };
     fs.writeFileSync(path.join(__dirname, "swing_historical_validation.json"), JSON.stringify(report, null, 2) + "\n");
-    console.log(JSON.stringify({ event: "historical_replay_complete", summary: report.summary, markets: Object.fromEntries(Object.entries(report.markets).map(([k,v]) => [k, {status:v.status, signals:v.performance?.signals, outcomes:v.performance?.outcomes, history:v.history || v.continuity}])) }));
+    console.log(JSON.stringify({ event: "historical_replay_complete", summary: report.summary, markets: Object.fromEntries(Object.entries(report.markets).map(([k,v]) => [k, {status:v.status, replayedM5Bars:v.replayedM5Bars, signals:v.performance?.signals, outcomes:v.performance?.outcomes, stateCounts:v.stateCounts, history:v.history || v.continuity}])) }));
     if (totals.length === 0) process.exitCode = 1;
   } finally {
     client.close();
