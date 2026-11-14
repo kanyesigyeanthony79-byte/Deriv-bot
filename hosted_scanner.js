@@ -51,6 +51,7 @@ try {
   if (savedJournal && Array.isArray(savedJournal.signals)) journal = { version: 1, signals: savedJournal.signals, dailyReports: savedJournal.dailyReports || {} };
 } catch {}
 const saveJournal = () => fs.writeFileSync(JOURNAL_FILE, JSON.stringify(journal, null, 2) + "\n");
+if (reconcileJournalState(journal, state, log) > 0) saveJournal();
 const localDate = epoch => new Intl.DateTimeFormat("en-CA", {timeZone:"Africa/Kampala",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(epoch * 1000));
 const findJournalSignal = id => journal.signals.find(s => s.signalId === id);
 function journalCandidate(entry) {
@@ -223,6 +224,7 @@ async function sendOutcome(signal, outcome, candle) {
   });
   log("outcome_delivered", { signalId: signal.signalId, market: signal.market, outcome, candle_epoch: candle.epoch, observed_close: candle.close });
   recordJournalOutcome(journal, signal.signalId, outcome, candle);
+  saveJournal();
 }
 
 async function monitorSignals(marketId, candles, now) {
@@ -261,6 +263,7 @@ async function monitorSignals(marketId, candles, now) {
         signal.closeReason = "ambiguous_same_candle";
         signal.lastCheckedEpoch = candle.epoch;
         recordJournalOutcome(journal, signal.signalId, "AMBIGUOUS", candle);
+        saveJournal();
         log("ambiguous_outcome_not_reported", { signalId: signal.signalId, market: signal.market, candle_epoch: candle.epoch });
         break;
       }
