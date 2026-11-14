@@ -148,3 +148,13 @@ test("management decision elevates early invalidation to exit review", () => {
   const decision=managementDecision(signal,{H1:h1,H4:[]},h1.at(-1).epoch+3600);
   assert.equal(decision.action,"EXIT_REVIEW");
 });
+
+test("management advice is suppressed when completed synthetic H1 history has a gap", () => {
+  const start=1_700_000_000;
+  const signal={direction:"BUY",entry:100,stopLoss:98,tp1:103,entryEpoch:start-3600,decisionEpoch:start-1,marketId:"R_25"};
+  const h1=bars(6,3600,i=>101+i,start).filter((_,i)=>i!==2);
+  const decision=managementDecision(signal,{H1:h1,H4:[]},h1.at(-1).epoch+3600);
+  assert.equal(decision.action,"WAIT");
+  assert.ok(decision.dataGaps.length>0);
+  assert.equal(decision.events.length,0);
+});
