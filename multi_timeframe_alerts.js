@@ -5,7 +5,6 @@
 const ALERT_MAX_AGE_SECONDS = Object.freeze({
   SCALP: 15 * 60,
   SHORT_TERM: 60 * 60,
-  SWING: 6 * 60 * 60,
   POSITION: 24 * 60 * 60
 });
 
@@ -13,7 +12,7 @@ function latestCandidates(markets) {
   const latest = new Map();
   for (const market of Object.values(markets || {})) {
     const candidates = [...(market.signals || []), ...(market.recentSignals || [])]
-      .filter(s => s && s.state === "signal" && s.signalId && s.category);
+      .filter(s => s && s.state === "signal" && s.signalId && s.category && s.category !== "SWING");
     for (const candidate of candidates) {
       const key = candidate.marketId + ":" + candidate.category;
       const prior = latest.get(key);
