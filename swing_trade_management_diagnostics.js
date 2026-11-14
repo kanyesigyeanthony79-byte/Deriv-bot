@@ -68,8 +68,7 @@ function diagnoseTradePath(signal, candles, signalIndex, outcome, options = {}) 
       reachedOriginalTP1: tp1,
       reachedOriginalTP2: tp2,
       reachedOriginalStop: originalStop,
-      fullHorizonObserved: endIndex === signalIndex + maxHoldBars ||
-        (postExitPath.length === maxHoldBars - outcome.barsHeld)
+      fullHorizonObserved: candles.length - 1 >= signalIndex + maxHoldBars
     };
   }
   return result;
