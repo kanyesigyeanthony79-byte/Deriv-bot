@@ -54,6 +54,13 @@ function buildDailySummaryMessage(summary) {
     "\nTP1 reached: " + summary.tp1 + "\nExpired: " + summary.expired +
     "\nAmbiguous: " + summary.ambiguous + "\nUnverified (state missing): " + summary.unverified +
     "\nStill open/unresolved: " + summary.unresolved +
+    "\n\nMAX FAVOURABLE MOVEMENT (MFE)" +
+    "\nSignals with positive movement recorded: " + summary.mfeCount +
+    (summary.mfeTop.length ? "\n" + summary.mfeTop.map(item =>
+      item.market + " " + item.direction + " (" + item.category + "/" + item.timeframe + "): +" +
+      item.points + " points (" + item.pct + "%)"
+    ).join("\n") : "\nNo positive movement recorded or movement data not yet available.") +
+    "\nMFE is the greatest favourable completed-candle excursion, not realised profit; intrabar order and execution costs are unknown." +
     "\n\nNote: Signal outcomes only; this is not actual account profit/loss." +
     (summary.byMarket.length ? "\n\nBY MARKET\n" + summary.byMarket.join("\n") : "");
 }
