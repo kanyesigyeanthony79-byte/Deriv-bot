@@ -185,7 +185,8 @@ async function run() {
       methodology: {
         entry: "M5 completed candle close",
         setupAndFilters: "Existing staged swing engine with M15/H1/H4/D1 completed-candle cutoffs",
-        forwardHorizon: "7 days",\n        intendedLookback: "Approximately 80 days, subject to Deriv API history availability",
+        forwardHorizon: "7 days",
+        intendedLookback: "Approximately 80 days, subject to Deriv API history availability",
         barrierHandling: "Same-candle SL/TP contact is marked ambiguous; no assumed intrabar order",
         caveat: "Descriptive historical replay, not a guarantee of future performance; no fees/slippage model"
       },
