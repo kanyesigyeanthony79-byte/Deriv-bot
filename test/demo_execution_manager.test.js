@@ -87,7 +87,7 @@ test("rejects symbols outside the synthetic allowlist", async () => {
 test("attempts an exit at the hard holding-time ceiling", async () => {
   const openedAt = NOW - 60 * 60 * 1000;
   const adapter = makeAdapter({ snapshot: { openPositions: [{ contractId: 9, openedAt, isValidToSell: true }] } });
-  const manager = new DemoExecutionManager({ adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"], now: () => NOW });
+  const manager = new DemoExecutionManager({ adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"], positionManagementEnabled: true, now: () => NOW });
   const result = await manager.runCycle({});
   assert.equal(result.actions[0].type, "EXIT_CONFIRMED");
   assert.equal(adapter.calls[0].close, 9);
@@ -132,4 +132,13 @@ test("blocks new entries if an existing exit cannot be confirmed", async () => {
   const result = await manager.runCycle({});
   assert.equal(result.reason, "unresolved_exit_requires_reconciliation_before_new_entry");
   assert.equal(adapter.calls.some(c => c.open), false);
+});
+
+test("observe-only mode never closes an existing position", async () => {
+  const adapter = makeAdapter({ snapshot: { openPositions: [{ contractId: 11,
+    openedAt: NOW - 60 * 60 * 1000, isValidToSell: true }] } });
+  const manager = new DemoExecutionManager({ adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"], now: () => NOW });
+  const result = await manager.runCycle({});
+  assert.equal(result.status, "observe_only");
+  assert.equal(adapter.calls.some(c => c.close), false);
 });
