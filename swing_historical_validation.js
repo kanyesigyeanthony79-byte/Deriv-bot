@@ -256,8 +256,8 @@ async function run() {
         const outcomes = [];
         const states = {};
         let replayedM5Bars = 0;
-        let lastSignalIndex = null;
         for (const m5 of m5Segments) {
+          let lastSignalIndex = null;
           const lastMatureIndex = m5.length - MAX_HOLD_BARS - 1;
           replayedM5Bars += Math.max(0, lastMatureIndex - 63);
           const segmentFrames = { ...frames, M5: m5 };
