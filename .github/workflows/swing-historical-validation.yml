@@ -22,6 +22,10 @@ on:
       - ".github/workflows/swing-historical-validation.yml"
   workflow_dispatch:
 
+concurrency:
+  group: swing-historical-validation-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
