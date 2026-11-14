@@ -143,8 +143,11 @@ function managementAdvisories(signal, candlesByTimeframe, decisionEpoch) {
   const lastH1 = h1.at(-1), lastH4 = h4.at(-1);
   const maxFavourable = Math.max(0, ...h1.map(c => favourable(signal.direction === "BUY" ? c.high : c.low)));
   if (maxFavourable >= risk && lastH1)
-    events.push({ type: "PROTECT_PROFIT_REVIEW", epoch: lastH1.epoch, timeframe: "H1",
-      reason: "Completed H1 price path has reached at least +1R; review protection. No stop is changed." });
+    events.push({ type: "BREAK_EVEN_REVIEW", epoch: lastH1.epoch, timeframe: "H1",
+      reason: "Completed H1 price path has reached at least +1R; review whether break-even protection is justified. No stop is changed." });
+  if (maxFavourable >= risk * 1.5 && lastH1)
+    events.push({ type: "TRAILING_PROTECTION_REVIEW", epoch: lastH1.epoch, timeframe: "H1",
+      reason: "Completed H1 price path has reached at least +1.5R; review a structure-based trailing level while preserving room for the swing." });
   const target = Number.isFinite(signal.tp1) ? signal.tp1 :
     signal.entry + (signal.direction === "BUY" ? 1 : -1) * risk * 1.5;
   if (h1.some(c => signal.direction === "BUY" ? c.high >= target : c.low <= target) && lastH1)
@@ -152,10 +155,12 @@ function managementAdvisories(signal, candlesByTimeframe, decisionEpoch) {
       reason: "TP1 reference was reached on a completed H1 candle; review partial profit and the remaining swing thesis." });
   if (lastH1 && lastH4) {
     const h1s = structure(h1, "H1", decisionEpoch), h4s = structure(h4, "H4", decisionEpoch);
-    if ([h1s, h4s].some(s => s.direction !== "NEUTRAL" && s.direction !== "BUY" && s.direction !== "SELL" ? false :
-      s.direction !== "NEUTRAL" && s.direction !== signal.direction))
+    if ([h1s, h4s].some(s => ["BUY", "SELL"].includes(s.direction) && s.direction !== signal.direction))
       events.push({ type: "STRUCTURE_DETERIORATION_WARNING", epoch: lastH1.epoch, timeframe: "H1/H4",
         reason: "Completed-candle swing structure is opposing the open thesis; review whether to reduce or exit." });
+    else if (h1s.direction === signal.direction && h4s.direction === signal.direction)
+      events.push({ type: "HOLD_STRUCTURE_INTACT", epoch: lastH1.epoch, timeframe: "H1/H4",
+        reason: "Completed H1 and H4 swing structure still supports the thesis; holding remains consistent with the plan." });
     const crossed = signal.direction === "BUY" ? lastH1.close < signal.stopLoss : lastH1.close > signal.stopLoss;
     if (crossed) events.push({ type: "EARLY_LOSS_REVIEW", epoch: lastH1.epoch, timeframe: "H1",
       reason: "Completed H1 close has crossed structural invalidation; review early exit rather than waiting mechanically for the stop." });
