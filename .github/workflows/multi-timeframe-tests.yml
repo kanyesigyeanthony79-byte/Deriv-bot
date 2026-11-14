@@ -5,6 +5,7 @@ on:
     branches:
       - feature/multi-timeframe-engine
       - feature/phase1-market-regime-data-quality
+      - feature/multi-timeframe-telegram-alerts
   pull_request:
     branches:
       - main
@@ -24,6 +25,6 @@ jobs:
         with:
           node-version: "22"
       - name: Syntax check
-        run: node --check multi_timeframe_engine.js && node --check market_quality.js
+        run: node --check multi_timeframe_engine.js && node --check market_quality.js && node --check multi_timeframe_alerts.js && node --check multi_timeframe_collector.js
       - name: Run unit tests
-        run: node --test test/multi_timeframe_engine.test.js test/multi_timeframe_journal.test.js test/dashboard_syntax.test.js
+        run: node --test test/multi_timeframe_engine.test.js test/multi_timeframe_journal.test.js test/dashboard_syntax.test.js test/multi_timeframe_alerts.test.js
