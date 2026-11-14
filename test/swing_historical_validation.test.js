@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { simulateOutcome, summarize, latestContinuousSegment } = require("../swing_historical_validation");
+const { simulateOutcome, summarize, latestContinuousSegment, continuousSegments } = require("../swing_historical_validation");
 
 const candle = (low, high) => ({ low, high });
 const signal = { direction: "BUY", stopLoss: 95, tp1: 110, tp2: 120 };
@@ -47,4 +47,10 @@ test("historical replay uses only the latest continuous candle segment", () => {
 test("historical replay retains full history when candles are continuous", () => {
   const bars = [0, 300, 600].map(epoch => ({epoch, open:1, high:2, low:0, close:1}));
   assert.deepEqual(latestContinuousSegment(bars, 300), bars);
+});
+
+test("historical replay keeps separate complete segments instead of bridging a data gap", () => {
+  const bars = [0, 300, 900, 1200, 1500].map(epoch => ({epoch, open:1, high:2, low:0, close:1}));
+  const segments = continuousSegments(bars, 300);
+  assert.deepEqual(segments.map(segment => segment.map(x => x.epoch)), [[0, 300], [900, 1200, 1500]]);
 });
