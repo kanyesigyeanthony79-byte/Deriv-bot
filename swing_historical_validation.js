@@ -10,7 +10,7 @@ const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 // Initial historical validation focuses on Volatility 25, the instrument
 // from the user's losing swing-entry example. Expand only after this replay is sound.
 const MARKETS = [["R_25", "Volatility 25 Index"]];
-const REQUESTS = [["M5", 300, 10000], ["M15", 900, 4000], ["H1", 3600, 1000], ["H4", 14400, 500], ["D1", 86400, 365]];
+const REQUESTS = [["M5", 300, 25000], ["M15", 900, 8000], ["H1", 3600, 2000], ["H4", 14400, 600], ["D1", 86400, 180]];
 const MAX_HOLD_SECONDS = 7 * 86400;
 const MAX_HOLD_BARS = MAX_HOLD_SECONDS / TIMEFRAMES.M5;
 
@@ -141,7 +141,7 @@ async function fetchHistory(client, symbol, granularity, requestedCount, now) {
   const byEpoch = new Map();
   let end = "latest";
   let pages = 0;
-  while (byEpoch.size < requestedCount && pages < 12) {
+  while (byEpoch.size < requestedCount && pages < 32) {
     const remaining = requestedCount - byEpoch.size;
     const count = Math.min(999, remaining);
     const reply = await client.ask({
@@ -185,7 +185,7 @@ async function run() {
       methodology: {
         entry: "M5 completed candle close",
         setupAndFilters: "Existing staged swing engine with M15/H1/H4/D1 completed-candle cutoffs",
-        forwardHorizon: "7 days",
+        forwardHorizon: "7 days",\n        intendedLookback: "Approximately 80 days, subject to Deriv API history availability",
         barrierHandling: "Same-candle SL/TP contact is marked ambiguous; no assumed intrabar order",
         caveat: "Descriptive historical replay, not a guarantee of future performance; no fees/slippage model"
       },
