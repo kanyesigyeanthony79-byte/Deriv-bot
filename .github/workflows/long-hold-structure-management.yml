@@ -2,12 +2,16 @@ name: Long-Hold Structure Management Experiment
 
 on:
   push:
-    branches: [dev/long-hold-structure-management-experiment]
+    branches:
+      - dev/long-hold-structure-management-experiment
+      - dev/long-hold-trade-ledger-audit
   pull_request:
-    branches: [dev/top-down-swing-precision-experiment]
+    branches: [dev/top-down-swing-precision-experiment, dev/long-hold-structure-management-experiment]
     paths:
       - "top_down_swing_long_hold_replay.js"
+      - "top_down_swing_trade_ledger.js"
       - "test/top_down_swing_long_hold_replay.test.js"
+      - "test/top_down_swing_trade_ledger.test.js"
       - ".github/workflows/long-hold-structure-management.yml"
   workflow_dispatch:
 
@@ -21,20 +25,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: dev/long-hold-structure-management-experiment
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run long-hold policy tests
-        run: node --test test/top_down_swing_long_hold_replay.test.js test/top_down_swing_engine.test.js
+      - name: Run long-hold and ledger tests
+        run: node --test test/top_down_swing_long_hold_replay.test.js test/top_down_swing_trade_ledger.test.js test/top_down_swing_engine.test.js
       - name: Collect fresh historical OHLC
         run: node top_down_swing_backfill.js
       - name: Compare 14-day management policies
         run: node top_down_swing_long_hold_replay.js top_down_swing_snapshot.json top_down_swing_long_hold_report.json
+      - name: Build trade-by-trade audit ledger
+        run: node top_down_swing_trade_ledger.js top_down_swing_snapshot.json top_down_swing_trade_ledger.json
       - uses: actions/upload-artifact@v4
         with:
           name: long-hold-structure-management-report
           path: |
             top_down_swing_snapshot.json
             top_down_swing_long_hold_report.json
+            top_down_swing_trade_ledger.json
           retention-days: 30
