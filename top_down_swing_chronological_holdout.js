@@ -155,9 +155,17 @@ function runChronologicalHoldout(snapshot) {
         const training = trainingPaired.policies;
         const validation = validationPaired.policies;
         const selectedPolicy = choosePolicy(training);
+        const baseline = training.FIXED_2_5R;
+        const selectionStatus = selectedPolicy ? "selected_from_training_only" :
+          (trainingPaired.pairedScoredCount < MIN_TRAIN_SCORED ||
+           !baseline || baseline.scoredCount < MIN_TRAIN_SCORED)
+            ? "insufficient_training_sample"
+            : (!Number.isFinite(baseline.averageR) || baseline.averageR <= 0)
+              ? "baseline_not_positive"
+              : "no_policy_cleared_selection_rule";
         marketResult.variants[variant] = {
           trainingSignalCount: trainSignals.length, validationSignalCount: validationSignals.length,
-          selectedPolicy, selectionStatus: selectedPolicy ? "selected_from_training_only" : "insufficient_training_sample",
+          selectedPolicy, selectionStatus,
           trainingPairedScoredCount: trainingPaired.pairedScoredCount,
           validationPairedScoredCount: validationPaired.pairedScoredCount,
           training, validation,
