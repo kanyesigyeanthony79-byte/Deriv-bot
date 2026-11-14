@@ -189,7 +189,7 @@ function evaluateCategory(marketId, marketName, category, candlesByTimeframe, en
 
   return {
     state: "signal",
-    signalId: marketId + "-" + category + "-" + entryCandle.epoch,
+    signalId: marketId + "-" + category + (category === "SWING" ? "-M5-" : "-") + entryCandle.epoch,
     marketId, market: marketName, category, categoryLabel: config.label,
     direction: entryResult.signal,
     entryTimeframe: config.entry,
