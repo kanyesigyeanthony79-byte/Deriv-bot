@@ -53,6 +53,8 @@ test("management is advisory-only and does not mutate the signal", () => {
   const candles = { H1: bars(5, 3600, i => 101 + i), H4: bars(5, 14400, i => 101 + i) };
   const events = managementAdvisories(signal, candles, 2_000_000_000);
   assert.ok(Array.isArray(events));
+  assert.ok(events.some(e => e.type === "BREAK_EVEN_REVIEW"));
+  assert.ok(events.some(e => e.type === "TRAILING_PROTECTION_REVIEW"));
   assert.equal(JSON.stringify(signal), before);
 });
 test("unknown entry variants are rejected rather than silently substituted", () => {
