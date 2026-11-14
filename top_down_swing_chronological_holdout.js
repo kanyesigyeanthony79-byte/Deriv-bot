@@ -43,6 +43,35 @@ function summarizeResults(rows) {
   };
 }
 
+// A policy comparison is only fair when every policy is scored on the same
+// entry decisions. Ambiguous/censored outcomes are removed as a paired cohort,
+// never independently per policy. Raw status counts remain visible.
+function summarizePairedResults(resultsByPolicy) {
+  const policies = Object.keys(resultsByPolicy);
+  const lengths = policies.map(policy => resultsByPolicy[policy].length);
+  const candidateCount = lengths.length ? Math.min(...lengths) : 0;
+  const pairedIndexes = [];
+  for (let i = 0; i < candidateCount; i++) {
+    if (policies.every(policy => resultsByPolicy[policy][i]?.status === "scored"))
+      pairedIndexes.push(i);
+  }
+  const output = { candidateCount, pairedScoredCount: pairedIndexes.length, policies: {} };
+  for (const policy of policies) {
+    const rows = resultsByPolicy[policy];
+    const paired = pairedIndexes.map(i => rows[i]);
+    const summary = summarizeResults(paired);
+    output.policies[policy] = {
+      ...summary,
+      rawScoredCount: rows.filter(row => row.status === "scored").length,
+      rawCensoredCount: rows.filter(row => row.status === "censored").length,
+      rawAmbiguousCount: rows.filter(row => row.status === "ambiguous").length,
+      pairedScoredCount: pairedIndexes.length,
+      comparisonBasis: "identical_entry_signals_scored_by_every_policy"
+    };
+  }
+  return output;
+}
+
 function choosePolicy(trainingResults, minScored = MIN_TRAIN_SCORED) {
   const eligible = POLICIES.map(policy => ({ policy, ...trainingResults[policy] }))
     .filter(row => row && row.scoredCount >= minScored && Number.isFinite(row.averageR));
@@ -104,19 +133,27 @@ function runChronologicalHoldout(snapshot) {
       for (const variant of variants) {
         const trainSignals = collectSignals(marketId, frames, variant, windows.train, HORIZON);
         const validationSignals = collectSignals(marketId, frames, variant, windows.validation, HORIZON);
-        const training = {}, validation = {};
+        const trainingRows = {}, validationRows = {};
         for (const policy of POLICIES) {
-          training[policy] = summarizeResults(trainSignals.map(signal => simulatePolicy(signal, frames, policy, HORIZON)));
-          validation[policy] = summarizeResults(validationSignals.map(signal => simulatePolicy(signal, frames, policy, HORIZON)));
+          trainingRows[policy] = trainSignals.map(signal => simulatePolicy(signal, frames, policy, HORIZON));
+          validationRows[policy] = validationSignals.map(signal => simulatePolicy(signal, frames, policy, HORIZON));
         }
+        const trainingPaired = summarizePairedResults(trainingRows);
+        const validationPaired = summarizePairedResults(validationRows);
+        const training = trainingPaired.policies;
+        const validation = validationPaired.policies;
         const selectedPolicy = choosePolicy(training);
         marketResult.variants[variant] = {
           trainingSignalCount: trainSignals.length, validationSignalCount: validationSignals.length,
           selectedPolicy, selectionStatus: selectedPolicy ? "selected_from_training_only" : "insufficient_training_sample",
-          training, validation, selectedPolicyValidation: selectedPolicy ? validation[selectedPolicy] : null,
+          trainingPairedScoredCount: trainingPaired.pairedScoredCount,
+          validationPairedScoredCount: validationPaired.pairedScoredCount,
+          training, validation,
+          selectedPolicyValidation: selectedPolicy ? validation[selectedPolicy] : null,
           fixedTargetValidation: validation.FIXED_2_5R,
           selectedMinusFixedAverageR: selectedPolicy && validation[selectedPolicy].averageR !== null && validation.FIXED_2_5R.averageR !== null
-            ? Number((validation[selectedPolicy].averageR - validation.FIXED_2_5R.averageR).toFixed(4)) : null
+            ? Number((validation[selectedPolicy].averageR - validation.FIXED_2_5R.averageR).toFixed(4)) : null,
+          comparisonBasis: "selected_policy_and_fixed_target_use_the_same_validation_entry_signals_and_common_unambiguous_trade_cohort"
         };
       }
       output.markets[marketId] = marketResult;
@@ -155,4 +192,4 @@ if (require.main === module) {
   fs.writeFileSync(output, JSON.stringify(result, null, 2) + "\n");
   console.log(JSON.stringify({ output, summary: result.summary }, null, 2));
 }
-module.exports = { makeWindows, summarizeResults, choosePolicy, firstEligibleEpoch, collectSignals, runChronologicalHoldout };
+module.exports = { makeWindows, summarizeResults, summarizePairedResults, choosePolicy, firstEligibleEpoch, collectSignals, runChronologicalHoldout };
