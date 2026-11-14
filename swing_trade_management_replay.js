@@ -114,10 +114,73 @@ function simulateManagedOutcome(signal, candlesByTimeframe, signalIndex, options
     partialTaken: position.partialTaken, partialR, stopState, managementActions: actions };
 }
 
+
+function simulateFixedPlanOutcome(signal, candlesByTimeframe, signalIndex, options = {}) {
+  const config = { ...DEFAULTS, ...options };
+  const candles = candlesByTimeframe.M5 || [];
+  if (!Number.isInteger(signalIndex) || signalIndex < 0 || signalIndex >= candles.length) {
+    return { status: "invalid_entry_index", realizedR: null };
+  }
+  const position = {
+    direction: signal.direction,
+    entry: signal.entry,
+    stopLoss: signal.stopLoss,
+    riskDistance: signal.riskDistance
+  };
+  const finalIndex = Math.min(candles.length - 1, signalIndex + config.maxHoldBars);
+  let partialTaken = false;
+  let partialR = null;
+
+  for (let index = signalIndex + 1; index <= finalIndex; index++) {
+    const candle = candles[index];
+    const stop = signal.direction === "BUY" ? candle.low <= signal.stopLoss : candle.high >= signal.stopLoss;
+    const tp1 = signal.direction === "BUY" ? candle.high >= signal.tp1 : candle.low <= signal.tp1;
+    const tp2 = signal.direction === "BUY" ? candle.high >= signal.tp2 : candle.low <= signal.tp2;
+    const barsHeld = index - signalIndex;
+
+    if (!partialTaken) {
+      if (stop && tp1) return { status: "ambiguous_barrier", barsHeld, realizedR: null };
+      if (stop) return { status: "stop_before_tp1", barsHeld, exitR: -1, realizedR: -1, partialTaken: false };
+      if (tp1) {
+        partialTaken = true;
+        partialR = favorableR(position, signal.tp1);
+        if (tp2) {
+          const finalR = favorableR(position, signal.tp2);
+          return { status: "tp2_exit", barsHeld, exitR: finalR,
+            realizedR: combineR(true, partialR, finalR, config.partialFraction), partialTaken, partialR };
+        }
+      }
+    } else {
+      if (stop && tp2) return { status: "ambiguous_barrier", barsHeld, realizedR: null, partialTaken, partialR };
+      if (tp2) {
+        const finalR = favorableR(position, signal.tp2);
+        return { status: "tp2_exit", barsHeld, exitR: finalR,
+          realizedR: combineR(true, partialR, finalR, config.partialFraction), partialTaken, partialR };
+      }
+      if (stop) {
+        return { status: "stop_after_tp1", barsHeld, exitR: -1,
+          realizedR: combineR(true, partialR, -1, config.partialFraction), partialTaken, partialR };
+      }
+    }
+  }
+
+  const end = candles[finalIndex];
+  const exitR = favorableR(position, end.close);
+  const fullWindow = finalIndex - signalIndex === config.maxHoldBars;
+  return { status: fullWindow ? (partialTaken ? "tp1_only_by_horizon" : "horizon_exit") : "incomplete_window",
+    barsHeld: finalIndex - signalIndex, exitPrice: end.close, exitR,
+    realizedR: combineR(partialTaken, partialR, exitR, config.partialFraction),
+    partialTaken, partialR };
+}
+
 function summarizeManaged(results) {
   const outcomes = {};
   for (const result of results) outcomes[result.status] = (outcomes[result.status] || 0) + 1;
   const scored = results.filter(result => Number.isFinite(result.realizedR));
+  const winners = scored.filter(result => result.realizedR > 0);
+  const losers = scored.filter(result => result.realizedR < 0);
+  const grossProfit = winners.reduce((sum, result) => sum + result.realizedR, 0);
+  const grossLoss = Math.abs(losers.reduce((sum, result) => sum + result.realizedR, 0));
   return {
     signals: results.length,
     scoredSignals: scored.length,
@@ -127,8 +190,14 @@ function summarizeManaged(results) {
       : null,
     averageBarsHeld: scored.length
       ? Number((scored.reduce((sum, result) => sum + result.barsHeld, 0) / scored.length).toFixed(1))
-      : null
+      : null,
+    winRate: scored.length ? Number((winners.length / scored.length).toFixed(4)) : null,
+    profitFactor: grossLoss ? Number((grossProfit / grossLoss).toFixed(4)) : (grossProfit ? "infinite" : null),
+    averageWinningR: winners.length ? Number((grossProfit / winners.length).toFixed(4)) : null,
+    averageLosingR: losers.length ? Number((losers.reduce((sum, result) => sum + result.realizedR, 0) / losers.length).toFixed(4)) : null,
+    averageWinningHoldBars: winners.length ? Number((winners.reduce((sum, result) => sum + result.barsHeld, 0) / winners.length).toFixed(1)) : null,
+    longestWinningHoldBars: winners.length ? Math.max(...winners.map(result => result.barsHeld)) : null
   };
 }
 
-module.exports = { DEFAULTS, completedTail, simulateManagedOutcome, summarizeManaged };
+module.exports = { DEFAULTS, completedTail, simulateFixedPlanOutcome, simulateManagedOutcome, summarizeManaged };
