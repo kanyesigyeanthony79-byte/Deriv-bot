@@ -36,7 +36,7 @@ function barrierTouches(position, candle) {
   const buy = position.direction === "BUY";
   return {
     stop: buy ? candle.low <= position.stopLoss : candle.high >= position.stopLoss,
-    tp1: Number.isFinite(position.tp1) && (buy ? candle.high >= position.tp1 : candle.low <= position.tp1),
+    tp1: position.partialTaken !== true && Number.isFinite(position.tp1) && (buy ? candle.high >= position.tp1 : candle.low <= position.tp1),
     tp2: Number.isFinite(position.tp2) && (buy ? candle.high >= position.tp2 : candle.low <= position.tp2)
   };
 }
@@ -158,7 +158,8 @@ function evaluateTradeManagement({ position, candlesByTimeframe }) {
     }
   }
 
-  if (rNow >= CONFIG.breakEvenAtR && position.stopLoss !== position.entry) {
+  const stopStillBeyondEntry = position.direction === "BUY" ? position.stopLoss < position.entry : position.stopLoss > position.entry;
+  if (rNow >= CONFIG.breakEvenAtR && stopStillBeyondEntry) {
     const saferStop = position.direction === "BUY"
       ? Math.max(position.stopLoss, position.entry)
       : Math.min(position.stopLoss, position.entry);
