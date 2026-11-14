@@ -31,6 +31,7 @@ jobs:
       - name: Fetch historical candles and replay swing entries
         run: node swing_historical_validation.js
       - name: Upload historical validation report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: swing-historical-validation
