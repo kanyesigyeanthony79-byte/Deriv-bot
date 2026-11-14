@@ -43,9 +43,9 @@ test("sniper candidate suppresses decisions when a required timeframe has a cand
   const series = (count, step) => Array.from({length: count}, (_, i) => candle(i * step));
   const frames = {
     M5: series(70, 300), M15: series(30, 900), H1: series(70, 3600),
-    H4: series(60, 14400), D1: series(55, 86400)
+    H4: series(61, 14400), D1: series(55, 86400)
   };
-  frames.H4[40] = { ...frames.H4[40], epoch: frames.H4[40].epoch + 14400 };
+  frames.H4.splice(40, 1);
   const result = evaluateSwingReversalSniper("R_25", "Volatility 25", frames);
   assert.equal(result.state, "data_gap");
   assert.equal(result.timeframe, "H4");
