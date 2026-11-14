@@ -72,11 +72,23 @@ function summarizePairedResults(resultsByPolicy) {
   return output;
 }
 
-function choosePolicy(trainingResults, minScored = MIN_TRAIN_SCORED) {
+function choosePolicy(trainingResults, minScored = MIN_TRAIN_SCORED, minImprovementR = 0.1) {
+  // Do not promote a merely least-bad losing policy. Require the fixed target
+  // baseline itself to be positive; otherwise abstain for this market/variant.
+  const baseline = trainingResults.FIXED_2_5R;
+  if (!baseline || baseline.scoredCount < minScored ||
+      !Number.isFinite(baseline.averageR) || baseline.averageR <= 0) return null;
   const eligible = POLICIES.map(policy => ({ policy, ...trainingResults[policy] }))
-    .filter(row => row && row.scoredCount >= minScored && Number.isFinite(row.averageR));
+    .filter(row => row && row.scoredCount >= minScored &&
+      Number.isFinite(row.averageR) && row.averageR > 0);
   eligible.sort((a, b) => b.averageR - a.averageR || POLICIES.indexOf(a.policy) - POLICIES.indexOf(b.policy));
-  return eligible[0] ? eligible[0].policy : null;
+  const best = eligible[0];
+  if (!best) return null;
+  // Keep the simpler fixed-target baseline unless an alternative clears a
+  // predeclared +0.10R training advantage on the same paired cohort.
+  if (best.policy !== "FIXED_2_5R" && best.averageR < baseline.averageR + minImprovementR)
+    return "FIXED_2_5R";
+  return best.policy;
 }
 
 function firstEligibleEpoch(frames) {
