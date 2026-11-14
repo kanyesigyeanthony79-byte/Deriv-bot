@@ -41,6 +41,7 @@ test("refuses real endpoint and missing explicit symbol allowlist", () => {
   const c = makeConnection(() => ({}));
   assert.throws(() => new DerivDemoAdapter(baseOptions(c, { websocketUrl: "wss://api.derivws.com/trading/v1/options/ws/real?otp=x" })), /demo_websocket_required/);
   assert.throws(() => new DerivDemoAdapter(baseOptions(c, { allowedSymbols: [] })), /allowlist/);
+  assert.throws(() => new DerivDemoAdapter(baseOptions(c, { allowedSymbols: ["frxXAUUSD"] })), /non_approved_synthetic/);
 });
 
 test("reads balance and reconciles an empty portfolio", async () => {
