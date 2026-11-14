@@ -3,6 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { evaluate, DEF } = require("./engine");
+const { journalOutcome: recordJournalOutcome, reconcileJournalState, markExpired } = require("./signal_journal");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const GRANULARITY = 900;
@@ -55,17 +56,6 @@ const findJournalSignal = id => journal.signals.find(s => s.signalId === id);
 function journalCandidate(entry) {
   if (findJournalSignal(entry.signalId)) return;
   journal.signals.push(entry);
-  saveJournal();
-}
-function journalOutcome(signal, outcome, candle) {
-  const entry = findJournalSignal(signal.signalId);
-  if (!entry) return;
-  entry.events = Array.isArray(entry.events) ? entry.events : [];
-  entry.events.push({outcome, observedAt:new Date().toISOString(), candleEpoch:candle.epoch, candle:{open:candle.open,high:candle.high,low:candle.low,close:candle.close}});
-  if (outcome === "TP1_HIT") entry.tp1Hit = true;
-  if (outcome === "TP2_HIT") { entry.tp2Hit = true; entry.finalOutcome = "TP2"; }
-  if (outcome === "SL_HIT") entry.finalOutcome = entry.tp1Hit ? "SL_AFTER_TP1" : "SL";
-  if (outcome === "AMBIGUOUS") entry.finalOutcome = "AMBIGUOUS";
   saveJournal();
 }
 function journalStatus(signalId, status, reason) {
@@ -232,16 +222,28 @@ async function sendOutcome(signal, outcome, candle) {
     currentPrice: candle.close
   });
   log("outcome_delivered", { signalId: signal.signalId, market: signal.market, outcome, candle_epoch: candle.epoch, observed_close: candle.close });
-  journalOutcome(signal.signalId, outcome, candle);
+  recordJournalOutcome(journal, signal.signalId, outcome, candle);
 }
 
 async function monitorSignals(marketId, candles, now) {
   const active = state.activeSignals.filter(s => s.marketId === marketId && !s.closed);
   for (const signal of active) {
     if (now - signal.createdEpoch > MAX_MONITOR_AGE) {
+      const lastCandle = candles[candles.length - 1];
+      if (lastCandle) {
+        try {
+          await sendOutcome(signal, "EXPIRED", lastCandle);
+        } catch (error) {
+          markExpired(journal, signal.signalId, lastCandle, "expired_after_24_hours; expiry_alert_failed");
+          saveJournal();
+          log("expiry_alert_failed", { signalId: signal.signalId, market: signal.market, message: error.message });
+        }
+      } else {
+        markExpired(journal, signal.signalId, null, "expired_after_24_hours_no_recent_candle");
+        saveJournal();
+      }
       signal.closed = true;
       signal.closeReason = "expired_after_24_hours";
-      const je = findJournalSignal(signal.signalId); if (je) { je.finalOutcome = "EXPIRED"; je.statusReason = "expired_after_24_hours"; saveJournal(); }
       log("signal_expired", { signalId: signal.signalId, market: signal.market });
       continue;
     }
@@ -258,7 +260,7 @@ async function monitorSignals(marketId, candles, now) {
         signal.closed = true;
         signal.closeReason = "ambiguous_same_candle";
         signal.lastCheckedEpoch = candle.epoch;
-        journalOutcome(signal.signalId, "AMBIGUOUS", candle);
+        recordJournalOutcome(journal, signal.signalId, "AMBIGUOUS", candle);
         log("ambiguous_outcome_not_reported", { signalId: signal.signalId, market: signal.market, candle_epoch: candle.epoch });
         break;
       }
