@@ -27,6 +27,24 @@ function journalOutcome(journal, signalOrId, outcome, candle, observedAt = new D
   return true;
 }
 
+function updateFavourableMovement(journal, signalOrId, candle) {
+  const signalId = signalIdOf(signalOrId);
+  if (!signalId || !journal || !Array.isArray(journal.signals) || !candle) return false;
+  const entry = journal.signals.find(item => item.signalId === signalId);
+  if (!entry || !Number.isFinite(Number(entry.entry))) return false;
+  const direction = String(entry.direction || "").toUpperCase();
+  if (direction !== "BUY" && direction !== "SELL") return false;
+  const price = direction === "BUY" ? Number(candle.high) : Number(candle.low);
+  if (!Number.isFinite(price)) return false;
+  const points = direction === "BUY" ? price - Number(entry.entry) : Number(entry.entry) - price;
+  if (!(points > Number(entry.maxFavourablePoints || 0))) return true;
+  entry.maxFavourablePrice = price;
+  entry.maxFavourablePoints = Number(points.toFixed(8));
+  entry.maxFavourablePct = Number((points / Number(entry.entry) * 100).toFixed(5));
+  entry.maxFavourableEpoch = Number(candle.epoch);
+  return true;
+}
+
 function reconcileJournalState(journal, state, log = () => {}) {
   if (!journal || !Array.isArray(journal.signals)) return 0;
   const activeIds = new Set(((state && state.activeSignals) || [])
@@ -56,4 +74,4 @@ function markExpired(journal, signalId, candle, reason, observedAt = new Date().
   return found;
 }
 
-module.exports = { journalOutcome, reconcileJournalState, markExpired };
+module.exports = { journalOutcome, reconcileJournalState, markExpired, updateFavourableMovement };
