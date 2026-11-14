@@ -69,6 +69,42 @@ function connect() {
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+function validateCoverage(candles, symbol, granularity, startEpoch, snapshotEpoch) {
+  const firstExpected = Math.ceil(startEpoch / granularity) * granularity;
+  const lastExpected = Math.floor(snapshotEpoch / granularity) * granularity - granularity;
+  if (lastExpected < firstExpected) {
+    throw new Error(`No completed ${symbol} M${granularity / 60} candles in requested window.`);
+  }
+
+  const expectedCount = Math.floor((lastExpected - firstExpected) / granularity) + 1;
+  const actualEpochs = new Set(candles.map(candle => candle.epoch));
+  const missing = [];
+  for (let epoch = firstExpected; epoch <= lastExpected; epoch += granularity) {
+    if (!actualEpochs.has(epoch)) missing.push(epoch);
+  }
+
+  if (missing.length > 0 || candles.length !== expectedCount) {
+    const examples = missing.slice(0, 8).map(epoch => new Date(epoch * 1000).toISOString());
+    throw new Error(
+      `Incomplete ${symbol} M${granularity / 60} coverage: ${candles.length}/${expectedCount} candles; ` +
+      `${missing.length} missing intervals. First gaps: ${examples.join(", ") || "count mismatch"}`
+    );
+  }
+
+  for (let i = 1; i < candles.length; i++) {
+    const delta = candles[i].epoch - candles[i - 1].epoch;
+    if (delta !== granularity) {
+      throw new Error(
+        `Non-contiguous ${symbol} M${granularity / 60} candles at ` +
+        `${new Date(candles[i - 1].epoch * 1000).toISOString()} and ` +
+        `${new Date(candles[i].epoch * 1000).toISOString()} (gap ${delta}s).`
+      );
+    }
+  }
+
+  return { expectedCount, gapCount: missing.length, firstEpoch: firstExpected, lastEpoch: lastExpected };
+}
+
 async function fetchFrame(client, symbol, granularity, startEpoch, snapshotEpoch) {
   const byEpoch = new Map();
   let end = "latest";
@@ -103,6 +139,9 @@ async function fetchFrame(client, symbol, granularity, startEpoch, snapshotEpoch
           candle.high <= candle.low) {
         throw new Error(`Invalid OHLC candle returned for ${symbol} M${granularity / 60}.`);
       }
+      if (epoch % granularity !== 0) {
+        throw new Error(`Unaligned candle timestamp returned for ${symbol} M${granularity / 60}: ${epoch}.`);
+      }
       pageOldest = Math.min(pageOldest, epoch);
       if (epoch >= startEpoch && epoch + granularity <= snapshotEpoch) byEpoch.set(epoch, candle);
     }
@@ -114,13 +153,8 @@ async function fetchFrame(client, symbol, granularity, startEpoch, snapshotEpoch
   }
 
   const candles = [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch);
-  if (candles.length < Math.floor((DAYS * 86400) / granularity * 0.9)) {
-    throw new Error(`Insufficient ${symbol} M${granularity / 60} history: received ${candles.length} candles.`);
-  }
-  for (let i = 1; i < candles.length; i++) {
-    if (candles[i].epoch <= candles[i - 1].epoch) throw new Error("Candle timestamps are not strictly increasing.");
-  }
-  return candles;
+  const coverage = validateCoverage(candles, symbol, granularity, startEpoch, snapshotEpoch);
+  return { candles, coverage };
 }
 
 async function main() {
@@ -134,12 +168,16 @@ async function main() {
     for (const market of MARKETS) {
       if (!active.has(market)) throw new Error(`Market ${market} was not confirmed in active_symbols.`);
       const frames = {};
+      const coverage = {};
       for (const granularity of FRAMES) {
-        frames[`M${granularity / 60}`] = await fetchFrame(client, market, granularity, startEpoch, snapshotEpoch);
-        console.log(`${market} M${granularity / 60}: ${frames[`M${granularity / 60}`].length} completed candles`);
+        const frame = `M${granularity / 60}`;
+        const result = await fetchFrame(client, market, granularity, startEpoch, snapshotEpoch);
+        frames[frame] = result.candles;
+        coverage[frame] = result.coverage;
+        console.log(`${market} ${frame}: ${result.candles.length}/${result.coverage.expectedCount} candles; gaps=0`);
       }
       const payload = {
-        schemaVersion: 1,
+        schemaVersion: 2,
         market,
         source: "Deriv public ticks_history candles",
         endpoint: ENDPOINT,
@@ -147,6 +185,7 @@ async function main() {
         requestedDays: DAYS,
         startEpoch,
         snapshotEpoch,
+        coverage,
         frames
       };
       fs.writeFileSync(path.join(OUT, `${market}.json`), JSON.stringify(payload, null, 2) + "\n");
