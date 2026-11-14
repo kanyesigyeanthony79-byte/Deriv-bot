@@ -30,19 +30,19 @@ A simple causal context filter was screened:
 - At each eligible completed bar, measure the signed close-to-close movement 16 M15 bars later (four hours), divided by the ATR(14) available at the signal bar.
 - The sample is split chronologically into two halves as a basic stability check.
 
-Every eligible bar is sampled, so observations overlap and are not independent. The screen does not model trade entry price, stop loss, take profit, early exit, slippage, payout, contract pricing, or fees.
+Every eligible bar is sampled, so observations overlap and are not independent. The screen does not model trade entry price, stop loss, take profit, early exit, slippage, payout, contract pricing, or fees. The calculation is reproducible with `node scripts/analyze_m15_context.js research/data` after extracting the capture artifact into `research/data`.
 
 ## Results
 
-| Market | Full sample: median 16-bar move | Full sample: positive outcomes | First half: median / positive | Second half: median / positive |
+| Market | Full n | Full median / positive | First half n; median / positive | Second half n; median / positive |
 |---|---:|---:|---:|---:|
-| R_10 | -0.17 ATR | 47.1% | -0.16 ATR / 48.6% | -0.37 ATR / 44.2% |
-| R_25 | +0.08 ATR | 51.8% | +0.16 ATR / 52.9% | -0.04 ATR / 49.4% |
-| R_50 | +0.91 ATR | 62.9% | +0.80 ATR / 61.0% | +0.89 ATR / 62.3% |
-| R_75 | -0.16 ATR | 48.4% | +0.15 ATR / 53.1% | -0.40 ATR / 43.7% |
-| JD100 | +0.63 ATR | 59.7% | +0.84 ATR / 61.7% | +0.58 ATR / 59.3% |
-| CRASH500 | -0.59 ATR | 41.4% | -0.75 ATR / 36.6% | -0.39 ATR / 45.5% |
-| BOOM500 | -0.06 ATR | 48.9% | -0.25 ATR / 45.0% | +0.35 ATR / 53.8% |
+| R_10 | 866 | -0.17 ATR / 47.1% | 389; -0.16 / 48.6% | 452; -0.37 / 44.2% |
+| R_25 | 850 | +0.08 ATR / 51.8% | 412; +0.18 / 52.9% | 417; -0.04 / 49.4% |
+| R_50 | 950 | +0.92 ATR / 62.9% | 433; +0.80 / 61.0% | 486; +0.90 / 62.3% |
+| R_75 | 863 | -0.16 ATR / 48.4% | 403; +0.15 / 53.1% | 435; -0.40 / 43.7% |
+| JD100 | 928 | +0.64 ATR / 59.7% | 426; +0.85 / 61.7% | 481; +0.58 / 59.3% |
+| CRASH500 | 844 | -0.59 ATR / 41.4% | 385; -0.75 / 36.6% | 437; -0.39 / 45.5% |
+| BOOM500 | 846 | -0.06 ATR / 48.9% | 389; -0.25 / 45.0% | 442; +0.36 / 53.8% |
 
 ## Interpretation
 
