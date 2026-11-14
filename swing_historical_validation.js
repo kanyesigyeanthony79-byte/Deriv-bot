@@ -138,7 +138,7 @@ async function fetchHistory(client, symbol, granularity, requestedCount, now) {
     for (const candle of batch) byEpoch.set(candle.epoch, candle);
     if (byEpoch.size === previousSize) break;
     const oldest = batch[0].epoch;
-    const nextEnd = oldest;
+    const nextEnd = oldest + granularity;
     if (typeof end === "number" && nextEnd >= end) break;
     end = nextEnd;
     pages++;
