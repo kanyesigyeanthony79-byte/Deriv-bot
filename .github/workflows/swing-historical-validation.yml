@@ -5,12 +5,24 @@ on:
     branches:
       - feature/swing-historical-validation
       - feature/swing-safety-reliability-fixes
+      - dev/swing-identical-candle-comparison
     paths:
       - "swing_historical_validation.js"
+      - "swing_identical_candle_comparison.js"
+      - "test/fixtures/multi_timeframe_engine.baseline.js"
+      - "test/swing_identical_candle_comparison.test.js"
       - "multi_timeframe_engine.js"
       - "test/swing_historical_validation.test.js"
       - ".github/workflows/swing-historical-validation.yml"
+  pull_request:
+    branches:
+      - feature/swing-safety-reliability-fixes
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
+
+concurrency:
+  group: swing-historical-validation-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -32,11 +44,18 @@ jobs:
         run: node --test test/swing_historical_validation.test.js
       - name: Fetch historical candles and replay swing entries
         run: node swing_historical_validation.js
+      - name: Compare PR9 and PR11 on identical candle snapshots
+        run: node swing_identical_candle_comparison.js
+      - name: Test paired comparison
+        run: node --test test/swing_identical_candle_comparison.test.js
       - name: Upload historical validation report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: swing-historical-validation
-          path: swing_historical_validation.json
+          path: |
+            swing_historical_validation.json
+            swing_historical_snapshots.json
+            swing_identical_candle_comparison.json
           if-no-files-found: error
           retention-days: 30

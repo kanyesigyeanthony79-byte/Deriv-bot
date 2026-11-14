@@ -212,6 +212,15 @@ async function run() {
     metadataClient.close();
   }
 
+    const snapshot = {
+      schemaVersion: 1,
+      generatedAt: new Date(now * 1000).toISOString(),
+      sourceBranch: "feature/swing-safety-reliability-fixes",
+      sourceHead: "633f3b430d6433f897e7e5c499212fbfc7113a0d",
+      candlePolicy: "Completed candles only; raw fetched frames retained for identical baseline/candidate replay.",
+      markets: {}
+    };
+    const snapshotPath = path.join(__dirname, "swing_historical_snapshots.json");
     const report = {
       generatedAt: new Date(now * 1000).toISOString(),
       mode: "historical_read_only_replay",
@@ -229,6 +238,11 @@ async function run() {
     };
 
     for (const [marketId, marketName] of MARKETS) {
+      // Respect the separate Gold work window; no Gold collection before Monday.
+      if (marketId === "frxXAUUSD") {
+        report.markets[marketId] = { marketName, status: "deferred_until_monday_market_reopen" };
+        continue;
+      }
       const symbol = resolveSymbol(symbols, marketId, marketName);
       if (!symbol) {
         report.errors.push({ marketId, error: "Symbol could not be resolved" });
@@ -236,6 +250,10 @@ async function run() {
       }
       try {
         const fetchedFrames = await fetchMarket(symbol, now, 2);
+        // Persist the exact raw completed candles used by this replay so both rule
+        // versions can be evaluated on identical market data.
+        snapshot.markets[marketId] = { marketName, symbol, frames: fetchedFrames };
+        fs.writeFileSync(snapshotPath, JSON.stringify(snapshot));
         const continuity = {};
         const minimumBars = { M5: MAX_HOLD_BARS + 65, M15: 60, H1: 65, H4: 51, D1: 60 };
         const m5Segments = [];
@@ -297,6 +315,7 @@ async function run() {
       }
     }
 
+    fs.writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2) + "\n");
     const totals = Object.values(report.markets).filter(m => m.performance);
     report.summary = {
       marketsRequested: MARKETS.length,
