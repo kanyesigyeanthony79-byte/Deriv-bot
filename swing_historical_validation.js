@@ -5,6 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { evaluateCategory, validCandles, TIMEFRAMES, cooldownAllows } = require("./multi_timeframe_engine");
 const { validateCandleContinuity } = require("./market_quality");
+const { evaluateRefinedSwing } = require("./swing_h4_d1_m15_m5");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 // Initial historical validation focuses on Volatility 25, the instrument
@@ -217,7 +218,8 @@ async function run() {
       mode: "historical_read_only_replay",
       methodology: {
         entry: "M5 completed candle close",
-        setupAndFilters: "Existing staged swing engine with M15/H1/H4/D1 completed-candle cutoffs",
+        setupAndFilters: "Paired baseline and experimental H4/D1 trend, H1 setup, M15 confirmation, M5 trigger; all higher-timeframe candles completed by entry close",
+        comparison: "Both strategies use the same market candle snapshot, M5 entry index, four-entry-bar cooldown, and seven-day outcome horizon",
         forwardHorizon: "7 days",
         intendedLookback: "Approximately 80 days, subject to Deriv API history availability",
         barrierHandling: "Same-candle SL/TP contact is marked ambiguous; no assumed intrabar order",
@@ -229,6 +231,10 @@ async function run() {
     };
 
     for (const [marketId, marketName] of MARKETS) {
+      if (marketId === "frxXAUUSD") {
+        report.markets[marketId] = { marketName, status: "deferred_until_2026-11-16", reason: "Gold collection is deferred until the agreed Monday review." };
+        continue;
+      }
       const symbol = resolveSymbol(symbols, marketId, marketName);
       if (!symbol) {
         report.errors.push({ marketId, error: "Symbol could not be resolved" });
@@ -263,24 +269,41 @@ async function run() {
 
         const outcomes = [];
         const states = {};
+        const refinedOutcomes = [];
+        const refinedStates = {};
         let replayedM5Bars = 0;
         for (const m5 of m5Segments) {
           let lastSignalIndex = null;
+          let lastRefinedSignalIndex = null;
           const lastMatureIndex = m5.length - MAX_HOLD_BARS - 1;
           replayedM5Bars += Math.max(0, lastMatureIndex - 63);
           const segmentFrames = { ...frames, M5: m5 };
           for (let i = 64; i <= lastMatureIndex; i++) {
             const signal = evaluateCategory(marketId, marketName, "SWING", segmentFrames, i);
             states[signal.state] = (states[signal.state] || 0) + 1;
-            if (signal.state !== "signal" || !cooldownAllows(lastSignalIndex, i, 4)) continue;
-            lastSignalIndex = i;
-            const outcome = simulateOutcome(signal, m5, i);
-            outcomes.push({
-              signalId: signal.signalId, direction: signal.direction,
-              signalTime: new Date(signal.candleEpoch * 1000).toISOString(),
-              entry: signal.entry, stopLoss: signal.stopLoss, tp1: signal.tp1, tp2: signal.tp2,
-              ...outcome
-            });
+            if (signal.state === "signal" && cooldownAllows(lastSignalIndex, i, 4)) {
+              lastSignalIndex = i;
+              const outcome = simulateOutcome(signal, m5, i);
+              outcomes.push({
+                signalId: signal.signalId, direction: signal.direction,
+                signalTime: new Date(signal.candleEpoch * 1000).toISOString(),
+                entry: signal.entry, stopLoss: signal.stopLoss, tp1: signal.tp1, tp2: signal.tp2,
+                ...outcome
+              });
+            }
+
+            const refined = evaluateRefinedSwing(marketId, marketName, segmentFrames, i);
+            refinedStates[refined.state] = (refinedStates[refined.state] || 0) + 1;
+            if (refined.state === "signal" && cooldownAllows(lastRefinedSignalIndex, i, 4)) {
+              lastRefinedSignalIndex = i;
+              const refinedOutcome = simulateOutcome(refined, m5, i);
+              refinedOutcomes.push({
+                signalId: refined.signalId, direction: refined.direction,
+                signalTime: new Date(refined.candleEpoch * 1000).toISOString(),
+                entry: refined.entry, stopLoss: refined.stopLoss, tp1: refined.tp1, tp2: refined.tp2,
+                ...refinedOutcome
+              });
+            }
           }
         }
         report.markets[marketId] = {
@@ -289,7 +312,10 @@ async function run() {
           replayedM5Bars,
           stateCounts: states,
           performance: summarize(outcomes),
-          signals: outcomes
+          signals: outcomes,
+          refinedStateCounts: refinedStates,
+          refinedPerformance: summarize(refinedOutcomes),
+          refinedSignals: refinedOutcomes
         };
       } catch (error) {
         report.markets[marketId] = { marketName, symbol, status: "collection_or_replay_error", error: error.message };
@@ -298,14 +324,32 @@ async function run() {
     }
 
     const totals = Object.values(report.markets).filter(m => m.performance);
+    const refinedTotals = Object.values(report.markets).filter(m => m.refinedPerformance);
+    const baselineKeys = new Set(totals.flatMap(m => m.signals.map(x => x.signalTime + "|" + x.direction)));
+    const refinedKeys = new Set(refinedTotals.flatMap(m => m.refinedSignals.map(x => x.signalTime + "|" + x.direction)));
+    const overlap = [...baselineKeys].filter(key => refinedKeys.has(key)).length;
+    report.comparison = {
+      baselineSignals: [...baselineKeys].length,
+      refinedSignals: [...refinedKeys].length,
+      exactTimeAndDirectionOverlap: overlap,
+      baselineOnly: [...baselineKeys].filter(key => !refinedKeys.has(key)).length,
+      refinedOnly: [...refinedKeys].filter(key => !baselineKeys.has(key)).length,
+      note: "Signal overlap is descriptive; different signal frequencies do not establish better performance."
+    };
     report.summary = {
       marketsRequested: MARKETS.length,
       marketsCompleted: totals.length,
       marketsSkipped: MARKETS.length - totals.length,
       totalSignals: totals.reduce((n, m) => n + m.performance.signals, 0),
       totalResolvedSignals: totals.reduce((n, m) => n + m.performance.resolvedSignals, 0),
+      refinedSignals: refinedTotals.reduce((n, m) => n + m.refinedPerformance.signals, 0),
+      refinedResolvedSignals: refinedTotals.reduce((n, m) => n + m.refinedPerformance.resolvedSignals, 0),
       outcomeCounts: totals.reduce((acc, m) => {
         for (const [k,v] of Object.entries(m.performance.outcomes)) acc[k] = (acc[k] || 0) + v;
+        return acc;
+      }, {}),
+      refinedOutcomeCounts: refinedTotals.reduce((acc, m) => {
+        for (const [k,v] of Object.entries(m.refinedPerformance.outcomes)) acc[k] = (acc[k] || 0) + v;
         return acc;
       }, {}),
       errors: report.errors.length
