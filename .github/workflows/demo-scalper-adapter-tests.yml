@@ -2,11 +2,15 @@ name: Demo Scalper Adapter Tests
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feat/demo-account-aware-scalper]
     paths:
       - "deriv_demo_adapter.js"
       - "account_risk.js"
       - "test/deriv_demo_adapter.test.js"
+      - "demo_execution_manager.js"
+      - "deriv_demo_connection.js"
+      - "test/demo_execution_manager.test.js"
+      - "test/deriv_demo_connection.test.js"
       - ".github/workflows/demo-scalper-adapter-tests.yml"
   push:
     branches: [feat/demo-account-aware-scalper]
@@ -30,4 +34,4 @@ jobs:
       - name: Check syntax
         run: node --check deriv_demo_adapter.js
       - name: Run adapter tests
-        run: node --test test/deriv_demo_adapter.test.js test/account_risk.test.js
+        run: node --test test/deriv_demo_adapter.test.js test/account_risk.test.js test/deriv_demo_connection.test.js test/demo_execution_manager.test.js
