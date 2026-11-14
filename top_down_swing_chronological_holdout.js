@@ -128,6 +128,46 @@ function collectSignals(marketId, frames, variant, window, horizon) {
   return signals;
 }
 
+function summarizePortfolio(markets, variants = ["H1_CONTROL", "M15_REFINED", "M15_M5_REFINED"]) {
+  const summary = {};
+  for (const variant of variants) {
+    const evaluated = [];
+    for (const market of Object.values(markets || {})) {
+      const item = market.state === "replayed" ? market.variants?.[variant] : null;
+      if (item) evaluated.push(item);
+    }
+    const selected = evaluated.filter(item => item.selectedPolicy && item.selectedPolicyValidation?.scoredCount);
+    const selectedScoredCount = selected.reduce((sum, item) => sum + item.selectedPolicyValidation.scoredCount, 0);
+    const weighted = key => selectedScoredCount ? Number((selected.reduce((sum, item) =>
+      sum + (item.selectedPolicyValidation[key] || 0) * item.selectedPolicyValidation.scoredCount, 0) / selectedScoredCount).toFixed(4)) : null;
+    summary[variant] = {
+      // marketVariantCount means evaluated combinations, not only successful selections.
+      marketVariantCount: evaluated.length,
+      selectedMarketVariantCount: selected.length,
+      abstainedMarketVariantCount: evaluated.length - selected.length,
+      selectedPolicyScoredCount: selectedScoredCount,
+      // Retain the legacy field while making its selected-only meaning explicit above.
+      scoredCount: selectedScoredCount,
+      validationScoredCount: evaluated.reduce((sum, item) =>
+        sum + (item.fixedTargetValidation?.scoredCount || 0), 0),
+      selectedPolicyAverageR: weighted("averageR"),
+      selectedPolicyAverageDurationHours: weighted("averageDurationHours"),
+      selectionStatuses: Object.fromEntries([...new Set(evaluated.map(item => item.selectionStatus || "unknown"))]
+        .map(status => [status, evaluated.filter(item => (item.selectionStatus || "unknown") === status).length])),
+      markets: Object.entries(markets || {})
+        .filter(([, market]) => market.state === "replayed" && market.variants?.[variant])
+        .map(([marketId, market]) => ({
+          market: marketId,
+          selectedPolicy: market.variants[variant].selectedPolicy,
+          selectionStatus: market.variants[variant].selectionStatus,
+          validation: market.variants[variant].selectedPolicyValidation,
+          fixedTargetValidation: market.variants[variant].fixedTargetValidation
+        }))
+    };
+  }
+  return summary;
+}
+
 function runChronologicalHoldout(snapshot) {
   const output = {
     version: 1, generatedAt: snapshot.generatedAt || null, horizonDays: 14,
@@ -186,26 +226,7 @@ function runChronologicalHoldout(snapshot) {
     }
   }
 
-  for (const variant of ["H1_CONTROL", "M15_REFINED", "M15_M5_REFINED"]) {
-    const groups = [];
-    for (const market of Object.values(output.markets)) {
-      const item = market.state === "replayed" ? market.variants[variant] : null;
-      if (item && item.selectedPolicy && item.selectedPolicyValidation?.scoredCount) groups.push(item);
-    }
-    const n = groups.reduce((sum, item) => sum + item.selectedPolicyValidation.scoredCount, 0);
-    const weighted = key => n ? Number((groups.reduce((sum, item) =>
-      sum + (item.selectedPolicyValidation[key] || 0) * item.selectedPolicyValidation.scoredCount, 0) / n).toFixed(4)) : null;
-    output.summary[variant] = {
-      marketVariantCount: groups.length, scoredCount: n,
-      selectedPolicyAverageR: weighted("averageR"),
-      selectedPolicyAverageDurationHours: weighted("averageDurationHours"),
-      markets: Object.entries(output.markets)
-        .filter(([, market]) => market.state === "replayed" && market.variants[variant])
-        .map(([marketId, market]) => ({ market: marketId,
-          selectedPolicy: market.variants[variant].selectedPolicy,
-          validation: market.variants[variant].selectedPolicyValidation }))
-    };
-  }
+  output.summary = summarizePortfolio(output.markets);
   return output;
 }
 
@@ -216,4 +237,4 @@ if (require.main === module) {
   fs.writeFileSync(output, JSON.stringify(result, null, 2) + "\n");
   console.log(JSON.stringify({ output, summary: result.summary }, null, 2));
 }
-module.exports = { makeWindows, summarizeResults, summarizePairedResults, choosePolicy, classifySelectionStatus, firstEligibleEpoch, collectSignals, runChronologicalHoldout };
+module.exports = { makeWindows, summarizeResults, summarizePairedResults, choosePolicy, classifySelectionStatus, firstEligibleEpoch, collectSignals, summarizePortfolio, runChronologicalHoldout };
