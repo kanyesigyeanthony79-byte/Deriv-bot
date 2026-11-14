@@ -3,7 +3,8 @@ name: Multi-Timeframe Data Collector
 on:
   push:
     branches:
-      - feature/multi-timeframe-engine
+      - main
+      - feature/multi-timeframe-telegram-alerts
     paths:
       - "multi_timeframe_collector.js"
       - "multi_timeframe_engine.js"
@@ -17,7 +18,7 @@ permissions:
 
 concurrency:
   group: multi-timeframe-observation-collector
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   collect:
@@ -27,13 +28,17 @@ jobs:
       - name: Checkout development branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name == 'main' && 'main' || 'feature/multi-timeframe-engine' }}
+          ref: ${{ github.ref_name }}
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Collect completed candles for all eight markets
+      - name: Collect candles and route recent candidates to Telegram
         run: node multi_timeframe_collector.js
+        env:
+          MTF_TELEGRAM_ALERTS: "true"
+          TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
+          SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
       - name: Persist isolated observation journal
         run: |
           git config user.name "github-actions[bot]"
