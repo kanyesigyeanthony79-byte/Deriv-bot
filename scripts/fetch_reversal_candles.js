@@ -148,7 +148,7 @@ async function fetchFrame(client, symbol, granularity, startEpoch, snapshotEpoch
           ![candle.open, candle.high, candle.low, candle.close].every(Number.isFinite) ||
           candle.high < Math.max(candle.open, candle.close) ||
           candle.low > Math.min(candle.open, candle.close) ||
-          candle.high <= candle.low) {
+          candle.high < candle.low) {
         throw new Error(`Invalid OHLC candle returned for ${symbol} M${granularity / 60}.`);
       }
       if (epoch % granularity !== 0) {
