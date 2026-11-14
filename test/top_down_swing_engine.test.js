@@ -37,8 +37,8 @@ test("pivots are unavailable until all right-hand confirmation candles have clos
     {epoch:180,open:1,high:3,low:0,close:1},
     {epoch:240,open:1,high:2,low:0,close:1}
   ];
-  assert.equal(confirmedPivots(data, "M5", 240 + 300).highs.length, 0);
-  assert.equal(confirmedPivots(data, "M5", 240 + 300 + 1).highs.length, 1);
+  assert.equal(confirmedPivots(data, "M5", 240 + 300 - 1).highs.length, 0);
+  assert.equal(confirmedPivots(data, "M5", 240 + 300).highs.length, 1);
 });
 test("structure reports warming when confirmed swing points are insufficient", () => {
   assert.equal(structure(bars(10, 3600, i => 100 + i), "H1", 2_000_000_000).state, "warming");
