@@ -1,8 +1,8 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { POLICIES } = require("./top_down_swing_long_hold_replay");
-const { makeWindows, summarizeResults, choosePolicy } = require("./top_down_swing_chronological_holdout");
+const { POLICIES } = require("../top_down_swing_long_hold_replay");
+const { makeWindows, summarizeResults, choosePolicy } = require("../top_down_swing_chronological_holdout");
 
 test("training outcome horizon does not overlap validation entries", () => {
   const start = 1_800_000_000;
