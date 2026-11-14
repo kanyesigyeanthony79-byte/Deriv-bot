@@ -5,7 +5,6 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const ENDPOINT = "wss://api.derivws.com/trading/v1/options/ws/public";
-const LEGACY_ENDPOINT = "wss://ws.derivws.com/websockets/v3?app_id=1089";
 const MARKETS = ["R_10", "R_25", "R_50", "R_75", "JD100", "CRASH500", "BOOM500"];
 const FRAMES = [60, 300, 900];
 const DAYS = Number(process.env.REPLAY_DAYS || 14);
@@ -106,7 +105,7 @@ function validateCoverage(candles, symbol, granularity, startEpoch, snapshotEpoc
   return { expectedCount, gapCount: missing.length, firstEpoch: firstExpected, lastEpoch: lastExpected };
 }
 
-async function reconstructFromTicks(client, legacyClient, symbol, granularity, epoch) {
+async function reconstructFromTicks(client, symbol, granularity, epoch) {
   const request = {
     ticks_history: symbol,
     style: "ticks",
@@ -114,14 +113,9 @@ async function reconstructFromTicks(client, legacyClient, symbol, granularity, e
     start: epoch,
     end: String(epoch + granularity - 1)
   };
-  let reply = await client.ask(request);
-  let times = reply.history?.times || [];
-  let prices = reply.history?.prices || [];
-  if (times.length === 0 && legacyClient) {
-    reply = await legacyClient.ask(request);
-    times = reply.history?.times || [];
-    prices = reply.history?.prices || [];
-  }
+  const reply = await client.ask(request);
+  const times = reply.history?.times || [];
+  const prices = reply.history?.prices || [];
   if (times.length !== prices.length) {
     throw new Error(`Mismatched tick timestamps/prices for ${symbol} at ${new Date(epoch * 1000).toISOString()}.`);
   }
@@ -147,7 +141,7 @@ async function reconstructFromTicks(client, legacyClient, symbol, granularity, e
   };
 }
 
-async function fetchFrame(client, legacyClient, symbol, granularity, startEpoch, snapshotEpoch) {
+async function fetchFrame(client, symbol, granularity, startEpoch, snapshotEpoch) {
   const firstExpected = Math.ceil(startEpoch / granularity) * granularity;
   const lastExpected = Math.floor(snapshotEpoch / granularity) * granularity - granularity;
   const byEpoch = new Map();
@@ -211,7 +205,7 @@ async function fetchFrame(client, legacyClient, symbol, granularity, startEpoch,
   const reconstructed = [];
   for (let epoch = firstExpected; epoch <= lastExpected; epoch += granularity) {
     if (byEpoch.has(epoch)) continue;
-    const candle = await reconstructFromTicks(client, legacyClient, symbol, granularity, epoch);
+    const candle = await reconstructFromTicks(client, symbol, granularity, epoch);
     if (candle) {
       byEpoch.set(epoch, candle);
       reconstructed.push(epoch);
@@ -254,14 +248,7 @@ async function main() {
   const startEpoch = snapshotEpoch - DAYS * 86400;
   fs.mkdirSync(OUT, { recursive: true });
   const client = await connect();
-  let legacyClient = null;
   try {
-    try {
-      legacyClient = await connect(LEGACY_ENDPOINT);
-      console.log("Legacy public history fallback connected.");
-    } catch (error) {
-      console.warn(`Legacy history fallback unavailable: ${error.message}`);
-    }
     const symbolsReply = await client.ask({ active_symbols: "brief" });
     const active = new Set((symbolsReply.active_symbols || []).map(item => item.underlying_symbol || item.symbol).filter(Boolean));
     const summary = {
@@ -284,7 +271,7 @@ async function main() {
       for (const granularity of FRAMES) {
         const frame = `M${granularity / 60}`;
         try {
-          const result = await fetchFrame(client, legacyClient, market, granularity, startEpoch, snapshotEpoch);
+          const result = await fetchFrame(client, market, granularity, startEpoch, snapshotEpoch);
           frames[frame] = result.candles;
           coverage[frame] = result.coverage;
           if (!result.complete) {
@@ -326,7 +313,6 @@ async function main() {
     }
   } finally {
     client.close();
-    if (legacyClient) legacyClient.close();
   }
 }
 
