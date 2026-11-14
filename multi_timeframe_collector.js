@@ -151,7 +151,7 @@ async function main() {
     const total = Object.values(output.markets).reduce((sum, m) =>
       sum + Object.values(m.timeframes).reduce((n, candles) => n + candles.length, 0), 0);
     const allSignals = Object.values(output.markets).flatMap(m => m.signals || []);
-    const signalCounts = Object.fromEntries(["signal", "no_signal", "timeframe_conflict", "warming", "market_filtered", "data_gap"].map(state =>
+    const signalCounts = Object.fromEntries(["signal", "no_signal", "timeframe_conflict", "waiting_pullback", "warming", "market_filtered", "data_gap"].map(state =>
       [state, allSignals.filter(s => s.state === state).length]
     ));
     output.summary = { markets: Object.keys(output.markets).length, signalCounts, journal: summarizeJournal(journal), telegram: alertSummary };
