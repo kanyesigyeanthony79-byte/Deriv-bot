@@ -138,15 +138,12 @@ test("swing entries use M5 execution with M15 confirmation and H1 setup", () => 
 
 test("swing pullback confirmation requires a completed directional rejection near M15 EMA20", () => {
   const { swingPullbackConfirmed } = require("../multi_timeframe_engine");
-  const rising = candles(60, 900, 1_700_000_000, 100);
-  const prior = rising[rising.length - 2];
-  const emaArea = prior.close - 0.2;
+  const rising = Array.from({ length: 60 }, (_, i) => ({
+    epoch: 1_700_000_000 + i * 900, open: 100, high: 100.1, low: 99.9, close: 100
+  }));
   rising[rising.length - 1] = {
-    epoch: prior.epoch + 900,
-    open: emaArea - 0.08,
-    high: emaArea + 0.22,
-    low: emaArea - 0.18,
-    close: emaArea + 0.16
+    epoch: rising[rising.length - 2].epoch + 900,
+    open: 99.9, high: 100.3, low: 99.8, close: 100.2
   };
   assert.equal(swingPullbackConfirmed(rising, "BUY"), true);
   assert.equal(swingPullbackConfirmed(rising, "SELL"), false);
@@ -154,14 +151,12 @@ test("swing pullback confirmation requires a completed directional rejection nea
 
 test("swing pullback confirmation rejects candles that never test the EMA20 area", () => {
   const { swingPullbackConfirmed } = require("../multi_timeframe_engine");
-  const rising = candles(60, 900, 1_700_000_000, 100);
-  const prior = rising[rising.length - 2];
+  const rising = Array.from({ length: 60 }, (_, i) => ({
+    epoch: 1_700_000_000 + i * 900, open: 100, high: 100.1, low: 99.9, close: 100
+  }));
   rising[rising.length - 1] = {
-    epoch: prior.epoch + 900,
-    open: prior.close + 0.3,
-    high: prior.close + 0.8,
-    low: prior.close + 0.25,
-    close: prior.close + 0.7
+    epoch: rising[rising.length - 2].epoch + 900,
+    open: 101.2, high: 101.8, low: 101.1, close: 101.7
   };
   assert.equal(swingPullbackConfirmed(rising, "BUY"), false);
 });
