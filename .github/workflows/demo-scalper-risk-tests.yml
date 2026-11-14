@@ -1,0 +1,31 @@
+name: Demo Scalper Risk Policy Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "account_risk.js"
+      - "test/account_risk.test.js"
+      - ".github/workflows/demo-scalper-risk-tests.yml"
+  push:
+    branches: [feat/demo-account-aware-scalper]
+    paths:
+      - "account_risk.js"
+      - "test/account_risk.test.js"
+      - ".github/workflows/demo-scalper-risk-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check syntax
+        run: node --check account_risk.js
+      - name: Run account-risk tests
+        run: node --test test/account_risk.test.js
