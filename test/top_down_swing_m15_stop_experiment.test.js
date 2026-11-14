@@ -2,6 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { METHODS, deriveStop, completedFrames } = require("../top_down_swing_m15_stop_experiment");
+const { atr } = require("../top_down_swing_engine");
 
 function makeFrames() {
   const M15 = [];
@@ -40,7 +41,7 @@ test("M15 ATR stop uses the fixed 1.5 ATR distance on the same entry", () => {
   const stop = deriveStop(signal, frames, METHODS.M15_ATR_1_5);
   assert.ok(stop);
   assert.equal(stop.source, METHODS.M15_ATR_1_5);
-  assert.ok(Math.abs(stop.riskDistance - 1.5 * stop.riskDistance / 1.5) < 1e-9);
+  assert.ok(Math.abs(stop.riskDistance - 1.5 * atr(completedFrames(frames, signal.decisionEpoch).M15)) < 1e-9);
   assert.ok(stop.stopLoss < signal.entry);
 });
 
