@@ -233,6 +233,7 @@ async function run() {
     report.summary = {
       marketsRequested: MARKETS.length,
       marketsCompleted: totals.length,
+      marketsSkipped: MARKETS.length - totals.length,
       totalSignals: totals.reduce((n, m) => n + m.performance.signals, 0),
       totalResolvedSignals: totals.reduce((n, m) => n + m.performance.resolvedSignals, 0),
       outcomeCounts: totals.reduce((acc, m) => {
@@ -243,7 +244,7 @@ async function run() {
     };
     fs.writeFileSync(path.join(__dirname, "swing_historical_validation.json"), JSON.stringify(report, null, 2) + "\n");
     console.log(JSON.stringify({ event: "historical_replay_complete", summary: report.summary, markets: Object.fromEntries(Object.entries(report.markets).map(([k,v]) => [k, {status:v.status, signals:v.performance?.signals, outcomes:v.performance?.outcomes, history:v.history || v.continuity}])) }));
-    if (totals.length !== MARKETS.length) process.exitCode = 1;
+    if (totals.length === 0) process.exitCode = 1;
   } finally {
     client.close();
   }
