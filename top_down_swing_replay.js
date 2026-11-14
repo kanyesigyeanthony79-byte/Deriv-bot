@@ -67,9 +67,14 @@ function runReplay(snapshot, options = {}) {
     const latestClose = m5[m5.length - 1].epoch + M5_SECONDS;
     const eligibleDecisions = m5.filter(c => c.epoch + M5_SECONDS + MAX_AGE <= latestClose);
     const byVariant = Object.fromEntries(VARIANTS.map(v => [v, new Map()]));
-    for (const bar of eligibleDecisions) {
-      const decision = bar.epoch + M5_SECONDS;
-      for (const variant of VARIANTS) {
+    const eligibleDecisionCountByVariant = {};
+    for (const variant of VARIANTS) {
+      const tf = variant === "H1_CONTROL" ? "H1" : variant === "M15_REFINED" ? "M15" : "M5";
+      const seconds = tf === "H1" ? 3600 : tf === "M15" ? 900 : M5_SECONDS;
+      const decisionBars = (frames[tf] || []).filter(c => c.epoch + seconds + MAX_AGE <= latestClose);
+      eligibleDecisionCountByVariant[variant] = decisionBars.length;
+      for (const bar of decisionBars) {
+        const decision = bar.epoch + seconds;
         const signal = evaluateTopDown(marketId, frames, decision, variant);
         if (signal.state !== "candidate") continue;
         const key = signal.entryEpoch + "|" + signal.direction;
@@ -130,7 +135,7 @@ function runReplay(snapshot, options = {}) {
     report.markets[marketId] = { state: eligibleDecisions.length ? "replayed" : "insufficient_forward_coverage",
       firstM5Epoch: m5[0].epoch, lastM5Epoch: m5[m5.length - 1].epoch,
       coverageDays: Number((coverageSeconds / 86400).toFixed(2)), requiredCoverageDays: 7,
-      eligibleDecisionCount: eligibleDecisions.length,
+      eligibleDecisionCount: eligibleDecisions.length, eligibleDecisionCountByVariant,
       sharedThesisCountAcrossAllVariants: shared, variants: candidates };
   }
   for (const variant of VARIANTS) {
