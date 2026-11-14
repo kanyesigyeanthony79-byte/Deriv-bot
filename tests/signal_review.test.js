@@ -22,3 +22,8 @@ test("review never mutates original signal levels",()=>{
  reviewSignal(signal,{M1:candles(60)},1000+60*60);
  assert.deepEqual(signal,original);
 });
+
+test("flags same-candle stop and target as ambiguous",()=>{
+ const r=reviewSignal(signal,{M1:candles(60,95,89,111)},1000+60*60);
+ assert.equal(r.status,"AMBIGUOUS_CANDLE");
+});
