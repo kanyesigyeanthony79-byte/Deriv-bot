@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { journalOutcome, reconcileJournalState, markExpired } = require("../signal_journal");
+const { journalOutcome, reconcileJournalState, markExpired, updateFavourableMovement } = require("../signal_journal");
 
 function fixture() {
   return { version: 1, signals: [
@@ -56,4 +56,19 @@ test("unknown signal IDs do not create phantom journal rows", () => {
   const journal = fixture();
   assert.equal(journalOutcome(journal, "missing", "TP1_HIT", candle), false);
   assert.equal(journal.signals.length, 3);
+});
+
+test("tracks maximum favourable movement for BUY and SELL signals", () => {
+  const journal = { signals: [
+    { signalId: "buy-1", direction: "BUY", entry: 100 },
+    { signalId: "sell-1", direction: "SELL", entry: 200 }
+  ] };
+  assert.equal(updateFavourableMovement(journal, "buy-1", { epoch: 10, high: 108, low: 97 }), true);
+  assert.equal(updateFavourableMovement(journal, "buy-1", { epoch: 20, high: 105, low: 99 }), true);
+  assert.equal(updateFavourableMovement(journal, "sell-1", { epoch: 30, high: 204, low: 188 }), true);
+  assert.equal(journal.signals[0].maxFavourablePoints, 8);
+  assert.equal(journal.signals[0].maxFavourablePct, 8);
+  assert.equal(journal.signals[0].maxFavourableEpoch, 10);
+  assert.equal(journal.signals[1].maxFavourablePoints, 12);
+  assert.equal(journal.signals[1].maxFavourablePct, 6);
 });

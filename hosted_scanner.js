@@ -3,7 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { evaluate, DEF } = require("./engine");
-const { journalOutcome: recordJournalOutcome, reconcileJournalState, markExpired } = require("./signal_journal");
+const { journalOutcome: recordJournalOutcome, reconcileJournalState, markExpired, updateFavourableMovement } = require("./signal_journal");
 const { dailySummary, buildDailySummaryMessage, previousUgandaDay } = require("./daily_summary");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
@@ -68,8 +68,17 @@ async function maybeSendDailySummary(now) {
   // Retry the previous Uganda calendar day's report on every scanner cycle until delivery succeeds.
   // A successful Telegram response is persisted in the journal to prevent routine duplicate reports.
   const reportDay = previousUgandaDay(now);
+  const localNow = new Date(now * 1000);
+  const localClock = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Kampala", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(localNow);
+  const [localHour, localMinute] = localClock.split(":").map(Number);
+  if (localHour * 60 + localMinute < 15) return; // allow final completed candles and MTF journal commit to arrive
   if (journal.dailyReports[reportDay]?.delivered) return;
-  const summary = dailySummary(journal.signals, reportDay, MARKETS);
+  let mtfSignals = [];
+  try {
+    const mtfJournal = JSON.parse(fs.readFileSync(path.join(__dirname, "multi_timeframe_journal.json"), "utf8"));
+    if (mtfJournal && Array.isArray(mtfJournal.signals)) mtfSignals = mtfJournal.signals;
+  } catch {}
+  const summary = dailySummary(journal.signals, reportDay, MARKETS, mtfSignals);
   const message = buildDailySummaryMessage(summary);
   try {
     await postTelegram({ event: "daily_summary", message, text: message });
@@ -240,6 +249,7 @@ async function monitorSignals(marketId, candles, now) {
 
     const laterCandles = candles.filter(c => c.epoch > Number(signal.lastCheckedEpoch || signal.createdEpoch));
     for (const candle of laterCandles) {
+      updateFavourableMovement(journal, signal.signalId, candle);
       const isBuy = signal.direction === "BUY";
       const slTouched = isBuy ? candle.low <= signal.stopLoss : candle.high >= signal.stopLoss;
       const tp1Touched = isBuy ? candle.high >= signal.tp1 : candle.low <= signal.tp1;

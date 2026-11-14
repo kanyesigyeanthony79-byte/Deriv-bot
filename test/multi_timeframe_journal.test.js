@@ -36,6 +36,20 @@ test("journal keeps market and category signal IDs separate and updates outcomes
   assert.deepEqual(summarizeJournal(third), { tp1_hit: 1 });
 });
 
+test("records maximum favourable movement before a terminal outcome", () => {
+  const buySignal = { ...signal, signalId: "JD100-SHORT_TERM-200", category: "SHORT_TERM", state: "signal" };
+  const first = updateJournal({ version: 1, signals: [] }, {
+    JD100: { marketId: "JD100", signals: [buySignal], timeframes: { H1: [candle(100, 105, 95), candle(200, 108, 99)] } }
+  }, 250);
+  assert.equal(first.signals[0].maxFavourablePoints, 8);
+  assert.equal(first.signals[0].maxFavourablePrice, 108);
+  const second = updateJournal(first, {
+    JD100: { marketId: "JD100", signals: [buySignal], timeframes: { H1: [candle(100, 105, 95), candle(200, 108, 99), candle(300, 111, 99)] } }
+  }, 350);
+  assert.equal(second.signals[0].maxFavourablePoints, 11);
+  assert.equal(second.signals[0].status, "tp1_hit");
+});
+
 test("journal expires an unclosed observation after its category age limit", () => {
   const result = updateJournal({ version: 1, signals: [{ ...signal, status: "pending", createdEpoch: 100, tp1Hit: false }] }, {}, 1200);
   assert.equal(result.signals[0].status, "expired");
