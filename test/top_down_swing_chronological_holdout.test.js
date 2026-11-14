@@ -19,8 +19,8 @@ test("holdout rejects a window too short for training, embargo and validation", 
 test("policy selection uses only sufficiently scored training policies", () => {
   const rows = Object.fromEntries(POLICIES.map(policy => [policy, { scoredCount: 20, averageR: 0.2 }]));
   rows.H4_PIVOT_TRAIL = { scoredCount: 9, averageR: 9 };
-  rows.M15_REFINED = { scoredCount: 20, averageR: 0.8 };
-  assert.equal(choosePolicy(rows), "M15_REFINED");
+  rows.H1_PIVOT_TRAIL = { scoredCount: 20, averageR: 0.8 };
+  assert.equal(choosePolicy(rows), "H1_PIVOT_TRAIL");
 });
 
 test("policy selection abstains when no policy reaches minimum training sample", () => {
