@@ -2,10 +2,14 @@ name: Demo Scalper Risk Policy Tests
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feat/demo-account-aware-scalper]
     paths:
       - "account_risk.js"
       - "test/account_risk.test.js"
+      - "demo_execution_manager.js"
+      - "deriv_demo_connection.js"
+      - "test/demo_execution_manager.test.js"
+      - "test/deriv_demo_connection.test.js"
       - ".github/workflows/demo-scalper-risk-tests.yml"
   push:
     branches: [feat/demo-account-aware-scalper]
@@ -28,4 +32,4 @@ jobs:
       - name: Check syntax
         run: node --check account_risk.js
       - name: Run account-risk tests
-        run: node --test test/account_risk.test.js
+        run: node --test test/account_risk.test.js test/demo_execution_manager.test.js test/deriv_demo_connection.test.js
