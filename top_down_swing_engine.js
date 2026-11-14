@@ -229,8 +229,16 @@ function managementDecision(signal, candlesByTimeframe, decisionEpoch, state = {
   if (!validCandles(h1) || h1.length === 0) {
     return { action: "WAIT", reason: "Waiting for the first valid completed H1 candle after entry.", events: [] };
   }
+  const h1Continuity = validateContinuity(h1, "H1", signal.marketId);
+  if (!h1Continuity.valid) {
+    return { action: "WAIT", reason: "H1 history contains missing intervals; management advice is suppressed until the candle history is reliable.", events: [], dataGaps: h1Continuity.gaps };
+  }
+  const h4 = completed(candlesByTimeframe && candlesByTimeframe.H4, "H4", decisionEpoch)
+    .filter(c => c.epoch >= entryClose);
+  const h4Continuity = h4.length >= 2 ? validateContinuity(h4, "H4", signal.marketId) : { valid: true, gaps: [] };
   const events = managementAdvisories(signal, candlesByTimeframe, decisionEpoch)
-    .filter(event => !state.dismissedEventTypes?.includes(event.type));
+    .filter(event => !state.dismissedEventTypes?.includes(event.type))
+    .filter(event => h4Continuity.valid || !["HOLD_STRUCTURE_INTACT", "STRUCTURE_DETERIORATION_WARNING"].includes(event.type));
   const has = type => events.some(event => event.type === type);
   if (has("EARLY_LOSS_REVIEW")) {
     return { action: "EXIT_REVIEW", reason: "The completed H1 evidence shows structural risk near or beyond invalidation.", events };
@@ -249,6 +257,9 @@ function managementDecision(signal, candlesByTimeframe, decisionEpoch, state = {
   }
   if (has("HOLD_STRUCTURE_INTACT")) {
     return { action: "HOLD", reason: "Completed H1/H4 structure still supports the swing thesis.", events };
+  }
+  if (!h4Continuity.valid) {
+    return { action: "MONITOR", reason: "H4 history has gaps; price-based H1 reviews remain available, but no H1/H4 structure verdict is issued.", events, dataGaps: h4Continuity.gaps };
   }
   return { action: "MONITOR", reason: "No decisive management trigger is confirmed; keep the original invalidation and monitor the next completed candle.", events };
 }
