@@ -5,10 +5,14 @@ on:
     branches:
       - feature/swing-historical-validation
       - feature/swing-safety-reliability-fixes
+      - dev/swing-h4-d1-m15-m5-refinement
     paths:
       - "swing_historical_validation.js"
+      - "swing_h4_d1_m15_m5.js"
+      - "SWING_H4_D1_M15_M5_EXPERIMENT.md"
       - "multi_timeframe_engine.js"
       - "test/swing_historical_validation.test.js"
+      - "test/swing_h4_d1_m15_m5.test.js"
       - ".github/workflows/swing-historical-validation.yml"
   workflow_dispatch:
 
@@ -27,9 +31,11 @@ jobs:
         with:
           node-version: "22"
       - name: Check syntax
-        run: node --check swing_historical_validation.js
-      - name: Test conservative outcome replay
-        run: node --test test/swing_historical_validation.test.js
+        run: |
+          node --check swing_historical_validation.js
+          node --check swing_h4_d1_m15_m5.js
+      - name: Test historical replay and refined swing candidate
+        run: node --test test/swing_historical_validation.test.js test/swing_h4_d1_m15_m5.test.js
       - name: Fetch historical candles and replay swing entries
         run: node swing_historical_validation.js
       - name: Upload historical validation report
