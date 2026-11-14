@@ -1,0 +1,39 @@
+name: Swing Historical Validation
+
+on:
+  push:
+    branches:
+      - feature/swing-historical-validation
+    paths:
+      - "swing_historical_validation.js"
+      - "test/swing_historical_validation.test.js"
+      - ".github/workflows/swing-historical-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout development branch
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check syntax
+        run: node --check swing_historical_validation.js
+      - name: Test conservative outcome replay
+        run: node --test test/swing_historical_validation.test.js
+      - name: Fetch historical candles and replay swing entries
+        run: node swing_historical_validation.js
+      - name: Upload historical validation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: swing-historical-validation
+          path: swing_historical_validation.json
+          if-no-files-found: error
+          retention-days: 30
