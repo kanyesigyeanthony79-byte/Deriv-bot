@@ -145,7 +145,9 @@ class DemoExecutionManager {
           actions.push({ type: "EXIT_BLOCKED", contractId: position.contractId, reason: "holding_limit_reached_contract_not_sellable" });
           continue;
         }
-        const result = await this.adapter.closeContract(position.contractId, item.reason);
+        let result;
+        try { result = await this.adapter.closeContract(position.contractId, item.reason); }
+        catch (_) { result = { closed: false, contractId: position.contractId, reason: "close_request_failed_reconciliation_required" }; }
         actions.push({ type: result.closed ? "EXIT_CONFIRMED" : "EXIT_UNCONFIRMED", ...result });
         if (result.closed) closedIds.add(Number(position.contractId));
       }
@@ -155,13 +157,17 @@ class DemoExecutionManager {
       if (this.positionManagementEnabled && typeof this.exitEvaluator === "function") {
         for (const position of snapshot.openPositions) {
           if (closedIds.has(Number(position.contractId))) continue;
-          const decision = await this.exitEvaluator({ position, snapshot, nowMs });
+          let decision;
+          try { decision = await this.exitEvaluator({ position, snapshot, nowMs }); }
+          catch (_) { return { status: "blocked", reason: "exit_policy_evaluation_failed", actions }; }
           if (!decision || decision.exit !== true) continue;
           if (!position.isValidToSell) {
             actions.push({ type: "EXIT_BLOCKED", contractId: position.contractId, reason: "contract_not_sellable", policyReason: decision.reason || null });
             continue;
           }
-          const result = await this.adapter.closeContract(position.contractId, decision.reason || "approved_exit_policy");
+          let result;
+          try { result = await this.adapter.closeContract(position.contractId, decision.reason || "approved_exit_policy"); }
+          catch (_) { result = { closed: false, contractId: position.contractId, reason: "close_request_failed_reconciliation_required" }; }
           actions.push({ type: result.closed ? "EXIT_CONFIRMED" : "EXIT_UNCONFIRMED", ...result });
           if (result.closed) closedIds.add(Number(position.contractId));
         }
@@ -206,14 +212,19 @@ class DemoExecutionManager {
       }
       const risk = assessNewPosition(snapshot, this.adapter.policy, nowMs);
       if (!risk.allowed) return { status: "blocked", reason: risk.reason, actions };
-      const opened = await this.adapter.openPosition({
-        symbol,
-        contractType: direction === "BUY" ? "CALL" : "PUT",
-        duration: candidate.duration,
-        durationUnit: candidate.durationUnit || "m",
-        dayStartEquity: baseline.dayStartEquity,
-        sessionPeakEquity: baseline.sessionPeakEquity
-      });
+      let opened;
+      try {
+        opened = await this.adapter.openPosition({
+          symbol,
+          contractType: direction === "BUY" ? "CALL" : "PUT",
+          duration: candidate.duration,
+          durationUnit: candidate.durationUnit || "m",
+          dayStartEquity: baseline.dayStartEquity,
+          sessionPeakEquity: baseline.sessionPeakEquity
+        });
+      } catch (_) {
+        return { status: "blocked", reason: "entry_request_failed_reconcile_before_retry", actions };
+      }
       actions.push({ type: opened.opened ? "ENTRY_CONFIRMED" : "ENTRY_REJECTED", ...opened });
       return { status: opened.opened ? "executed_demo" : "blocked", actions };
     } finally {
