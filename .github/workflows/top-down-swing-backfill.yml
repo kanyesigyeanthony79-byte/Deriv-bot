@@ -1,0 +1,28 @@
+name: Top-Down Swing Historical Backfill
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev/top-down-swing-precision-experiment
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Collect historical OHLC only
+        run: node top_down_swing_backfill.js
+      - name: Upload isolated research snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: top-down-swing-historical-snapshot
+          path: top_down_swing_snapshot.json
+          if-no-files-found: error
+          retention-days: 30
