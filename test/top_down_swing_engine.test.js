@@ -75,3 +75,23 @@ test("early loss warning is not delayed while waiting for a completed H4 candle"
   const events=managementAdvisories(signal,{H1:h1,H4:[]},h1.at(-1).epoch+3600);
   assert.ok(events.some(e=>e.type==="EARLY_LOSS_REVIEW"));
 });
+
+test("all three entry variants preserve an H4/H1 thesis even when D1 context is opposite", () => {
+  const end=2_000_000_000;
+  const makeUp=(n,step)=>risingStructure(n,step).map((bar,i)=>({...bar,epoch:end-n*step+i*step}));
+  const makeDown=(n,step)=>makeUp(n,step).map(bar=>({
+    ...bar,open:200-bar.open,close:200-bar.close,high:200-bar.low,low:200-bar.high
+  }));
+  const frames={
+    D1:makeDown(100,86400), H4:makeUp(100,14400), H1:makeUp(100,3600),
+    M15:makeUp(100,900), M5:makeUp(100,300)
+  };
+  const last=frames.M5.at(-1), prior=frames.M5.at(-2);
+  frames.M5[frames.M5.length-1]={...last,open:prior.high,close:prior.high+0.5,high:prior.high+0.7,low:prior.high-0.1};
+  for(const variant of ["H1_CONTROL","M15_REFINED","M15_M5_REFINED"]) {
+    const result=evaluateTopDown("R_25",frames,end,variant,{maxRiskAtr:10,minEntryNoiseAtr:0.1});
+    assert.equal(result.state,"candidate",variant+" should produce the expected deterministic fixture candidate");
+    assert.equal(result.direction,"BUY");
+    assert.equal(result.d1Alignment,"counter_trend");
+  }
+});
