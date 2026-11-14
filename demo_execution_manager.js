@@ -3,6 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { assessNewPosition, positionsPastTimeLimit } = require("./account_risk");
+const { APPROVED_SYNTHETIC_SYMBOLS } = require("./deriv_demo_adapter");
 
 function kampalaDate(nowMs) {
   return new Intl.DateTimeFormat("en-CA", {
@@ -78,6 +79,9 @@ class DemoExecutionManager {
     if (!baselineStore || typeof baselineStore.load !== "function" ||
         typeof baselineStore.save !== "function") throw new Error("persistent_baseline_store_required");
     if (!Array.isArray(allowedSymbols) || !allowedSymbols.length) throw new Error("synthetic_symbol_allowlist_required");
+    if (allowedSymbols.some(s => !APPROVED_SYNTHETIC_SYMBOLS.has(String(s).toUpperCase()))) {
+      throw new Error("allowlist_contains_non_approved_synthetic_symbol");
+    }
     if (!Number.isInteger(maxEntriesPerCycle) || maxEntriesPerCycle < 0 || maxEntriesPerCycle > 1) {
       throw new Error("max_entries_per_cycle_must_be_zero_or_one");
     }
