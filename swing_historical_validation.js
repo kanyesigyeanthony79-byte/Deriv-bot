@@ -238,6 +238,11 @@ async function run() {
     };
 
     for (const [marketId, marketName] of MARKETS) {
+      // Respect the separate Gold work window; no Gold collection before Monday.
+      if (marketId === "frxXAUUSD") {
+        report.markets[marketId] = { marketName, status: "deferred_until_monday_market_reopen" };
+        continue;
+      }
       const symbol = resolveSymbol(symbols, marketId, marketName);
       if (!symbol) {
         report.errors.push({ marketId, error: "Symbol could not be resolved" });
