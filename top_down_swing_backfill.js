@@ -78,7 +78,6 @@ async function fetchCandleHistory(client, symbol, granularity, requestedCount, n
     if (!(oldest < previousOldest)) break;
     for (const candle of page) byEpoch.set(candle.epoch, candle);
     previousOldest = oldest;
-    if (page.length < count) break;
     end = String(oldest - 1);
     await sleep(100);
   }
