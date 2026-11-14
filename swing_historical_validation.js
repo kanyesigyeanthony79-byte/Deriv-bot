@@ -35,6 +35,17 @@ function normalizeCandles(raw, granularity, now) {
   return validCandles(candles) ? candles : [];
 }
 
+// Use the latest uninterrupted segment rather than bridging a missing interval.
+// This preserves the engine's strict no-gap rule without discarding all newer data.
+function latestContinuousSegment(candles, granularity) {
+  if (!Array.isArray(candles) || !candles.length) return [];
+  let start = 0;
+  for (let i = 1; i < candles.length; i++) {
+    if (candles[i].epoch - candles[i - 1].epoch > granularity * 1.5) start = i;
+  }
+  return candles.slice(start);
+}
+
 // Conservative barrier replay: if SL and TP1 are both touched in one M5
 // candle, their order is unknowable and the trade is marked ambiguous.
 function simulateOutcome(signal, candles, signalIndex, horizonBars = MAX_HOLD_BARS) {
@@ -187,12 +198,19 @@ async function run() {
       try {
         const frames = await fetchMarket(client, symbol, now);
         const continuity = {};
+        const minimumBars = { M5: MAX_HOLD_BARS + 65, M15: 60, H1: 65, H4: 51, D1: 60 };
         let dataReady = true;
         for (const [tf, granularity] of REQUESTS) {
-          const data = frames[tf] || [];
-          const check = validateCandleContinuity(data, granularity, marketId);
-          continuity[tf] = { candles: data.length, valid: check.valid, gaps: check.gaps?.length || 0, gapSamples: (check.gaps || []).slice(0, 3) };
-          if (data.length < 60 || !check.valid) dataReady = false;
+          const fetched = frames[tf] || [];
+          const check = validateCandleContinuity(fetched, granularity, marketId);
+          const segment = latestContinuousSegment(fetched, granularity);
+          frames[tf] = segment;
+          continuity[tf] = {
+            fetchedCandles: fetched.length, candlesUsed: segment.length,
+            valid: segment.length >= minimumBars[tf], gapsInFetchedHistory: check.gaps?.length || 0,
+            gapSamples: (check.gaps || []).slice(0, 3)
+          };
+          if (!validCandles(segment) || segment.length < minimumBars[tf]) dataReady = false;
         }
         if (!dataReady) {
           report.markets[marketId] = { marketName, symbol, status: "insufficient_or_discontinuous_data", continuity };
@@ -251,4 +269,4 @@ async function run() {
 }
 
 if (require.main === module) run().catch(error => { console.error(JSON.stringify({ event: "historical_replay_failed", message: error.message })); process.exitCode = 1; });
-module.exports = { simulateOutcome, summarize };
+module.exports = { simulateOutcome, summarize, latestContinuousSegment };
