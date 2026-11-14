@@ -8,20 +8,21 @@ on:
       - "hosted_scanner.js"
       - "index.html"
       - "signal_journal.js"
+      - "daily_summary.js"
+      - "test/daily_summary.test.js"
       - "test/signal_journal.test.js"
       - ".github/workflows/hosted-scanner-tests.yml"
   push:
     branches:
       - fix/hosted-scanner-journal-expiry
+      - fix/daily-summary-retry-main
       - main
     paths:
       - "hosted_scanner.js"
       - "index.html"
       - "signal_journal.js"
-      - "test/signal_journal.test.js"
-      - ".github/workflows/hosted-scanner-tests.yml"
-      - "hosted_scanner.js"
-      - "signal_journal.js"
+      - "daily_summary.js"
+      - "test/daily_summary.test.js"
       - "test/signal_journal.test.js"
       - ".github/workflows/hosted-scanner-tests.yml"
 
@@ -37,6 +38,6 @@ jobs:
         with:
           node-version: "22"
       - name: Check syntax
-        run: node --check hosted_scanner.js && node --check signal_journal.js
+        run: node --check hosted_scanner.js && node --check signal_journal.js && node --check daily_summary.js
       - name: Run journal tests
-        run: node --test test/signal_journal.test.js
+        run: node --test test/signal_journal.test.js test/daily_summary.test.js
