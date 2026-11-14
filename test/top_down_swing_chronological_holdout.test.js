@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { POLICIES } = require("../top_down_swing_long_hold_replay");
-const { makeWindows, summarizeResults, choosePolicy } = require("../top_down_swing_chronological_holdout");
+const { makeWindows, summarizeResults, summarizePairedResults, choosePolicy } = require("../top_down_swing_chronological_holdout");
 
 test("training outcome horizon does not overlap validation entries", () => {
   const start = 1_800_000_000;
@@ -37,4 +37,26 @@ test("summary separates scored, censored and ambiguous results", () => {
   assert.deepEqual({ candidates: result.candidateCount, scored: result.scoredCount,
     censored: result.censoredCount, ambiguous: result.ambiguousCount, averageR: result.averageR },
   { candidates: 4, scored: 2, censored: 1, ambiguous: 1, averageR: 0 });
+});
+
+test("policy averages use the same common unambiguous trade cohort", () => {
+  const results = {
+    FIXED_2_5R: [
+      { status: "scored", realisedR: 2.5, mfeR: 3, maeR: 0.2, durationHours: 20 },
+      { status: "ambiguous" },
+      { status: "scored", realisedR: -1, mfeR: 0.5, maeR: 1, durationHours: 4 }
+    ],
+    H4_PIVOT_TRAIL: [
+      { status: "scored", realisedR: 1.5, mfeR: 3, maeR: 0.2, durationHours: 18 },
+      { status: "scored", realisedR: 1, mfeR: 2, maeR: 0.4, durationHours: 12 },
+      { status: "scored", realisedR: -0.5, mfeR: 0.5, maeR: 1, durationHours: 5 }
+    ]
+  };
+  const paired = summarizePairedResults(results);
+  assert.equal(paired.pairedScoredCount, 2);
+  assert.equal(paired.policies.FIXED_2_5R.averageR, 0.75);
+  assert.equal(paired.policies.H4_PIVOT_TRAIL.averageR, 0.5);
+  assert.equal(paired.policies.FIXED_2_5R.rawAmbiguousCount, 1);
+  assert.equal(paired.policies.H4_PIVOT_TRAIL.rawScoredCount, 3);
+  assert.equal(paired.policies.H4_PIVOT_TRAIL.scoredCount, 2);
 });
