@@ -15,6 +15,7 @@ function reviewSignal(signal, timeframes, nowEpoch = Math.floor(Date.now()/1000)
   const stopTouched = buy ? last.low <= signal.stopLoss : last.high >= signal.stopLoss;
   const tp2Touched = buy ? last.high >= signal.tp2 : last.low <= signal.tp2;
   const tp1Touched = buy ? last.high >= signal.tp1 : last.low <= signal.tp1;
+  if (stopTouched && (tp1Touched || tp2Touched)) return { signalId:signal.signalId,status:"AMBIGUOUS_CANDLE",headline:"AMBIGUOUS CANDLE — VERIFY PRICE",currentPrice:last.close,lastCandleEpoch:last.epoch,reason:"The same completed candle crossed the original stop and a target level. Candle data cannot establish which was reached first; verify broker execution before deciding." };
   const ema = (values,n) => { if(values.length<n)return null; let v=values.slice(0,n).reduce((a,b)=>a+b,0)/n; const k=2/(n+1); for(let i=n;i<values.length;i++)v=values[i]*k+v*(1-k); return v; };
   const closes=completed.map(c=>c.close), fast=ema(closes,20), slow=ema(closes,50);
   if (stopTouched) return { signalId:signal.signalId,status:"STOP_LEVEL_TOUCHED",headline:"STOP-LOSS LEVEL TOUCHED",currentPrice:last.close,lastCandleEpoch:last.epoch,reason:"The latest completed candle crossed the original stop-loss level. Check actual broker price and execution; this review does not close a trade." };
