@@ -9,6 +9,7 @@ on:
       - "top_down_swing_replay.js"
       - "test/top_down_swing_replay.test.js"
       - "test/top_down_swing_engine.test.js"
+      - "test/top_down_swing_backfill.test.js"
       - ".github/workflows/top-down-swing-experiment.yml"
   workflow_dispatch:
 
@@ -26,4 +27,4 @@ jobs:
       - name: Syntax check
         run: node --check top_down_swing_engine.js && node --check top_down_swing_backfill.js && node --check top_down_swing_replay.js
       - name: Deterministic unit tests
-        run: node --test test/top_down_swing_engine.test.js test/top_down_swing_replay.test.js
+        run: node --test test/top_down_swing_engine.test.js test/top_down_swing_replay.test.js test/top_down_swing_backfill.test.js
