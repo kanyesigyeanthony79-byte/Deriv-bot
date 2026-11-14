@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { POLICIES } = require("../top_down_swing_long_hold_replay");
-const { makeWindows, summarizeResults, summarizePairedResults, choosePolicy } = require("../top_down_swing_chronological_holdout");
+const { makeWindows, summarizeResults, summarizePairedResults, choosePolicy, classifySelectionStatus } = require("../top_down_swing_chronological_holdout");
 
 test("training outcome horizon does not overlap validation entries", () => {
   const start = 1_800_000_000;
@@ -26,6 +26,14 @@ test("policy selection uses only sufficiently scored training policies", () => {
 test("policy selection abstains when no policy reaches minimum training sample", () => {
   const rows = Object.fromEntries(POLICIES.map(policy => [policy, { scoredCount: 3, averageR: 5 }]));
   assert.equal(choosePolicy(rows), null);
+});
+
+test("selection report distinguishes a losing baseline from too few training trades", () => {
+  const paired = { pairedScoredCount: 97 };
+  const losing = { FIXED_2_5R: { scoredCount: 97, averageR: -0.2631 } };
+  assert.equal(classifySelectionStatus(null, paired, losing), "baseline_not_positive");
+  assert.equal(classifySelectionStatus(null, { pairedScoredCount: 4 },
+    { FIXED_2_5R: { scoredCount: 4, averageR: -0.2 } }), "insufficient_training_sample");
 });
 
 test("policy selection abstains when the fixed-target training baseline is losing", () => {
