@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { TF, validCandles, completed, validateContinuity, confirmedPivots, structure, evaluateTopDown, managementAdvisories } = require("../top_down_swing_engine");
+const { TF, validCandles, completed, validateContinuity, confirmedPivots, structure, evaluateTopDown, managementAdvisories, managementDecision } = require("../top_down_swing_engine");
 
 function bars(n, step, fn, start = 1_700_000_000) {
   return Array.from({ length: n }, (_, i) => {
@@ -119,4 +119,42 @@ test("early loss advisory can warn before the structural stop is touched", () =>
   const events=managementAdvisories(signal,{H1:h1,H4:[]},h1.at(-1).epoch+3600);
   assert.ok(events.some(e=>e.type==="EARLY_LOSS_REVIEW"));
   assert.ok(h1.at(-1).close>signal.stopLoss);
+});
+
+test("management decision prioritises partial review over routine protection", () => {
+  const start=1_700_000_000;
+  const signal={direction:"BUY",entry:100,stopLoss:98,tp1:103,entryEpoch:start-3600,decisionEpoch:start-1};
+  const h1=bars(6,3600,i=>101+i,start);
+  const decision=managementDecision(signal,{H1:h1,H4:[]},h1.at(-1).epoch+3600);
+  assert.equal(decision.action,"TAKE_PARTIAL_REVIEW");
+  assert.ok(decision.events.some(e=>e.type==="PARTIAL_PROFIT_REVIEW"));
+  assert.ok(decision.events.some(e=>e.type==="TRAILING_PROTECTION_REVIEW"));
+});
+test("management decision does not repeat a partial instruction after user records it", () => {
+  const start=1_700_000_000;
+  const signal={direction:"BUY",entry:100,stopLoss:98,tp1:103,entryEpoch:start-3600,decisionEpoch:start-1};
+  const h1=bars(6,3600,i=>101+i,start);
+  const decision=managementDecision(signal,{H1:h1,H4:[]},h1.at(-1).epoch+3600,{partialTaken:true});
+  assert.notEqual(decision.action,"TAKE_PARTIAL_REVIEW");
+});
+test("management decision waits for completed post-entry H1 evidence", () => {
+  const signal={direction:"BUY",entry:100,stopLoss:98,entryEpoch:100,decisionEpoch:200};
+  assert.equal(managementDecision(signal,{H1:[]},5000).action,"WAIT");
+});
+test("management decision elevates early invalidation to exit review", () => {
+  const start=1_700_000_000;
+  const signal={direction:"BUY",entry:100,stopLoss:99,riskDistance:1,entryEpoch:start-3600,decisionEpoch:start-1};
+  const h1=bars(4,3600,i=>100-i*.7,start);
+  const decision=managementDecision(signal,{H1:h1,H4:[]},h1.at(-1).epoch+3600);
+  assert.equal(decision.action,"EXIT_REVIEW");
+});
+
+test("management advice is suppressed when completed synthetic H1 history has a gap", () => {
+  const start=1_700_000_000;
+  const signal={direction:"BUY",entry:100,stopLoss:98,tp1:103,entryEpoch:start-3600,decisionEpoch:start-1,marketId:"R_25"};
+  const h1=bars(6,3600,i=>101+i,start).filter((_,i)=>i!==2);
+  const decision=managementDecision(signal,{H1:h1,H4:[]},h1.at(-1).epoch+3600);
+  assert.equal(decision.action,"WAIT");
+  assert.ok(decision.dataGaps.length>0);
+  assert.equal(decision.events.length,0);
 });

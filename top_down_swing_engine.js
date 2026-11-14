@@ -207,4 +207,61 @@ function managementAdvisories(signal, candlesByTimeframe, decisionEpoch) {
   }
   return events.filter((e, i, all) => all.findIndex(x => x.type === e.type) === i);
 }
-module.exports = { TF, VARIANTS, validCandles, completed, validateContinuity, atr, confirmedPivots, structure, evaluateTopDown, managementAdvisories };
+
+/**
+ * Converts advisory evidence into one human-readable management state.
+ * Priority is deliberately conservative: exit review > deterioration warning >
+ * partial-profit review > protection review > hold. This is advice only.
+ */
+function managementDecision(signal, candlesByTimeframe, decisionEpoch, state = {}) {
+  if (!signal || !Number.isFinite(decisionEpoch) ||
+      !["BUY", "SELL"].includes(signal.direction) ||
+      !Number.isFinite(signal.entry) || !Number.isFinite(signal.stopLoss)) {
+    return { action: "WAIT", reason: "A valid open swing signal and decision timestamp are required.", events: [] };
+  }
+  const entryClose = Number.isFinite(signal.decisionEpoch) ? signal.decisionEpoch :
+    (Number.isFinite(signal.entryEpoch) ? signal.entryEpoch : null);
+  if (!Number.isFinite(entryClose) || decisionEpoch <= entryClose) {
+    return { action: "WAIT", reason: "No completed post-entry candle is available yet.", events: [] };
+  }
+  const rawH1 = candlesByTimeframe && candlesByTimeframe.H1;
+  const h1 = completed(rawH1, "H1", decisionEpoch).filter(c => c.epoch >= entryClose);
+  if (!validCandles(h1) || h1.length === 0) {
+    return { action: "WAIT", reason: "Waiting for the first valid completed H1 candle after entry.", events: [] };
+  }
+  const h1Continuity = validateContinuity(h1, "H1", signal.marketId);
+  if (!h1Continuity.valid) {
+    return { action: "WAIT", reason: "H1 history contains missing intervals; management advice is suppressed until the candle history is reliable.", events: [], dataGaps: h1Continuity.gaps };
+  }
+  const h4 = completed(candlesByTimeframe && candlesByTimeframe.H4, "H4", decisionEpoch)
+    .filter(c => c.epoch >= entryClose);
+  const h4Continuity = h4.length >= 2 ? validateContinuity(h4, "H4", signal.marketId) : { valid: true, gaps: [] };
+  const events = managementAdvisories(signal, candlesByTimeframe, decisionEpoch)
+    .filter(event => !state.dismissedEventTypes?.includes(event.type))
+    .filter(event => h4Continuity.valid || !["HOLD_STRUCTURE_INTACT", "STRUCTURE_DETERIORATION_WARNING"].includes(event.type));
+  const has = type => events.some(event => event.type === type);
+  if (has("EARLY_LOSS_REVIEW")) {
+    return { action: "EXIT_REVIEW", reason: "The completed H1 evidence shows structural risk near or beyond invalidation.", events };
+  }
+  if (has("STRUCTURE_DETERIORATION_WARNING")) {
+    return { action: "WARNING", reason: "H1/H4 swing structure is deteriorating or opposing the open thesis.", events };
+  }
+  if (has("PARTIAL_PROFIT_REVIEW") && !state.partialTaken) {
+    return { action: "TAKE_PARTIAL_REVIEW", reason: "The first profit reference has been reached; review a partial close while reassessing the remaining swing.", events };
+  }
+  if (has("TRAILING_PROTECTION_REVIEW")) {
+    return { action: "PROTECT_REVIEW", reason: "Favourable movement is sufficient to review a structure-based trailing level without crowding the trade.", events };
+  }
+  if (has("BREAK_EVEN_REVIEW")) {
+    return { action: "PROTECT_REVIEW", reason: "The trade has reached at least +1R; review whether break-even protection is appropriate for current structure.", events };
+  }
+  if (has("HOLD_STRUCTURE_INTACT")) {
+    return { action: "HOLD", reason: "Completed H1/H4 structure still supports the swing thesis.", events };
+  }
+  if (!h4Continuity.valid) {
+    return { action: "MONITOR", reason: "H4 history has gaps; price-based H1 reviews remain available, but no H1/H4 structure verdict is issued.", events, dataGaps: h4Continuity.gaps };
+  }
+  return { action: "MONITOR", reason: "No decisive management trigger is confirmed; keep the original invalidation and monitor the next completed candle.", events };
+}
+
+module.exports = { TF, VARIANTS, validCandles, completed, validateContinuity, atr, confirmedPivots, structure, evaluateTopDown, managementAdvisories, managementDecision };
