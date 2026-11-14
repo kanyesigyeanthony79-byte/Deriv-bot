@@ -111,7 +111,9 @@ async function main() {
             firstEpoch: candles[0]?.epoch ?? null, lastEpoch: candles.at(-1)?.epoch ?? null }));
         } catch (error) {
           market.timeframes[timeframe] = [];
-          market.errors.push({ timeframe, message: error.message });
+          const detail = { marketId, timeframe, message: error.message || String(error) };
+          market.errors.push({ timeframe, message: detail.message });
+          console.error(JSON.stringify({ event: "backfill_frame_error", ...detail }));
         }
         await sleep(150);
       }
