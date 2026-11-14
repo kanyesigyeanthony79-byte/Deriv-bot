@@ -76,12 +76,16 @@ function swingPullbackConfirmed(candles, direction) {
   const last = candles[candles.length - 1];
   if (!(volatility > 0) || !Number.isFinite(ema20)) return false;
   const body = Math.abs(last.close - last.open);
-  if (body < volatility * 0.12) return false;
+  const candleRange = last.high - last.low;
+  // Reject unusually deep EMA penetrations and oversized rejection candles.
+  if (body < volatility * 0.12 || body > volatility * 0.8 || candleRange > volatility * 1.5) return false;
   if (direction === "BUY") {
-    const testedArea = last.low <= ema20 + volatility * 0.25;
+    const penetrationAtr = (ema20 - last.low) / volatility;
+    const testedArea = last.low <= ema20 + volatility * 0.25 && penetrationAtr <= 0.75;
     return testedArea && last.close > ema20 && last.close > last.open;
   }
-  const testedArea = last.high >= ema20 - volatility * 0.25;
+  const penetrationAtr = (last.high - ema20) / volatility;
+  const testedArea = last.high >= ema20 - volatility * 0.25 && penetrationAtr <= 0.75;
   return testedArea && last.close < ema20 && last.close < last.open;
 }
 
@@ -223,14 +227,21 @@ function evaluateAllCategories(marketId, marketName, candlesByTimeframe) {
 
 // Recover recent completed entry bars between scheduled scans. Higher-timeframe
 // confirmation/context candles are cut off at each entry bar's close to avoid look-ahead.
-function evaluateRecentSignals(marketId, marketName, candlesByTimeframe, recentBars = 6) {
+function cooldownAllows(lastSignalIndex, currentIndex, cooldownBars = 4) {
+  return !Number.isInteger(lastSignalIndex) || currentIndex - lastSignalIndex >= Math.max(0, cooldownBars);
+}
+
+function evaluateRecentSignals(marketId, marketName, candlesByTimeframe, recentBars = 6, cooldownBars = 4) {
   const found = [];
   for (const category of Object.keys(CATEGORIES)) {
     const entry = candlesByTimeframe[CATEGORIES[category].entry] || [];
     const start = Math.max(64, entry.length - Math.max(1, recentBars));
+    let lastSignalIndex = null;
     for (let index = start; index < entry.length; index++) {
       const result = evaluateCategory(marketId, marketName, category, candlesByTimeframe, index);
-      if (result.state === "signal") found.push(result);
+      if (result.state !== "signal" || !cooldownAllows(lastSignalIndex, index, cooldownBars)) continue;
+      found.push(result);
+      lastSignalIndex = index;
     }
   }
   return found;
@@ -262,5 +273,5 @@ function aggregateWeeklyCandles(dailyCandles, nowEpoch = Math.floor(Date.now() /
 
 module.exports = {
   TIMEFRAMES, CATEGORIES, validCandles, trendBias, makeLevels, classifyMarketRegime, validateCandleContinuity,
-  evaluateCategory, evaluateAllCategories, evaluateRecentSignals, aggregateWeeklyCandles, swingPullbackConfirmed
+  evaluateCategory, evaluateAllCategories, evaluateRecentSignals, aggregateWeeklyCandles, swingPullbackConfirmed, cooldownAllows
 };
