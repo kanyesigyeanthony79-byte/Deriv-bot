@@ -245,6 +245,7 @@ async function monitorSignals(marketId, candles, now) {
 
     const laterCandles = candles.filter(c => c.epoch > Number(signal.lastCheckedEpoch || signal.createdEpoch));
     for (const candle of laterCandles) {
+      updateFavourableMovement(journal, signal.signalId, candle);
       const isBuy = signal.direction === "BUY";
       const slTouched = isBuy ? candle.low <= signal.stopLoss : candle.high >= signal.stopLoss;
       const tp1Touched = isBuy ? candle.high >= signal.tp1 : candle.low <= signal.tp1;
