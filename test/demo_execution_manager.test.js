@@ -49,8 +49,8 @@ test("rejects a research reversal candidate even when execution is explicitly en
   const adapter = makeAdapter();
   const manager = new DemoExecutionManager({
     adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"],
-    executionEnabled: true, strategyApprovalId: "approved-test",
-    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true,
+    executionEnabled: true, positionManagementEnabled: true, exitEvaluator: async () => ({ exit: false }), strategyApprovalId: "approved-test",
+    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, strategyApprovalId: "approved-test",
       generatedAtMs: NOW, symbol: "R_50", direction: "BUY", duration: 5, experimentalReversal: true,
       source: "price_action_reversal_research" })
   });
@@ -64,8 +64,8 @@ test("requires a validated completed-candle signal and applies account risk", as
   const adapter = makeAdapter();
   const manager = new DemoExecutionManager({
     adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"],
-    executionEnabled: true, strategyApprovalId: "approved-test",
-    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, symbol: "R_50", direction: "BUY", duration: 5 })
+    executionEnabled: true, positionManagementEnabled: true, exitEvaluator: async () => ({ exit: false }), strategyApprovalId: "approved-test",
+    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, strategyApprovalId: "approved-test", generatedAtMs: NOW, symbol: "R_50", direction: "BUY", duration: 5 })
   });
   const result = await manager.runCycle({});
   assert.equal(result.status, "executed_demo");
@@ -77,8 +77,8 @@ test("rejects symbols outside the synthetic allowlist", async () => {
   const adapter = makeAdapter();
   const manager = new DemoExecutionManager({
     adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"],
-    executionEnabled: true, strategyApprovalId: "approved-test",
-    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, generatedAtMs: NOW, symbol: "frxXAUUSD", direction: "BUY", duration: 5 })
+    executionEnabled: true, positionManagementEnabled: true, exitEvaluator: async () => ({ exit: false }), strategyApprovalId: "approved-test",
+    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, strategyApprovalId: "approved-test", generatedAtMs: NOW, symbol: "frxXAUUSD", direction: "BUY", duration: 5 })
   });
   assert.equal((await manager.runCycle({})).reason, "candidate_symbol_or_direction_not_allowed");
   assert.equal(adapter.calls.some(c => c.open), false);
@@ -113,7 +113,7 @@ test("rejects stale strategy candidates before requesting an order", async () =>
     adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"],
     executionEnabled: true, positionManagementEnabled: true, exitEvaluator: async () => ({ exit: false }), strategyApprovalId: "approved-test", now: () => NOW,
     signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true,
-      generatedAtMs: NOW - 61000, symbol: "R_50", direction: "BUY", duration: 5 })
+      strategyApprovalId: "approved-test", generatedAtMs: NOW - 61000, symbol: "R_50", direction: "BUY", duration: 5 })
   });
   const result = await manager.runCycle({});
   assert.equal(result.reason, "candidate_missing_or_stale_timestamp");
@@ -125,9 +125,9 @@ test("blocks new entries if an existing exit cannot be confirmed", async () => {
     openedAt: NOW - 60 * 60 * 1000, isValidToSell: false }] } });
   const manager = new DemoExecutionManager({
     adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"],
-    executionEnabled: true, strategyApprovalId: "approved-test", now: () => NOW,
+    executionEnabled: true, positionManagementEnabled: true, exitEvaluator: async () => ({ exit: false }), strategyApprovalId: "approved-test", now: () => NOW,
     signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true,
-      generatedAtMs: NOW, symbol: "R_50", direction: "BUY", duration: 5 })
+      strategyApprovalId: "approved-test", generatedAtMs: NOW, symbol: "R_50", direction: "BUY", duration: 5 })
   });
   const result = await manager.runCycle({});
   assert.equal(result.reason, "unresolved_exit_requires_reconciliation_before_new_entry");
