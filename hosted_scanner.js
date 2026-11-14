@@ -68,6 +68,10 @@ async function maybeSendDailySummary(now) {
   // Retry the previous Uganda calendar day's report on every scanner cycle until delivery succeeds.
   // A successful Telegram response is persisted in the journal to prevent routine duplicate reports.
   const reportDay = previousUgandaDay(now);
+  const localNow = new Date(now * 1000);
+  const localClock = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Kampala", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(localNow);
+  const [localHour, localMinute] = localClock.split(":").map(Number);
+  if (localHour * 60 + localMinute < 15) return; // allow final completed candles and MTF journal commit to arrive
   if (journal.dailyReports[reportDay]?.delivered) return;
   let mtfSignals = [];
   try {
