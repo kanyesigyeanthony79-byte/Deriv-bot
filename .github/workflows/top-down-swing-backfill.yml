@@ -20,6 +20,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: top-down-swing-historical-backfill
+  cancel-in-progress: true
+
 jobs:
   backfill:
     runs-on: ubuntu-latest
