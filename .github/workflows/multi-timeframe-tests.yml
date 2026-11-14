@@ -30,14 +30,3 @@ jobs:
         run: node --check multi_timeframe_engine.js && node --check market_quality.js && node --check multi_timeframe_alerts.js && node --check multi_timeframe_collector.js
       - name: Run unit tests
         run: node --test test/multi_timeframe_engine.test.js test/multi_timeframe_journal.test.js test/dashboard_syntax.test.js test/multi_timeframe_alerts.test.js test/swing_historical_validation.test.js
-      - name: Fetch historical candles and replay swing entries
-        if: github.ref == 'refs/heads/feature/swing-historical-validation'
-        run: node swing_historical_validation.js
-      - name: Upload historical validation report
-        if: always() && github.ref == 'refs/heads/feature/swing-historical-validation'
-        uses: actions/upload-artifact@v4
-        with:
-          name: swing-historical-validation
-          path: swing_historical_validation.json
-          if-no-files-found: warn
-          retention-days: 30
