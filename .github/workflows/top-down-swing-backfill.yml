@@ -19,10 +19,14 @@ jobs:
           node-version: "22"
       - name: Collect historical OHLC only
         run: node top_down_swing_backfill.js
+      - name: Run seven-day comparative replay
+        run: node top_down_swing_replay.js top_down_swing_snapshot.json top_down_swing_replay_report.json
       - name: Upload isolated research snapshot
         uses: actions/upload-artifact@v4
         with:
           name: top-down-swing-historical-snapshot
-          path: top_down_swing_snapshot.json
+          path: |
+            top_down_swing_snapshot.json
+            top_down_swing_replay_report.json
           if-no-files-found: error
           retention-days: 30
