@@ -65,6 +65,37 @@ test("recent candidate is sent once with its horizon in the market label", async
   assert.equal(requests[0].payload.event, "new_signal");
 });
 
+test("SCALP, SHORT_TERM and POSITION candidates each route with their own horizon label", async () => {
+  const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
+  for (const [category, label] of [["SCALP", "Scalping"], ["SHORT_TERM", "Short-term"], ["POSITION", "Position"]]) {
+    const item = candidate({ category, categoryLabel: label, signalId: "R_50-" + category + "-1000" });
+    const { markets, journal } = fixture([item]);
+    const requests = [];
+    const result = await sendCandidateAlerts(markets, journal, 1010, env, {
+      fetchImpl: async (url, init) => {
+        requests.push(JSON.parse(init.body));
+        return { ok: true, json: async () => ({ success: true }) };
+      }
+    });
+    assert.equal(result.sent, 1, category + " should be delivered");
+    assert.match(requests[0].market, new RegExp(label));
+  }
+});
+
+test("SHORT_TERM and POSITION use their own stale-alert cutoffs", async () => {
+  const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
+  for (const category of ["SHORT_TERM", "POSITION"]) {
+    const item = candidate({ category, signalId: "R_50-" + category + "-1000" });
+    const { markets, journal } = fixture([item]);
+    let calls = 0;
+    const result = await sendCandidateAlerts(markets, journal, 1000 + ALERT_MAX_AGE_SECONDS[category] + 1, env, {
+      fetchImpl: async () => { calls++; return { ok: true, json: async () => ({ success: true }) }; }
+    });
+    assert.equal(result.stale, 1, category + " should be marked stale");
+    assert.equal(calls, 0, category + " stale candidate must not be sent");
+  }
+});
+
 test("candidate outside the alert age window is not sent", async () => {
   const old = candidate({ entryCandleEpoch: 1000 });
   const { markets, journal } = fixture([old]);
