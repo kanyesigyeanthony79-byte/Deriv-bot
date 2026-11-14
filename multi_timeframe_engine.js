@@ -13,7 +13,7 @@ const TIMEFRAMES = Object.freeze({
 const CATEGORIES = Object.freeze({
   SCALP: Object.freeze({ label: "Scalping", entry: "M1", confirmation: "M5", context: "M15", risk: "M15", targetHorizon: "M15", maxAgeSeconds: 30 * 60, stopAtr: 1.25, tp1R: 1.25, tp2R: 1.8 }),
   SHORT_TERM: Object.freeze({ label: "Short-term", entry: "M5", confirmation: "M15", context: "H1", risk: "H1", targetHorizon: "H1", maxAgeSeconds: 6 * 3600, stopAtr: 1.5, tp1R: 1.5, tp2R: 2.25 }),
-  SWING: Object.freeze({ label: "Swing", entry: "H1", confirmation: "H4", context: "D1", risk: "H4", targetHorizon: "H4", maxAgeSeconds: 7 * 86400, stopAtr: 1.75, tp1R: 1.5, tp2R: 2.5 }),
+  SWING: Object.freeze({ label: "Swing", entry: "M5", confirmation: "M15", context: "H1", risk: "H4", targetHorizon: "H4", maxAgeSeconds: 7 * 86400, stopAtr: 1.75, tp1R: 1.5, tp2R: 2.5 }),
   POSITION: Object.freeze({ label: "Position", entry: "H4", confirmation: "D1", context: "W1", risk: "D1", targetHorizon: "D1", maxAgeSeconds: 30 * 86400, stopAtr: 2, tp1R: 2, tp2R: 3 })
 });
 
@@ -65,6 +65,26 @@ function trendBias(candles) {
   return { state: "aligned", direction, separationAtr, slopeAtr };
 }
 
+// A swing pullback is considered ready only when the latest completed M15
+// candle tests the 20 EMA area and closes back in the setup direction with a
+// meaningful body. This is a confirmation filter, not a prediction.
+function swingPullbackConfirmed(candles, direction) {
+  if (!validCandles(candles) || candles.length < 25 || !["BUY", "SELL"].includes(direction)) return false;
+  const closes = candles.map(c => c.close);
+  const ema20 = ema(closes, 20);
+  const volatility = atr(candles, 14);
+  const last = candles[candles.length - 1];
+  if (!(volatility > 0) || !Number.isFinite(ema20)) return false;
+  const body = Math.abs(last.close - last.open);
+  if (body < volatility * 0.12) return false;
+  if (direction === "BUY") {
+    const testedArea = last.low <= ema20 + volatility * 0.25;
+    return testedArea && last.close > ema20 && last.close > last.open;
+  }
+  const testedArea = last.high >= ema20 - volatility * 0.25;
+  return testedArea && last.close < ema20 && last.close < last.open;
+}
+
 function makeLevels(entryPrice, riskCandles, direction, config) {
   const volatility = atr(riskCandles, 14);
   if (!(volatility > 0)) return null;
@@ -93,23 +113,34 @@ function evaluateCategory(marketId, marketName, category, candlesByTimeframe, en
   const contextCandles = (candlesByTimeframe[config.context] || []).filter(c => c.epoch + TIMEFRAMES[config.context] <= cutoffEpoch);
   const riskCandles = (candlesByTimeframe[config.risk] || []).filter(c => c.epoch + TIMEFRAMES[config.risk] <= cutoffEpoch);
 
+  const swingSetupCandles = category === "SWING"
+    ? (candlesByTimeframe.H1 || []).filter(c => c.epoch + TIMEFRAMES.H1 <= cutoffEpoch) : [];
+  const swingHigherCandles = category === "SWING"
+    ? (candlesByTimeframe.D1 || []).filter(c => c.epoch + TIMEFRAMES.D1 <= cutoffEpoch) : [];
   if (!validCandles(entryCandles) || entryCandles.length < 65 ||
       !validCandles(confirmationCandles) || confirmationCandles.length < 60 ||
       !validCandles(contextCandles) || contextCandles.length < (config.context === "W1" ? 51 : 60) ||
-      !validCandles(riskCandles) || riskCandles.length < 20) {
+      !validCandles(riskCandles) || riskCandles.length < 20 ||
+      (category === "SWING" && (!validCandles(swingSetupCandles) || swingSetupCandles.length < 65 ||
+        !validCandles(swingHigherCandles) || swingHigherCandles.length < 60))) {
     return { state: "warming", category, label: config.label, reason: "Waiting for sufficient completed candles across required timeframes." };
   }
 
   // Reject data gaps before indicators are trusted. Gold/USD weekend closures are exempted.
   const candlesUsed = { [config.entry]: entryCandles, [config.confirmation]: confirmationCandles, [config.context]: contextCandles, [config.risk]: riskCandles };
-  for (const tf of [config.entry, config.confirmation, config.context, config.risk]) {
+  if (category === "SWING") { candlesUsed.H1 = swingSetupCandles; candlesUsed.D1 = swingHigherCandles; }
+  const continuityFrames = [...new Set([config.entry, config.confirmation, config.context, config.risk, ...(category === "SWING" ? ["H1", "D1"] : [])])];
+  for (const tf of continuityFrames) {
     const continuity = validateCandleContinuity(candlesUsed[tf] || [], TIMEFRAMES[tf], marketId);
     if (!continuity.valid) return { state: "data_gap", category, label: config.label, timeframe: tf, gaps: continuity.gaps.slice(0, 5), reason: "Missing candle intervals detected; indicators are withheld until data quality is restored." };
   }
 
   const confirmationRegime = classifyMarketRegime(confirmationCandles);
   const contextRegime = classifyMarketRegime(contextCandles);
-  for (const [timeframe, regime] of [[config.confirmation, confirmationRegime], [config.context, contextRegime]]) {
+  const swingHigherRegime = category === "SWING" ? classifyMarketRegime(swingHigherCandles) : null;
+  const regimesToCheck = [[config.confirmation, confirmationRegime], [config.context, contextRegime]];
+  if (category === "SWING") regimesToCheck.push(["D1", swingHigherRegime]);
+  for (const [timeframe, regime] of regimesToCheck) {
     if (regime.state === "ranging" || regime.state === "high_volatility" || regime.state === "transitioning" || regime.state === "warming" || regime.state === "uncertain") {
       return { state: "market_filtered", category, label: config.label, timeframe, regime, reason: "Market conditions are not suitable for this trend-following setup." };
     }
@@ -130,6 +161,25 @@ function evaluateCategory(marketId, marketName, category, candlesByTimeframe, en
       direction: entryResult.signal, confirmationBias: confirmation.direction,
       contextBias: context.direction, confirmationRegime, contextRegime, reason: "Entry, confirmation and higher-timeframe context are not aligned."
     };
+  }
+
+  let swingSetup = null;
+  let swingHigherBias = null;
+  if (category === "SWING") {
+    swingSetup = evaluate(swingSetupCandles);
+    swingHigherBias = trendBias(swingHigherCandles);
+    if (swingSetup.state !== "ok" || swingSetup.signal !== entryResult.signal || swingHigherBias.direction !== entryResult.signal) {
+      return {
+        state: "timeframe_conflict", category, label: config.label, direction: entryResult.signal,
+        setupBias: swingSetup.signal || "NEUTRAL", higherTimeframeBias: swingHigherBias.direction,
+        reason: "Swing entry is withheld unless the H1 setup and D1 trend agree with the M5 direction."
+      };
+    }
+    if (!swingPullbackConfirmed(confirmationCandles, entryResult.signal)) {
+      return { state: "waiting_pullback", category, label: config.label, direction: entryResult.signal,
+        setupBias: swingSetup.signal, higherTimeframeBias: swingHigherBias.direction,
+        reason: "H1 swing setup is valid, but M15 has not confirmed a pullback and directional rejection." };
+    }
   }
 
   const levels = makeLevels(entryCandle.close, riskCandles, entryResult.signal, config);
@@ -153,6 +203,8 @@ function evaluateCategory(marketId, marketName, category, candlesByTimeframe, en
       entry: entryResult.metrics,
       confirmation: confirmation,
       context: context,
+      swingSetup: swingSetup ? { score: swingSetup.score, checks: swingSetup.checks } : null,
+      swingHigherBias: swingHigherBias,
       riskAtr: atr(riskCandles, 14)
     },
     ...levels,
@@ -207,5 +259,5 @@ function aggregateWeeklyCandles(dailyCandles, nowEpoch = Math.floor(Date.now() /
 
 module.exports = {
   TIMEFRAMES, CATEGORIES, validCandles, trendBias, makeLevels, classifyMarketRegime, validateCandleContinuity,
-  evaluateCategory, evaluateAllCategories, evaluateRecentSignals, aggregateWeeklyCandles
+  evaluateCategory, evaluateAllCategories, evaluateRecentSignals, aggregateWeeklyCandles, swingPullbackConfirmed
 };
