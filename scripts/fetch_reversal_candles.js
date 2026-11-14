@@ -228,21 +228,43 @@ async function main() {
   try {
     const symbolsReply = await client.ask({ active_symbols: "brief" });
     const active = new Set((symbolsReply.active_symbols || []).map(item => item.underlying_symbol || item.symbol).filter(Boolean));
+    const summary = {
+      schemaVersion: 1,
+      capturedAt: new Date(snapshotEpoch * 1000).toISOString(),
+      requestedDays: DAYS,
+      marketsRequested: MARKETS,
+      capturedMarkets: [],
+      failedMarkets: {}
+    };
     for (const market of MARKETS) {
-      if (!active.has(market)) throw new Error(`Market ${market} was not confirmed in active_symbols.`);
+      if (!active.has(market)) {
+        summary.failedMarkets[market] = { error: "Market not confirmed in active_symbols." };
+        console.error(`Skipping ${market}: not confirmed in active_symbols.`);
+        continue;
+      }
       const frames = {};
       const coverage = {};
+      const frameErrors = {};
       for (const granularity of FRAMES) {
         const frame = `M${granularity / 60}`;
-        const result = await fetchFrame(client, market, granularity, startEpoch, snapshotEpoch);
-        frames[frame] = result.candles;
-        coverage[frame] = result.coverage;
-        console.log(`${market} ${frame}: ${result.candles.length}/${result.coverage.expectedCount} candles; gaps=0`);
+        try {
+          const result = await fetchFrame(client, market, granularity, startEpoch, snapshotEpoch);
+          frames[frame] = result.candles;
+          coverage[frame] = result.coverage;
+          console.log(`${market} ${frame}: ${result.candles.length}/${result.coverage.expectedCount} candles; gaps=0`);
+        } catch (error) {
+          frameErrors[frame] = error.message;
+          console.error(`${market} ${frame} capture failed: ${error.message}`);
+        }
+      }
+      if (Object.keys(frameErrors).length > 0) {
+        summary.failedMarkets[market] = { frameErrors };
+        continue;
       }
       const payload = {
         schemaVersion: 2,
         market,
-        source: "Deriv public ticks_history candles",
+        source: "Deriv public ticks_history candles; missing intervals reconstructed only from returned ticks",
         endpoint: ENDPOINT,
         capturedAt: new Date(snapshotEpoch * 1000).toISOString(),
         requestedDays: DAYS,
@@ -252,6 +274,14 @@ async function main() {
         frames
       };
       fs.writeFileSync(path.join(OUT, `${market}.json`), JSON.stringify(payload, null, 2) + "\n");
+      summary.capturedMarkets.push(market);
+    }
+    fs.writeFileSync(path.join(OUT, "capture-summary.json"), JSON.stringify(summary, null, 2) + "\n");
+    if (Object.keys(summary.failedMarkets).length > 0) {
+      throw new Error(
+        `Capture incomplete: ${summary.capturedMarkets.length}/${MARKETS.length} markets passed all-frame validation. ` +
+        `See capture-summary.json for per-market failures.`
+      );
     }
   } finally {
     client.close();
