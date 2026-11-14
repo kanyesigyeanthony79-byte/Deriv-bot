@@ -64,6 +64,26 @@ function normalizeCandles(raw, seconds, now) {
       c.high >= Math.max(c.open, c.close) && c.low <= Math.min(c.open, c.close) && c.high >= c.low &&
       c.epoch + seconds <= now).sort((a, b) => a.epoch - b.epoch);
 }
+async function fetchCandleHistory(client, symbol, granularity, requestedCount, now, pageSize = 1000) {
+  const byEpoch = new Map();
+  let end = "latest";
+  let previousOldest = Infinity;
+  while (byEpoch.size < requestedCount) {
+    const count = Math.min(pageSize, requestedCount - byEpoch.size);
+    const reply = await client.ask({ ticks_history: symbol, adjust_start_time: 1, count,
+      end, granularity, style: "candles" });
+    const page = normalizeCandles(reply.candles, granularity, now);
+    if (!page.length) break;
+    const oldest = page[0].epoch;
+    if (!(oldest < previousOldest)) break;
+    for (const candle of page) byEpoch.set(candle.epoch, candle);
+    previousOldest = oldest;
+    if (page.length < count) break;
+    end = String(oldest - 1);
+    await sleep(100);
+  }
+  return [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch).slice(-requestedCount);
+}
 async function main() {
   const client = await connect();
   const output = { version: 1, generatedAt: null, generatedEpoch: null, mode: "historical_research_only",
@@ -85,9 +105,7 @@ async function main() {
       const market = { marketId, marketName, symbol, timeframes: {}, errors: [] };
       for (const [timeframe, granularity, count] of FRAMES) {
         try {
-          const data = await client.ask({ ticks_history: symbol, adjust_start_time: 1, count,
-            end: "latest", granularity, style: "candles" });
-          const candles = normalizeCandles(data.candles, granularity, now);
+          const candles = await fetchCandleHistory(client, symbol, granularity, count, now);
           market.timeframes[timeframe] = candles;
           if (candles.length < 60) market.errors.push({ timeframe, message: "Fewer than 60 completed candles returned." });
           console.log(JSON.stringify({ event: "backfill_frame", marketId, timeframe, count: candles.length,
