@@ -188,7 +188,7 @@ function managementAdvisories(signal, candlesByTimeframe, decisionEpoch) {
     const crossed = signal.direction === "BUY" ? lastH1.close < signal.stopLoss : lastH1.close > signal.stopLoss;
     const adverseClose = signal.direction === "BUY" ? lastH1.close < signal.entry : lastH1.close > signal.entry;
     const remainingToStop = signal.direction === "BUY" ? lastH1.close - signal.stopLoss : signal.stopLoss - lastH1.close;
-    const currentH1Atr = atr(h1);
+    const currentH1Atr = h1.length >= 5 ? atr(h1, Math.min(14, h1.length - 1)) : 0;
     const approaching = adverseClose && currentH1Atr > 0 && remainingToStop > 0 &&
       remainingToStop <= currentH1Atr * 0.5;
     if (crossed || approaching) events.push({ type: "EARLY_LOSS_REVIEW", epoch: lastH1.epoch, timeframe: "H1",
