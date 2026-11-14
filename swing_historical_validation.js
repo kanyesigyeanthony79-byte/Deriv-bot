@@ -6,6 +6,7 @@ const path = require("node:path");
 const { evaluateCategory, validCandles, TIMEFRAMES, cooldownAllows } = require("./multi_timeframe_engine");
 const { validateCandleContinuity } = require("./market_quality");
 const { evaluateRefinedSwing } = require("./swing_h4_d1_m15_m5");
+const { evaluateSwingReversalSniper } = require("./swing_reversal_sniper");
 const { simulateFixedPlanOutcome, simulateManagedOutcome, summarizeManaged } = require("./swing_trade_management_replay");
 const { diagnoseTradePath } = require("./swing_trade_management_diagnostics");
 
@@ -294,6 +295,8 @@ async function run() {
         const states = {};
         const refinedOutcomes = [];
         const refinedStates = {};
+        const sniperOutcomes = [];
+        const sniperStates = {};
         const fixedPlanOutcomes = [];
         const refinedFixedPlanOutcomes = [];
         const managedOutcomes = [];
@@ -302,6 +305,7 @@ async function run() {
         for (const m5 of m5Segments) {
           let lastSignalIndex = null;
           let lastRefinedSignalIndex = null;
+          let lastSniperSignalIndex = null;
           const lastMatureIndex = m5.length - MAX_HOLD_BARS - 1;
           replayedM5Bars += Math.max(0, lastMatureIndex - 63);
           const segmentFrames = { ...frames, M5: m5 };
@@ -330,6 +334,24 @@ async function run() {
                 signalTime: new Date(signal.candleEpoch * 1000).toISOString(),
                 ...managedResult,
                 pathDiagnostics: diagnoseTradePath(signal, m5, i, managedResult)
+              });
+            }
+
+            const sniper = evaluateSwingReversalSniper(marketId, marketName, segmentFrames, i);
+            sniperStates[sniper.state] = (sniperStates[sniper.state] || 0) + 1;
+            if (sniper.state === "signal" && cooldownAllows(lastSniperSignalIndex, i, 4)) {
+              lastSniperSignalIndex = i;
+              const sniperOutcome = simulateOutcome(sniper, m5, i);
+              const sniperFixedResult = simulateFixedPlanOutcome(sniper, segmentFrames, i);
+              const sniperManagedResult = simulateManagedOutcome(sniper, segmentFrames, i);
+              sniperOutcomes.push({
+                signalId: sniper.signalId, direction: sniper.direction,
+                signalTime: new Date(sniper.candleEpoch * 1000).toISOString(),
+                entry: sniper.entry, stopLoss: sniper.stopLoss, tp1: sniper.tp1, tp2: sniper.tp2,
+                ...sniperOutcome,
+                fixedPlan: sniperFixedResult,
+                managed: sniperManagedResult,
+                pathDiagnostics: diagnoseTradePath(sniper, m5, i, sniperManagedResult)
               });
             }
 
@@ -369,6 +391,9 @@ async function run() {
           performance: summarize(outcomes),
           signals: outcomes,
           refinedStateCounts: refinedStates,
+          sniperStateCounts: sniperStates,
+          sniperPerformance: summarize(sniperOutcomes),
+          sniperSignals: sniperOutcomes,
           refinedPerformance: summarize(refinedOutcomes),
           refinedSignals: refinedOutcomes,
           fixedPlanPerformance: summarizeManaged(fixedPlanOutcomes),
@@ -392,6 +417,7 @@ async function run() {
 
     const totals = Object.values(report.markets).filter(m => m.performance);
     const refinedTotals = Object.values(report.markets).filter(m => m.refinedPerformance);
+    const sniperTotals = Object.values(report.markets).filter(m => m.sniperPerformance);
     const fixedPlanTotals = Object.values(report.markets).filter(m => m.fixedPlanPerformance);
     const refinedFixedPlanTotals = Object.values(report.markets).filter(m => m.refinedFixedPlanPerformance);
     const managedTotals = Object.values(report.markets).filter(m => m.managedPerformance);
@@ -414,6 +440,11 @@ async function run() {
       totalSignals: totals.reduce((n, m) => n + m.performance.signals, 0),
       totalResolvedSignals: totals.reduce((n, m) => n + m.performance.resolvedSignals, 0),
       refinedSignals: refinedTotals.reduce((n, m) => n + m.refinedPerformance.signals, 0),
+      sniperSignals: sniperTotals.reduce((n, m) => n + m.sniperPerformance.signals, 0),
+      sniperResolvedSignals: sniperTotals.reduce((n, m) => n + m.sniperPerformance.resolvedSignals, 0),
+      sniperOutcomeCounts: sniperTotals.reduce((acc, m) => { for (const [k,v] of Object.entries(m.sniperPerformance.outcomes)) acc[k] = (acc[k] || 0) + v; return acc; }, {}),
+      sniperAverageRealizedR: sniperTotals.flatMap(m => m.sniperSignals).filter(x => Number.isFinite(x.managed?.realizedR)).length
+        ? Number((sniperTotals.flatMap(m => m.sniperSignals).filter(x => Number.isFinite(x.managed?.realizedR)).reduce((sum, x) => sum + x.managed.realizedR, 0) / sniperTotals.flatMap(m => m.sniperSignals).filter(x => Number.isFinite(x.managed?.realizedR)).length).toFixed(4)) : null,
       refinedResolvedSignals: refinedTotals.reduce((n, m) => n + m.refinedPerformance.resolvedSignals, 0),
       fixedPlanSignals: fixedPlanTotals.reduce((n, m) => n + m.fixedPlanPerformance.signals, 0),
       refinedFixedPlanSignals: refinedFixedPlanTotals.reduce((n, m) => n + m.refinedFixedPlanPerformance.signals, 0),
