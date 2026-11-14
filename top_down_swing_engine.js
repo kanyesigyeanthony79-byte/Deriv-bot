@@ -114,10 +114,14 @@ function evaluateTopDown(marketId, candlesByTimeframe, decisionEpoch, variant = 
   const buffer = volatility * (Number.isFinite(options.stopBufferAtr) ? options.stopBufferAtr : 0.25);
   const stopLoss = direction === "BUY" ? structuralPivot.price - buffer : structuralPivot.price + buffer;
   const riskDistance = Math.abs(entryCandle.close - stopLoss);
+  const entryNoiseAtr = atr(frames.M15);
+  const minEntryNoiseAtr = Number.isFinite(options.minEntryNoiseAtr) ? options.minEntryNoiseAtr : 1.5;
+  const minRiskDistance = Math.max(buffer, entryNoiseAtr > 0 ? entryNoiseAtr * minEntryNoiseAtr : buffer);
   const maxRiskAtr = Number.isFinite(options.maxRiskAtr) ? options.maxRiskAtr : 3.5;
-  if (!(riskDistance > 0) || riskDistance > volatility * maxRiskAtr)
-    return result("risk_rejected", "Structural stop is invalid or exceeds the predeclared H4 ATR risk ceiling.", {
-      direction, entry: entryCandle.close, stopLoss, riskDistance, riskAtr: volatility, maxRiskAtr, d1, h4, h1, entryCutoff
+  if (!(riskDistance >= minRiskDistance) || riskDistance > volatility * maxRiskAtr)
+    return result("risk_rejected", "Structural stop is inside the M15 noise floor or exceeds the predeclared H4 ATR risk ceiling.", {
+      direction, entry: entryCandle.close, stopLoss, riskDistance, minRiskDistance, entryNoiseAtr,
+      minEntryNoiseAtr, riskAtr: volatility, maxRiskAtr, d1, h4, h1, entryCutoff
     });
   return {
     state: "candidate", marketId, variant, direction,
