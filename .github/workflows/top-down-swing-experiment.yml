@@ -1,0 +1,30 @@
+name: Top-Down Swing Experiment Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "top_down_swing_engine.js"
+      - "top_down_swing_backfill.js"
+      - "top_down_swing_replay.js"
+      - "test/top_down_swing_replay.test.js"
+      - "test/top_down_swing_engine.test.js"
+      - "test/top_down_swing_backfill.test.js"
+      - ".github/workflows/top-down-swing-experiment.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax check
+        run: node --check top_down_swing_engine.js && node --check top_down_swing_backfill.js && node --check top_down_swing_replay.js
+      - name: Deterministic unit tests
+        run: node --test test/top_down_swing_engine.test.js test/top_down_swing_replay.test.js test/top_down_swing_backfill.test.js

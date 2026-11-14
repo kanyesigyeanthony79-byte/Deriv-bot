@@ -1,0 +1,50 @@
+name: Top-Down Swing Historical Backfill
+
+on:
+  push:
+    branches: [dev/top-down-swing-precision-experiment]
+    paths:
+      - "top_down_swing_backfill.js"
+      - "top_down_swing_engine.js"
+      - "top_down_swing_replay.js"
+      - ".github/workflows/top-down-swing-backfill.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "top_down_swing_backfill.js"
+      - "top_down_swing_engine.js"
+      - "top_down_swing_replay.js"
+      - ".github/workflows/top-down-swing-backfill.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: top-down-swing-historical-backfill
+  cancel-in-progress: true
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev/top-down-swing-precision-experiment
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Collect historical OHLC only
+        run: node top_down_swing_backfill.js
+      - name: Run seven-day comparative replay
+        run: node top_down_swing_replay.js top_down_swing_snapshot.json top_down_swing_replay_report.json
+      - name: Upload isolated research snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: top-down-swing-historical-snapshot
+          path: |
+            top_down_swing_snapshot.json
+            top_down_swing_replay_report.json
+          if-no-files-found: error
+          retention-days: 30
