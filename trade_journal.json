@@ -189,8 +189,20 @@
       "status": "sent",
       "tp1Hit": false,
       "tp2Hit": false,
-      "finalOutcome": null,
-      "events": []
+      "finalOutcome": "EXPIRED",
+      "events": [
+        {
+          "outcome": "EXPIRED",
+          "observedAt": "2026-11-14T18:28:20.886Z",
+          "candleEpoch": 1794602700,
+          "candle": {
+            "open": 3873.46,
+            "high": 3879.71,
+            "low": 3873.42,
+            "close": 3879.71
+          }
+        }
+      ]
     },
     {
       "signalId": "BOOM500-1794622500",
@@ -464,14 +476,37 @@
         }
       ],
       "status": "sent",
-      "tp1Hit": false,
+      "tp1Hit": true,
       "tp2Hit": false,
-      "finalOutcome": null,
-      "events": [],
-      "maxFavourablePrice": 5600.647,
-      "maxFavourablePoints": 20.947,
-      "maxFavourablePct": 0.37262,
-      "maxFavourableEpoch": 1794663000
+      "finalOutcome": "SL_AFTER_TP1",
+      "events": [
+        {
+          "outcome": "TP1_HIT",
+          "observedAt": "2026-11-14T18:28:22.141Z",
+          "candleEpoch": 1794670200,
+          "candle": {
+            "open": 5593.846,
+            "high": 5593.846,
+            "low": 5585.719,
+            "close": 5585.719
+          }
+        },
+        {
+          "outcome": "SL_HIT",
+          "observedAt": "2026-11-14T18:28:22.416Z",
+          "candleEpoch": 1794676500,
+          "candle": {
+            "open": 5624.495,
+            "high": 5647.085,
+            "low": 5623.138,
+            "close": 5646.794
+          }
+        }
+      ],
+      "maxFavourablePrice": 5574.207,
+      "maxFavourablePoints": 47.387,
+      "maxFavourablePct": 0.84295,
+      "maxFavourableEpoch": 1794672000
     },
     {
       "signalId": "R_50-1794663000",
@@ -524,6 +559,70 @@
         {
           "passed": true,
           "reason": "Not extended from EMA20 (0.4 ATR)"
+        },
+        {
+          "passed": true,
+          "reason": "No spike candle"
+        }
+      ],
+      "status": "stale",
+      "tp1Hit": false,
+      "tp2Hit": false,
+      "finalOutcome": null,
+      "events": [],
+      "statusReason": "too_old_for_alert"
+    },
+    {
+      "signalId": "CRASH500-1794679200",
+      "marketId": "CRASH500",
+      "market": "Crash 500 Index",
+      "direction": "BUY",
+      "localDate": "2026-11-14",
+      "createdAt": "2026-11-14T18:00:00.000Z",
+      "candleEpoch": 1794679200,
+      "score": 76,
+      "entry": 3032.578,
+      "metrics": {
+        "ema20": 3031.673133175377,
+        "ema50": 3027.179260779719,
+        "ema50Previous": 3025.134512201481,
+        "atr": 5.762672852303417,
+        "emaSeparationAtr": 0.7798243125778238,
+        "emaSlopeAtr": 0.3548264200735554,
+        "bodyRatio": 0.7248846290379521,
+        "closeLocation": 0.7248846290379521,
+        "extensionAtr": 0.15702207080193678,
+        "swingAtr": 0.8400615693575043,
+        "candleRange": 2.8170000000000073
+      },
+      "checks": [
+        {
+          "passed": true,
+          "reason": "EMA20/EMA50 trend up, gap 0.78 ATR"
+        },
+        {
+          "passed": true,
+          "reason": "Close on the trend side of EMA20"
+        },
+        {
+          "passed": true,
+          "reason": "EMA50 sloping with the trend"
+        },
+        {
+          "passed": true,
+          "reason": "RSI 52.3 inside 50-68"
+        },
+        {
+          "passed": true,
+          "reason": "Bullish candle, body 72% of range"
+        },
+        {
+          "passed": true,
+          "reason": "Higher low formed"
+        },
+        {
+          "passed": true,
+          "reason": "Not extended from EMA20 (0.2 ATR)"
         },
         {
           "passed": true,
