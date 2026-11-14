@@ -139,7 +139,7 @@ test("swing entries use M5 execution with M15 confirmation and H1 setup", () => 
 test("swing pullback confirmation requires a completed directional rejection near M15 EMA20", () => {
   const { swingPullbackConfirmed } = require("../multi_timeframe_engine");
   const rising = Array.from({ length: 60 }, (_, i) => ({
-    epoch: 1_700_000_000 + i * 900, open: 100, high: 100.1, low: 99.9, close: 100
+    epoch: 1_700_000_000 + i * 900, open: 100, high: 100.4, low: 99.6, close: 100
   }));
   rising[rising.length - 1] = {
     epoch: rising[rising.length - 2].epoch + 900,
