@@ -17,8 +17,10 @@ on:
       - "swing_trade_management.js"
       - "SWING_TRADE_MANAGEMENT_EXPERIMENT.md"
       - "test/swing_trade_management.test.js"
-      - "test/swing_trade_management_replay.test.js"
+      - "test/swing_trade_management_replay.test.js test/swing_trade_management_diagnostics.test.js"
       - "swing_trade_management_replay.js"
+      - "swing_trade_management_diagnostics.js"
+      - "test/swing_trade_management_diagnostics.test.js"
       - ".github/workflows/swing-historical-validation.yml"
   workflow_dispatch:
 
@@ -46,6 +48,7 @@ jobs:
           node --check swing_h4_d1_m15_m5.js
           node --check swing_trade_management.js
           node --check swing_trade_management_replay.js
+          node --check swing_trade_management_diagnostics.js
       - name: Test historical replay and refined swing candidate
         run: node --test test/swing_historical_validation.test.js test/swing_h4_d1_m15_m5.test.js test/swing_trade_management.test.js test/swing_trade_management_replay.test.js
       - name: Fetch historical candles and replay swing entries
