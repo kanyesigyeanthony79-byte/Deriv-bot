@@ -3,6 +3,7 @@
 const { makePolicy, assessNewPosition, positionsPastTimeLimit } = require("./account_risk");
 
 const ALLOWED_CONTRACT_TYPES = new Set(["CALL", "PUT"]);
+const APPROVED_SYNTHETIC_SYMBOLS = new Set(["R_10", "R_25", "R_50", "R_75", "JD100", "CRASH500", "BOOM500"]);
 
 function positive(value, name) {
   const n = Number(value);
@@ -37,9 +38,13 @@ class DerivDemoAdapter {
     }
     if (!accountId) throw new Error("expected_demo_account_id_required");
     if (!Array.isArray(allowedSymbols) || !allowedSymbols.length) throw new Error("explicit_synthetic_symbol_allowlist_required");
+    const requestedSymbols = allowedSymbols.map(x => String(x).toUpperCase());
+    if (requestedSymbols.some(symbol => !APPROVED_SYNTHETIC_SYMBOLS.has(symbol))) {
+      throw new Error("symbol_allowlist_contains_non_approved_synthetic");
+    }
     this.connection = connection;
     this.accountId = String(accountId).toUpperCase();
-    this.allowedSymbols = new Set(allowedSymbols.map(x => String(x).toUpperCase()));
+    this.allowedSymbols = new Set(requestedSymbols);
     this.policy = makePolicy(policy);
     this.now = now;
     this.entryOutcomeUnknown = false;
@@ -54,6 +59,10 @@ class DerivDemoAdapter {
   async getBalance() {
     const result = await this.request({ balance: 1 }, "balance");
     if (!Number.isFinite(Number(result.balance))) throw new Error("balance_value_invalid");
+    const returnedAccountId = String(result.loginid || "").toUpperCase();
+    if (!returnedAccountId || returnedAccountId !== this.accountId) {
+      throw new Error("demo_account_identity_mismatch");
+    }
     return result;
   }
 
@@ -65,7 +74,9 @@ class DerivDemoAdapter {
 
   async getContractStatus(contractId) {
     positive(contractId, "contractId");
-    return this.request({ proposal_open_contract: 1, contract_id: Number(contractId) }, "proposal_open_contract");
+    const status = await this.request({ proposal_open_contract: 1, contract_id: Number(contractId) }, "proposal_open_contract");
+    if (Number(status.contract_id) !== Number(contractId)) throw new Error("open_contract_identity_mismatch");
+    return status;
   }
 
   async getAccountSnapshot({ dayStartEquity, sessionPeakEquity }) {
@@ -131,16 +142,21 @@ class DerivDemoAdapter {
     const decision = assessNewPosition(snapshot, this.policy, this.now());
     if (!decision.allowed) return { opened: false, reason: decision.reason, risk: decision };
 
-    const proposalResponse = await this.request({
-      proposal: 1,
-      amount: decision.stake,
-      basis: "stake",
-      contract_type: type,
-      currency: snapshot.currency,
-      duration: durationValue,
-      duration_unit: unit,
-      underlying_symbol: normalizedSymbol
-    }, "proposal");
+    let proposalResponse;
+    try {
+      proposalResponse = await this.request({
+        proposal: 1,
+        amount: decision.stake,
+        basis: "stake",
+        contract_type: type,
+        currency: snapshot.currency,
+        duration: durationValue,
+        duration_unit: unit,
+        underlying_symbol: normalizedSymbol
+      }, "proposal");
+    } catch (_) {
+      return { opened: false, reason: "proposal_request_failed" };
+    }
     const proposalId = proposalResponse.id;
     const askPrice = Number(proposalResponse.ask_price);
     if (!proposalId || !Number.isFinite(askPrice) || askPrice <= 0 || askPrice > decision.stake * 1.001) {
@@ -213,4 +229,4 @@ class DerivDemoAdapter {
   }
 }
 
-module.exports = { DerivDemoAdapter, isDemoUrl };
+module.exports = { DerivDemoAdapter, isDemoUrl, APPROVED_SYNTHETIC_SYMBOLS };
