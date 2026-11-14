@@ -1,0 +1,36 @@
+name: One-time Telegram test alert
+
+on:
+  push:
+    branches:
+      - test/telegram-fake-signal-once
+
+permissions:
+  contents: read
+
+jobs:
+  send-test-alert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send clearly labelled test signal
+        env:
+          WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
+          SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$WORKER_URL"
+          test -n "$SIGNAL_API_KEY"
+          curl --fail-with-body --silent --show-error \
+            -X POST "$WORKER_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-API-Key: $SIGNAL_API_KEY" \
+            --data '{
+              "event": "new_signal",
+              "signalId": "TEST-ONLY-20261114-01",
+              "market": "TEST ONLY — Gold/USD",
+              "direction": "BUY",
+              "entry": 4000.00,
+              "stopLoss": 3990.00,
+              "tp1": 4010.00,
+              "tp2": 4020.00
+            }'
