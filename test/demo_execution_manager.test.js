@@ -36,8 +36,8 @@ test("blocks entries when persistent baseline is missing", async () => {
   const adapter = makeAdapter();
   const manager = new DemoExecutionManager({
     adapter, baselineStore: makeStore(), allowedSymbols: ["R_50"],
-    executionEnabled: true, strategyApprovalId: "approved-test",
-    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, generatedAtMs: NOW, symbol: "R_50", direction: "BUY", duration: 5 })
+    executionEnabled: true, positionManagementEnabled: true, exitEvaluator: async () => ({ exit: false }), strategyApprovalId: "approved-test",
+    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, strategyApprovalId: "approved-test", generatedAtMs: NOW, symbol: "R_50", direction: "BUY", duration: 5 })
   });
   const result = await manager.runCycle({});
   assert.equal(result.status, "observe_only");
@@ -111,7 +111,7 @@ test("rejects stale strategy candidates before requesting an order", async () =>
   const adapter = makeAdapter();
   const manager = new DemoExecutionManager({
     adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"],
-    executionEnabled: true, strategyApprovalId: "approved-test", now: () => NOW,
+    executionEnabled: true, positionManagementEnabled: true, exitEvaluator: async () => ({ exit: false }), strategyApprovalId: "approved-test", now: () => NOW,
     signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true,
       generatedAtMs: NOW - 61000, symbol: "R_50", direction: "BUY", duration: 5 })
   });
@@ -141,4 +141,20 @@ test("observe-only mode never closes an existing position", async () => {
   const result = await manager.runCycle({});
   assert.equal(result.status, "observe_only");
   assert.equal(adapter.calls.some(c => c.close), false);
+});
+
+test("refuses to enable entries without a position exit policy", async () => {
+  const adapter = makeAdapter();
+  const manager = new DemoExecutionManager({
+    adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"],
+    executionEnabled: true, positionManagementEnabled: true,
+    strategyApprovalId: "approved-test",
+    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true,
+      strategyApprovalId: "approved-test", generatedAtMs: NOW,
+      symbol: "R_50", direction: "BUY", duration: 5 }),
+    now: () => NOW
+  });
+  const result = await manager.runCycle({});
+  assert.equal(result.reason, "position_management_and_exit_policy_required_before_entries");
+  assert.equal(adapter.calls.some(c => c.open), false);
 });
