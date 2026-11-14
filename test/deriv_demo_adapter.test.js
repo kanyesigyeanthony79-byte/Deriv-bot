@@ -149,3 +149,14 @@ test("refuses a close when Deriv says the contract is not sellable", async () =>
   assert.equal(r.reason, "contract_not_currently_sellable");
   assert.equal(c.calls.some(x => x.sell), false);
 });
+
+test("refuses a balance response belonging to a different account", async () => {
+  const c = makeConnection(p => p.balance
+    ? { balance: { balance: 100, currency: "USD", loginid: "VRTC999999" } }
+    : portfolio());
+  const a = new DerivDemoAdapter(baseOptions(c));
+  await assert.rejects(
+    () => a.getAccountSnapshot({ dayStartEquity: 100, sessionPeakEquity: 100 }),
+    /demo_account_identity_mismatch/
+  );
+});
