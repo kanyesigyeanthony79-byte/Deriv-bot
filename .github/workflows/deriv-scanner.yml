@@ -1,6 +1,13 @@
 name: Deriv Hosted Scanner
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "hosted_scanner.js"
+      - "signal_journal.js"
+      - ".github/workflows/deriv-scanner.yml"
   workflow_dispatch:
   schedule:
     # Offset away from the start of each hour to reduce GitHub scheduler congestion.
