@@ -21,7 +21,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: swing-historical-validation-${{ github.event.pull_request.head.ref || github.ref }}
+  group: swing-historical-validation-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 permissions:
