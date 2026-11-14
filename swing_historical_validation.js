@@ -315,7 +315,7 @@ async function run() {
       }
     }
 
-    fs.writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2) + "\\n");
+    fs.writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2) + "\n");
     const totals = Object.values(report.markets).filter(m => m.performance);
     report.summary = {
       marketsRequested: MARKETS.length,
