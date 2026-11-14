@@ -52,7 +52,8 @@ test("rejects a research reversal candidate even when execution is explicitly en
     executionEnabled: true, positionManagementEnabled: true, exitEvaluator: async () => ({ exit: false }), strategyApprovalId: "approved-test",
     signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, strategyApprovalId: "approved-test",
       generatedAtMs: NOW, symbol: "R_50", direction: "BUY", duration: 5, experimentalReversal: true,
-      source: "price_action_reversal_research" })
+      source: "price_action_reversal_research" }),
+    now: () => NOW
   });
   const result = await manager.runCycle({});
   assert.equal(result.status, "observe_only");
@@ -65,7 +66,8 @@ test("requires a validated completed-candle signal and applies account risk", as
   const manager = new DemoExecutionManager({
     adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"],
     executionEnabled: true, positionManagementEnabled: true, exitEvaluator: async () => ({ exit: false }), strategyApprovalId: "approved-test",
-    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, strategyApprovalId: "approved-test", generatedAtMs: NOW, symbol: "R_50", direction: "BUY", duration: 5 })
+    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, strategyApprovalId: "approved-test", generatedAtMs: NOW, symbol: "R_50", direction: "BUY", duration: 5 }),
+    now: () => NOW
   });
   const result = await manager.runCycle({});
   assert.equal(result.status, "executed_demo");
@@ -78,7 +80,8 @@ test("rejects symbols outside the synthetic allowlist", async () => {
   const manager = new DemoExecutionManager({
     adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"],
     executionEnabled: true, positionManagementEnabled: true, exitEvaluator: async () => ({ exit: false }), strategyApprovalId: "approved-test",
-    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, strategyApprovalId: "approved-test", generatedAtMs: NOW, symbol: "frxXAUUSD", direction: "BUY", duration: 5 })
+    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, strategyApprovalId: "approved-test", generatedAtMs: NOW, symbol: "frxXAUUSD", direction: "BUY", duration: 5 }),
+    now: () => NOW
   });
   assert.equal((await manager.runCycle({})).reason, "candidate_symbol_or_direction_not_allowed");
   assert.equal(adapter.calls.some(c => c.open), false);
