@@ -3,7 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { evaluate, DEF } = require("./engine");
-const { journalOutcome: recordJournalOutcome, reconcileJournalState, markExpired } = require("./signal_journal");
+const { journalOutcome: recordJournalOutcome, reconcileJournalState, markExpired, updateFavourableMovement } = require("./signal_journal");
 const { dailySummary, buildDailySummaryMessage, previousUgandaDay } = require("./daily_summary");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
@@ -69,7 +69,12 @@ async function maybeSendDailySummary(now) {
   // A successful Telegram response is persisted in the journal to prevent routine duplicate reports.
   const reportDay = previousUgandaDay(now);
   if (journal.dailyReports[reportDay]?.delivered) return;
-  const summary = dailySummary(journal.signals, reportDay, MARKETS);
+  let mtfSignals = [];
+  try {
+    const mtfJournal = JSON.parse(fs.readFileSync(path.join(__dirname, "multi_timeframe_journal.json"), "utf8"));
+    if (mtfJournal && Array.isArray(mtfJournal.signals)) mtfSignals = mtfJournal.signals;
+  } catch {}
+  const summary = dailySummary(journal.signals, reportDay, MARKETS, mtfSignals);
   const message = buildDailySummaryMessage(summary);
   try {
     await postTelegram({ event: "daily_summary", message, text: message });
