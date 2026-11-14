@@ -69,7 +69,9 @@ class DerivDemoAdapter {
 
   async getContractStatus(contractId) {
     positive(contractId, "contractId");
-    return this.request({ proposal_open_contract: 1, contract_id: Number(contractId) }, "proposal_open_contract");
+    const status = await this.request({ proposal_open_contract: 1, contract_id: Number(contractId) }, "proposal_open_contract");
+    if (Number(status.contract_id) !== Number(contractId)) throw new Error("open_contract_identity_mismatch");
+    return status;
   }
 
   async getAccountSnapshot({ dayStartEquity, sessionPeakEquity }) {
@@ -135,16 +137,21 @@ class DerivDemoAdapter {
     const decision = assessNewPosition(snapshot, this.policy, this.now());
     if (!decision.allowed) return { opened: false, reason: decision.reason, risk: decision };
 
-    const proposalResponse = await this.request({
-      proposal: 1,
-      amount: decision.stake,
-      basis: "stake",
-      contract_type: type,
-      currency: snapshot.currency,
-      duration: durationValue,
-      duration_unit: unit,
-      underlying_symbol: normalizedSymbol
-    }, "proposal");
+    let proposalResponse;
+    try {
+      proposalResponse = await this.request({
+        proposal: 1,
+        amount: decision.stake,
+        basis: "stake",
+        contract_type: type,
+        currency: snapshot.currency,
+        duration: durationValue,
+        duration_unit: unit,
+        underlying_symbol: normalizedSymbol
+      }, "proposal");
+    } catch (_) {
+      return { opened: false, reason: "proposal_request_failed" };
+    }
     const proposalId = proposalResponse.id;
     const askPrice = Number(proposalResponse.ask_price);
     if (!proposalId || !Number.isFinite(askPrice) || askPrice <= 0 || askPrice > decision.stake * 1.001) {
