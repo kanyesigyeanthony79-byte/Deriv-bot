@@ -52,7 +52,7 @@ function connect() {
     ws.addEventListener("error", () => { clearTimeout(timeout); reject(new Error("WebSocket connection error")); }, { once: true });
   });
 }
-const norm = s => String(s || "").toLowerCase().replace(/\\s+/g, " ").trim();
+const norm = s => String(s || "").toLowerCase().replace(/\s+/g, " ").trim();
 function resolveSymbol(symbols, id, name) {
   const found = symbols.find(s => norm(s.underlying_symbol_name || s.display_name) === norm(name)) ||
     symbols.find(s => (s.underlying_symbol || s.symbol) === id);
