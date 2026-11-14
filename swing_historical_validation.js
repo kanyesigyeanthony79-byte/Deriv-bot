@@ -121,14 +121,34 @@ function connect(url) {
   });
 }
 
+async function fetchHistory(client, symbol, granularity, requestedCount, now) {
+  const byEpoch = new Map();
+  let end = "latest";
+  let pages = 0;
+  while (byEpoch.size < requestedCount && pages < 12) {
+    const remaining = requestedCount - byEpoch.size;
+    const count = Math.min(999, remaining);
+    const reply = await client.ask({
+      ticks_history: symbol, adjust_start_time: 1, count,
+      end, granularity, style: "candles"
+    });
+    const batch = normalizeCandles(reply.candles, granularity, now);
+    if (!batch.length) break;
+    for (const candle of batch) byEpoch.set(candle.epoch, candle);
+    const oldest = batch[0].epoch;
+    const nextEnd = oldest - 1;
+    if (typeof end === "number" && nextEnd >= end) break;
+    end = nextEnd;
+    pages++;
+    if (batch.length < count) break;
+  }
+  return [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch).slice(-requestedCount);
+}
+
 async function fetchMarket(client, symbol, now) {
   const frames = {};
   for (const [tf, granularity, count] of REQUESTS) {
-    const reply = await client.ask({
-      ticks_history: symbol, adjust_start_time: 1, count,
-      end: "latest", granularity, style: "candles"
-    });
-    frames[tf] = normalizeCandles(reply.candles, granularity, now);
+    frames[tf] = await fetchHistory(client, symbol, granularity, count, now);
   }
   return frames;
 }
