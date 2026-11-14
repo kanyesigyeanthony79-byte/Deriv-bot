@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { touchStatus, updateJournal, summarizeJournal } = require("../multi_timeframe_journal");
+const { touchStatus, updateJournal, isReviewableSignal, summarizeJournal } = require("../multi_timeframe_journal");
 
 const signal = {
   signalId: "JD100-SWING-100", marketId: "JD100", direction: "BUY",
@@ -53,4 +53,15 @@ test("records maximum favourable movement before a terminal outcome", () => {
 test("journal expires an unclosed observation after its category age limit", () => {
   const result = updateJournal({ version: 1, signals: [{ ...signal, status: "pending", createdEpoch: 100, tp1Hit: false }] }, {}, 1200);
   assert.equal(result.signals[0].status, "expired");
+});
+
+
+test("review visibility includes active swing signals without making terminal records reviewable", () => {
+  const swing = { ...signal, category: "SWING", status: "pending" };
+  assert.equal(isReviewableSignal(swing), true);
+  assert.equal(isReviewableSignal({ ...swing, status: "tp1_hit" }), true);
+  for (const status of ["tp2_hit", "stopped", "stopped_after_tp1", "ambiguous", "expired"]) {
+    assert.equal(isReviewableSignal({ ...swing, status }), false, status + " is terminal");
+  }
+  assert.equal(isReviewableSignal(null), false);
 });
