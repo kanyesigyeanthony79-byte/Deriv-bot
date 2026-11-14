@@ -1,0 +1,44 @@
+name: Selective Successful Swing Market Replay
+
+on:
+  push:
+    branches: [dev/selective-successful-swing-markets]
+    paths:
+      - "top_down_swing_selective_replay.js"
+      - "test/top_down_swing_selective_replay.test.js"
+      - ".github/workflows/selective-successful-swing-markets.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "top_down_swing_selective_replay.js"
+      - "test/top_down_swing_selective_replay.test.js"
+      - ".github/workflows/selective-successful-swing-markets.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  selective-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev/selective-successful-swing-markets
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test test/top_down_swing_selective_replay.test.js test/top_down_swing_engine.test.js test/top_down_swing_replay.test.js
+      - name: Collect fresh historical OHLC
+        run: node top_down_swing_backfill.js
+      - name: Replay selected market-entry pairs
+        run: node top_down_swing_selective_replay.js top_down_swing_snapshot.json top_down_swing_selective_report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: selective-successful-swing-market-report
+          path: |
+            top_down_swing_snapshot.json
+            top_down_swing_selective_report.json
+          if-no-files-found: error
+          retention-days: 30
