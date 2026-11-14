@@ -122,7 +122,7 @@ function evaluateCategory(marketId, marketName, category, candlesByTimeframe, en
       !validCandles(contextCandles) || contextCandles.length < (config.context === "W1" ? 51 : 60) ||
       !validCandles(riskCandles) || riskCandles.length < 20 ||
       (category === "SWING" && (!validCandles(swingSetupCandles) || swingSetupCandles.length < 65 ||
-        !validCandles(swingHigherCandles) || swingHigherCandles.length < 60))) {
+        !validCandles(swingHigherCandles) || swingHigherCandles.length < 60 || riskCandles.length < 51))) {
     return { state: "warming", category, label: config.label, reason: "Waiting for sufficient completed candles across required timeframes." };
   }
 
@@ -165,19 +165,21 @@ function evaluateCategory(marketId, marketName, category, candlesByTimeframe, en
 
   let swingSetup = null;
   let swingHigherBias = null;
+  let swingH4Bias = null;
   if (category === "SWING") {
     swingSetup = evaluate(swingSetupCandles);
     swingHigherBias = trendBias(swingHigherCandles);
-    if (swingSetup.state !== "ok" || swingSetup.signal !== entryResult.signal || swingHigherBias.direction !== entryResult.signal) {
+    swingH4Bias = trendBias(riskCandles);
+    if (swingSetup.state !== "ok" || swingSetup.signal !== entryResult.signal || swingHigherBias.direction !== entryResult.signal || swingH4Bias.direction !== entryResult.signal) {
       return {
         state: "timeframe_conflict", category, label: config.label, direction: entryResult.signal,
-        setupBias: swingSetup.signal || "NEUTRAL", higherTimeframeBias: swingHigherBias.direction,
+        setupBias: swingSetup.signal || "NEUTRAL", higherTimeframeBias: swingHigherBias.direction, h4Bias: swingH4Bias.direction,
         reason: "Swing entry is withheld unless the H1 setup and D1 trend agree with the M5 direction."
       };
     }
     if (!swingPullbackConfirmed(confirmationCandles, entryResult.signal)) {
       return { state: "waiting_pullback", category, label: config.label, direction: entryResult.signal,
-        setupBias: swingSetup.signal, higherTimeframeBias: swingHigherBias.direction,
+        setupBias: swingSetup.signal, higherTimeframeBias: swingHigherBias.direction, h4Bias: swingH4Bias.direction,
         reason: "H1 swing setup is valid, but M15 has not confirmed a pullback and directional rejection." };
     }
   }
@@ -205,6 +207,7 @@ function evaluateCategory(marketId, marketName, category, candlesByTimeframe, en
       context: context,
       swingSetup: swingSetup ? { score: swingSetup.score, checks: swingSetup.checks } : null,
       swingHigherBias: swingHigherBias,
+      swingH4Bias: swingH4Bias,
       riskAtr: atr(riskCandles, 14)
     },
     ...levels,
