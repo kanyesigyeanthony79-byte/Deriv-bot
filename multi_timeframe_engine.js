@@ -235,13 +235,16 @@ function evaluateRecentSignals(marketId, marketName, candlesByTimeframe, recentB
   const found = [];
   for (const category of Object.keys(CATEGORIES)) {
     const entry = candlesByTimeframe[CATEGORIES[category].entry] || [];
-    const start = Math.max(64, entry.length - Math.max(1, recentBars));
+    const outputStart = Math.max(64, entry.length - Math.max(1, recentBars));
+    // Scan the cooldown lookback too, so a signal just before the recovery
+    // window can suppress a duplicate at the start of the returned window.
+    const scanStart = Math.max(64, outputStart - Math.max(0, cooldownBars));
     let lastSignalIndex = null;
-    for (let index = start; index < entry.length; index++) {
+    for (let index = scanStart; index < entry.length; index++) {
       const result = evaluateCategory(marketId, marketName, category, candlesByTimeframe, index);
       if (result.state !== "signal" || !cooldownAllows(lastSignalIndex, index, cooldownBars)) continue;
-      found.push(result);
       lastSignalIndex = index;
+      if (index >= outputStart) found.push(result);
     }
   }
   return found;
