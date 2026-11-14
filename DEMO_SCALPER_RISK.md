@@ -37,3 +37,14 @@ Profit harvesting, trailing protection, and target extension are intentionally n
 ## Safety boundary
 
 This PR is not an activation or deployment. It does not change `main`, the production Telegram alert path, or the existing `bot.js` execution behaviour. No real-account trading is enabled.
+
+## Deriv API integration notes (verified against current official docs)
+
+- Obtain the authenticated WebSocket URL from the account OTP endpoint and require the returned URL to identify the demo endpoint before connecting.
+- Read `balance` and `portfolio` on the authenticated session. Portfolio is the authoritative list of currently open contracts; never assume no positions when this request fails.
+- Track each contract with `proposal_open_contract` (prefer a subscription for timely updates). Reconcile every returned contract ID against the portfolio.
+- Before an early close, inspect the contract's `is_valid_to_sell` flag and issue `sell` only when it is true. Treat a confirmed broker response—not a local timer—as proof of closure.
+- Use `contract_update` for stop-loss/take-profit changes only when the specific contract type supports the requested update.
+- Buy by the proposal ID rather than repeatedly sending `buy: "1"` with parameters. If a buy request times out or its response is lost, query the account statement for the transaction before retrying; otherwise a duplicate position could be created.
+
+These rules are deliberately prerequisites for the next adapter phase. The current PR does not implement or invoke these operations.
