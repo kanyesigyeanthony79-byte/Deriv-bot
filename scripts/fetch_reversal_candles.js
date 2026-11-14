@@ -163,7 +163,7 @@ async function main() {
   const client = await connect();
   try {
     const symbolsReply = await client.ask({ active_symbols: "brief" });
-    const active = new Set((symbolsReply.active_symbols || []).map(item => item.symbol));
+    const active = new Set((symbolsReply.active_symbols || []).map(item => item.underlying_symbol || item.symbol).filter(Boolean));
     for (const market of MARKETS) {
       if (!active.has(market)) throw new Error(`Market ${market} was not confirmed in active_symbols.`);
       const frames = {};
