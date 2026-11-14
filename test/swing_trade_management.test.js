@@ -43,13 +43,26 @@ test("refuses to infer the order when stop and target are touched in the same M5
   assert.equal(evaluateTradeManagement({ position: position(), candlesByTimeframe: data }).action, "AMBIGUOUS_BARRIER");
 });
 
-test("advises an early exit when H1 and M15 both reverse before the original stop", () => {
-  const data = frames("up", { open: 104.9, high: 105.1, low: 104.8, close: 105 });
+test("advises an early exit when H1 and M15 reverse while the position is losing", () => {
+  const data = frames("up", { open: 95.1, high: 95.2, low: 94.8, close: 95 });
   data.H1 = series(80, 3600, CUTOFF - 80 * 3600, "down", 130);
   data.M15 = series(80, 900, CUTOFF - 80 * 900, "down", 130);
   const result = evaluateTradeManagement({ position: position(), candlesByTimeframe: data });
   assert.equal(result.action, "EXIT_EARLY");
   assert.ok(result.currentPrice > 90);
+});
+
+
+test("does not close a profitable runner solely because H1 and M15 reverse while H4 and D1 remain aligned", () => {
+  const data = frames("up", { open: 104.9, high: 105.1, low: 104.8, close: 105 });
+  data.H1 = series(80, 3600, CUTOFF - 80 * 3600, "down", 130);
+  data.M15 = series(80, 900, CUTOFF - 80 * 900, "down", 130);
+  const result = evaluateTradeManagement({
+    position: position({ stopLoss: 100, partialTaken: true }),
+    candlesByTimeframe: data
+  });
+  assert.notEqual(result.action, "EXIT_EARLY");
+  assert.equal(result.action, "WATCH_CLOSELY");
 });
 
 test("advises break-even only after price reaches the configured +1R threshold", () => {
