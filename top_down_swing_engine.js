@@ -16,6 +16,22 @@ function completed(candles, timeframe, decisionEpoch) {
   return candles.filter(c => c && Number.isFinite(c.epoch) &&
     c.epoch + TF[timeframe] <= decisionEpoch);
 }
+function validateContinuity(candles, timeframe, marketId) {
+  if (!validCandles(candles) || !(TF[timeframe] > 0))
+    return { valid: false, gaps: [], reason: "Insufficient or invalid candle history." };
+  const gaps = [];
+  for (let i=1;i<candles.length;i++) {
+    const delta=candles[i].epoch-candles[i-1].epoch;
+    if (delta <= TF[timeframe]*1.5) continue;
+    const from=new Date(candles[i-1].epoch*1000), to=new Date(candles[i].epoch*1000);
+    const goldWeekend=marketId==="frxXAUUSD" &&
+      [0,5,6].includes(from.getUTCDay()) && [0,1].includes(to.getUTCDay()) &&
+      delta <= 72*3600+TF[timeframe];
+    if (!goldWeekend) gaps.push({afterEpoch:candles[i-1].epoch,beforeEpoch:candles[i].epoch,
+      missingIntervals:Math.max(1,Math.round(delta/TF[timeframe])-1)});
+  }
+  return {valid:gaps.length===0,gaps,reason:gaps.length?"Missing candle intervals detected.":"Candle sequence is continuous."};
+}
 function atr(candles, period = 14) {
   if (!validCandles(candles) || candles.length <= period) return 0;
   const ranges = [];
@@ -75,6 +91,11 @@ function evaluateTopDown(marketId, candlesByTimeframe, decisionEpoch, variant = 
     frames[tf] = completed(raw, tf, entryCutoff);
     if (frames[tf].length && !validCandles(frames[tf]))
       return result("invalid_data", "Completed candles must be valid OHLC, oldest first, with unique increasing epochs.", { timeframe: tf });
+    if (frames[tf].length >= 2) {
+      const continuity = validateContinuity(frames[tf], tf, marketId);
+      if (!continuity.valid)
+        return result("data_gap", continuity.reason, { timeframe: tf, gaps: continuity.gaps.slice(0, 5) });
+    }
   }
   for (const tf of ["D1", "H4", "H1"]) {
     if (frames[tf].length < 12)
@@ -179,4 +200,4 @@ function managementAdvisories(signal, candlesByTimeframe, decisionEpoch) {
   }
   return events.filter((e, i, all) => all.findIndex(x => x.type === e.type) === i);
 }
-module.exports = { TF, VARIANTS, validCandles, completed, atr, confirmedPivots, structure, evaluateTopDown, managementAdvisories };
+module.exports = { TF, VARIANTS, validCandles, completed, validateContinuity, atr, confirmedPivots, structure, evaluateTopDown, managementAdvisories };
