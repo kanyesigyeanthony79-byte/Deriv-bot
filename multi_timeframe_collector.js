@@ -1,10 +1,11 @@
 "use strict";
-// Isolated, observation-only multi-timeframe data collector.
-// Does not send Telegram messages, place trades, or modify production signal state.
+// Multi-timeframe collector and optional signal-only Telegram alert router.
+// The MTF_TELEGRAM_ALERTS feature flag controls alert delivery; no order execution.
 const fs = require("node:fs");
 const path = require("node:path");
 const { aggregateWeeklyCandles, validCandles, evaluateAllCategories, evaluateRecentSignals } = require("./multi_timeframe_engine");
 const { updateJournal, summarizeJournal } = require("./multi_timeframe_journal");
+const { sendCandidateAlerts } = require("./multi_timeframe_alerts");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const MARKETS = [
@@ -149,10 +150,10 @@ async function main() {
     const signalCounts = Object.fromEntries(["signal", "no_signal", "timeframe_conflict", "warming", "market_filtered", "data_gap"].map(state =>
       [state, allSignals.filter(s => s.state === state).length]
     ));
-    output.summary = { markets: Object.keys(output.markets).length, signalCounts, journal: summarizeJournal(journal) };
+    output.summary = { markets: Object.keys(output.markets).length, signalCounts, journal: summarizeJournal(journal), telegram: alertSummary };
     const dashboard = {
       version: 1, generatedAt: output.generatedAt, generatedEpoch: now,
-      mode: "observation_only", summary: output.summary,
+      mode: alertSummary.enabled ? "signal_alerts_enabled" : "observation_only", summary: output.summary,
       markets: Object.values(output.markets).map(m => ({
         marketId: m.marketId, marketName: m.marketName, signals: m.signals,
         timeframeCounts: Object.fromEntries(Object.entries(m.timeframes).map(([tf, candles]) => [tf, candles.length])),
@@ -164,6 +165,7 @@ async function main() {
       markets: Object.keys(output.markets).length,
       candles: total,
       signalCounts,
+      telegram: alertSummary,
       errors: output.errors.length + Object.values(output.markets).reduce((n, m) => n + m.errors.length, 0),
       output: "multi_timeframe_data.json"
     });
