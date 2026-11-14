@@ -35,12 +35,24 @@ function simulatePolicy(signal, frames, policy, horizonSeconds = HORIZON) {
   const entryClose = signal.decisionEpoch ?? signal.entryEpoch;
   const m5 = (frames.M5 || []).filter(c => c.epoch >= entryClose && c.epoch + M5 <= entryClose + horizonSeconds);
   if (!m5.length || m5.at(-1).epoch + M5 < entryClose + horizonSeconds) return { status: "censored", policy };
-  const h1 = frames.H1 || [], h4 = frames.H4 || [];
+  // Advance completed higher-timeframe candles once as M5 time moves forward.
+  // The previous implementation rescanned the full H1/H4 arrays for every M5
+  // candle in every candidate trade, multiplying work without changing evidence.
+  const h1 = (frames.H1 || []).filter(c => c.epoch + H1 > entryClose);
+  const h4 = (frames.H4 || []).filter(c => c.epoch + H4 > entryClose);
+  let h1Index = 0, h4Index = 0;
+  const completedH1 = [], completedH4 = [];
   let stop = signal.stopLoss, partial = false, realised = 0, mfe = 0, mae = 0;
   let exitEpoch = null, exitReason = "horizon_expiry", previousMfe = 0;
   for (const candle of m5) {
-    const completedH1 = h1.filter(c => c.epoch + H1 <= candle.epoch && c.epoch + H1 > entryClose);
-    const completedH4 = h4.filter(c => c.epoch + H4 <= candle.epoch && c.epoch + H4 > entryClose);
+    while (h1Index < h1.length && h1[h1Index].epoch + H1 <= candle.epoch) {
+      completedH1.push(h1[h1Index]);
+      h1Index++;
+    }
+    while (h4Index < h4.length && h4[h4Index].epoch + H4 <= candle.epoch) {
+      completedH4.push(h4[h4Index]);
+      h4Index++;
+    }
     // Pivot becomes actionable only after its right-hand confirmation candle has closed.
     if (policy === "H1_PIVOT_TRAIL" && previousMfe >= 1 && completedH1.length >= 8) {
       const p = confirmedPivots(completedH1, "H1", candle.epoch);
