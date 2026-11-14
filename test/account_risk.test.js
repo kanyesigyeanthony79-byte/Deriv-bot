@@ -27,7 +27,7 @@ test("sizes a new position from current equity and per-position risk", () => {
 });
 
 test("resizes down when account equity falls", () => {
-  const result = assessNewPosition(account({ balance: 40, equity: 40, dayStartEquity: 100, sessionPeakEquity: 100 }), makePolicy(), NOW);
+  const result = assessNewPosition(account({ balance: 40, equity: 40, dayStartEquity: 40, sessionPeakEquity: 40 }), makePolicy(), NOW);
   assert.equal(result.allowed, true);
   assert.equal(result.stake, 0.2);
 });
@@ -53,7 +53,7 @@ test("blocks stale, missing, or non-demo account snapshots", () => {
 
 test("blocks at daily loss and peak-to-current drawdown thresholds", () => {
   assert.equal(assessNewPosition(account({ equity: 97, balance: 97 }), makePolicy(), NOW).reason, "daily_loss_limit_reached");
-  assert.equal(assessNewPosition(account({ equity: 95, balance: 95, dayStartEquity: 110, sessionPeakEquity: 110 }), makePolicy(), NOW).reason, "drawdown_pause_reached");
+  assert.equal(assessNewPosition(account({ equity: 104.5, balance: 104.5, dayStartEquity: 100, sessionPeakEquity: 110 }), makePolicy(), NOW).reason, "drawdown_pause_reached");
 });
 
 test("fails closed if any open position risk is unknown", () => {
