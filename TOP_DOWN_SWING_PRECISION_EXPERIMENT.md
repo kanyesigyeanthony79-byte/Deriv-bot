@@ -102,7 +102,7 @@ If historical snapshots do not contain enough D1/H4/H1/M15/M5 history, report th
 
 ## Implementation progress — 2026-11-14
 
-- Added `top_down_swing_engine.js`: confirmed D1/H4/H1 structure, three comparable entry variants (H1 control, M15 refinement, M15+M5 refinement), H4 structural invalidation with ATR buffer/risk ceiling, and advisory-only hold/break-even/trailing/partial-profit/structure-deterioration/early-loss events.
+- Added `top_down_swing_engine.js`: confirmed D1/H4/H1 structure, three comparable entry variants (H1 control, M15 refinement, M15+M5 refinement), H4 structural invalidation with ATR buffer, M15 volatility noise floor and H4 ATR risk ceiling, and advisory-only hold/break-even/trailing/partial-profit/structure-deterioration/early-loss events.
 - All timeframe inputs are re-cut at the candidate entry candle close. Pivots are not available until their right-hand confirmation candles have closed.
 - Added `top_down_swing_replay.js`: seven-day forward outcomes, fixed-exit and 50%-at-TP1 comparison, MFE/MAE, censored-window handling, and ambiguous same-candle handling. No spread, slippage or fees are modelled; reports must disclose this.
 - Added deterministic tests and a dedicated GitHub Actions workflow. Latest run: 10/10 experiment tests passed; syntax checks passed for the engine, backfill and replay scripts. Existing multi-timeframe tests also passed.
