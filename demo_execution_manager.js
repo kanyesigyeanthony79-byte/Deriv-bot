@@ -68,6 +68,7 @@ class DemoExecutionManager {
     executionEnabled = false,
     strategyApprovalId = null,
     maxEntriesPerCycle = 1,
+    maxSignalAgeMs = 60000,
     now = () => Date.now()
   }) {
     if (!adapter || typeof adapter.getAccountSnapshot !== "function" ||
@@ -85,7 +86,9 @@ class DemoExecutionManager {
     this.exitEvaluator = exitEvaluator;
     this.executionEnabled = executionEnabled === true;
     this.strategyApprovalId = strategyApprovalId;
+    if (!Number.isFinite(maxSignalAgeMs) || maxSignalAgeMs < 1000 || maxSignalAgeMs > 60000) throw new Error("max_signal_age_must_be_1_to_60_seconds");
     this.maxEntriesPerCycle = maxEntriesPerCycle;
+    this.maxSignalAgeMs = maxSignalAgeMs;
     this.now = now;
     this.cycleInFlight = false;
   }
@@ -122,9 +125,12 @@ class DemoExecutionManager {
         }
         baseline.updatedAt = new Date(nowMs).toISOString();
         this.baselineStore.save(baseline);
+        snapshot.dayStartEquity = baseline.dayStartEquity;
+        snapshot.sessionPeakEquity = baseline.sessionPeakEquity;
       }
 
       const actions = [];
+      const closedIds = new Set();
       const due = positionsPastTimeLimit(snapshot.openPositions, nowMs, this.adapter.policy);
       for (const item of due) {
         const position = snapshot.openPositions.find(p => Number(p.contractId) === Number(item.contractId));
@@ -135,12 +141,14 @@ class DemoExecutionManager {
         }
         const result = await this.adapter.closeContract(position.contractId, item.reason);
         actions.push({ type: result.closed ? "EXIT_CONFIRMED" : "EXIT_UNCONFIRMED", ...result });
+        if (result.closed) closedIds.add(Number(position.contractId));
       }
 
       // Additional profit-protection/early-loss exits require an explicit,
       // tested policy callback. There is intentionally no invented threshold.
       if (typeof this.exitEvaluator === "function") {
         for (const position of snapshot.openPositions) {
+          if (closedIds.has(Number(position.contractId))) continue;
           const decision = await this.exitEvaluator({ position, snapshot, nowMs });
           if (!decision || decision.exit !== true) continue;
           if (!position.isValidToSell) {
@@ -149,6 +157,7 @@ class DemoExecutionManager {
           }
           const result = await this.adapter.closeContract(position.contractId, decision.reason || "approved_exit_policy");
           actions.push({ type: result.closed ? "EXIT_CONFIRMED" : "EXIT_UNCONFIRMED", ...result });
+          if (result.closed) closedIds.add(Number(position.contractId));
         }
       }
 
@@ -157,6 +166,9 @@ class DemoExecutionManager {
       }
       if (!this.executionEnabled) {
         return { status: "observe_only", reason: "execution_disabled_by_default", accountMode: snapshot.mode, openPositions: snapshot.openPositions.length, actions };
+      }
+      if (actions.some(action => action.type === "EXIT_BLOCKED" || action.type === "EXIT_UNCONFIRMED")) {
+        return { status: "blocked", reason: "unresolved_exit_requires_reconciliation_before_new_entry", actions };
       }
       if (!this.strategyApprovalId || typeof this.signalEvaluator !== "function" || this.maxEntriesPerCycle !== 1) {
         return { status: "blocked", reason: "explicit_strategy_approval_and_single_entry_evaluator_required", actions };
@@ -168,9 +180,15 @@ class DemoExecutionManager {
       if (!candidate || candidate.validated !== true || candidate.completedCandlesOnly !== true) {
         return { status: "observe_only", reason: "no_validated_completed_candle_candidate", actions };
       }
+      const generatedAtMs = Number(candidate.generatedAtMs);
+      if (!Number.isFinite(generatedAtMs) || generatedAtMs > nowMs || nowMs - generatedAtMs > this.maxSignalAgeMs) {
+        return { status: "blocked", reason: "candidate_missing_or_stale_timestamp", actions };
+      }
       const symbol = String(candidate.symbol || "").toUpperCase();
       const direction = String(candidate.direction || "").toUpperCase();
-      if (!this.allowedSymbols.has(symbol) || !["BUY", "SELL"].includes(direction)) {
+      const duration = Number(candidate.duration);
+      if (!this.allowedSymbols.has(symbol) || !["BUY", "SELL"].includes(direction) ||
+          !Number.isFinite(duration) || duration <= 0 || duration > 60) {
         return { status: "blocked", reason: "candidate_symbol_or_direction_not_allowed", actions };
       }
       if (candidate.experimentalReversal === true || candidate.source === "price_action_reversal_research") {
