@@ -95,7 +95,7 @@ export default {
       const telegramResponse = await fetch(telegramURL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify((() => { const payload = { chat_id: env.TELEGRAM_CHAT_ID, text: message }; if (data.event === "new_signal" && env.REVIEW_PAGE_URL && data.signalId) { payload.reply_markup = { inline_keyboard: [[{ text: "REVIEW SIGNAL", url: env.REVIEW_PAGE_URL + "?signalId=" + encodeURIComponent(String(data.signalId)) }]] }; } return payload; })())
+        body: JSON.stringify((() => { const payload = { chat_id: env.TELEGRAM_CHAT_ID, text: message }; if (data.event === "new_signal" && data.reviewAvailable === true && env.REVIEW_PAGE_URL && data.signalId) { payload.reply_markup = { inline_keyboard: [[{ text: "REVIEW SIGNAL", url: env.REVIEW_PAGE_URL + "?signalId=" + encodeURIComponent(String(data.signalId)) }]] }; } return payload; })())
       });
       const result = await telegramResponse.json();
       if (!telegramResponse.ok || !result.ok) return reply({ error: "Telegram delivery failed" }, 502);
