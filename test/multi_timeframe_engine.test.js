@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const {
   TIMEFRAMES, CATEGORIES, validCandles, trendBias,
   evaluateCategory, evaluateAllCategories, evaluateRecentSignals, aggregateWeeklyCandles,
-  classifyMarketRegime, validateCandleContinuity
+  classifyMarketRegime, validateCandleContinuity, cooldownAllows
 } = require("../multi_timeframe_engine");
 
 function candles(count, stepSeconds, start = 1_700_000_000, startPrice = 100) {
@@ -139,7 +139,7 @@ test("swing entries use M5 execution with M15 confirmation and H1 setup", () => 
 test("swing pullback confirmation requires a completed directional rejection near M15 EMA20", () => {
   const { swingPullbackConfirmed } = require("../multi_timeframe_engine");
   const rising = Array.from({ length: 60 }, (_, i) => ({
-    epoch: 1_700_000_000 + i * 900, open: 100, high: 100.1, low: 99.9, close: 100
+    epoch: 1_700_000_000 + i * 900, open: 100, high: 100.4, low: 99.6, close: 100
   }));
   rising[rising.length - 1] = {
     epoch: rising[rising.length - 2].epoch + 900,
@@ -159,4 +159,25 @@ test("swing pullback confirmation rejects candles that never test the EMA20 area
     open: 101.2, high: 101.8, low: 101.1, close: 101.7
   };
   assert.equal(swingPullbackConfirmed(rising, "BUY"), false);
+});
+
+
+test("signal cooldown suppresses repeated entries until four completed entry bars pass", () => {
+  assert.equal(cooldownAllows(null, 10, 4), true);
+  assert.equal(cooldownAllows(10, 13, 4), false);
+  assert.equal(cooldownAllows(10, 14, 4), true);
+  assert.equal(cooldownAllows(10, 20, 4), true);
+});
+
+test("swing pullback rejects deep EMA penetration and oversized rejection candles", () => {
+  const { swingPullbackConfirmed } = require("../multi_timeframe_engine");
+  const base = Array.from({ length: 60 }, (_, i) => ({
+    epoch: 1_700_000_000 + i * 900, open: 100, high: 100.1, low: 99.9, close: 100
+  }));
+  const deep = base.map(c => ({ ...c }));
+  deep[59] = { epoch: deep[58].epoch + 900, open: 99.5, high: 100.4, low: 98.5, close: 100.3 };
+  assert.equal(swingPullbackConfirmed(deep, "BUY"), false);
+  const oversized = base.map(c => ({ ...c }));
+  oversized[59] = { epoch: oversized[58].epoch + 900, open: 99.0, high: 101.2, low: 98.8, close: 100.8 };
+  assert.equal(swingPullbackConfirmed(oversized, "BUY"), false);
 });

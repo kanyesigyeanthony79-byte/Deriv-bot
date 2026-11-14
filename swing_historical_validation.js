@@ -3,7 +3,7 @@
 // No Telegram calls, orders, or production files are modified.
 const fs = require("node:fs");
 const path = require("node:path");
-const { evaluateCategory, validCandles, TIMEFRAMES } = require("./multi_timeframe_engine");
+const { evaluateCategory, validCandles, TIMEFRAMES, cooldownAllows } = require("./multi_timeframe_engine");
 const { validateCandleContinuity } = require("./market_quality");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
@@ -17,6 +17,8 @@ const MARKETS = [
 ];
 const REQUESTS = [["M5", 300, 25000], ["M15", 900, 8000], ["H1", 3600, 2000], ["H4", 14400, 600], ["D1", 86400, 180]];
 const MAX_HOLD_SECONDS = 7 * 86400;
+const REQUEST_SPACING_MS = 200;
+const RETRY_BASE_DELAY_MS = 1000;
 const MAX_HOLD_BARS = MAX_HOLD_SECONDS / TIMEFRAMES.M5;
 
 function normalize(value) {
@@ -153,6 +155,8 @@ async function fetchHistory(client, symbol, granularity, requestedCount, now) {
       ticks_history: symbol, adjust_start_time: 1, count,
       end, granularity, style: "candles"
     });
+    // Space every paginated request, not just each timeframe, to avoid bursts.
+    await new Promise(resolve => setTimeout(resolve, REQUEST_SPACING_MS));
     const batch = normalizeCandles(reply.candles, granularity, now);
     if (!batch.length) break;
     const previousSize = byEpoch.size;
@@ -167,22 +171,46 @@ async function fetchHistory(client, symbol, granularity, requestedCount, now) {
   return [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch).slice(-requestedCount);
 }
 
-async function fetchMarket(client, symbol, now) {
-  const frames = {};
-  for (const [tf, granularity, count] of REQUESTS) {
-    frames[tf] = await fetchHistory(client, symbol, granularity, count, now);
+async function fetchMarket(symbol, now, maxAttempts = 2) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    let client;
+    try {
+      // A fresh socket per market avoids relying on one connection for the full replay.
+      client = await connect(PUBLIC);
+      const frames = {};
+      for (const [tf, granularity, count] of REQUESTS) {
+        frames[tf] = await fetchHistory(client, symbol, granularity, count, now);
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      return frames;
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxAttempts) {
+        const backoff = RETRY_BASE_DELAY_MS * (2 ** (attempt - 1));
+        const jitter = Math.floor(Math.random() * 250);
+        await new Promise(resolve => setTimeout(resolve, backoff + jitter));
+      }
+    } finally {
+      if (client) client.close();
+    }
   }
-  return frames;
+  throw new Error("Market history failed after " + maxAttempts + " attempts: " + (lastError?.message || "unknown error"));
 }
 
 async function run() {
-  const client = await connect(PUBLIC);
+  const metadataClient = await connect(PUBLIC);
+  let now;
+  let symbols;
   try {
-    const timeReply = await client.ask({ time: 1 });
-    const now = Number(timeReply.time) || Math.floor(Date.now() / 1000);
-    let symbols = (await client.ask({ active_symbols: "brief" })).active_symbols || [];
+    const timeReply = await metadataClient.ask({ time: 1 });
+    now = Number(timeReply.time) || Math.floor(Date.now() / 1000);
+    symbols = (await metadataClient.ask({ active_symbols: "brief" })).active_symbols || [];
     const missing = MARKETS.some(([id, name]) => !resolveSymbol(symbols, id, name));
-    if (missing) symbols = [...symbols, ...((await client.ask({ active_symbols: "full" })).active_symbols || [])];
+    if (missing) symbols = [...symbols, ...((await metadataClient.ask({ active_symbols: "full" })).active_symbols || [])];
+  } finally {
+    metadataClient.close();
+  }
 
     const report = {
       generatedAt: new Date(now * 1000).toISOString(),
@@ -207,7 +235,7 @@ async function run() {
         continue;
       }
       try {
-        const fetchedFrames = await fetchMarket(client, symbol, now);
+        const fetchedFrames = await fetchMarket(symbol, now, 2);
         const continuity = {};
         const minimumBars = { M5: MAX_HOLD_BARS + 65, M15: 60, H1: 65, H4: 51, D1: 60 };
         const m5Segments = [];
@@ -237,13 +265,15 @@ async function run() {
         const states = {};
         let replayedM5Bars = 0;
         for (const m5 of m5Segments) {
+          let lastSignalIndex = null;
           const lastMatureIndex = m5.length - MAX_HOLD_BARS - 1;
           replayedM5Bars += Math.max(0, lastMatureIndex - 63);
           const segmentFrames = { ...frames, M5: m5 };
           for (let i = 64; i <= lastMatureIndex; i++) {
             const signal = evaluateCategory(marketId, marketName, "SWING", segmentFrames, i);
             states[signal.state] = (states[signal.state] || 0) + 1;
-            if (signal.state !== "signal") continue;
+            if (signal.state !== "signal" || !cooldownAllows(lastSignalIndex, i, 4)) continue;
+            lastSignalIndex = i;
             const outcome = simulateOutcome(signal, m5, i);
             outcomes.push({
               signalId: signal.signalId, direction: signal.direction,
@@ -283,9 +313,6 @@ async function run() {
     fs.writeFileSync(path.join(__dirname, "swing_historical_validation.json"), JSON.stringify(report, null, 2) + "\n");
     console.log(JSON.stringify({ event: "historical_replay_complete", summary: report.summary, markets: Object.fromEntries(Object.entries(report.markets).map(([k,v]) => [k, {status:v.status, replayedM5Bars:v.replayedM5Bars, signals:v.performance?.signals, outcomes:v.performance?.outcomes, stateCounts:v.stateCounts, history:v.history || v.continuity}])) }));
     if (totals.length === 0) process.exitCode = 1;
-  } finally {
-    client.close();
-  }
 }
 
 if (require.main === module) run().catch(error => { console.error(JSON.stringify({ event: "historical_replay_failed", message: error.message })); process.exitCode = 1; });
