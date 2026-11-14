@@ -3,6 +3,7 @@
 // Experimental, read-only staged reversal-to-sniper swing entry.
 // This module is not imported by the live scanner, Telegram router or execution.
 const { TIMEFRAMES, validCandles } = require("./multi_timeframe_engine");
+const { validateCandleContinuity } = require("./market_quality");
 
 const CONFIG = Object.freeze({
   h4BreakoutLookback: 10,
@@ -124,6 +125,13 @@ function evaluateSwingReversalSniper(marketId, marketName, candlesByTimeframe, e
       return { state: "warming", timeframe: tf, availableCandles: used[tf]?.length || 0, requiredCandles: count,
         reason: "Waiting for sufficient completed candles." };
     }
+  }
+
+  for (const [tf, candles] of Object.entries(used)) {
+    const continuity = validateCandleContinuity(candles, TIMEFRAMES[tf], marketId);
+    if (!continuity.valid) return { state: "data_gap", timeframe: tf,
+      gaps: continuity.gaps.slice(0, 5),
+      reason: "A required timeframe has missing candle intervals; no reversal or entry signal is issued." };
   }
 
   // Stage 1: H4 must break recent structure against its preceding EMA trend.
