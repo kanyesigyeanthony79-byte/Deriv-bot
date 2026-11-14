@@ -6,6 +6,8 @@ const path = require("node:path");
 const { evaluateCategory, validCandles, TIMEFRAMES, cooldownAllows } = require("./multi_timeframe_engine");
 const { validateCandleContinuity } = require("./market_quality");
 const { evaluateRefinedSwing } = require("./swing_h4_d1_m15_m5");
+const { simulateFixedPlanOutcome, simulateManagedOutcome, summarizeManaged } = require("./swing_trade_management_replay");
+const { diagnoseTradePath } = require("./swing_trade_management_diagnostics");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 // Initial historical validation focuses on Volatility 25, the instrument
@@ -84,6 +86,27 @@ function simulateOutcome(signal, candles, signalIndex, horizonBars = MAX_HOLD_BA
     }
   }
   return { status: tp1Seen ? "tp1_only_by_horizon" : "no_barrier_by_horizon", barsHeld: horizonBars };
+}
+
+function summarizeTradeDiagnostics(results) {
+  const measured = results.map(x => x.pathDiagnostics).filter(x => x && x.diagnosticStatus === "measured");
+  const average = key => {
+    const values = measured.map(x => x[key]).filter(Number.isFinite);
+    return values.length ? Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(4)) : null;
+  };
+  const early = measured.map(x => x.afterEarlyExit).filter(Boolean);
+  return {
+    measuredSignals: measured.length,
+    averageMaxFavorableR: average("maxFavorableR"),
+    averageMaxAdverseR: average("maxAdverseR"),
+    averageTimeTo1RBars: average("timeTo1RBars"),
+    averagePeakToExitGivebackR: average("peakToExitGivebackR"),
+    earlyExitCounterfactuals: early.length,
+    earlyExitLaterReachedTP1: early.filter(x => x.reachedOriginalTP1).length,
+    earlyExitLaterReachedTP2: early.filter(x => x.reachedOriginalTP2).length,
+    earlyExitLaterReachedOriginalStop: early.filter(x => x.reachedOriginalStop).length,
+    earlyExitFullHorizonObserved: early.filter(x => x.fullHorizonObserved).length
+  };
 }
 
 function summarize(results) {
@@ -271,6 +294,10 @@ async function run() {
         const states = {};
         const refinedOutcomes = [];
         const refinedStates = {};
+        const fixedPlanOutcomes = [];
+        const refinedFixedPlanOutcomes = [];
+        const managedOutcomes = [];
+        const refinedManagedOutcomes = [];
         let replayedM5Bars = 0;
         for (const m5 of m5Segments) {
           let lastSignalIndex = null;
@@ -290,6 +317,20 @@ async function run() {
                 entry: signal.entry, stopLoss: signal.stopLoss, tp1: signal.tp1, tp2: signal.tp2,
                 ...outcome
               });
+              const fixedResult = simulateFixedPlanOutcome(signal, segmentFrames, i);
+              fixedPlanOutcomes.push({
+                signalId: signal.signalId, direction: signal.direction,
+                signalTime: new Date(signal.candleEpoch * 1000).toISOString(),
+                ...fixedResult,
+                pathDiagnostics: diagnoseTradePath(signal, m5, i, fixedResult)
+              });
+              const managedResult = simulateManagedOutcome(signal, segmentFrames, i);
+              managedOutcomes.push({
+                signalId: signal.signalId, direction: signal.direction,
+                signalTime: new Date(signal.candleEpoch * 1000).toISOString(),
+                ...managedResult,
+                pathDiagnostics: diagnoseTradePath(signal, m5, i, managedResult)
+              });
             }
 
             const refined = evaluateRefinedSwing(marketId, marketName, segmentFrames, i);
@@ -303,6 +344,20 @@ async function run() {
                 entry: refined.entry, stopLoss: refined.stopLoss, tp1: refined.tp1, tp2: refined.tp2,
                 ...refinedOutcome
               });
+              const refinedFixedResult = simulateFixedPlanOutcome(refined, segmentFrames, i);
+              refinedFixedPlanOutcomes.push({
+                signalId: refined.signalId, direction: refined.direction,
+                signalTime: new Date(refined.candleEpoch * 1000).toISOString(),
+                ...refinedFixedResult,
+                pathDiagnostics: diagnoseTradePath(refined, m5, i, refinedFixedResult)
+              });
+              const refinedManagedResult = simulateManagedOutcome(refined, segmentFrames, i);
+              refinedManagedOutcomes.push({
+                signalId: refined.signalId, direction: refined.direction,
+                signalTime: new Date(refined.candleEpoch * 1000).toISOString(),
+                ...refinedManagedResult,
+                pathDiagnostics: diagnoseTradePath(refined, m5, i, refinedManagedResult)
+              });
             }
           }
         }
@@ -315,7 +370,19 @@ async function run() {
           signals: outcomes,
           refinedStateCounts: refinedStates,
           refinedPerformance: summarize(refinedOutcomes),
-          refinedSignals: refinedOutcomes
+          refinedSignals: refinedOutcomes,
+          fixedPlanPerformance: summarizeManaged(fixedPlanOutcomes),
+          fixedPlanDiagnostics: summarizeTradeDiagnostics(fixedPlanOutcomes),
+          fixedPlanSignals: fixedPlanOutcomes,
+          refinedFixedPlanPerformance: summarizeManaged(refinedFixedPlanOutcomes),
+          refinedFixedPlanDiagnostics: summarizeTradeDiagnostics(refinedFixedPlanOutcomes),
+          refinedFixedPlanSignals: refinedFixedPlanOutcomes,
+          managedPerformance: summarizeManaged(managedOutcomes),
+          managedDiagnostics: summarizeTradeDiagnostics(managedOutcomes),
+          managedSignals: managedOutcomes,
+          refinedManagedPerformance: summarizeManaged(refinedManagedOutcomes),
+          refinedManagedDiagnostics: summarizeTradeDiagnostics(refinedManagedOutcomes),
+          refinedManagedSignals: refinedManagedOutcomes
         };
       } catch (error) {
         report.markets[marketId] = { marketName, symbol, status: "collection_or_replay_error", error: error.message };
@@ -325,6 +392,10 @@ async function run() {
 
     const totals = Object.values(report.markets).filter(m => m.performance);
     const refinedTotals = Object.values(report.markets).filter(m => m.refinedPerformance);
+    const fixedPlanTotals = Object.values(report.markets).filter(m => m.fixedPlanPerformance);
+    const refinedFixedPlanTotals = Object.values(report.markets).filter(m => m.refinedFixedPlanPerformance);
+    const managedTotals = Object.values(report.markets).filter(m => m.managedPerformance);
+    const refinedManagedTotals = Object.values(report.markets).filter(m => m.refinedManagedPerformance);
     const baselineKeys = new Set(totals.flatMap(m => m.signals.map(x => x.signalTime + "|" + x.direction)));
     const refinedKeys = new Set(refinedTotals.flatMap(m => m.refinedSignals.map(x => x.signalTime + "|" + x.direction)));
     const overlap = [...baselineKeys].filter(key => refinedKeys.has(key)).length;
@@ -344,6 +415,12 @@ async function run() {
       totalResolvedSignals: totals.reduce((n, m) => n + m.performance.resolvedSignals, 0),
       refinedSignals: refinedTotals.reduce((n, m) => n + m.refinedPerformance.signals, 0),
       refinedResolvedSignals: refinedTotals.reduce((n, m) => n + m.refinedPerformance.resolvedSignals, 0),
+      fixedPlanSignals: fixedPlanTotals.reduce((n, m) => n + m.fixedPlanPerformance.signals, 0),
+      refinedFixedPlanSignals: refinedFixedPlanTotals.reduce((n, m) => n + m.refinedFixedPlanPerformance.signals, 0),
+      managedSignals: managedTotals.reduce((n, m) => n + m.managedPerformance.signals, 0),
+      managedScoredSignals: managedTotals.reduce((n, m) => n + m.managedPerformance.scoredSignals, 0),
+      refinedManagedSignals: refinedManagedTotals.reduce((n, m) => n + m.refinedManagedPerformance.signals, 0),
+      refinedManagedScoredSignals: refinedManagedTotals.reduce((n, m) => n + m.refinedManagedPerformance.scoredSignals, 0),
       outcomeCounts: totals.reduce((acc, m) => {
         for (const [k,v] of Object.entries(m.performance.outcomes)) acc[k] = (acc[k] || 0) + v;
         return acc;
@@ -352,10 +429,34 @@ async function run() {
         for (const [k,v] of Object.entries(m.refinedPerformance.outcomes)) acc[k] = (acc[k] || 0) + v;
         return acc;
       }, {}),
+      fixedPlanOutcomeCounts: fixedPlanTotals.reduce((acc, m) => {
+        for (const [k,v] of Object.entries(m.fixedPlanPerformance.outcomes)) acc[k] = (acc[k] || 0) + v;
+        return acc;
+      }, {}),
+      refinedFixedPlanOutcomeCounts: refinedFixedPlanTotals.reduce((acc, m) => {
+        for (const [k,v] of Object.entries(m.refinedFixedPlanPerformance.outcomes)) acc[k] = (acc[k] || 0) + v;
+        return acc;
+      }, {}),
+      managedOutcomeCounts: managedTotals.reduce((acc, m) => {
+        for (const [k,v] of Object.entries(m.managedPerformance.outcomes)) acc[k] = (acc[k] || 0) + v;
+        return acc;
+      }, {}),
+      refinedManagedOutcomeCounts: refinedManagedTotals.reduce((acc, m) => {
+        for (const [k,v] of Object.entries(m.refinedManagedPerformance.outcomes)) acc[k] = (acc[k] || 0) + v;
+        return acc;
+      }, {}),
+      fixedPlanAverageRealizedR: fixedPlanTotals.flatMap(m => m.fixedPlanSignals).filter(x => Number.isFinite(x.realizedR)).length
+        ? Number((fixedPlanTotals.flatMap(m => m.fixedPlanSignals).filter(x => Number.isFinite(x.realizedR)).reduce((sum, x) => sum + x.realizedR, 0) / fixedPlanTotals.flatMap(m => m.fixedPlanSignals).filter(x => Number.isFinite(x.realizedR)).length).toFixed(4)) : null,
+      refinedFixedPlanAverageRealizedR: refinedFixedPlanTotals.flatMap(m => m.refinedFixedPlanSignals).filter(x => Number.isFinite(x.realizedR)).length
+        ? Number((refinedFixedPlanTotals.flatMap(m => m.refinedFixedPlanSignals).filter(x => Number.isFinite(x.realizedR)).reduce((sum, x) => sum + x.realizedR, 0) / refinedFixedPlanTotals.flatMap(m => m.refinedFixedPlanSignals).filter(x => Number.isFinite(x.realizedR)).length).toFixed(4)) : null,
+      managedAverageRealizedR: managedTotals.flatMap(m => m.managedSignals).filter(x => Number.isFinite(x.realizedR)).length
+        ? Number((managedTotals.flatMap(m => m.managedSignals).filter(x => Number.isFinite(x.realizedR)).reduce((sum, x) => sum + x.realizedR, 0) / managedTotals.flatMap(m => m.managedSignals).filter(x => Number.isFinite(x.realizedR)).length).toFixed(4)) : null,
+      refinedManagedAverageRealizedR: refinedManagedTotals.flatMap(m => m.refinedManagedSignals).filter(x => Number.isFinite(x.realizedR)).length
+        ? Number((refinedManagedTotals.flatMap(m => m.refinedManagedSignals).filter(x => Number.isFinite(x.realizedR)).reduce((sum, x) => sum + x.realizedR, 0) / refinedManagedTotals.flatMap(m => m.refinedManagedSignals).filter(x => Number.isFinite(x.realizedR)).length).toFixed(4)) : null,
       errors: report.errors.length
     };
     fs.writeFileSync(path.join(__dirname, "swing_historical_validation.json"), JSON.stringify(report, null, 2) + "\n");
-    console.log(JSON.stringify({ event: "historical_replay_complete", summary: report.summary, markets: Object.fromEntries(Object.entries(report.markets).map(([k,v]) => [k, {status:v.status, replayedM5Bars:v.replayedM5Bars, signals:v.performance?.signals, outcomes:v.performance?.outcomes, stateCounts:v.stateCounts, history:v.history || v.continuity}])) }));
+    console.log(JSON.stringify({ event: "historical_replay_complete", summary: report.summary, markets: Object.fromEntries(Object.entries(report.markets).map(([k,v]) => [k, {status:v.status, replayedM5Bars:v.replayedM5Bars, signals:v.performance?.signals, outcomes:v.performance?.outcomes, fixedPlan:v.fixedPlanPerformance, refinedFixedPlan:v.refinedFixedPlanPerformance, managed:v.managedPerformance, refinedManaged:v.refinedManagedPerformance, stateCounts:v.stateCounts, history:v.history || v.continuity}])) }));
     if (totals.length === 0) process.exitCode = 1;
 }
 
