@@ -88,6 +88,18 @@ test("market regime filter distinguishes a clean directional trend", () => {
   assert.equal(classifyMarketRegime(rising).direction, "BUY");
 });
 
+test("weekly position context can validate with 52 completed bars without weakening other timeframes", () => {
+  const weekly = candles(52, 604800);
+  assert.equal(classifyMarketRegime(weekly).state, "warming");
+  const weeklyRegime = classifyMarketRegime(weekly, { minCandles: 52, slopeLookback: 2 });
+  assert.equal(weeklyRegime.state, "trending");
+  assert.equal(weeklyRegime.direction, "BUY");
+  assert.equal(
+    classifyMarketRegime(weekly.slice(1), { minCandles: 52, slopeLookback: 2 }).state,
+    "warming"
+  );
+});
+
 test("market regime filter identifies a flat sideways market", () => {
   const flat = Array.from({ length: 120 }, (_, i) => ({
     epoch: 1_700_000_000 + i * 60,
