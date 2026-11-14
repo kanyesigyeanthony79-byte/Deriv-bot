@@ -40,9 +40,10 @@ test("sniper candidate never signals from incomplete timeframe coverage", () => 
 });
 
 test("sniper candidate suppresses decisions when a required timeframe has a candle gap", () => {
-  const series = (count, step) => Array.from({length: count}, (_, i) => candle(i * step));
+  const end = 1_700_000_000 + 80 * 300;
+  const series = (count, step) => Array.from({length: count}, (_, i) => candle(end - count * step + i * step));
   const frames = {
-    M5: series(70, 300), M15: series(30, 900), H1: series(70, 3600),
+    M5: series(80, 300), M15: series(80, 900), H1: series(70, 3600),
     H4: series(61, 14400), D1: series(55, 86400)
   };
   frames.H4.splice(40, 1);
