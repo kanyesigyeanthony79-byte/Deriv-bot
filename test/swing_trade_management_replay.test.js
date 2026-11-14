@@ -57,3 +57,33 @@ test("lifecycle replay accounts for partial TP1 profit followed by a break-even 
   assert.equal(result.status, "break_even_after_partial");
   assert.equal(result.realizedR, 0.75);
 });
+
+
+test("fixed-plan benchmark books half at TP1 and closes the rest at TP2", () => {
+  const frames = data();
+  frames.M5[71] = { ...frames.M5[71], open: 114.8, high: 115.2, low: 114.7, close: 115 };
+  frames.M5[72] = { ...frames.M5[72], open: 124.8, high: 125.2, low: 124.7, close: 125 };
+  const result = simulateFixedPlanOutcome(signal(), frames, 70, { maxHoldBars: 5, partialFraction: 0.5 });
+  assert.equal(result.status, "tp2_exit");
+  assert.equal(result.realizedR, 2);
+});
+
+test("fixed-plan benchmark records a partial TP1 gain when the remaining half hits the original stop", () => {
+  const frames = data();
+  frames.M5[71] = { ...frames.M5[71], open: 114.8, high: 115.2, low: 114.7, close: 115 };
+  frames.M5[72] = { ...frames.M5[72], open: 115.1, high: 116, low: 89, close: 90 };
+  const result = simulateFixedPlanOutcome(signal(), frames, 70, { maxHoldBars: 5, partialFraction: 0.5 });
+  assert.equal(result.status, "stop_after_tp1");
+  assert.equal(result.realizedR, 0.25);
+});
+
+test("summary reports winning trade duration and profit factor", () => {
+  const summary = summarizeManaged([
+    { status: "tp2_exit", realizedR: 2, barsHeld: 100 },
+    { status: "stop_before_tp1", realizedR: -1, barsHeld: 20 }
+  ]);
+  assert.equal(summary.winRate, 0.5);
+  assert.equal(summary.profitFactor, 2);
+  assert.equal(summary.averageWinningHoldBars, 100);
+  assert.equal(summary.longestWinningHoldBars, 100);
+});
