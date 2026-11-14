@@ -3,6 +3,7 @@
 const { makePolicy, assessNewPosition, positionsPastTimeLimit } = require("./account_risk");
 
 const ALLOWED_CONTRACT_TYPES = new Set(["CALL", "PUT"]);
+const APPROVED_SYNTHETIC_SYMBOLS = new Set(["R_10", "R_25", "R_50", "R_75", "JD100", "CRASH500", "BOOM500"]);
 
 function positive(value, name) {
   const n = Number(value);
@@ -37,9 +38,13 @@ class DerivDemoAdapter {
     }
     if (!accountId) throw new Error("expected_demo_account_id_required");
     if (!Array.isArray(allowedSymbols) || !allowedSymbols.length) throw new Error("explicit_synthetic_symbol_allowlist_required");
+    const requestedSymbols = allowedSymbols.map(x => String(x).toUpperCase());
+    if (requestedSymbols.some(symbol => !APPROVED_SYNTHETIC_SYMBOLS.has(symbol))) {
+      throw new Error("symbol_allowlist_contains_non_approved_synthetic");
+    }
     this.connection = connection;
     this.accountId = String(accountId).toUpperCase();
-    this.allowedSymbols = new Set(allowedSymbols.map(x => String(x).toUpperCase()));
+    this.allowedSymbols = new Set(requestedSymbols);
     this.policy = makePolicy(policy);
     this.now = now;
     this.entryOutcomeUnknown = false;
@@ -224,4 +229,4 @@ class DerivDemoAdapter {
   }
 }
 
-module.exports = { DerivDemoAdapter, isDemoUrl };
+module.exports = { DerivDemoAdapter, isDemoUrl, APPROVED_SYNTHETIC_SYMBOLS };
