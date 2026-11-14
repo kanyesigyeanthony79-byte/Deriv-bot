@@ -38,3 +38,15 @@ test("sniper candidate never signals from incomplete timeframe coverage", () => 
   assert.ok(["reversal_watch", "reversal_confirming", "pullback_wait", "entry_armed",
     "invalid_risk", "warming"].includes(result.state));
 });
+
+test("sniper candidate suppresses decisions when a required timeframe has a candle gap", () => {
+  const series = (count, step) => Array.from({length: count}, (_, i) => candle(i * step));
+  const frames = {
+    M5: series(70, 300), M15: series(30, 900), H1: series(70, 3600),
+    H4: series(60, 14400), D1: series(55, 86400)
+  };
+  frames.H4[40] = { ...frames.H4[40], epoch: frames.H4[40].epoch + 14400 };
+  const result = evaluateSwingReversalSniper("R_25", "Volatility 25", frames);
+  assert.equal(result.state, "data_gap");
+  assert.equal(result.timeframe, "H4");
+});
