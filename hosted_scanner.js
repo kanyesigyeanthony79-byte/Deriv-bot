@@ -66,12 +66,31 @@ function journalOutcome(signal, outcome, candle) {
   if (outcome === "TP2_HIT") { entry.tp2Hit = true; entry.finalOutcome = "TP2"; }
   if (outcome === "SL_HIT") entry.finalOutcome = entry.tp1Hit ? "SL_AFTER_TP1" : "SL";
   if (outcome === "AMBIGUOUS") entry.finalOutcome = "AMBIGUOUS";
+  if (outcome === "EXPIRED") entry.finalOutcome = "EXPIRED";
   saveJournal();
 }
 function journalStatus(signalId, status, reason) {
   const entry = findJournalSignal(signalId);
   if (entry && entry.status === "detected") { entry.status = status; if (reason) entry.statusReason = reason; saveJournal(); }
 }
+
+// A sent journal row without a matching active-state entry cannot safely be called active or closed.
+// Preserve the history, but label it for verification instead of leaving a misleading live status.
+function reconcileJournalState() {
+  const activeIds = new Set(state.activeSignals.filter(s => !s.closed).map(s => s.signalId));
+  let changed = false;
+  for (const entry of journal.signals) {
+    if (entry.status === "sent" && !entry.finalOutcome && !activeIds.has(entry.signalId)) {
+      entry.status = "state_missing";
+      entry.statusReason = "signal_missing_from_active_state_on_restart";
+      entry.finalOutcome = "UNVERIFIED";
+      changed = true;
+      log("signal_state_missing", { signalId: entry.signalId, market: entry.market });
+    }
+  }
+  if (changed) saveJournal();
+}
+reconcileJournalState();
 function dailySummary(day) {
   const rows = journal.signals.filter(s => s.localDate === day);
   const sent = rows.filter(s => s.status === "sent").length;
@@ -239,9 +258,20 @@ async function monitorSignals(marketId, candles, now) {
   const active = state.activeSignals.filter(s => s.marketId === marketId && !s.closed);
   for (const signal of active) {
     if (now - signal.createdEpoch > MAX_MONITOR_AGE) {
+      const lastCandle = candles[candles.length - 1];
+      if (lastCandle) {
+        try { await sendOutcome(signal, "EXPIRED", lastCandle); }
+        catch (error) {
+          journalOutcome(signal.signalId, "EXPIRED", lastCandle);
+          const je = findJournalSignal(signal.signalId); if (je) { je.statusReason = "expired_after_24_hours; expiry_alert_failed"; saveJournal(); }
+          log("expiry_alert_failed", { signalId: signal.signalId, market: signal.market, message: error.message });
+        }
+      } else {
+        const je = findJournalSignal(signal.signalId);
+        if (je) { je.finalOutcome = "EXPIRED"; je.statusReason = "expired_after_24_hours_no_recent_candle"; saveJournal(); }
+      }
       signal.closed = true;
       signal.closeReason = "expired_after_24_hours";
-      const je = findJournalSignal(signal.signalId); if (je) { je.finalOutcome = "EXPIRED"; je.statusReason = "expired_after_24_hours"; saveJournal(); }
       log("signal_expired", { signalId: signal.signalId, market: signal.market });
       continue;
     }
@@ -296,6 +326,7 @@ async function monitorSignals(marketId, candles, now) {
 }
 
 async function main() {
+  log("scanner_started", { markets: MARKETS.length, granularity_seconds: GRANULARITY });
   const client = await connect(PUBLIC);
   try {
     const timeReply = await client.ask({ time: 1 });
@@ -375,6 +406,7 @@ async function main() {
     await maybeSendDailySummary(now);
     saveState();
     saveJournal();
+    log("scanner_completed", { scannedAt: new Date(now * 1000).toISOString(), activeSignals: state.activeSignals.filter(s => !s.closed).length, journalRecords: journal.signals.length });
   } finally {
     client.close();
   }
