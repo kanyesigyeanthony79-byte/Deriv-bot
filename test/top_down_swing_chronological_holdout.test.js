@@ -28,6 +28,20 @@ test("policy selection abstains when no policy reaches minimum training sample",
   assert.equal(choosePolicy(rows), null);
 });
 
+test("policy selection abstains when the fixed-target training baseline is losing", () => {
+  const rows = Object.fromEntries(POLICIES.map(policy => [policy, { scoredCount: 20, averageR: -0.1 }]));
+  rows.H1_STRUCTURE_EXIT = { scoredCount: 20, averageR: -0.01 };
+  assert.equal(choosePolicy(rows), null);
+});
+
+test("policy selection keeps fixed target unless an alternative clears +0.10R", () => {
+  const rows = Object.fromEntries(POLICIES.map(policy => [policy, { scoredCount: 20, averageR: 0.5 }]));
+  rows.H4_PIVOT_TRAIL = { scoredCount: 20, averageR: 0.55 };
+  assert.equal(choosePolicy(rows), "FIXED_2_5R");
+  rows.H4_PIVOT_TRAIL = { scoredCount: 20, averageR: 0.7 };
+  assert.equal(choosePolicy(rows), "H4_PIVOT_TRAIL");
+});
+
 test("summary separates scored, censored and ambiguous results", () => {
   const result = summarizeResults([
     { status: "scored", realisedR: 1, mfeR: 2, maeR: 0.5, durationHours: 24 },
