@@ -91,6 +91,17 @@ function choosePolicy(trainingResults, minScored = MIN_TRAIN_SCORED, minImprovem
   return best.policy;
 }
 
+function classifySelectionStatus(selectedPolicy, trainingPaired, training) {
+  if (selectedPolicy) return "selected_from_training_only";
+  const baseline = training.FIXED_2_5R;
+  if (trainingPaired.pairedScoredCount < MIN_TRAIN_SCORED ||
+      !baseline || baseline.scoredCount < MIN_TRAIN_SCORED)
+    return "insufficient_training_sample";
+  if (!Number.isFinite(baseline.averageR) || baseline.averageR <= 0)
+    return "baseline_not_positive";
+  return "no_policy_cleared_selection_rule";
+}
+
 function firstEligibleEpoch(frames) {
   const required = [["D1", 11], ["H4", 11], ["H1", 11], ["M15", 7], ["M5", 7]];
   const starts = required.map(([tf, index]) => {
@@ -155,14 +166,7 @@ function runChronologicalHoldout(snapshot) {
         const training = trainingPaired.policies;
         const validation = validationPaired.policies;
         const selectedPolicy = choosePolicy(training);
-        const baseline = training.FIXED_2_5R;
-        const selectionStatus = selectedPolicy ? "selected_from_training_only" :
-          (trainingPaired.pairedScoredCount < MIN_TRAIN_SCORED ||
-           !baseline || baseline.scoredCount < MIN_TRAIN_SCORED)
-            ? "insufficient_training_sample"
-            : (!Number.isFinite(baseline.averageR) || baseline.averageR <= 0)
-              ? "baseline_not_positive"
-              : "no_policy_cleared_selection_rule";
+        const selectionStatus = classifySelectionStatus(selectedPolicy, trainingPaired, training);
         marketResult.variants[variant] = {
           trainingSignalCount: trainSignals.length, validationSignalCount: validationSignals.length,
           selectedPolicy, selectionStatus,
@@ -212,4 +216,4 @@ if (require.main === module) {
   fs.writeFileSync(output, JSON.stringify(result, null, 2) + "\n");
   console.log(JSON.stringify({ output, summary: result.summary }, null, 2));
 }
-module.exports = { makeWindows, summarizeResults, summarizePairedResults, choosePolicy, firstEligibleEpoch, collectSignals, runChronologicalHoldout };
+module.exports = { makeWindows, summarizeResults, summarizePairedResults, choosePolicy, classifySelectionStatus, firstEligibleEpoch, collectSignals, runChronologicalHoldout };
