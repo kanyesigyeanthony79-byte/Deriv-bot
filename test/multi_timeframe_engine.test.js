@@ -127,3 +127,41 @@ test("continuity validation does not apply the Gold/USD weekend exception to syn
   assert.equal(validateCandleContinuity(synthetic, 3600, "R_25").valid, false);
 });
 
+
+
+test("swing entries use M5 execution with M15 confirmation and H1 setup", () => {
+  assert.equal(CATEGORIES.SWING.entry, "M5");
+  assert.equal(CATEGORIES.SWING.confirmation, "M15");
+  assert.equal(CATEGORIES.SWING.context, "H1");
+  assert.equal(CATEGORIES.SWING.risk, "H4");
+});
+
+test("swing pullback confirmation requires a completed directional rejection near M15 EMA20", () => {
+  const { swingPullbackConfirmed } = require("../multi_timeframe_engine");
+  const rising = candles(60, 900, 1_700_000_000, 100);
+  const prior = rising[rising.length - 2];
+  const emaArea = prior.close - 0.2;
+  rising[rising.length - 1] = {
+    epoch: prior.epoch + 900,
+    open: emaArea - 0.08,
+    high: emaArea + 0.22,
+    low: emaArea - 0.18,
+    close: emaArea + 0.16
+  };
+  assert.equal(swingPullbackConfirmed(rising, "BUY"), true);
+  assert.equal(swingPullbackConfirmed(rising, "SELL"), false);
+});
+
+test("swing pullback confirmation rejects candles that never test the EMA20 area", () => {
+  const { swingPullbackConfirmed } = require("../multi_timeframe_engine");
+  const rising = candles(60, 900, 1_700_000_000, 100);
+  const prior = rising[rising.length - 2];
+  rising[rising.length - 1] = {
+    epoch: prior.epoch + 900,
+    open: prior.close + 0.3,
+    high: prior.close + 0.8,
+    low: prior.close + 0.25,
+    close: prior.close + 0.7
+  };
+  assert.equal(swingPullbackConfirmed(rising, "BUY"), false);
+});
