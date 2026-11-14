@@ -10,10 +10,10 @@ const MARKETS = [
   ["JD100", "Jump 100 Index"], ["frxXAUUSD", "Gold/USD"],
   ["CRASH500", "Crash 500 Index"], ["BOOM500", "Boom 500 Index"]
 ];
-// M5/M15 history spans about 35 days, leaving a multi-week candidate window
-// after the seven-day outcome horizon. Higher frames provide longer context.
+// Extended lower-timeframe and H1 history supports a chronological 28-day
+// training window, 14-day embargo, later validation window and 14-day outcomes.
 const FRAMES = [
-  ["M5", 300, 10000], ["M15", 900, 10000], ["H1", 3600, 1500],
+  ["M5", 300, 25000], ["M15", 900, 10000], ["H1", 3600, 2000],
   ["H4", 14400, 1500], ["D1", 86400, 1500]
 ];
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
