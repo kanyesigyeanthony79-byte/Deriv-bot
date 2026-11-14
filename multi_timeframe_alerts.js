@@ -59,6 +59,7 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
 
     const payload = {
       event: "new_signal",
+      reviewAvailable: true,
       signalId: candidate.signalId,
       market: String(candidate.market || candidate.marketId) + " | " + String(candidate.categoryLabel || candidate.category),
       direction: candidate.direction,

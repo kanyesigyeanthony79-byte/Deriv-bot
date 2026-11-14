@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#10251d"><title>Signal Review · Deriv Signal Assistant</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1712;--panel:#14251d;--line:#2c4939;--txt:#eef5ef;--muted:#a8b9ad;--gold:#d5a83d;--green:#55c58b;--red:#f07878}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#10251d,#09120e 70%);color:var(--txt);font:15px system-ui,sans-serif}main{max-width:680px;margin:auto;padding:22px 15px 45px}.brand{font-weight:800;font-size:14px;letter-spacing:.3px;color:var(--muted)}h1{font-size:26px;margin:22px 0 5px}.muted{color:var(--muted);font-size:13px;line-height:1.5}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:14px}.status{font-size:20px;font-weight:850;margin-bottom:8px}.ok{color:var(--green)}.warn{color:var(--gold)}.bad{color:var(--red)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.item{background:#1b3026;border-radius:10px;padding:10px}.label{font-size:11px;color:var(--muted)}.value{font-weight:750;margin-top:4px;overflow-wrap:anywhere}.btn{display:inline-block;border:1px solid var(--line);background:#1b3026;color:var(--txt);border-radius:10px;padding:11px 14px;text-decoration:none;margin-top:14px;font-weight:700}.notice{border-left:3px solid var(--gold);padding:11px;background:#1a281e;border-radius:8px;margin-top:16px;font-size:12px;line-height:1.6}.error{color:var(--red)}@media(max-width:400px){.grid{grid-template-columns:1fr 1fr}}
+</style></head><body><main>
+<div class="brand">DERIV SIGNAL ASSISTANT · ADVISORY ONLY</div><h1>Signal Review</h1>
+<p class="muted">Review of the original signal using the latest completed candle data collected by the scanner. This does not place, close or modify trades.</p>
+<div id="result" class="card"><div class="status">Loading review…</div><div class="muted">Retrieving the latest published review snapshot.</div></div>
+<a class="btn" href="./index.html">← Back to dashboard</a>
+<div class="notice"><b>Important:</b> A review is an evidence snapshot, not a guarantee that a position is safe. Candle highs/lows may differ from your broker's executable price. Always verify your actual position and prices. No automatic stop-loss, take-profit or closure action is performed.</div>
+</main><script>
+(async()=>{
+ const el=document.getElementById("result"),id=new URLSearchParams(location.search).get("signalId");
+ const esc=s=>String(s??"—").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ const num=v=>Number.isFinite(Number(v))?Number(v).toFixed(4):"—";
+ if(!id){el.innerHTML='<div class="status error">Missing signal ID</div><p class="muted">Open this page from the REVIEW action on a signal journal record.</p>';return;}
+ try{
+  const res=await fetch("./signal_review_data.json?v="+Date.now(),{cache:"no-store"});
+  if(!res.ok)throw new Error("Review snapshot is not published yet (HTTP "+res.status+").");
+  const data=await res.json(),record=(data.reviews||[]).find(x=>x.signalId===id);
+  if(!record){el.innerHTML='<div class="status warn">No active review record found</div><p class="muted">This signal may have expired or reached a terminal outcome. Refresh the dashboard and check the journal status.</p><div class="muted">Signal: '+esc(id)+'</div>';return;}
+  const r=record.review||{},status=String(r.status||"UNAVAILABLE"),tone=["THESIS_INTACT","TP1_LEVEL_TOUCHED","TP2_LEVEL_TOUCHED"].includes(status)?"ok":["STOP_LEVEL_TOUCHED","STOP_AFTER_TP1","THESIS_WEAKENING"].includes(status)?"bad":"warn";
+  const stamp=data.generatedAt?new Date(data.generatedAt).toLocaleString():"Unknown";
+  el.innerHTML='<div class="status '+tone+'">'+esc(r.headline||"REVIEW UNAVAILABLE")+'</div><div class="muted">'+esc(r.reason||"No assessment details returned.")+'</div>'+((record.tp1Hit||r.tp1Reached)?'<div class="notice">TP1 was reached earlier in this signal. Review whether protecting open profit is appropriate; no break-even or stop adjustment is made automatically.</div>':'')+'<div class="grid">'+
+   '<div class="item"><div class="label">Market / category</div><div class="value">'+esc(record.market)+' · '+esc(record.category)+'</div></div>'+
+   '<div class="item"><div class="label">Original direction</div><div class="value">'+esc(record.direction)+'</div></div>'+
+   '<div class="item"><div class="label">Current observed price</div><div class="value">'+num(r.currentPrice)+'</div></div>'+
+   '<div class="item"><div class="label">Entry timeframe</div><div class="value">'+esc(record.entryTimeframe)+'</div></div>'+
+   '<div class="item"><div class="label">Original entry</div><div class="value">'+num(record.entry)+'</div></div>'+
+   '<div class="item"><div class="label">Original stop loss</div><div class="value">'+num(record.stopLoss)+'</div></div>'+
+   '<div class="item"><div class="label">Original TP1</div><div class="value">'+num(record.tp1)+'</div></div>'+
+   '<div class="item"><div class="label">Original TP2</div><div class="value">'+num(record.tp2)+'</div></div></div>'+
+   '<p class="muted" style="margin-top:14px">Review snapshot generated: '+esc(stamp)+'<br>Signal ID: '+esc(id)+'<br>Assessment: '+esc(status)+'</p>';
+ }catch(e){el.innerHTML='<div class="status warn">Review unavailable</div><p class="muted">'+esc(e.message)+'</p>';}
+})();
+</script></body></html>
