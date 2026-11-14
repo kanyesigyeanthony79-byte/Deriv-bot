@@ -142,9 +142,11 @@ function managementAdvisories(signal, candlesByTimeframe, decisionEpoch) {
   const events = [], risk = Math.abs(signal.entry - signal.stopLoss);
   if (!(risk > 0)) return events;
   const favourable = price => signal.direction === "BUY" ? price - signal.entry : signal.entry - price;
-  const entryEpoch = Number.isFinite(signal.entryEpoch) ? signal.entryEpoch : 0;
-  const h1 = completed(candlesByTimeframe && candlesByTimeframe.H1, "H1", decisionEpoch).filter(c => c.epoch > entryEpoch);
-  const h4 = completed(candlesByTimeframe && candlesByTimeframe.H4, "H4", decisionEpoch).filter(c => c.epoch > entryEpoch);
+  const entryCloseEpoch = Number.isFinite(signal.decisionEpoch) ? signal.decisionEpoch :
+    (Number.isFinite(signal.entryEpoch) ? signal.entryEpoch : 0);
+  // Exclude bars that began before entry; their high/low may include pre-entry movement.
+  const h1 = completed(candlesByTimeframe && candlesByTimeframe.H1, "H1", decisionEpoch).filter(c => c.epoch >= entryCloseEpoch);
+  const h4 = completed(candlesByTimeframe && candlesByTimeframe.H4, "H4", decisionEpoch).filter(c => c.epoch >= entryCloseEpoch);
   const lastH1 = h1.at(-1), lastH4 = h4.at(-1);
   const maxFavourable = Math.max(0, ...h1.map(c => favourable(signal.direction === "BUY" ? c.high : c.low)));
   if (maxFavourable >= risk && lastH1)
