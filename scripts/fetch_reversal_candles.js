@@ -115,7 +115,6 @@ async function fetchFrame(client, symbol, granularity, startEpoch, snapshotEpoch
       style: "candles",
       granularity,
       count: PAGE_SIZE,
-      start: startEpoch,
       end,
       adjust_start_time: 1
     });
