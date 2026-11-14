@@ -8,14 +8,9 @@ const { validateCandleContinuity } = require("./market_quality");
 
 const CONFIG = Object.freeze({
   breakEvenAtR: 1.0,
-  partialProfitAtR: 1.5,
   trailingActivationAtR: 1.5,
   trailingLookbackM15: 5,
-  trailingAtrBuffer: 0.25,
-  earlyExit: Object.freeze({
-    requireH1AndM15Opposition: true,
-    requireH4AndD1Opposition: true
-  })
+  trailingAtrBuffer: 0.25
 });
 
 function riskDistance(position) {
@@ -165,6 +160,14 @@ function evaluateTradeManagement({ position, candlesByTimeframe }) {
     });
   }
 
+  if (!position.partialTaken && rNow >= 0.5 && (h1 === opposite || m15 === opposite)) {
+    const extra = { currentPrice, favorableR: rNow, biases: { M15: m15, H1: h1, H4: h4, D1: d1 }, candleEpoch: latestM5.epoch };
+    if (rNow >= CONFIG.breakEvenAtR) extra.suggestedStopLoss = position.direction === "BUY"
+      ? Math.max(position.stopLoss, position.entry)
+      : Math.min(position.stopLoss, position.entry);
+    return recommendation("PARTIAL_PROFIT_EARLY", "The trade is in profit and one lower timeframe is weakening. Consider banking part of the gain before the full TP1 target.", extra);
+  }
+
   if (rNow >= CONFIG.trailingActivationAtR && position.partialTaken === true) {
     const trailingStop = makeTrailingStop(position, frames.M15, currentPrice);
     if (trailingStop !== null) {
@@ -182,14 +185,6 @@ function evaluateTradeManagement({ position, candlesByTimeframe }) {
     return recommendation("MOVE_TO_BREAK_EVEN", "The trade has reached +1R. Consider moving the stop to entry to remove the initial price risk, subject to spread and execution costs.", {
       currentPrice, favorableR: rNow, suggestedStopLoss: saferStop, biases: { M15: m15, H1: h1, H4: h4, D1: d1 }, candleEpoch: latestM5.epoch
     });
-  }
-
-  if (!position.partialTaken && rNow >= 0.5 && (h1 === opposite || m15 === opposite)) {
-    const extra = { currentPrice, favorableR: rNow, biases: { M15: m15, H1: h1, H4: h4, D1: d1 }, candleEpoch: latestM5.epoch };
-    if (rNow >= CONFIG.breakEvenAtR) extra.suggestedStopLoss = position.direction === "BUY"
-      ? Math.max(position.stopLoss, position.entry)
-      : Math.min(position.stopLoss, position.entry);
-    return recommendation("PARTIAL_PROFIT_EARLY", "The trade is in profit and one lower timeframe is weakening. Consider banking part of the gain before the full TP1 target.", extra);
   }
 
   if (h1 === opposite || m15 === opposite) {
