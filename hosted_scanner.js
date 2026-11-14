@@ -349,7 +349,7 @@ async function main() {
         }
 
         const levels = makeLevels(candles, result.signal);
-        await postTelegram({ market: name, direction: result.signal, ...levels });
+        await postTelegram({ event: "new_signal", signalId, market: name, direction: result.signal, ...levels });
         journalStatus(signalId, "sent");
         state.lastSig[id] = candleEpoch;
         state.activeSignals.push({
