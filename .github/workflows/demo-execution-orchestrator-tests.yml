@@ -1,0 +1,45 @@
+name: Demo execution orchestrator tests
+
+on:
+  push:
+    branches: [feat/demo-execution-orchestrator]
+    paths:
+      - "account_risk.js"
+      - "deriv_demo_adapter.js"
+      - "deriv_demo_connection.js"
+      - "demo_execution_manager.js"
+      - "test/account_risk.test.js"
+      - "test/deriv_demo_adapter.test.js"
+      - "test/deriv_demo_connection.test.js"
+      - "test/demo_execution_manager.test.js"
+      - ".github/workflows/demo-execution-orchestrator-tests.yml"
+  pull_request:
+    paths:
+      - "account_risk.js"
+      - "deriv_demo_adapter.js"
+      - "deriv_demo_connection.js"
+      - "demo_execution_manager.js"
+      - "test/account_risk.test.js"
+      - "test/deriv_demo_adapter.test.js"
+      - "test/deriv_demo_connection.test.js"
+      - "test/demo_execution_manager.test.js"
+      - ".github/workflows/demo-execution-orchestrator-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  demo-orchestrator-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run account risk, adapter, connection and orchestration tests
+        run: >-
+          node --test
+          test/account_risk.test.js
+          test/deriv_demo_adapter.test.js
+          test/deriv_demo_connection.test.js
+          test/demo_execution_manager.test.js
