@@ -66,6 +66,7 @@ class DemoExecutionManager {
     signalEvaluator = null,
     exitEvaluator = null,
     executionEnabled = false,
+    positionManagementEnabled = false,
     strategyApprovalId = null,
     maxEntriesPerCycle = 1,
     maxSignalAgeMs = 60000,
@@ -85,6 +86,7 @@ class DemoExecutionManager {
     this.signalEvaluator = signalEvaluator;
     this.exitEvaluator = exitEvaluator;
     this.executionEnabled = executionEnabled === true;
+    this.positionManagementEnabled = positionManagementEnabled === true;
     this.strategyApprovalId = strategyApprovalId;
     if (!Number.isFinite(maxSignalAgeMs) || maxSignalAgeMs < 1000 || maxSignalAgeMs > 60000) throw new Error("max_signal_age_must_be_1_to_60_seconds");
     this.maxEntriesPerCycle = maxEntriesPerCycle;
@@ -131,7 +133,8 @@ class DemoExecutionManager {
 
       const actions = [];
       const closedIds = new Set();
-      const due = positionsPastTimeLimit(snapshot.openPositions, nowMs, this.adapter.policy);
+      const due = this.positionManagementEnabled
+        ? positionsPastTimeLimit(snapshot.openPositions, nowMs, this.adapter.policy) : [];
       for (const item of due) {
         const position = snapshot.openPositions.find(p => Number(p.contractId) === Number(item.contractId));
         if (!position) continue;
@@ -146,7 +149,7 @@ class DemoExecutionManager {
 
       // Additional profit-protection/early-loss exits require an explicit,
       // tested policy callback. There is intentionally no invented threshold.
-      if (typeof this.exitEvaluator === "function") {
+      if (this.positionManagementEnabled && typeof this.exitEvaluator === "function") {
         for (const position of snapshot.openPositions) {
           if (closedIds.has(Number(position.contractId))) continue;
           const decision = await this.exitEvaluator({ position, snapshot, nowMs });
