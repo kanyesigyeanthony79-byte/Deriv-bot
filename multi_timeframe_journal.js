@@ -36,6 +36,15 @@ function updateJournal(journal, markets, nowEpoch) {
         if (TERMINAL.has(record.status)) break;
         record.outcomeCandles++;
         record.lastProcessedEpoch = candle.epoch;
+        const favourablePrice = record.direction === "BUY" ? candle.high : candle.low;
+        const favourablePoints = record.direction === "BUY"
+          ? favourablePrice - record.entry : record.entry - favourablePrice;
+        if (Number.isFinite(favourablePoints) && favourablePoints > Number(record.maxFavourablePoints || 0)) {
+          record.maxFavourablePrice = favourablePrice;
+          record.maxFavourablePoints = Number(favourablePoints.toFixed(8));
+          record.maxFavourablePct = Number((favourablePoints / record.entry * 100).toFixed(5));
+          record.maxFavourableEpoch = candle.epoch;
+        }
         const hit = touchStatus(record, candle);
         if (hit === "ambiguous") {
           record.status = "ambiguous"; record.stopEpoch = candle.epoch;
