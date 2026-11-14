@@ -150,7 +150,7 @@ async function main() {
     });
     fs.writeFileSync(JOURNAL, JSON.stringify(journal, null, 2) + "\n");
     fs.writeFileSync(OUTPUT, JSON.stringify(output, null, 2) + "\n");
-    const reviewRecords = journal.signals.filter(s => s.status === "pending" || s.status === "tp1_hit").map(signal => {
+    const reviewRecords = journal.signals.filter(s => s.category !== "SWING" && (s.status === "pending" || s.status === "tp1_hit")).map(signal => {
       const market = output.markets[signal.marketId];
       return { signalId: signal.signalId, marketId: signal.marketId, market: signal.market, category: signal.category,
         direction: signal.direction, entry: signal.entry, stopLoss: signal.stopLoss, tp1: signal.tp1, tp2: signal.tp2,
