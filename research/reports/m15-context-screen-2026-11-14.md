@@ -4,7 +4,7 @@
 
 Research-only descriptive screen. This is **not** a validated trading strategy, and it does not authorize live trading, automated execution, or production alert changes.
 
-Source artifact: GitHub Actions run [#43638597843](https://github.com/kanyesigyeanthony79-byte/Deriv-bot/actions/runs/43638597843), artifact `reversal-candles-43638597843`.
+Source artifact: GitHub Actions run [#43638997724](https://github.com/kanyesigyeanthony79-byte/Deriv-bot/actions/runs/43638997724), artifact `reversal-candles-43638997724`.
 
 Capture window: 2026-10-31 20:45 UTC through 2026-11-14 20:15 UTC. Each of the seven requested synthetic markets has 1,343 complete M15 candles.
 
@@ -12,11 +12,11 @@ Capture window: 2026-10-31 20:45 UTC through 2026-11-14 20:15 UTC. Each of the s
 
 | Market | M1 | M5 | M15 |
 |---|---:|---:|---:|
-| R_10 | 20,146 / 20,160 | 4,030 / 4,031 | 1,343 / 1,343 |
-| R_25 | 20,152 / 20,160 | 4,030 / 4,031 | 1,343 / 1,343 |
+| R_10 | 20,145 / 20,159 | 4,030 / 4,031 | 1,343 / 1,343 |
+| R_25 | 20,151 / 20,159 | 4,030 / 4,031 | 1,343 / 1,343 |
 | R_50 | 20,152 / 20,160 | 4,030 / 4,031 | 1,343 / 1,343 |
 | R_75 | 20,152 / 20,160 | 4,030 / 4,031 | 1,343 / 1,343 |
-| JD100 | 20,155 / 20,160 | 4,031 / 4,031 | 1,343 / 1,343 |
+| JD100 | 20,154 / 20,159 | 4,031 / 4,031 | 1,343 / 1,343 |
 | CRASH500 | 20,152 / 20,160 | 4,030 / 4,031 | 1,343 / 1,343 |
 | BOOM500 | 20,152 / 20,160 | 4,030 / 4,031 | 1,343 / 1,343 |
 
