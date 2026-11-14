@@ -12,12 +12,28 @@ on:
     paths:
       - "scripts/fetch_reversal_candles.js"
       - ".github/workflows/reversal-candle-capture.yml"
+  pull_request:
+    paths:
+      - "scripts/fetch_reversal_candles.js"
+      - ".github/workflows/reversal-candle-capture.yml"
 
 permissions:
   contents: read
 
 jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate capture script syntax
+        run: node --check scripts/fetch_reversal_candles.js
+
   capture:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
