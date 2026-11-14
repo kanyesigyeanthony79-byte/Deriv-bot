@@ -6,16 +6,19 @@ on:
       - dev/long-hold-structure-management-experiment
       - dev/long-hold-trade-ledger-audit
       - dev/long-hold-chronological-holdout
+      - dev/swing-entry-quality-experiment
   pull_request:
-    branches: [dev/top-down-swing-precision-experiment, dev/long-hold-structure-management-experiment, dev/long-hold-trade-ledger-audit]
+    branches: [dev/top-down-swing-precision-experiment, dev/long-hold-structure-management-experiment, dev/long-hold-trade-ledger-audit, dev/long-hold-chronological-holdout]
     paths:
       - "top_down_swing_long_hold_replay.js"
       - "top_down_swing_trade_ledger.js"
       - "top_down_swing_chronological_holdout.js"
+      - "top_down_swing_entry_quality_experiment.js"
       - "top_down_swing_backfill.js"
       - "test/top_down_swing_long_hold_replay.test.js"
       - "test/top_down_swing_trade_ledger.test.js"
       - "test/top_down_swing_chronological_holdout.test.js"
+      - "test/top_down_swing_entry_quality_experiment.test.js"
       - ".github/workflows/long-hold-structure-management.yml"
   workflow_dispatch:
 
@@ -33,8 +36,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run long-hold and ledger tests
-        run: node --test test/top_down_swing_long_hold_replay.test.js test/top_down_swing_trade_ledger.test.js test/top_down_swing_chronological_holdout.test.js test/top_down_swing_engine.test.js
+      - name: Run long-hold, ledger and entry-quality tests
+        run: node --test test/top_down_swing_long_hold_replay.test.js test/top_down_swing_trade_ledger.test.js test/top_down_swing_chronological_holdout.test.js test/top_down_swing_entry_quality_experiment.test.js test/top_down_swing_engine.test.js
       - name: Collect fresh historical OHLC
         run: node top_down_swing_backfill.js
       - name: Compare 14-day management policies
@@ -43,6 +46,8 @@ jobs:
         run: node top_down_swing_trade_ledger.js top_down_swing_snapshot.json top_down_swing_trade_ledger.json
       - name: Run chronological policy-selection holdout
         run: node top_down_swing_chronological_holdout.js top_down_swing_snapshot.json top_down_swing_chronological_holdout.json
+      - name: Run chronological entry-quality comparison
+        run: node top_down_swing_entry_quality_experiment.js top_down_swing_snapshot.json top_down_swing_entry_quality_report.json
       - uses: actions/upload-artifact@v4
         with:
           name: long-hold-structure-management-report
@@ -51,4 +56,5 @@ jobs:
             top_down_swing_long_hold_report.json
             top_down_swing_trade_ledger.json
             top_down_swing_chronological_holdout.json
+            top_down_swing_entry_quality_report.json
           retention-days: 30
