@@ -17,7 +17,7 @@ on:
       - "swing_trade_management.js"
       - "SWING_TRADE_MANAGEMENT_EXPERIMENT.md"
       - "test/swing_trade_management.test.js"
-      - "test/swing_trade_management_replay.test.js test/swing_trade_management_diagnostics.test.js"
+      - "test/swing_trade_management_replay.test.js"
       - "swing_trade_management_replay.js"
       - "swing_trade_management_diagnostics.js"
       - "test/swing_trade_management_diagnostics.test.js"
@@ -50,7 +50,7 @@ jobs:
           node --check swing_trade_management_replay.js
           node --check swing_trade_management_diagnostics.js
       - name: Test historical replay and refined swing candidate
-        run: node --test test/swing_historical_validation.test.js test/swing_h4_d1_m15_m5.test.js test/swing_trade_management.test.js test/swing_trade_management_replay.test.js
+        run: node --test test/swing_historical_validation.test.js test/swing_h4_d1_m15_m5.test.js test/swing_trade_management.test.js test/swing_trade_management_replay.test.js test/swing_trade_management_diagnostics.test.js
       - name: Fetch historical candles and replay swing entries
         run: node swing_historical_validation.js
       - name: Upload historical validation report
