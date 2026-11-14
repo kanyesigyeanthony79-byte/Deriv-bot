@@ -157,7 +157,7 @@ async function main() {
         entryTimeframe: signal.entryTimeframe, entryCandleEpoch: signal.entryCandleEpoch,
         review: market ? reviewSignal(signal, market.timeframes, now) : { signalId: signal.signalId, status: "INSUFFICIENT_DATA", headline: "REVIEW UNAVAILABLE", reason: "Market data unavailable." } };
     });
-    fs.writeFileSync(REVIEW_DATA, JSON.stringify({ version: 1, generatedAt: output.generatedAt, generatedEpoch: now, advisoryOnly: true, reviews: reviewRecords }, null, 2) + "\\n");
+    fs.writeFileSync(REVIEW_DATA, JSON.stringify({ version: 1, generatedAt: output.generatedAt, generatedEpoch: now, advisoryOnly: true, reviews: reviewRecords }, null, 2) + "\n");
     const total = Object.values(output.markets).reduce((sum, m) =>
       sum + Object.values(m.timeframes).reduce((n, candles) => n + candles.length, 0), 0);
     const allSignals = Object.values(output.markets).flatMap(m => m.signals || []);
