@@ -289,6 +289,7 @@ async function monitorSignals(marketId, candles, now) {
 }
 
 async function main() {
+  log("scanner_started", { markets: MARKETS.length, granularity_seconds: GRANULARITY });
   const client = await connect(PUBLIC);
   try {
     const timeReply = await client.ask({ time: 1 });
@@ -368,6 +369,11 @@ async function main() {
     await maybeSendDailySummary(now);
     saveState();
     saveJournal();
+    log("scanner_completed", {
+      scannedAt: new Date(now * 1000).toISOString(),
+      activeSignals: state.activeSignals.filter(signal => !signal.closed).length,
+      journalRecords: journal.signals.length
+    });
   } finally {
     client.close();
   }
