@@ -37,7 +37,7 @@ test("blocks entries when persistent baseline is missing", async () => {
   const manager = new DemoExecutionManager({
     adapter, baselineStore: makeStore(), allowedSymbols: ["R_50"],
     executionEnabled: true, strategyApprovalId: "approved-test",
-    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, symbol: "R_50", direction: "BUY", duration: 5 })
+    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, generatedAtMs: NOW, symbol: "R_50", direction: "BUY", duration: 5 })
   });
   const result = await manager.runCycle({});
   assert.equal(result.status, "observe_only");
@@ -51,7 +51,7 @@ test("rejects a research reversal candidate even when execution is explicitly en
     adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"],
     executionEnabled: true, strategyApprovalId: "approved-test",
     signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true,
-      symbol: "R_50", direction: "BUY", duration: 5, experimentalReversal: true,
+      generatedAtMs: NOW, symbol: "R_50", direction: "BUY", duration: 5, experimentalReversal: true,
       source: "price_action_reversal_research" })
   });
   const result = await manager.runCycle({});
@@ -78,7 +78,7 @@ test("rejects symbols outside the synthetic allowlist", async () => {
   const manager = new DemoExecutionManager({
     adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"],
     executionEnabled: true, strategyApprovalId: "approved-test",
-    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, symbol: "frxXAUUSD", direction: "BUY", duration: 5 })
+    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true, generatedAtMs: NOW, symbol: "frxXAUUSD", direction: "BUY", duration: 5 })
   });
   assert.equal((await manager.runCycle({})).reason, "candidate_symbol_or_direction_not_allowed");
   assert.equal(adapter.calls.some(c => c.open), false);
@@ -105,4 +105,31 @@ test("updates session peak but does not reset baseline within the Uganda day", a
 test("baseline initialization refuses an account with open positions", async () => {
   const adapter = makeAdapter({ snapshot: { openPositions: [{ contractId: 1 }] } });
   await assert.rejects(() => initializeBaselineFromVerifiedDemo(adapter, makeStore(), () => NOW), /no_open_positions/);
+});
+
+test("rejects stale strategy candidates before requesting an order", async () => {
+  const adapter = makeAdapter();
+  const manager = new DemoExecutionManager({
+    adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"],
+    executionEnabled: true, strategyApprovalId: "approved-test", now: () => NOW,
+    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true,
+      generatedAtMs: NOW - 61000, symbol: "R_50", direction: "BUY", duration: 5 })
+  });
+  const result = await manager.runCycle({});
+  assert.equal(result.reason, "candidate_missing_or_stale_timestamp");
+  assert.equal(adapter.calls.some(c => c.open), false);
+});
+
+test("blocks new entries if an existing exit cannot be confirmed", async () => {
+  const adapter = makeAdapter({ snapshot: { openPositions: [{ contractId: 10,
+    openedAt: NOW - 60 * 60 * 1000, isValidToSell: false }] } });
+  const manager = new DemoExecutionManager({
+    adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50"],
+    executionEnabled: true, strategyApprovalId: "approved-test", now: () => NOW,
+    signalEvaluator: async () => ({ validated: true, completedCandlesOnly: true,
+      generatedAtMs: NOW, symbol: "R_50", direction: "BUY", duration: 5 })
+  });
+  const result = await manager.runCycle({});
+  assert.equal(result.reason, "unresolved_exit_requires_reconciliation_before_new_entry");
+  assert.equal(adapter.calls.some(c => c.open), false);
 });
