@@ -17,6 +17,8 @@ const MARKETS = [
 ];
 const REQUESTS = [["M5", 300, 25000], ["M15", 900, 8000], ["H1", 3600, 2000], ["H4", 14400, 600], ["D1", 86400, 180]];
 const MAX_HOLD_SECONDS = 7 * 86400;
+const REQUEST_SPACING_MS = 200;
+const RETRY_BASE_DELAY_MS = 1000;
 const MAX_HOLD_BARS = MAX_HOLD_SECONDS / TIMEFRAMES.M5;
 
 function normalize(value) {
@@ -153,6 +155,8 @@ async function fetchHistory(client, symbol, granularity, requestedCount, now) {
       ticks_history: symbol, adjust_start_time: 1, count,
       end, granularity, style: "candles"
     });
+    // Space every paginated request, not just each timeframe, to avoid bursts.
+    await new Promise(resolve => setTimeout(resolve, REQUEST_SPACING_MS));
     const batch = normalizeCandles(reply.candles, granularity, now);
     if (!batch.length) break;
     const previousSize = byEpoch.size;
@@ -182,7 +186,11 @@ async function fetchMarket(symbol, now, maxAttempts = 2) {
       return frames;
     } catch (error) {
       lastError = error;
-      if (attempt < maxAttempts) await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      if (attempt < maxAttempts) {
+        const backoff = RETRY_BASE_DELAY_MS * (2 ** (attempt - 1));
+        const jitter = Math.floor(Math.random() * 250);
+        await new Promise(resolve => setTimeout(resolve, backoff + jitter));
+      }
     } finally {
       if (client) client.close();
     }
