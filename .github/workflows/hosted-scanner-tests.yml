@@ -1,0 +1,35 @@
+name: Hosted Scanner Journal Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "hosted_scanner.js"
+      - "signal_journal.js"
+      - "test/signal_journal.test.js"
+      - ".github/workflows/hosted-scanner-tests.yml"
+  push:
+    branches:
+      - fix/hosted-scanner-journal-expiry
+    paths:
+      - "hosted_scanner.js"
+      - "signal_journal.js"
+      - "test/signal_journal.test.js"
+      - ".github/workflows/hosted-scanner-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check syntax
+        run: node --check hosted_scanner.js && node --check signal_journal.js
+      - name: Run journal tests
+        run: node --test test/signal_journal.test.js
