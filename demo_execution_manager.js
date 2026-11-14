@@ -24,7 +24,8 @@ class JsonBaselineStore {
     if (!data || typeof data !== "object" || data.version !== 1 ||
         !Number.isFinite(data.dayStartEquity) || data.dayStartEquity <= 0 ||
         !Number.isFinite(data.sessionPeakEquity) || data.sessionPeakEquity <= 0 ||
-        typeof data.date !== "string") {
+        typeof data.date !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(data.date) ||
+        typeof data.accountId !== "string" || !data.accountId.trim()) {
       throw new Error("baseline_store_invalid_refusing_entries");
     }
     return data;
@@ -119,6 +120,7 @@ class DemoExecutionManager {
       }
 
       const currentDate = kampalaDate(nowMs);
+      let baselineSaveFailed = false;
       if (baseline) {
         if (baseline.date !== currentDate) {
           baseline = { ...baseline, date: currentDate, dayStartEquity: snapshot.equity, sessionPeakEquity: snapshot.equity };
@@ -126,7 +128,8 @@ class DemoExecutionManager {
           baseline = { ...baseline, sessionPeakEquity: Math.max(baseline.sessionPeakEquity, snapshot.equity) };
         }
         baseline.updatedAt = new Date(nowMs).toISOString();
-        this.baselineStore.save(baseline);
+        try { this.baselineStore.save(baseline); }
+        catch (_) { baselineSaveFailed = true; }
         snapshot.dayStartEquity = baseline.dayStartEquity;
         snapshot.sessionPeakEquity = baseline.sessionPeakEquity;
       }
@@ -167,11 +170,15 @@ class DemoExecutionManager {
       if (!baseline) {
         return { status: "observe_only", reason: "persistent_equity_baseline_not_initialized", accountMode: snapshot.mode, openPositions: snapshot.openPositions.length, actions };
       }
+      if (baselineSaveFailed) return { status: "blocked", reason: "equity_baseline_persistence_failed", actions };
       if (!this.executionEnabled) {
         return { status: "observe_only", reason: "execution_disabled_by_default", accountMode: snapshot.mode, openPositions: snapshot.openPositions.length, actions };
       }
       if (actions.some(action => action.type === "EXIT_BLOCKED" || action.type === "EXIT_UNCONFIRMED")) {
         return { status: "blocked", reason: "unresolved_exit_requires_reconciliation_before_new_entry", actions };
+      }
+      if (!this.positionManagementEnabled || typeof this.exitEvaluator !== "function") {
+        return { status: "blocked", reason: "position_management_and_exit_policy_required_before_entries", actions };
       }
       if (!this.strategyApprovalId || typeof this.signalEvaluator !== "function" || this.maxEntriesPerCycle !== 1) {
         return { status: "blocked", reason: "explicit_strategy_approval_and_single_entry_evaluator_required", actions };
@@ -180,7 +187,7 @@ class DemoExecutionManager {
       let candidate;
       try { candidate = await this.signalEvaluator(marketData); }
       catch (_) { return { status: "blocked", reason: "strategy_evaluation_failed", actions }; }
-      if (!candidate || candidate.validated !== true || candidate.completedCandlesOnly !== true) {
+      if (!candidate || candidate.validated !== true || candidate.completedCandlesOnly !== true || candidate.strategyApprovalId !== this.strategyApprovalId) {
         return { status: "observe_only", reason: "no_validated_completed_candle_candidate", actions };
       }
       const generatedAtMs = Number(candidate.generatedAtMs);
