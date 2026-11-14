@@ -105,6 +105,41 @@ function validateCoverage(candles, symbol, granularity, startEpoch, snapshotEpoc
   return { expectedCount, gapCount: missing.length, firstEpoch: firstExpected, lastEpoch: lastExpected };
 }
 
+async function reconstructFromTicks(client, symbol, granularity, epoch) {
+  const reply = await client.ask({
+    ticks_history: symbol,
+    style: "ticks",
+    count: 1000,
+    start: epoch,
+    end: String(epoch + granularity - 1)
+  });
+  const times = reply.history?.times || [];
+  const prices = reply.history?.prices || [];
+  if (times.length !== prices.length) {
+    throw new Error(`Mismatched tick timestamps/prices for ${symbol} at ${new Date(epoch * 1000).toISOString()}.`);
+  }
+  const ticks = times.map((time, index) => ({ time: Number(time), price: Number(prices[index]) }))
+    .filter(tick => tick.time >= epoch && tick.time < epoch + granularity)
+    .sort((a, b) => a.time - b.time);
+  if (ticks.length === 0) return null;
+  if (ticks.length >= 1000) {
+    throw new Error(`Tick fallback reached its 1000-tick cap for ${symbol} at ${new Date(epoch * 1000).toISOString()}.`);
+  }
+  const values = ticks.map(tick => tick.price);
+  if (!values.every(Number.isFinite)) {
+    throw new Error(`Invalid tick price in fallback for ${symbol} at ${new Date(epoch * 1000).toISOString()}.`);
+  }
+  return {
+    epoch,
+    open: values[0],
+    high: Math.max(...values),
+    low: Math.min(...values),
+    close: values[values.length - 1],
+    complete: true,
+    reconstructedFromTicks: true
+  };
+}
+
 async function fetchFrame(client, symbol, granularity, startEpoch, snapshotEpoch) {
   const firstExpected = Math.ceil(startEpoch / granularity) * granularity;
   const lastExpected = Math.floor(snapshotEpoch / granularity) * granularity - granularity;
@@ -166,6 +201,22 @@ async function fetchFrame(client, symbol, granularity, startEpoch, snapshotEpoch
     await sleep(250);
   }
 
+  const firstExpected = Math.ceil(startEpoch / granularity) * granularity;
+  const lastExpected = Math.floor(snapshotEpoch / granularity) * granularity - granularity;
+  const reconstructed = [];
+  for (let epoch = firstExpected; epoch <= lastExpected; epoch += granularity) {
+    if (byEpoch.has(epoch)) continue;
+    const candle = await reconstructFromTicks(client, symbol, granularity, epoch);
+    if (candle) {
+      byEpoch.set(epoch, candle);
+      reconstructed.push(epoch);
+    }
+    await sleep(100);
+  }
+
+  if (reconstructed.length > 0) {
+    console.log(`${symbol} M${granularity / 60}: reconstructed ${reconstructed.length} missing candles from actual ticks`);
+  }
   const candles = [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch);
   const coverage = validateCoverage(candles, symbol, granularity, startEpoch, snapshotEpoch);
   return { candles, coverage };
