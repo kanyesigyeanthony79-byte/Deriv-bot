@@ -9,7 +9,12 @@ const { validateCandleContinuity } = require("./market_quality");
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 // Initial historical validation focuses on Volatility 25, the instrument
 // from the user's losing swing-entry example. Expand only after this replay is sound.
-const MARKETS = [["R_25", "Volatility 25 Index"]];
+const MARKETS = [
+  ["R_10", "Volatility 10 Index"], ["R_25", "Volatility 25 Index"],
+  ["R_50", "Volatility 50 Index"], ["R_75", "Volatility 75 Index"],
+  ["JD100", "Jump 100 Index"], ["frxXAUUSD", "Gold/USD"],
+  ["CRASH500", "Crash 500 Index"], ["BOOM500", "Boom 500 Index"]
+];
 const REQUESTS = [["M5", 300, 25000], ["M15", 900, 8000], ["H1", 3600, 2000], ["H4", 14400, 600], ["D1", 86400, 180]];
 const MAX_HOLD_SECONDS = 7 * 86400;
 const MAX_HOLD_BARS = MAX_HOLD_SECONDS / TIMEFRAMES.M5;
