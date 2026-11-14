@@ -27,3 +27,18 @@ test("flags same-candle stop and target as ambiguous",()=>{
  const r=reviewSignal(signal,{M1:candles(60,95,89,111)},1000+60*60);
  assert.equal(r.status,"AMBIGUOUS_CANDLE");
 });
+
+test("scans all post-signal candles, not only the latest candle",()=>{
+ const series=candles(60,105,104,106);
+ series[10]={epoch:1600,open:105,high:111,low:104,close:109};
+ series[11]={epoch:1660,open:105,high:106,low:89,close:95};
+ const r=reviewSignal({...signal,entryCandleEpoch:1000},{M1:series},1000+60*60);
+ assert.equal(r.status,"STOP_AFTER_TP1");
+ assert.equal(r.tp1Reached,true);
+});
+test("does not report an old stop touch as safe when latest candle recovers",()=>{
+ const series=candles(60,105,104,106);
+ series[10]={epoch:1600,open:105,high:106,low:89,close:95};
+ const r=reviewSignal({...signal,entryCandleEpoch:1000},{M1:series},1000+60*60);
+ assert.equal(r.status,"STOP_LEVEL_TOUCHED");
+});
