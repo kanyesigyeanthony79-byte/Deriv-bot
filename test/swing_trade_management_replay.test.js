@@ -30,14 +30,26 @@ test("completedTail excludes a higher-timeframe candle that has not closed", () 
   assert.equal(tail.length, 59);
 });
 
-test("lifecycle replay exits early when H1 and M15 reverse before the original stop", () => {
+test("lifecycle replay exits a profitable position when both H4 and D1 invalidate the swing", () => {
   const frames = data();
   frames.H1 = series(80, 3600, END, "down", 130);
   frames.M15 = series(80, 900, END, "down", 130);
+  frames.H4 = series(80, 14400, END, "down", 130);
+  frames.D1 = series(80, 86400, END, "down", 130);
   const result = simulateManagedOutcome(signal(), frames, 70, { maxHoldBars: 5 });
   assert.equal(result.status, "early_exit");
   assert.ok(result.realizedR > 0);
   assert.ok(result.exitPrice > signal().stopLoss);
+});
+
+test("lifecycle replay keeps a profitable runner open when only H1 and M15 reverse", () => {
+  const frames = data();
+  frames.H1 = series(80, 3600, END, "down", 130);
+  frames.M15 = series(80, 900, END, "down", 130);
+  const result = simulateManagedOutcome(signal(), frames, 70, { maxHoldBars: 5 });
+  assert.notEqual(result.status, "early_exit");
+  assert.equal(result.partialTaken, true);
+  assert.ok(result.realizedR > 0);
 });
 
 test("lifecycle replay records a break-even exit after the +1R protection advice", () => {
