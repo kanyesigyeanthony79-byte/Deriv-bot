@@ -90,10 +90,27 @@ function evaluateTradeManagement({ position, candlesByTimeframe }) {
   const risk = riskDistance(position);
   if (!(risk > 0)) return recommendation("INVALID_POSITION", "The initial risk distance must be positive.");
 
-  const required = ["M5", "M15", "H1", "H4", "D1"];
-  const frames = {};
+  const rawM5 = candlesByTimeframe && candlesByTimeframe.M5;
+  if (!validCandles(rawM5) || rawM5.length < 51) {
+    return recommendation("WAIT_FOR_DATA", "Insufficient completed M5 candles; no management advice is issued.", {
+      timeframe: "M5", availableCandles: Array.isArray(rawM5) ? rawM5.length : 0, requiredCandles: 51
+    });
+  }
+  const latestM5 = rawM5[rawM5.length - 1];
+  const cutoffEpoch = latestM5.epoch + TIMEFRAMES.M5;
+  const required = ["M15", "H1", "H4", "D1"];
+  const frames = { M5: rawM5 };
+  const m5Continuity = validateCandleContinuity(rawM5, TIMEFRAMES.M5, position.marketId);
+  if (!m5Continuity.valid) {
+    return recommendation("WAIT_FOR_DATA", "A candle gap exists on M5; no management advice is issued across missing data.", {
+      timeframe: "M5", gaps: m5Continuity.gaps.slice(0, 3)
+    });
+  }
   for (const timeframe of required) {
-    const candles = candlesByTimeframe && candlesByTimeframe[timeframe];
+    const raw = candlesByTimeframe && candlesByTimeframe[timeframe];
+    const candles = Array.isArray(raw)
+      ? raw.filter(c => c.epoch + TIMEFRAMES[timeframe] <= cutoffEpoch)
+      : raw;
     if (!validCandles(candles) || candles.length < 51) {
       return recommendation("WAIT_FOR_DATA", "Insufficient completed " + timeframe + " candles; no management advice is issued.", {
         timeframe, availableCandles: Array.isArray(candles) ? candles.length : 0, requiredCandles: 51
@@ -108,7 +125,6 @@ function evaluateTradeManagement({ position, candlesByTimeframe }) {
     frames[timeframe] = candles;
   }
 
-  const latestM5 = frames.M5[frames.M5.length - 1];
   const currentPrice = latestM5.close;
   const rNow = favorableR(position, currentPrice);
   const touches = barrierTouches(position, latestM5);
@@ -166,6 +182,14 @@ function evaluateTradeManagement({ position, candlesByTimeframe }) {
     return recommendation("MOVE_TO_BREAK_EVEN", "The trade has reached +1R. Consider moving the stop to entry to remove the initial price risk, subject to spread and execution costs.", {
       currentPrice, favorableR: rNow, suggestedStopLoss: saferStop, biases: { M15: m15, H1: h1, H4: h4, D1: d1 }, candleEpoch: latestM5.epoch
     });
+  }
+
+  if (!position.partialTaken && rNow >= 0.5 && (h1 === opposite || m15 === opposite)) {
+    const extra = { currentPrice, favorableR: rNow, biases: { M15: m15, H1: h1, H4: h4, D1: d1 }, candleEpoch: latestM5.epoch };
+    if (rNow >= CONFIG.breakEvenAtR) extra.suggestedStopLoss = position.direction === "BUY"
+      ? Math.max(position.stopLoss, position.entry)
+      : Math.min(position.stopLoss, position.entry);
+    return recommendation("PARTIAL_PROFIT_EARLY", "The trade is in profit and one lower timeframe is weakening. Consider banking part of the gain before the full TP1 target.", extra);
   }
 
   if (h1 === opposite || m15 === opposite) {
