@@ -18,3 +18,15 @@ test("outcome simulation never mutates the candidate signal", () => {
   simulateOutcome(signal, [], "partial");
   assert.equal(JSON.stringify(signal), before);
 });
+
+test("outcome replay excludes the entry candle and all candles before its close", () => {
+  const candidate = { ...signal, entryEpoch:300, decisionEpoch:600 };
+  const future = [{epoch:300,open:100,high:100,low:98,close:99}];
+  for (let i=0;i<=2015;i++) {
+    const epoch=600+i*300;
+    future.push({epoch,open:100,high:100.2,low:99.8,close:100});
+  }
+  const result=simulateOutcome(candidate,future,"fixed");
+  assert.equal(result.status,"expired");
+  assert.equal(result.realisedR,0);
+});
