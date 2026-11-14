@@ -98,8 +98,20 @@ function runReplay(snapshot, options = {}) {
         const sorted = [...values].sort((a,b)=>a-b), mid = Math.floor(sorted.length / 2);
         return Number((sorted.length % 2 ? sorted[mid] : (sorted[mid-1] + sorted[mid]) / 2).toFixed(4));
       };
+      const alignmentBreakdown = Object.fromEntries(["aligned", "counter_trend", "neutral"].map(alignment => {
+        const group = results.filter(r => r.signal.d1Alignment === alignment);
+        const groupScored = group.filter(r => r.fixed.status !== "censored");
+        return [alignment, {
+          candidateCount: group.length,
+          scoredCount: groupScored.length,
+          averageFixedR: avg(groupScored.map(r => r.fixed.realisedR)),
+          outcomesFixed: Object.fromEntries(["tp2_hit","stopped","ambiguous","expired"].map(status =>
+            [status, groupScored.filter(r => r.fixed.status === status).length]))
+        }];
+      }));
       candidates[variant] = {
         candidateCount: signals.length, scoredCount: scored.length,
+        d1Alignment: alignmentBreakdown,
         censoredCount: results.length - scored.length,
         outcomesFixed: Object.fromEntries(["tp2_hit","stopped","ambiguous","expired"].map(s => [s, scored.filter(r => r.fixed.status === s).length])),
         outcomesPartial: Object.fromEntries(["tp2_hit","stopped","stopped_after_tp1","ambiguous","expired"].map(s => [s, scored.filter(r => r.partial.status === s).length])),
@@ -114,8 +126,11 @@ function runReplay(snapshot, options = {}) {
     }
     const thesisSets = VARIANTS.map(v => new Set([...byVariant[v].values()].map(thesisKey)));
     const shared = [...thesisSets[0]].filter(k => thesisSets.every(s => s.has(k))).length;
-    report.markets[marketId] = { state: "replayed", firstM5Epoch: m5[0].epoch,
-      lastM5Epoch: m5[m5.length - 1].epoch, eligibleDecisionCount: eligibleDecisions.length,
+    const coverageSeconds = m5[m5.length - 1].epoch + M5_SECONDS - (m5[0].epoch + M5_SECONDS);
+    report.markets[marketId] = { state: eligibleDecisions.length ? "replayed" : "insufficient_forward_coverage",
+      firstM5Epoch: m5[0].epoch, lastM5Epoch: m5[m5.length - 1].epoch,
+      coverageDays: Number((coverageSeconds / 86400).toFixed(2)), requiredCoverageDays: 7,
+      eligibleDecisionCount: eligibleDecisions.length,
       sharedThesisCountAcrossAllVariants: shared, variants: candidates };
   }
   for (const variant of VARIANTS) {
