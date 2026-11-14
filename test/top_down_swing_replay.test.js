@@ -10,7 +10,7 @@ test("seven-day replay marks incomplete forward windows as censored", () => {
 });
 test("same-candle stop and target collision is ambiguous, not guessed", () => {
   const bars = [{epoch:300,open:100,high:103,low:98,close:101}];
-  bars.push({epoch:604800,open:101,high:101,low:101,close:101});
+  bars.push({epoch:604500,open:101,high:101,low:101,close:101});
   assert.equal(simulateOutcome(signal, bars, "fixed").status, "ambiguous");
 });
 test("outcome simulation never mutates the candidate signal", () => {
