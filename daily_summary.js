@@ -24,7 +24,7 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
   );
   const movementRows = [
     ...rows.filter(signal => Number(signal.maxFavourablePoints) > 0).map(signal => ({
-      market: signal.market || (markets.find(([id]) => id === signal.marketId) || [null, signal.marketId])[1],
+      market: signal.market || ((markets || []).find(([id]) => id === signal.marketId) || [null, signal.marketId])[1],
       direction: signal.direction, category: "Legacy", timeframe: "M15",
       points: Number(signal.maxFavourablePoints), pct: Number(signal.maxFavourablePct || 0)
     })),
@@ -41,7 +41,8 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
       marketRows.filter(signal => ["SL", "SL_AFTER_TP1"].includes(signal.finalOutcome)).length + " losses (SL)";
   }).filter((_, index) => rows.some(signal => signal.marketId === markets[index][0]));
   return { day, generated: rows.length, sent, missed, tp1, tp2, wins, losses, resolved, winRate,
-    netSignalOutcomes, expired, ambiguous, unverified, unresolved, byMarket,\n    mfeCount: movementRows.length, mfeTop: movementRows.slice(0, 12) };
+    netSignalOutcomes, expired, ambiguous, unverified, unresolved, byMarket,
+    mfeCount: movementRows.length, mfeTop: movementRows.slice(0, 12) };
 }
 
 function buildDailySummaryMessage(summary) {
