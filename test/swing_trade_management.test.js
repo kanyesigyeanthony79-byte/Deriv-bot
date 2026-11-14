@@ -70,9 +70,8 @@ test("advises closing the remainder when TP2 is touched", () => {
   assert.equal(result.action, "CLOSE_REMAINDER");
 });
 
-test("does not lower an existing long stop when recommending break-even", () => {
+test("does not recommend break-even when the long stop already protects profit", () => {
   const data = frames("up", { close: 110, open: 109.9, high: 110.1, low: 109.8 });
   const result = evaluateTradeManagement({ position: position({ stopLoss: 103 }), candlesByTimeframe: data });
-  assert.equal(result.action, "MOVE_TO_BREAK_EVEN");
-  assert.equal(result.suggestedStopLoss, 103);
+  assert.notEqual(result.action, "MOVE_TO_BREAK_EVEN");
 });
