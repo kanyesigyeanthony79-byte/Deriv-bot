@@ -7,6 +7,7 @@ on:
       - feature/phase1-market-regime-data-quality
       - feature/multi-timeframe-telegram-alerts
       - feature/swing-lower-timeframe-entry
+      - feature/swing-historical-validation
   pull_request:
     branches:
       - main
@@ -28,4 +29,4 @@ jobs:
       - name: Syntax check
         run: node --check multi_timeframe_engine.js && node --check market_quality.js && node --check multi_timeframe_alerts.js && node --check multi_timeframe_collector.js
       - name: Run unit tests
-        run: node --test test/multi_timeframe_engine.test.js test/multi_timeframe_journal.test.js test/dashboard_syntax.test.js test/multi_timeframe_alerts.test.js
+        run: node --test test/multi_timeframe_engine.test.js test/multi_timeframe_journal.test.js test/dashboard_syntax.test.js test/multi_timeframe_alerts.test.js test/swing_historical_validation.test.js
