@@ -127,4 +127,7 @@ async function main() {
       process.exitCode = 1;
   } finally { client.close(); }
 }
-main().catch(error => { console.error(error.stack || error.message); process.exitCode = 1; });
+if (require.main === module)
+  main().catch(error => { console.error(error.stack || error.message); process.exitCode = 1; });
+
+module.exports = { fetchCandleHistory, normalizeCandles };
