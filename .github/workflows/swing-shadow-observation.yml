@@ -1,0 +1,53 @@
+name: Swing Shadow Observation
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: swing-shadow-observation
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout swing-entry development code
+        uses: actions/checkout@v4
+        with:
+          ref: feature/swing-historical-validation
+          path: swing-source
+
+      - name: Checkout isolated shadow journal
+        uses: actions/checkout@v4
+        with:
+          ref: feature/swing-shadow-data
+          path: shadow-data
+
+      - name: Restore shadow-only state
+        run: |
+          cp shadow-data/multi_timeframe_journal.json swing-source/multi_timeframe_journal.json
+          cp shadow-data/multi_timeframe_dashboard.json swing-source/multi_timeframe_dashboard.json
+
+      - name: Run read-only shadow scan (Telegram disabled)
+        run: node swing-source/multi_timeframe_collector.js
+        env:
+          MTF_TELEGRAM_ALERTS: "false"
+
+      - name: Persist isolated shadow journal and dashboard
+        run: |
+          cp swing-source/multi_timeframe_journal.json shadow-data/multi_timeframe_journal.json
+          cp swing-source/multi_timeframe_dashboard.json shadow-data/multi_timeframe_dashboard.json
+          cd shadow-data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add multi_timeframe_journal.json multi_timeframe_dashboard.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update swing shadow observation state"
+            git push origin HEAD:feature/swing-shadow-data
+          fi
