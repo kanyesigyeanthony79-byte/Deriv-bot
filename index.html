@@ -81,8 +81,8 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <div class="mtf-grid" id="mtfSignals"><div class="card">Waiting for multi-timeframe data…</div></div>
     <h2 style="margin-top:18px">Multi-timeframe outcome journal</h2>
     <div class="card mtf-table-wrap">
-      <table><thead><tr><th>Time</th><th>Market</th><th>Category</th><th>Direction</th><th>Entry</th><th>SL</th><th>TP1 / TP2</th><th>Outcome</th></tr></thead>
-      <tbody id="mtfJournal"><tr><td colspan="8" class="muted">No multi-timeframe observations recorded yet.</td></tr></tbody></table>
+      <table><thead><tr><th>Time</th><th>Market</th><th>Category</th><th>Direction</th><th>Entry</th><th>SL</th><th>TP1 / TP2</th><th>Outcome</th><th>Review</th></tr></thead>
+      <tbody id="mtfJournal"><tr><td colspan="9" class="muted">No multi-timeframe observations recorded yet.</td></tr></tbody></table>
     </div>
   </section>
 
@@ -175,7 +175,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 
   const MTF_URL="./multi_timeframe_dashboard.json";
   const MTF_JOURNAL_URL="./multi_timeframe_journal.json";
-  let mtfSnapshot=null, mtfJournal=[];
+  let mtfSnapshot=null, mtfJournal=[], mtfReviews={};
   const categoryNames={SCALP:"Scalping",SHORT_TERM:"Short-term",SWING:"Swing",POSITION:"Position"};
   const fmtTime=epoch=>epoch?new Date(epoch*1000).toLocaleString():"—";
   function renderMtf(){
@@ -194,14 +194,14 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     const counts=mtfSnapshot.summary?.signalCounts||{};
     $("mtfSummary").innerHTML=['signal','timeframe_conflict','warming','no_signal'].map(k=>'<div class="card"><div class="detail">'+esc(k.replaceAll("_"," ").toUpperCase())+'</div><div class="signal">'+esc(counts[k]??0)+'</div></div>').join("");
     const rows=mtfJournal.slice().sort((a,b)=>(b.entryCandleEpoch||0)-(a.entryCandleEpoch||0)).slice(0,40);
-    $("mtfJournal").innerHTML=rows.map(s=>'<tr><td>'+esc(fmtTime(s.entryCandleEpoch))+'</td><td>'+esc(s.market||s.marketId)+'</td><td>'+esc(categoryNames[s.category]||s.category)+'</td><td class="'+(s.direction==="BUY"?"buy":"sell")+'">'+esc(s.direction)+'</td><td>'+fmt(s.entry)+'</td><td>'+fmt(s.stopLoss)+'</td><td>'+fmt(s.tp1)+' / '+fmt(s.tp2)+'</td><td>'+esc(String(s.status||"pending").replaceAll("_"," ").toUpperCase())+'</td></tr>').join("")||'<tr><td colspan="8" class="muted">No qualifying signals recorded yet.</td></tr>';
+    $("mtfJournal").innerHTML=rows.map(s=>{const review=mtfReviews[s.signalId];const link=review?'<a class="btn smallbtn" href="./signal-review.html?signalId='+encodeURIComponent(s.signalId)+'">REVIEW</a>':'<span class="muted">—</span>';return '<tr><td>'+esc(fmtTime(s.entryCandleEpoch))+'</td><td>'+esc(s.market||s.marketId)+'</td><td>'+esc(categoryNames[s.category]||s.category)+'</td><td class="'+(s.direction==="BUY"?"buy":"sell")+'">'+esc(s.direction)+'</td><td>'+fmt(s.entry)+'</td><td>'+fmt(s.stopLoss)+'</td><td>'+fmt(s.tp1)+' / '+fmt(s.tp2)+'</td><td>'+esc(String(s.status||"pending").replaceAll("_"," ").toUpperCase())+'</td><td>'+link+'</td></tr>';}).join("")||'<tr><td colspan="9" class="muted">No qualifying signals recorded yet.</td></tr>';
   }
   async function refreshMtf(){
     $("mtfStatus").textContent="Refreshing multi-timeframe snapshot…";
     try{
-      const [a,b]=await Promise.all([fetch(MTF_URL+"?v="+Date.now(),{cache:"no-store"}),fetch(MTF_JOURNAL_URL+"?v="+Date.now(),{cache:"no-store"})]);
+      const [a,b,r]=await Promise.all([fetch(MTF_URL+"?v="+Date.now(),{cache:"no-store"}),fetch(MTF_JOURNAL_URL+"?v="+Date.now(),{cache:"no-store"}),fetch("./signal_review_data.json?v="+Date.now(),{cache:"no-store"})]);
       if(!a.ok)throw new Error("Snapshot HTTP "+a.status);
-      mtfSnapshot=await a.json(); mtfJournal=b.ok?(await b.json()).signals||[]:[];
+      mtfSnapshot=await a.json(); mtfJournal=b.ok?(await b.json()).signals||[]:[]; const reviewData=r.ok?await r.json():{reviews:[]}; mtfReviews=Object.fromEntries((reviewData.reviews||[]).map(x=>[x.signalId,x]));
       renderMtf();
       $("mtfStatus").textContent="Observation-only · "+esc(mtfSnapshot.markets?.length||0)+" markets · Updated "+esc(time(mtfSnapshot.generatedAt));
     }catch(e){$("mtfStatus").textContent="Multi-timeframe data not published yet: "+e.message;}
