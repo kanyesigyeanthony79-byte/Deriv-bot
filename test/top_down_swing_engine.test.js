@@ -114,7 +114,7 @@ test("normal Gold weekend closure is accepted without weakening synthetic contin
 });
 
 test("early loss advisory can warn before the structural stop is touched", () => {
-  const signal={direction:"BUY",entry:100,stopLoss:98.5,riskDistance:1.5,entryEpoch:0,decisionEpoch:1};
+  const signal={direction:"BUY",entry:100,stopLoss:98.3,riskDistance:1.7,entryEpoch:0,decisionEpoch:1};
   const h1=bars(5,3600,i=>100-i*.4);
   const events=managementAdvisories(signal,{H1:h1,H4:[]},h1.at(-1).epoch+3600);
   assert.ok(events.some(e=>e.type==="EARLY_LOSS_REVIEW"));
