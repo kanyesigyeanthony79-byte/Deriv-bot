@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { POLICIES } = require("../top_down_swing_long_hold_replay");
-const { makeWindows, summarizeResults, summarizePairedResults, choosePolicy, classifySelectionStatus } = require("../top_down_swing_chronological_holdout");
+const { makeWindows, summarizeResults, summarizePairedResults, choosePolicy, classifySelectionStatus, summarizePortfolio } = require("../top_down_swing_chronological_holdout");
 
 test("training outcome horizon does not overlap validation entries", () => {
   const start = 1_800_000_000;
@@ -81,4 +81,26 @@ test("policy averages use the same common unambiguous trade cohort", () => {
   assert.equal(paired.policies.FIXED_2_5R.rawAmbiguousCount, 1);
   assert.equal(paired.policies.H4_PIVOT_TRAIL.rawScoredCount, 3);
   assert.equal(paired.policies.H4_PIVOT_TRAIL.scoredCount, 2);
+});
+
+test("portfolio summary counts evaluated variants even when every policy is correctly rejected", () => {
+  const markets = {
+    R_10: { state: "replayed", variants: {
+      H1_CONTROL: { selectedPolicy: null, selectionStatus: "baseline_not_positive",
+        fixedTargetValidation: { scoredCount: 143 }, selectedPolicyValidation: null }
+    }},
+    R_25: { state: "replayed", variants: {
+      H1_CONTROL: { selectedPolicy: "FIXED_2_5R", selectionStatus: "selected_from_training_only",
+        fixedTargetValidation: { scoredCount: 75 }, selectedPolicyValidation: { scoredCount: 75, averageR: 0.6, averageDurationHours: 40 } }
+    }},
+    R_50: { state: "insufficient_history", reason: "fixture" }
+  };
+  const summary = summarizePortfolio(markets, ["H1_CONTROL"]).H1_CONTROL;
+  assert.equal(summary.marketVariantCount, 2);
+  assert.equal(summary.selectedMarketVariantCount, 1);
+  assert.equal(summary.abstainedMarketVariantCount, 1);
+  assert.equal(summary.validationScoredCount, 218);
+  assert.equal(summary.selectedPolicyScoredCount, 75);
+  assert.deepEqual(summary.selectionStatuses, { baseline_not_positive: 1, selected_from_training_only: 1 });
+  assert.equal(summary.markets.find(row => row.market === "R_10").fixedTargetValidation.scoredCount, 143);
 });
