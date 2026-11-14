@@ -1,0 +1,29 @@
+name: Signal Review Validation
+on:
+  push:
+    branches:
+      - feature/on-demand-signal-review
+    paths:
+      - "signal_review.js"
+      - "signal-review.html"
+      - "cloudflare/deriv-telegram-alerts.js"
+      - "tests/signal_review.test.js"
+      - ".github/workflows/signal-review-tests.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run review engine tests
+        run: node --test tests/signal_review.test.js
+      - name: Check JavaScript syntax
+        run: |
+          node --check signal_review.js
+          node --check cloudflare/deriv-telegram-alerts.js
+          node -e "const fs=require('fs');const html=fs.readFileSync('signal-review.html','utf8');const script=html.match(/<script>([\\s\\S]*?)<\\/script>/i);if(!script)throw new Error('No review script');new Function(script[1]);console.log('Review page script syntax OK')"
