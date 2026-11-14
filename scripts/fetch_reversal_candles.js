@@ -201,8 +201,6 @@ async function fetchFrame(client, symbol, granularity, startEpoch, snapshotEpoch
     await sleep(250);
   }
 
-  const firstExpected = Math.ceil(startEpoch / granularity) * granularity;
-  const lastExpected = Math.floor(snapshotEpoch / granularity) * granularity - granularity;
   const reconstructed = [];
   for (let epoch = firstExpected; epoch <= lastExpected; epoch += granularity) {
     if (byEpoch.has(epoch)) continue;
