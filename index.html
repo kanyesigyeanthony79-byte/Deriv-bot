@@ -110,6 +110,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   const fmt = v => Number.isFinite(Number(v)) ? Number(v).toFixed(2) : "—";
   const time = s => { const d=new Date(s); return Number.isNaN(d.getTime())? "—" : d.toLocaleString(); };
   function outcomeLabel(s) {
+    if (s.finalOutcome === "UNVERIFIED" || s.status === "state_missing") return "UNVERIFIED · STATE MISSING";
     if (s.finalOutcome) return s.finalOutcome.replaceAll("_"," ");
     if (s.tp2Hit) return "TP2 HIT";
     if (s.tp1Hit) return "TP1 HIT · OPEN";
@@ -120,7 +121,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     latestSignals=signals.slice();
     for (const [id,name] of MARKETS) {
       const card=document.querySelector('[data-market="'+id+'"]');
-      const sent=signals.filter(s=>s.marketId===id && s.status==="sent").sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0));
+      const sent=signals.filter(s=>s.marketId===id && (s.status==="sent" || s.status==="state_missing")).sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0));
       const s=sent[0];
       if (!s) {
         card.innerHTML='<div class="name">'+esc(name)+'</div><div class="signal none">NO SENT SIGNAL</div><div class="detail">No delivered signal recorded yet.</div>';
