@@ -71,6 +71,22 @@ test("advises closing the remainder when TP2 is touched", () => {
   assert.equal(result.action, "CLOSE_REMAINDER");
 });
 
+test("ignores an unfinished M15 candle that begins at the latest M5 close", () => {
+  const data = frames("up");
+  data.M15.push({ epoch: CUTOFF, open: 130, high: 130.1, low: 129.8, close: 129.9 });
+  const result = evaluateTradeManagement({ position: position({ entry: 120, stopLoss: 110, tp1: 135, tp2: 145 }), candlesByTimeframe: data });
+  assert.equal(result.action, "HOLD");
+  assert.equal(result.biases.M15, "BUY");
+});
+
+test("advises early partial profit when a profitable trade has one weakening lower timeframe", () => {
+  const data = frames("up", { open: 104.9, high: 105.1, low: 104.8, close: 105 });
+  data.M15 = series(80, 900, CUTOFF - 80 * 900, "down", 130);
+  const result = evaluateTradeManagement({ position: position(), candlesByTimeframe: data });
+  assert.equal(result.action, "PARTIAL_PROFIT_EARLY");
+  assert.ok(result.favorableR >= 0.5);
+});
+
 test("does not recommend break-even when the long stop already protects profit", () => {
   const data = frames("up", { close: 110, open: 109.9, high: 110.1, low: 109.8 });
   const result = evaluateTradeManagement({ position: position({ stopLoss: 103 }), candlesByTimeframe: data });
