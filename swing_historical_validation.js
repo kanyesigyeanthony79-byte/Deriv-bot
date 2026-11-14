@@ -10,7 +10,7 @@ const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 // Initial historical validation focuses on Volatility 25, the instrument
 // from the user's losing swing-entry example. Expand only after this replay is sound.
 const MARKETS = [["R_25", "Volatility 25 Index"]];
-const REQUESTS = [["M5", 300, 5000], ["M15", 900, 2000], ["H1", 3600, 520], ["H4", 14400, 240], ["D1", 86400, 520]];
+const REQUESTS = [["M5", 300, 10000], ["M15", 900, 4000], ["H1", 3600, 1000], ["H4", 14400, 500], ["D1", 86400, 365]];
 const MAX_HOLD_SECONDS = 7 * 86400;
 const MAX_HOLD_BARS = MAX_HOLD_SECONDS / TIMEFRAMES.M5;
 
@@ -32,15 +32,23 @@ function normalizeCandles(raw, granularity, now) {
   return validCandles(candles) ? candles : [];
 }
 
-// Use the latest uninterrupted segment rather than bridging a missing interval.
-// This preserves the engine's strict no-gap rule without discarding all newer data.
-function latestContinuousSegment(candles, granularity) {
+// Split history at every missing interval. Never let the replay engine bridge a gap.
+function continuousSegments(candles, granularity) {
   if (!Array.isArray(candles) || !candles.length) return [];
+  const segments = [];
   let start = 0;
   for (let i = 1; i < candles.length; i++) {
-    if (candles[i].epoch - candles[i - 1].epoch > granularity * 1.5) start = i;
+    if (candles[i].epoch - candles[i - 1].epoch > granularity * 1.5) {
+      segments.push(candles.slice(start, i));
+      start = i;
+    }
   }
-  return candles.slice(start);
+  segments.push(candles.slice(start));
+  return segments;
+}
+function latestContinuousSegment(candles, granularity) {
+  const segments = continuousSegments(candles, granularity);
+  return segments[segments.length - 1] || [];
 }
 
 // Conservative barrier replay: if SL and TP1 are both touched in one M5
@@ -193,47 +201,56 @@ async function run() {
         continue;
       }
       try {
-        const frames = await fetchMarket(client, symbol, now);
+        const fetchedFrames = await fetchMarket(client, symbol, now);
         const continuity = {};
         const minimumBars = { M5: MAX_HOLD_BARS + 65, M15: 60, H1: 65, H4: 51, D1: 60 };
+        const m5Segments = [];
+        const frames = {};
         let dataReady = true;
         for (const [tf, granularity] of REQUESTS) {
-          const fetched = frames[tf] || [];
+          const fetched = fetchedFrames[tf] || [];
           const check = validateCandleContinuity(fetched, granularity, marketId);
-          const segment = latestContinuousSegment(fetched, granularity);
-          frames[tf] = segment;
+          const segments = continuousSegments(fetched, granularity);
+          const usable = segments.filter(segment => validCandles(segment) && segment.length >= minimumBars[tf]);
           continuity[tf] = {
-            fetchedCandles: fetched.length, candlesUsed: segment.length,
-            valid: segment.length >= minimumBars[tf], gapsInFetchedHistory: check.gaps?.length || 0,
+            fetchedCandles: fetched.length, continuousSegments: segments.length,
+            usableSegments: usable.length, usableCandleCounts: usable.map(segment => segment.length),
+            valid: usable.length > 0, gapsInFetchedHistory: check.gaps?.length || 0,
             gapSamples: (check.gaps || []).slice(0, 3)
           };
-          if (!validCandles(segment) || segment.length < minimumBars[tf]) dataReady = false;
+          if (tf === "M5") m5Segments.push(...usable);
+          else frames[tf] = usable[usable.length - 1] || [];
+          if (!usable.length) dataReady = false;
         }
-        if (!dataReady) {
+        if (!dataReady || !m5Segments.length) {
           report.markets[marketId] = { marketName, symbol, status: "insufficient_or_discontinuous_data", continuity };
           continue;
         }
 
-        const m5 = frames.M5;
-        const lastMatureIndex = m5.length - MAX_HOLD_BARS - 1;
         const outcomes = [];
         const states = {};
-        for (let i = 64; i <= lastMatureIndex; i++) {
-          const signal = evaluateCategory(marketId, marketName, "SWING", frames, i);
-          states[signal.state] = (states[signal.state] || 0) + 1;
-          if (signal.state !== "signal") continue;
-          const outcome = simulateOutcome(signal, m5, i);
-          outcomes.push({
-            signalId: signal.signalId, direction: signal.direction,
-            signalTime: new Date(signal.candleEpoch * 1000).toISOString(),
-            entry: signal.entry, stopLoss: signal.stopLoss, tp1: signal.tp1, tp2: signal.tp2,
-            ...outcome
-          });
+        let replayedM5Bars = 0;
+        for (const m5 of m5Segments) {
+          const lastMatureIndex = m5.length - MAX_HOLD_BARS - 1;
+          replayedM5Bars += Math.max(0, lastMatureIndex - 63);
+          const segmentFrames = { ...frames, M5: m5 };
+          for (let i = 64; i <= lastMatureIndex; i++) {
+            const signal = evaluateCategory(marketId, marketName, "SWING", segmentFrames, i);
+            states[signal.state] = (states[signal.state] || 0) + 1;
+            if (signal.state !== "signal") continue;
+            const outcome = simulateOutcome(signal, m5, i);
+            outcomes.push({
+              signalId: signal.signalId, direction: signal.direction,
+              signalTime: new Date(signal.candleEpoch * 1000).toISOString(),
+              entry: signal.entry, stopLoss: signal.stopLoss, tp1: signal.tp1, tp2: signal.tp2,
+              ...outcome
+            });
+          }
         }
         report.markets[marketId] = {
           marketName, symbol, status: "completed",
           history: continuity,
-          replayedM5Bars: Math.max(0, lastMatureIndex - 63),
+          replayedM5Bars,
           stateCounts: states,
           performance: summarize(outcomes),
           signals: outcomes
@@ -266,4 +283,4 @@ async function run() {
 }
 
 if (require.main === module) run().catch(error => { console.error(JSON.stringify({ event: "historical_replay_failed", message: error.message })); process.exitCode = 1; });
-module.exports = { simulateOutcome, summarize, latestContinuousSegment };
+module.exports = { simulateOutcome, summarize, latestContinuousSegment, continuousSegments };
