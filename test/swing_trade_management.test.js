@@ -10,13 +10,14 @@ function series(count, step, start, direction = "up", startPrice = 100) {
       high: close + 0.1, low: close - 0.1, close };
   });
 }
+const CUTOFF = 1_700_000_000 + 80 * 300;
 function frames(direction = "up", lastM5 = null) {
   const result = {
-    M5: series(80, 300, 1_700_000_000, direction),
-    M15: series(80, 900, 1_700_000_000, direction),
-    H1: series(80, 3600, 1_700_000_000, direction),
-    H4: series(80, 14400, 1_700_000_000, direction),
-    D1: series(80, 86400, 1_700_000_000, direction)
+    M5: series(80, 300, CUTOFF - 80 * 300, direction),
+    M15: series(80, 900, CUTOFF - 80 * 900, direction),
+    H1: series(80, 3600, CUTOFF - 80 * 3600, direction),
+    H4: series(80, 14400, CUTOFF - 80 * 14400, direction),
+    D1: series(80, 86400, CUTOFF - 80 * 86400, direction)
   };
   if (lastM5) result.M5[result.M5.length - 1] = { ...result.M5.at(-1), ...lastM5 };
   return result;
@@ -44,8 +45,8 @@ test("refuses to infer the order when stop and target are touched in the same M5
 
 test("advises an early exit when H1 and M15 both reverse before the original stop", () => {
   const data = frames("up", { open: 104.9, high: 105.1, low: 104.8, close: 105 });
-  data.H1 = series(80, 3600, 1_700_000_000, "down", 130);
-  data.M15 = series(80, 900, 1_700_000_000, "down", 130);
+  data.H1 = series(80, 3600, CUTOFF - 80 * 3600, "down", 130);
+  data.M15 = series(80, 900, CUTOFF - 80 * 900, "down", 130);
   const result = evaluateTradeManagement({ position: position(), candlesByTimeframe: data });
   assert.equal(result.action, "EXIT_EARLY");
   assert.ok(result.currentPrice > 90);
