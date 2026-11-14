@@ -4,7 +4,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { aggregateWeeklyCandles, validCandles, evaluateAllCategories, evaluateRecentSignals } = require("./multi_timeframe_engine");
-const { updateJournal, summarizeJournal } = require("./multi_timeframe_journal");
+const { updateJournal, isReviewableSignal, summarizeJournal } = require("./multi_timeframe_journal");
 const { sendCandidateAlerts } = require("./multi_timeframe_alerts");
 const { reviewSignal } = require("./signal_review");
 
@@ -150,11 +150,12 @@ async function main() {
     });
     fs.writeFileSync(JOURNAL, JSON.stringify(journal, null, 2) + "\n");
     fs.writeFileSync(OUTPUT, JSON.stringify(output, null, 2) + "\n");
-    const reviewRecords = journal.signals.filter(s => s.category !== "SWING" && (s.status === "pending" || s.status === "tp1_hit")).map(signal => {
+    const reviewRecords = journal.signals.filter(isReviewableSignal).map(signal => {
       const market = output.markets[signal.marketId];
       return { signalId: signal.signalId, marketId: signal.marketId, market: signal.market, category: signal.category,
         direction: signal.direction, entry: signal.entry, stopLoss: signal.stopLoss, tp1: signal.tp1, tp2: signal.tp2, tp1Hit: Boolean(signal.tp1Hit), tp1Epoch: signal.tp1Epoch || null,
         entryTimeframe: signal.entryTimeframe, entryCandleEpoch: signal.entryCandleEpoch,
+        reviewMode: signal.category === "SWING" ? "ENTRY_TIMEFRAME_OBSERVATION_ONLY" : "STANDARD",
         review: market ? reviewSignal(signal, market.timeframes, now) : { signalId: signal.signalId, status: "INSUFFICIENT_DATA", headline: "REVIEW UNAVAILABLE", reason: "Market data unavailable." } };
     });
     fs.writeFileSync(REVIEW_DATA, JSON.stringify({ version: 1, generatedAt: output.generatedAt, generatedEpoch: now, advisoryOnly: true, reviews: reviewRecords }, null, 2) + "\n");
