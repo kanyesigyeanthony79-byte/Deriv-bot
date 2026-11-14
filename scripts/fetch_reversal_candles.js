@@ -8,7 +8,7 @@ const ENDPOINT = "wss://api.derivws.com/trading/v1/options/ws/public";
 const MARKETS = ["R_10", "R_25", "R_50", "R_75", "JD100", "CRASH500", "BOOM500"];
 const FRAMES = [60, 300, 900];
 const DAYS = Number(process.env.REPLAY_DAYS || 14);
-const PAGE_SIZE = 5000;
+const PAGE_SIZE = 1000;
 const OUT = path.join(__dirname, "..", "research", "data");
 
 if (!Number.isInteger(DAYS) || DAYS < 7 || DAYS > 30) {
