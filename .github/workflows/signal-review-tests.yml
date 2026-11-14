@@ -31,4 +31,4 @@ jobs:
           node --check multi_timeframe_collector.js
           node --check multi_timeframe_alerts.js
           node --check cloudflare/deriv-telegram-alerts.js
-          node -e "const fs=require('fs');const html=fs.readFileSync('signal-review.html','utf8');const script=html.match(/<script>([\\s\\S]*?)<\\/script>/i);if(!script)throw new Error('No review script');new Function(script[1]);console.log('Review page script syntax OK')"
+          node -e "const fs=require('fs');for(const file of ['signal-review.html','index.html']){const html=fs.readFileSync(file,'utf8');const script=html.match(/<script>([\\s\\S]*?)<\\/script>/i);if(!script)throw new Error('No script in '+file);new Function(script[1]);console.log(file+' script syntax OK')}"
