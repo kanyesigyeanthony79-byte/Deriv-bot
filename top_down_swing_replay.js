@@ -8,8 +8,9 @@ function signedR(signal, price) {
   return (signal.direction === "BUY" ? price - signal.entry : signal.entry - price) / signal.riskDistance;
 }
 function simulateOutcome(signal, m5, policy = "fixed") {
-  const future = (m5 || []).filter(c => c.epoch > signal.entryEpoch && c.epoch + M5_SECONDS <= signal.entryEpoch + MAX_AGE);
-  if (!future.length || future[future.length - 1].epoch + M5_SECONDS < signal.entryEpoch + MAX_AGE)
+  const entryCloseEpoch = Number.isFinite(signal.decisionEpoch) ? signal.decisionEpoch : signal.entryEpoch;
+  const future = (m5 || []).filter(c => c.epoch >= entryCloseEpoch && c.epoch + M5_SECONDS <= entryCloseEpoch + MAX_AGE);
+  if (!future.length || future[future.length - 1].epoch + M5_SECONDS < entryCloseEpoch + MAX_AGE)
     return { status: "censored", policy };
   const tp1 = signal.entry + (signal.direction === "BUY" ? 1 : -1) * signal.riskDistance * 1.5;
   const tp2 = signal.entry + (signal.direction === "BUY" ? 1 : -1) * signal.riskDistance * 2.5;
@@ -45,7 +46,7 @@ function simulateOutcome(signal, m5, policy = "fixed") {
     }
   }
   return { status, policy, realisedR: Number(realisedR.toFixed(4)), mfeR: Number(mfe.toFixed(4)),
-    maeR: Number(mae.toFixed(4)), durationHours: exitEpoch ? (exitEpoch - signal.entryEpoch) / 3600 : null,
+    maeR: Number(mae.toFixed(4)), durationHours: exitEpoch ? (exitEpoch - entryCloseEpoch) / 3600 : null,
     exitEpoch, partialTaken: partial };
 }
 function thesisKey(signal) {
@@ -85,7 +86,7 @@ function runReplay(snapshot, options = {}) {
         const h1 = frames.H1 || [], h4 = frames.H4 || [];
         for (const candle of h1) {
           const at = candle.epoch + 3600;
-          if (at <= signal.entryEpoch || at > signal.entryEpoch + MAX_AGE) continue;
+          if (at <= (signal.decisionEpoch ?? signal.entryEpoch) || at > (signal.decisionEpoch ?? signal.entryEpoch) + MAX_AGE) continue;
           for (const event of managementAdvisories(signal, { H1: h1, H4: h4 }, at)) advisoryTypes.add(event.type);
         }
         return { signal, fixed, partial, advisoryTypes: [...advisoryTypes] };
