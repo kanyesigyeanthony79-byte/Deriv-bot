@@ -134,13 +134,14 @@ async function fetchHistory(client, symbol, granularity, requestedCount, now) {
     });
     const batch = normalizeCandles(reply.candles, granularity, now);
     if (!batch.length) break;
+    const previousSize = byEpoch.size;
     for (const candle of batch) byEpoch.set(candle.epoch, candle);
+    if (byEpoch.size === previousSize) break;
     const oldest = batch[0].epoch;
     const nextEnd = oldest - 1;
     if (typeof end === "number" && nextEnd >= end) break;
     end = nextEnd;
     pages++;
-    if (batch.length < count) break;
   }
   return [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch).slice(-requestedCount);
 }
