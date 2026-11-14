@@ -40,4 +40,4 @@ After connecting to the verified demo account, call `initializeBaselineFromVerif
 node --test test/account_risk.test.js test/deriv_demo_adapter.test.js test/deriv_demo_connection.test.js test/demo_execution_manager.test.js
 ```
 
-Passing unit tests do not prove profitability, live API compatibility, or permission to enable automated demo execution. This PR must remain unmerged and disabled until authenticated demo validation, replay evidence, and supervised soak testing are complete.
+Passing unit tests do not prove profitability, live API compatibility, or permission to enable automated demo execution. The stacked PR inherits the risk/adapter CI definitions from its base branch so these tests can run on pull-request updates. This PR must remain unmerged and disabled until authenticated demo validation, replay evidence, and supervised soak testing are complete.
