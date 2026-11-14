@@ -92,6 +92,11 @@ function runReplay(snapshot, options = {}) {
       });
       const scored = results.filter(r => r.fixed.status !== "censored");
       const avg = values => values.length ? Number((values.reduce((a,b)=>a+b,0)/values.length).toFixed(4)) : null;
+      const median = values => {
+        if (!values.length) return null;
+        const sorted = [...values].sort((a,b)=>a-b), mid = Math.floor(sorted.length / 2);
+        return Number((sorted.length % 2 ? sorted[mid] : (sorted[mid-1] + sorted[mid]) / 2).toFixed(4));
+      };
       candidates[variant] = {
         candidateCount: signals.length, scoredCount: scored.length,
         censoredCount: results.length - scored.length,
@@ -99,7 +104,7 @@ function runReplay(snapshot, options = {}) {
         outcomesPartial: Object.fromEntries(["tp2_hit","stopped","stopped_after_tp1","ambiguous","expired"].map(s => [s, scored.filter(r => r.partial.status === s).length])),
         averageFixedR: avg(scored.map(r => r.fixed.realisedR)),
         averagePartialR: avg(scored.map(r => r.partial.realisedR)),
-        medianMfeR: avg(scored.map(r => r.fixed.mfeR).sort((a,b)=>a-b).slice(Math.floor(scored.length/2))),
+        medianMfeR: median(scored.map(r => r.fixed.mfeR)),
         averageMaeR: avg(scored.map(r => r.fixed.maeR)),
         advisoryCounts: Object.fromEntries(["HOLD_STRUCTURE_INTACT","BREAK_EVEN_REVIEW","TRAILING_PROTECTION_REVIEW",
           "PARTIAL_PROFIT_REVIEW","STRUCTURE_DETERIORATION_WARNING","EARLY_LOSS_REVIEW"].map(type =>
