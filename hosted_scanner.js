@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { evaluate, DEF } = require("./engine");
 const { journalOutcome: recordJournalOutcome, reconcileJournalState, markExpired } = require("./signal_journal");
+const { dailySummary, buildDailySummaryMessage, previousUgandaDay } = require("./daily_summary");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const GRANULARITY = 900;
@@ -63,45 +64,32 @@ function journalStatus(signalId, status, reason) {
   const entry = findJournalSignal(signalId);
   if (entry && entry.status === "detected") { entry.status = status; if (reason) entry.statusReason = reason; saveJournal(); }
 }
-function dailySummary(day) {
-  const rows = journal.signals.filter(s => s.localDate === day);
-  const sent = rows.filter(s => s.status === "sent").length;
-  const missed = rows.filter(s => ["suppressed","stale","delivery_failed"].includes(s.status)).length;
-  const tp1 = rows.filter(s => s.tp1Hit).length;
-  const tp2 = rows.filter(s => s.tp2Hit).length;
-  const sl = rows.filter(s => s.finalOutcome === "SL" || s.finalOutcome === "SL_AFTER_TP1").length;
-  const expired = rows.filter(s => s.finalOutcome === "EXPIRED").length;
-  const ambiguous = rows.filter(s => s.finalOutcome === "AMBIGUOUS").length;
-  const unresolved = rows.filter(s => s.status === "sent" && !s.finalOutcome).length;
-  const byMarket = MARKETS.map(([id,name]) => {
-    const m = rows.filter(s => s.marketId === id);
-    return name + ": " + m.length + " generated, " + m.filter(s=>s.finalOutcome==="TP2").length + " TP2, " + m.filter(s=>s.finalOutcome==="SL"||s.finalOutcome==="SL_AFTER_TP1").length + " SL";
-  }).filter((_,i)=>rows.some(s=>s.marketId===MARKETS[i][0]));
-  return {day,generated:rows.length,sent,missed,tp1,tp2,sl,expired,ambiguous,unresolved,byMarket};
-}
 async function maybeSendDailySummary(now) {
-  const localNow = new Date(now * 1000).toLocaleString("en-GB",{timeZone:"Africa/Kampala",hour:"2-digit",minute:"2-digit",hour12:false});
-  const [hour,minute] = localNow.split(":").map(Number);
-  if (hour !== 0 || minute > 9) return;
-  const today = localDate(now);
-  const yesterday = new Date(Date.parse(today + "T00:00:00Z") - 86400000).toISOString().slice(0,10);
-  if (journal.dailyReports[yesterday]) return;
-  const s = dailySummary(yesterday);
-  const message = "DAILY DERIV SIGNAL REPORT (" + yesterday + ")\n" +
-    "Generated: " + s.generated + "\nSent to Telegram: " + s.sent + "\nMissed / not sent: " + s.missed +
-    "\nTP1 hit: " + s.tp1 + "\nTP2 hit: " + s.tp2 + "\nSL hit: " + s.sl +
-    "\nExpired: " + s.expired + "\nAmbiguous: " + s.ambiguous + "\nStill open/unresolved: " + s.unresolved +
-    (s.byMarket.length ? "\n\nBY MARKET\n" + s.byMarket.join("\n") : "");
+  // Retry the previous Uganda calendar day's report on every scanner cycle until delivery succeeds.
+  // A successful Telegram response is persisted in the journal to prevent routine duplicate reports.
+  const reportDay = previousUgandaDay(now);
+  if (journal.dailyReports[reportDay]?.delivered) return;
+  const summary = dailySummary(journal.signals, reportDay, MARKETS);
+  const message = buildDailySummaryMessage(summary);
   try {
-    await postTelegram({event:"daily_summary", message, text:message});
-    journal.dailyReports[yesterday] = {attemptedAt:new Date(now*1000).toISOString(), delivered:true, stats:s};
+    await postTelegram({ event: "daily_summary", message, text: message });
+    journal.dailyReports[reportDay] = {
+      attemptedAt: new Date(now * 1000).toISOString(),
+      delivered: true,
+      stats: summary
+    };
     saveJournal();
-    log("daily_summary_delivered",{day:yesterday,generated:s.generated,sent:s.sent,tp1:s.tp1,tp2:s.tp2,sl:s.sl});
-  } catch(error) {
-    log("daily_summary_delivery_failed",{day:yesterday,message:error.message,note:"Telegram Worker may need daily_summary event support"});
+    log("daily_summary_delivered", {
+      day: reportDay, generated: summary.generated, sent: summary.sent,
+      wins: summary.wins, losses: summary.losses, winRate: summary.winRate
+    });
+  } catch (error) {
+    log("daily_summary_delivery_failed", {
+      day: reportDay, message: error.message,
+      note: "The report will be retried on the next scanner cycle."
+    });
   }
 }
-
 
 function connect(url) {
   return new Promise((resolve, reject) => {
