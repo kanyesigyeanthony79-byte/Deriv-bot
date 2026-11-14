@@ -1,0 +1,33 @@
+name: Demo Scalper Adapter Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "deriv_demo_adapter.js"
+      - "account_risk.js"
+      - "test/deriv_demo_adapter.test.js"
+      - ".github/workflows/demo-scalper-adapter-tests.yml"
+  push:
+    branches: [feat/demo-account-aware-scalper]
+    paths:
+      - "deriv_demo_adapter.js"
+      - "account_risk.js"
+      - "test/deriv_demo_adapter.test.js"
+      - ".github/workflows/demo-scalper-adapter-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check syntax
+        run: node --check deriv_demo_adapter.js
+      - name: Run adapter tests
+        run: node --test test/deriv_demo_adapter.test.js test/account_risk.test.js
