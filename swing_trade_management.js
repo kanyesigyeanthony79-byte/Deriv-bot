@@ -36,7 +36,7 @@ function barrierTouches(position, candle) {
   };
 }
 
-function makeTrailingStop(position, m15Candles, currentPrice) {
+function makeTrailingStop(position, m15Candles, currentPrice, requireProfitProtection = false) {
   const lookback = m15Candles.slice(-CONFIG.trailingLookbackM15);
   if (lookback.length < CONFIG.trailingLookbackM15) return null;
   const volatility = atr(m15Candles, 14);
@@ -46,8 +46,10 @@ function makeTrailingStop(position, m15Candles, currentPrice) {
     ? Math.min(...lookback.map(c => c.low)) - buffer
     : Math.max(...lookback.map(c => c.high)) + buffer;
   if (position.direction === "BUY") {
-    if (candidate <= position.stopLoss || candidate >= currentPrice) return null;
-  } else if (candidate >= position.stopLoss || candidate <= currentPrice) {
+    if (candidate <= position.stopLoss || candidate >= currentPrice ||
+        (requireProfitProtection && candidate <= position.entry)) return null;
+  } else if (candidate >= position.stopLoss || candidate <= currentPrice ||
+      (requireProfitProtection && candidate >= position.entry)) {
     return null;
   }
   return Number(candidate.toFixed(priceDigits(position.entry)));
@@ -154,8 +156,10 @@ function evaluateTradeManagement({ position, candlesByTimeframe }) {
   const lowerTimeframeReversal = h1 === opposite && m15 === opposite;
   const higherTimeframeInvalidation = h4 === opposite && d1 === opposite;
 
-  if (lowerTimeframeReversal || higherTimeframeInvalidation) {
-    return recommendation("EXIT_EARLY", "The trade direction is contradicted by both H1/M15 or by both H4/D1. Consider exiting before the original stop-loss.", {
+  // A confirmed higher-timeframe reversal invalidates the swing thesis even
+  // when the position is currently profitable.
+  if (higherTimeframeInvalidation) {
+    return recommendation("EXIT_EARLY", "Both H4 and D1 now oppose the position, invalidating the larger swing thesis.", {
       currentPrice, favorableR: rNow, biases: { M15: m15, H1: h1, H4: h4, D1: d1 }, candleEpoch: latestM5.epoch
     });
   }
@@ -165,13 +169,22 @@ function evaluateTradeManagement({ position, candlesByTimeframe }) {
     if (rNow >= CONFIG.breakEvenAtR) extra.suggestedStopLoss = position.direction === "BUY"
       ? Math.max(position.stopLoss, position.entry)
       : Math.min(position.stopLoss, position.entry);
-    return recommendation("PARTIAL_PROFIT_EARLY", "The trade is in profit and one lower timeframe is weakening. Consider banking part of the gain before the full TP1 target.", extra);
+    return recommendation("PARTIAL_PROFIT_EARLY", "The trade is in profit and a lower timeframe is weakening. Consider banking part while keeping the larger swing thesis under review.", extra);
   }
 
-  if (rNow >= CONFIG.trailingActivationAtR && position.partialTaken === true) {
-    const trailingStop = makeTrailingStop(position, frames.M15, currentPrice);
+  // A lower-timeframe reversal can justify an early exit while the trade is
+  // losing. For a winner, preserve the runner unless H4 and D1 also reverse.
+  if (lowerTimeframeReversal && rNow < 0) {
+    return recommendation("EXIT_EARLY", "H1 and M15 both oppose the position while it is losing. Consider reducing the loss before the original stop.", {
+      currentPrice, favorableR: rNow, biases: { M15: m15, H1: h1, H4: h4, D1: d1 }, candleEpoch: latestM5.epoch
+    });
+  }
+
+  if (position.partialTaken === true && rNow >= 0.5 &&
+      (lowerTimeframeReversal || rNow >= CONFIG.trailingActivationAtR)) {
+    const trailingStop = makeTrailingStop(position, frames.M15, currentPrice, true);
     if (trailingStop !== null) {
-      return recommendation("TRAIL_PROTECT_PROFIT", "Price has progressed beyond the first reward threshold. Consider tightening protection behind recent completed M15 structure.", {
+      return recommendation("TRAIL_PROTECT_PROFIT", "Protect the profitable remainder behind completed M15 structure without closing the runner solely because lower timeframes weakened.", {
         currentPrice, favorableR: rNow, suggestedStopLoss: trailingStop, biases: { M15: m15, H1: h1, H4: h4, D1: d1 }, candleEpoch: latestM5.epoch
       });
     }
