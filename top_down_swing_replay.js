@@ -138,7 +138,13 @@ function runReplay(snapshot, options = {}) {
     report.summary[variant] = {
       candidateCount: rows.reduce((n,r)=>n+r.candidateCount,0),
       scoredCount: rows.reduce((n,r)=>n+r.scoredCount,0),
-      averageFixedR: (() => { const v=rows.filter(r=>r.averageFixedR!==null).map(r=>r.averageFixedR); return v.length ? Number((v.reduce((a,b)=>a+b,0)/v.length).toFixed(4)) : null; })(),
+      averageFixedR: (() => {
+        const n = rows.reduce((sum, r) => sum + r.scoredCount, 0);
+        const total = rows.reduce((sum, r) => sum + (r.averageFixedR === null ? 0 : r.averageFixedR * r.scoredCount), 0);
+        return n ? Number((total / n).toFixed(4)) : null;
+      })(),
+      outcomesFixed: Object.fromEntries(["tp2_hit","stopped","ambiguous","expired"].map(status =>
+        [status, rows.reduce((sum, r) => sum + r.outcomesFixed[status], 0)])),
       marketsIncluded: rows.length
     };
   }
