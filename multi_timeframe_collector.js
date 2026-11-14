@@ -153,7 +153,7 @@ async function main() {
     const reviewRecords = journal.signals.filter(s => s.category !== "SWING" && (s.status === "pending" || s.status === "tp1_hit")).map(signal => {
       const market = output.markets[signal.marketId];
       return { signalId: signal.signalId, marketId: signal.marketId, market: signal.market, category: signal.category,
-        direction: signal.direction, entry: signal.entry, stopLoss: signal.stopLoss, tp1: signal.tp1, tp2: signal.tp2,
+        direction: signal.direction, entry: signal.entry, stopLoss: signal.stopLoss, tp1: signal.tp1, tp2: signal.tp2, tp1Hit: Boolean(signal.tp1Hit), tp1Epoch: signal.tp1Epoch || null,
         entryTimeframe: signal.entryTimeframe, entryCandleEpoch: signal.entryCandleEpoch,
         review: market ? reviewSignal(signal, market.timeframes, now) : { signalId: signal.signalId, status: "INSUFFICIENT_DATA", headline: "REVIEW UNAVAILABLE", reason: "Market data unavailable." } };
     });
