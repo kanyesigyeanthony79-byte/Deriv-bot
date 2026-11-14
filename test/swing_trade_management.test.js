@@ -43,7 +43,7 @@ test("refuses to infer the order when stop and target are touched in the same M5
 });
 
 test("advises an early exit when H1 and M15 both reverse before the original stop", () => {
-  const data = frames("up");
+  const data = frames("up", { open: 104.9, high: 105.1, low: 104.8, close: 105 });
   data.H1 = series(80, 3600, 1_700_000_000, "down", 130);
   data.M15 = series(80, 900, 1_700_000_000, "down", 130);
   const result = evaluateTradeManagement({ position: position(), candlesByTimeframe: data });
