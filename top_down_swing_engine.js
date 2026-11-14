@@ -69,9 +69,12 @@ function evaluateTopDown(marketId, candlesByTimeframe, decisionEpoch, variant = 
   const entryCutoff = entryCandle.epoch + TF[entryTimeframe];
   const frames = {};
   for (const tf of Object.keys(TF)) {
-    frames[tf] = completed(candlesByTimeframe && candlesByTimeframe[tf], tf, entryCutoff);
-    if (frames[tf].length && !validCandles(frames[tf]))
+    const raw = candlesByTimeframe && candlesByTimeframe[tf];
+    if (Array.isArray(raw) && raw.length >= 2 && !validCandles(raw))
       return result("invalid_data", "Candles must be valid OHLC, oldest first, with unique increasing epochs.", { timeframe: tf });
+    frames[tf] = completed(raw, tf, entryCutoff);
+    if (frames[tf].length && !validCandles(frames[tf]))
+      return result("invalid_data", "Completed candles must be valid OHLC, oldest first, with unique increasing epochs.", { timeframe: tf });
   }
   for (const tf of ["D1", "H4", "H1"]) {
     if (frames[tf].length < 12)
@@ -160,6 +163,11 @@ function managementAdvisories(signal, candlesByTimeframe, decisionEpoch) {
   if (h1.some(c => signal.direction === "BUY" ? c.high >= target : c.low <= target) && lastH1)
     events.push({ type: "PARTIAL_PROFIT_REVIEW", epoch: lastH1.epoch, timeframe: "H1",
       reason: "TP1 reference was reached on a completed H1 candle; review partial profit and the remaining swing thesis." });
+  if (lastH1) {
+    const crossed = signal.direction === "BUY" ? lastH1.close < signal.stopLoss : lastH1.close > signal.stopLoss;
+    if (crossed) events.push({ type: "EARLY_LOSS_REVIEW", epoch: lastH1.epoch, timeframe: "H1",
+      reason: "Completed H1 close has crossed structural invalidation; review early exit rather than waiting mechanically for the stop." });
+  }
   if (lastH1 && lastH4) {
     const h1s = structure(h1, "H1", decisionEpoch), h4s = structure(h4, "H4", decisionEpoch);
     if ([h1s, h4s].some(s => ["BUY", "SELL"].includes(s.direction) && s.direction !== signal.direction))
@@ -168,9 +176,6 @@ function managementAdvisories(signal, candlesByTimeframe, decisionEpoch) {
     else if (h1s.direction === signal.direction && h4s.direction === signal.direction)
       events.push({ type: "HOLD_STRUCTURE_INTACT", epoch: lastH1.epoch, timeframe: "H1/H4",
         reason: "Completed H1 and H4 swing structure still supports the thesis; holding remains consistent with the plan." });
-    const crossed = signal.direction === "BUY" ? lastH1.close < signal.stopLoss : lastH1.close > signal.stopLoss;
-    if (crossed) events.push({ type: "EARLY_LOSS_REVIEW", epoch: lastH1.epoch, timeframe: "H1",
-      reason: "Completed H1 close has crossed structural invalidation; review early exit rather than waiting mechanically for the stop." });
   }
   return events.filter((e, i, all) => all.findIndex(x => x.type === e.type) === i);
 }
