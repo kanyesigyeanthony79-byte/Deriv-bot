@@ -8,6 +8,8 @@ on:
       - "hosted_scanner.js"
       - "index.html"
       - "signal_journal.js"
+      - "daily_summary.js"
+      - "test/daily_summary.test.js"
       - "test/signal_journal.test.js"
       - ".github/workflows/hosted-scanner-tests.yml"
   push:
@@ -39,4 +41,4 @@ jobs:
       - name: Check syntax
         run: node --check hosted_scanner.js && node --check signal_journal.js
       - name: Run journal tests
-        run: node --test test/signal_journal.test.js
+        run: node --test test/signal_journal.test.js test/daily_summary.test.js
