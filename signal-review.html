@@ -22,7 +22,7 @@
   if(!record){el.innerHTML='<div class="status warn">No active review record found</div><p class="muted">This signal may have expired or reached a terminal outcome. Refresh the dashboard and check the journal status.</p><div class="muted">Signal: '+esc(id)+'</div>';return;}
   const r=record.review||{},status=String(r.status||"UNAVAILABLE"),tone=["THESIS_INTACT","TP1_LEVEL_TOUCHED","TP2_LEVEL_TOUCHED"].includes(status)?"ok":["STOP_LEVEL_TOUCHED","THESIS_WEAKENING"].includes(status)?"bad":"warn";
   const stamp=data.generatedAt?new Date(data.generatedAt).toLocaleString():"Unknown";
-  el.innerHTML='<div class="status '+tone+'">'+esc(r.headline||"REVIEW UNAVAILABLE")+'</div><div class="muted">'+esc(r.reason||"No assessment details returned.")+'</div><div class="grid">'+
+  el.innerHTML='<div class="status '+tone+'">'+esc(r.headline||"REVIEW UNAVAILABLE")+'</div><div class="muted">'+esc(r.reason||"No assessment details returned.")+'</div>'+(record.tp1Hit?'<div class="notice">TP1 was reached earlier in this signal. Review whether protecting open profit is appropriate; no break-even or stop adjustment is made automatically.</div>':'')+'<div class="grid">'+
    '<div class="item"><div class="label">Market / category</div><div class="value">'+esc(record.market)+' · '+esc(record.category)+'</div></div>'+
    '<div class="item"><div class="label">Original direction</div><div class="value">'+esc(record.direction)+'</div></div>'+
    '<div class="item"><div class="label">Current observed price</div><div class="value">'+num(r.currentPrice)+'</div></div>'+
