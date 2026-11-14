@@ -1,0 +1,162 @@
+"use strict";
+
+// Research-only public candle capture. No authentication, account access, or orders.
+const fs = require("node:fs");
+const path = require("node:path");
+
+const ENDPOINT = "wss://api.derivws.com/trading/v1/options/ws/public";
+const MARKETS = ["R_10", "R_25", "R_50", "R_75", "JD100", "CRASH500", "BOOM500"];
+const FRAMES = [60, 300, 900];
+const DAYS = Number(process.env.REPLAY_DAYS || 14);
+const PAGE_SIZE = 5000;
+const OUT = path.join(__dirname, "..", "research", "data");
+
+if (!Number.isInteger(DAYS) || DAYS < 7 || DAYS > 30) {
+  throw new Error("REPLAY_DAYS must be an integer from 7 to 30.");
+}
+
+function connect() {
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(ENDPOINT);
+    const pending = new Map();
+    let nextId = 0;
+    const timeout = setTimeout(() => {
+      try { ws.close(); } catch {}
+      reject(new Error("Public Deriv WebSocket connection timed out."));
+    }, 20000);
+
+    ws.addEventListener("open", () => {
+      clearTimeout(timeout);
+      ws.addEventListener("message", event => {
+        let data;
+        try { data = JSON.parse(String(event.data)); } catch { return; }
+        const id = data.req_id;
+        if (!pending.has(id)) return;
+        const item = pending.get(id);
+        pending.delete(id);
+        clearTimeout(item.timer);
+        if (data.error) item.reject(new Error(data.error.message || "Deriv API error"));
+        else item.resolve(data);
+      });
+      ws.addEventListener("close", () => {
+        for (const item of pending.values()) {
+          clearTimeout(item.timer);
+          item.reject(new Error("Deriv WebSocket closed during candle capture."));
+        }
+        pending.clear();
+      });
+      resolve({
+        ask(payload) {
+          return new Promise((res, rej) => {
+            const req_id = ++nextId;
+            const timer = setTimeout(() => {
+              pending.delete(req_id);
+              rej(new Error("Deriv candle request timed out."));
+            }, 30000);
+            pending.set(req_id, { resolve: res, reject: rej, timer });
+            ws.send(JSON.stringify({ ...payload, req_id }));
+          });
+        },
+        close() { try { ws.close(); } catch {} }
+      });
+    });
+    ws.addEventListener("error", () => {
+      clearTimeout(timeout);
+      reject(new Error("Could not connect to Deriv public market-data endpoint."));
+    }, { once: true });
+  });
+}
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+async function fetchFrame(client, symbol, granularity, startEpoch, snapshotEpoch) {
+  const byEpoch = new Map();
+  let end = "latest";
+  let oldestSeen = Infinity;
+  for (let page = 0; page < 20; page++) {
+    const reply = await client.ask({
+      ticks_history: symbol,
+      style: "candles",
+      granularity,
+      count: PAGE_SIZE,
+      start: startEpoch,
+      end,
+      adjust_start_time: 1
+    });
+    if (!Array.isArray(reply.candles) || reply.candles.length === 0) break;
+
+    let pageOldest = Infinity;
+    for (const raw of reply.candles) {
+      const epoch = Number(raw.epoch);
+      const candle = {
+        epoch,
+        open: Number(raw.open),
+        high: Number(raw.high),
+        low: Number(raw.low),
+        close: Number(raw.close),
+        complete: epoch + granularity <= snapshotEpoch
+      };
+      if (!Number.isFinite(epoch) ||
+          ![candle.open, candle.high, candle.low, candle.close].every(Number.isFinite) ||
+          candle.high < Math.max(candle.open, candle.close) ||
+          candle.low > Math.min(candle.open, candle.close) ||
+          candle.high <= candle.low) {
+        throw new Error(`Invalid OHLC candle returned for ${symbol} M${granularity / 60}.`);
+      }
+      pageOldest = Math.min(pageOldest, epoch);
+      if (epoch >= startEpoch && epoch + granularity <= snapshotEpoch) byEpoch.set(epoch, candle);
+    }
+
+    if (!Number.isFinite(pageOldest) || pageOldest <= startEpoch || pageOldest >= oldestSeen) break;
+    oldestSeen = pageOldest;
+    end = String(pageOldest - 1);
+    await sleep(250);
+  }
+
+  const candles = [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch);
+  if (candles.length < Math.floor((DAYS * 86400) / granularity * 0.9)) {
+    throw new Error(`Insufficient ${symbol} M${granularity / 60} history: received ${candles.length} candles.`);
+  }
+  for (let i = 1; i < candles.length; i++) {
+    if (candles[i].epoch <= candles[i - 1].epoch) throw new Error("Candle timestamps are not strictly increasing.");
+  }
+  return candles;
+}
+
+async function main() {
+  const snapshotEpoch = Math.floor(Date.now() / 1000);
+  const startEpoch = snapshotEpoch - DAYS * 86400;
+  fs.mkdirSync(OUT, { recursive: true });
+  const client = await connect();
+  try {
+    const symbolsReply = await client.ask({ active_symbols: "brief" });
+    const active = new Set((symbolsReply.active_symbols || []).map(item => item.symbol));
+    for (const market of MARKETS) {
+      if (!active.has(market)) throw new Error(`Market ${market} was not confirmed in active_symbols.`);
+      const frames = {};
+      for (const granularity of FRAMES) {
+        frames[`M${granularity / 60}`] = await fetchFrame(client, market, granularity, startEpoch, snapshotEpoch);
+        console.log(`${market} M${granularity / 60}: ${frames[`M${granularity / 60}`].length} completed candles`);
+      }
+      const payload = {
+        schemaVersion: 1,
+        market,
+        source: "Deriv public ticks_history candles",
+        endpoint: ENDPOINT,
+        capturedAt: new Date(snapshotEpoch * 1000).toISOString(),
+        requestedDays: DAYS,
+        startEpoch,
+        snapshotEpoch,
+        frames
+      };
+      fs.writeFileSync(path.join(OUT, `${market}.json`), JSON.stringify(payload, null, 2) + "\n");
+    }
+  } finally {
+    client.close();
+  }
+}
+
+main().catch(error => {
+  console.error(error.message);
+  process.exitCode = 1;
+});
