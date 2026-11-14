@@ -186,8 +186,15 @@ function managementAdvisories(signal, candlesByTimeframe, decisionEpoch) {
       reason: "TP1 reference was reached on a completed H1 candle; review partial profit and the remaining swing thesis." });
   if (lastH1) {
     const crossed = signal.direction === "BUY" ? lastH1.close < signal.stopLoss : lastH1.close > signal.stopLoss;
-    if (crossed) events.push({ type: "EARLY_LOSS_REVIEW", epoch: lastH1.epoch, timeframe: "H1",
-      reason: "Completed H1 close has crossed structural invalidation; review early exit rather than waiting mechanically for the stop." });
+    const adverseClose = signal.direction === "BUY" ? lastH1.close < signal.entry : lastH1.close > signal.entry;
+    const remainingToStop = signal.direction === "BUY" ? lastH1.close - signal.stopLoss : signal.stopLoss - lastH1.close;
+    const currentH1Atr = atr(h1);
+    const approaching = adverseClose && currentH1Atr > 0 && remainingToStop > 0 &&
+      remainingToStop <= currentH1Atr * 0.5;
+    if (crossed || approaching) events.push({ type: "EARLY_LOSS_REVIEW", epoch: lastH1.epoch, timeframe: "H1",
+      reason: crossed
+        ? "Completed H1 close has crossed structural invalidation; review exit rather than waiting mechanically for the stop."
+        : "Adverse H1 close is within 0.5 H1 ATR of structural invalidation; review an early exit before the stop is reached." });
   }
   if (lastH1 && lastH4) {
     const h1s = structure(h1, "H1", decisionEpoch), h4s = structure(h4, "H4", decisionEpoch);
