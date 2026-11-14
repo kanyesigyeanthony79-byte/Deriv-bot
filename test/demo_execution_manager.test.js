@@ -161,3 +161,10 @@ test("refuses to enable entries without a position exit policy", async () => {
   assert.equal(result.reason, "position_management_and_exit_policy_required_before_entries");
   assert.equal(adapter.calls.some(c => c.open), false);
 });
+
+test("rejects Gold in the execution symbol allowlist at construction", () => {
+  const adapter = makeAdapter();
+  assert.throws(() => new DemoExecutionManager({
+    adapter, baselineStore: makeStore(baseline), allowedSymbols: ["R_50", "frxXAUUSD"]
+  }), /non_approved_synthetic_symbol/);
+});
