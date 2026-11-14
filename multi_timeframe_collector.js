@@ -142,6 +142,10 @@ async function main() {
 
     const priorJournal = fs.existsSync(JOURNAL) ? JSON.parse(fs.readFileSync(JOURNAL, "utf8")) : { version: 1, signals: [] };
     const journal = updateJournal(priorJournal, output.markets, now);
+    const alertSummary = await sendCandidateAlerts(output.markets, journal, now, process.env, {
+      log,
+      persist: current => fs.writeFileSync(JOURNAL, JSON.stringify(current, null, 2) + "\n")
+    });
     fs.writeFileSync(JOURNAL, JSON.stringify(journal, null, 2) + "\n");
     fs.writeFileSync(OUTPUT, JSON.stringify(output, null, 2) + "\n");
     const total = Object.values(output.markets).reduce((sum, m) =>
