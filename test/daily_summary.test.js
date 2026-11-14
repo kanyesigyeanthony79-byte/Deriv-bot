@@ -54,3 +54,23 @@ test("empty day produces zero counts and an undefined win rate", () => {
   assert.equal(summary.netSignalOutcomes, 0);
   assert.deepEqual(summary.byMarket, []);
 });
+
+test("daily report includes legacy and non-swing MTF maximum favourable movement", () => {
+  const legacy = [{ localDate: "2026-11-13", marketId: "R_50", market: "Volatility 50 Index",
+    direction: "BUY", status: "sent", maxFavourablePoints: 18.4, maxFavourablePct: 0.74 }];
+  const mtf = [
+    { signalId: "a", category: "SCALP", market: "Volatility 25 Index", direction: "SELL",
+      entryTimeframe: "M1", entryCandleEpoch: Date.parse("2026-11-13T10:00:00Z") / 1000,
+      maxFavourablePoints: 22, maxFavourablePct: 1.1 },
+    { signalId: "b", category: "SWING", market: "Jump 100 Index", direction: "BUY",
+      entryTimeframe: "M5", entryCandleEpoch: Date.parse("2026-11-13T10:00:00Z") / 1000,
+      maxFavourablePoints: 90, maxFavourablePct: 2.0 }
+  ];
+  const summary = dailySummary(legacy, "2026-11-13", markets, mtf);
+  assert.equal(summary.mfeCount, 2);
+  assert.equal(summary.mfeTop[0].category, "SCALP");
+  const message = buildDailySummaryMessage(summary);
+  assert.match(message, /MAX FAVOURABLE MOVEMENT/);
+  assert.match(message, /Volatility 25 Index SELL/);
+  assert.doesNotMatch(message, /SWING/);
+});
