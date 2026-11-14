@@ -70,8 +70,21 @@ async function fetchCandleHistory(client, symbol, granularity, requestedCount, n
   let previousOldest = Infinity;
   while (byEpoch.size < requestedCount) {
     const count = Math.min(pageSize, requestedCount - byEpoch.size);
-    const reply = await client.ask({ ticks_history: symbol, adjust_start_time: 1, count,
-      end, granularity, style: "candles" });
+    let reply;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        reply = await client.ask({ ticks_history: symbol, adjust_start_time: 1, count,
+          end, granularity, style: "candles" }, 45000);
+        break;
+      } catch (error) {
+        const rateLimited = /rate limit|ticks_history_expensive/i.test(error.message || "");
+        if (!rateLimited || attempt >= 4) throw error;
+        const delayMs = Math.min(30000, 5000 * (2 ** attempt));
+        console.warn(JSON.stringify({ event: "backfill_rate_limit_retry", symbol, granularity,
+          attempt: attempt + 1, delayMs, message: error.message }));
+        await sleep(delayMs);
+      }
+    }
     const page = normalizeCandles(reply.candles, granularity, now);
     if (!page.length) break;
     const oldest = page[0].epoch;
@@ -79,7 +92,7 @@ async function fetchCandleHistory(client, symbol, granularity, requestedCount, n
     for (const candle of page) byEpoch.set(candle.epoch, candle);
     previousOldest = oldest;
     end = String(oldest - 1);
-    await sleep(100);
+    await sleep(500);
   }
   return [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch).slice(-requestedCount);
 }
@@ -115,7 +128,7 @@ async function main() {
           market.errors.push({ timeframe, message: detail.message });
           console.error(JSON.stringify({ event: "backfill_frame_error", ...detail }));
         }
-        await sleep(150);
+        await sleep(1000);
       }
       output.markets[marketId] = market;
       if (market.errors.length) output.errors.push(...market.errors.map(e => ({ marketId, ...e })));
