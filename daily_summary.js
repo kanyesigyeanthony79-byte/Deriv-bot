@@ -45,7 +45,7 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
     mfeCount: movementRows.length, mfeTop: movementRows.slice(0, 12) };
 }
 
-function buildDailySummaryMessage(summary) {
+function buildDailySummaryMessage(summary, accountSnapshot = null) {
   return "DAILY DERIV SIGNAL REPORT (" + summary.day + ")\n" +
     "Generated: " + summary.generated + "\nSent to Telegram: " + summary.sent +
     "\nMissed / not sent: " + summary.missed +
@@ -63,7 +63,25 @@ function buildDailySummaryMessage(summary) {
     ).join("\n") : "\nNo positive movement recorded or movement data not yet available.") +
     "\nMFE is the greatest favourable completed-candle excursion, not realised profit; intrabar order and execution costs are unknown." +
     "\n\nNote: Signal outcomes only; this is not actual account profit/loss." +
-    (summary.byMarket.length ? "\n\nBY MARKET\n" + summary.byMarket.join("\n") : "");
+    (summary.byMarket.length ? "\n\nBY MARKET\n" + summary.byMarket.join("\n") : "") +
+    "\n\nDEMO ACCOUNT SNAPSHOT (READ-ONLY)" +
+    (accountSnapshot && accountSnapshot.status === "ok"
+      ? "\nAccount: " + accountSnapshot.accountId +
+        "\nBalance: " + accountSnapshot.balance + " " + accountSnapshot.currency +
+        "\nEstimated equity: " + accountSnapshot.equityEstimate + " " + accountSnapshot.currency +
+        "\nOpen contracts: " + accountSnapshot.openPositions.length +
+        "\nCaptured: " + accountSnapshot.fetchedAt +
+        "\nThis is a point-in-time demo account snapshot, not daily profit/loss."
+      : accountSnapshot && accountSnapshot.status === "unavailable"
+        ? "\nUnavailable: the read-only demo account check failed. Signal report is still valid; no account P/L is inferred."
+        : "\nNot connected: demo account snapshot credentials are not configured. Signal report only; no account P/L is inferred.");
+}
+
+async function deliverDailyReport(summary, accountSnapshot, postTelegram) {
+  if (typeof postTelegram !== "function") throw new Error("daily_report_delivery_function_required");
+  const message = buildDailySummaryMessage(summary, accountSnapshot);
+  await postTelegram({ event: "daily_summary", message, text: message });
+  return { delivered: true, message };
 }
 
 function previousUgandaDay(epochSeconds) {
@@ -73,4 +91,4 @@ function previousUgandaDay(epochSeconds) {
   return new Date(Date.parse(today + "T00:00:00Z") - 86400000).toISOString().slice(0, 10);
 }
 
-module.exports = { dailySummary, buildDailySummaryMessage, previousUgandaDay };
+module.exports = { dailySummary, buildDailySummaryMessage, deliverDailyReport, previousUgandaDay };

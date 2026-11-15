@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { dailySummary, buildDailySummaryMessage, previousUgandaDay } = require("../daily_summary");
+const { dailySummary, buildDailySummaryMessage, deliverDailyReport, previousUgandaDay } = require("../daily_summary");
 
 const markets = [["R_50", "Volatility 50 Index"], ["JD100", "Jump 100 Index"]];
 const signals = [
@@ -73,4 +73,41 @@ test("daily report includes legacy and non-swing MTF maximum favourable movement
   assert.match(message, /MAX FAVOURABLE MOVEMENT/);
   assert.match(message, /Volatility 25 Index SELL/);
   assert.doesNotMatch(message, /SWING/);
+});
+
+
+test("daily report labels the demo snapshot as point-in-time, not daily profit/loss", () => {
+  const summary = dailySummary(signals, "2026-11-13", markets);
+  const snapshot = {
+    status: "ok", mode: "demo", accountId: "DOT91725732",
+    balance: 10000, currency: "USD", equityEstimate: 10000,
+    openPositions: [], fetchedAt: "2026-11-14T00:20:00.000Z"
+  };
+  const message = buildDailySummaryMessage(summary, snapshot);
+  assert.match(message, /DEMO ACCOUNT SNAPSHOT \(READ-ONLY\)/);
+  assert.match(message, /Account: DOT91725732/);
+  assert.match(message, /Balance: 10000 USD/);
+  assert.match(message, /Open contracts: 0/);
+  assert.match(message, /point-in-time demo account snapshot, not daily profit\/loss/);
+});
+
+test("daily report delivery sends one daily_summary payload through the injected relay", async () => {
+  const summary = dailySummary(signals, "2026-11-13", markets);
+  const calls = [];
+  const result = await deliverDailyReport(summary, { status: "not_configured" }, async payload => {
+    calls.push(payload);
+  });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].event, "daily_summary");
+  assert.equal(calls[0].message, calls[0].text);
+  assert.match(calls[0].message, /DEMO ACCOUNT SNAPSHOT/);
+  assert.equal(result.delivered, true);
+});
+
+test("failed Telegram relay rejects delivery so the scanner can retry", async () => {
+  const summary = dailySummary(signals, "2026-11-13", markets);
+  await assert.rejects(
+    deliverDailyReport(summary, null, async () => { throw new Error("relay unavailable"); }),
+    /relay unavailable/
+  );
 });
