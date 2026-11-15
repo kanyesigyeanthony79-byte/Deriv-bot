@@ -155,7 +155,16 @@ async function main() {
     output.strategyComparison = summarizeStrategyJournal(strategyJournal);
     const researchArchivePath = path.join(__dirname, "strategy_research_candles.json");
     const researchReportPath = path.join(__dirname, "strategy_research_report.json");
-      catch { const repairedArchive = savedArchive.endsWith(String.fromCharCode(92) + "n") ? savedArchive.slice(0, -2) : savedArchive; priorResearchArchive = JSON.parse(repairedArchive); }
+    let priorResearchArchive = { version: 1, markets: {} };
+    if (fs.existsSync(researchArchivePath)) {
+      const savedArchive = fs.readFileSync(researchArchivePath, "utf8");
+      try {
+        priorResearchArchive = JSON.parse(savedArchive);
+      } catch {
+        const repairedArchive = savedArchive.endsWith(String.fromCharCode(92) + "n") ? savedArchive.slice(0, -2) : savedArchive;
+        priorResearchArchive = JSON.parse(repairedArchive);
+      }
+    }
     const candleArchive = mergeCandleArchive(priorResearchArchive, output.markets);
     const researchReport = researchArchive(candleArchive);
     fs.writeFileSync(researchArchivePath, JSON.stringify(candleArchive, null, 2) + "\n");
