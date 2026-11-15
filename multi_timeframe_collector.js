@@ -158,8 +158,8 @@ async function main() {
     const priorResearchArchive = fs.existsSync(researchArchivePath) ? JSON.parse(fs.readFileSync(researchArchivePath, "utf8")) : { version: 1, markets: {} };
     const candleArchive = mergeCandleArchive(priorResearchArchive, output.markets);
     const researchReport = researchArchive(candleArchive);
-    fs.writeFileSync(researchArchivePath, JSON.stringify(candleArchive, null, 2) + "\\n");
-    fs.writeFileSync(researchReportPath, JSON.stringify(researchReport, null, 2) + "\\n");
+    fs.writeFileSync(researchArchivePath, JSON.stringify(candleArchive, null, 2) + "\n");
+    fs.writeFileSync(researchReportPath, JSON.stringify(researchReport, null, 2) + "\n");
     output.strategyResearch = researchReport;
     const alertSummary = await sendCandidateAlerts(output.markets, journal, now, process.env, {
       log,
