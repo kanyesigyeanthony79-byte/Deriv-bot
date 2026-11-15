@@ -135,7 +135,7 @@ function researchMarket(candles) {
   }
   const aggregate=new Map();
   for(const row of results){
-    const id=row.config.id;const a=aggregate.get(id)||{config:row.config,train:{signals:0,resolved:0,tp1Hits:0,tp2Hits:0,fullStops:0,stoppedAfterTp1:0,anyStops:0,ambiguous:0,expired:0},validation:{signals:0,resolved:0,tp1Hits:0,tp2Hits:0,fullStops:0,anyStops:0,ambiguous:0,expired:0}};
+    const id=row.config.id;const a=aggregate.get(id)||{config:row.config,train:{signals:0,resolved:0,tp1Hits:0,tp2Hits:0,fullStops:0,stoppedAfterTp1:0,anyStops:0,ambiguous:0,expired:0},validation:{signals:0,resolved:0,tp1Hits:0,tp2Hits:0,fullStops:0,stoppedAfterTp1:0,anyStops:0,ambiguous:0,expired:0}};
     for(const phase of ["train","validation"])for(const k of Object.keys(a[phase]))a[phase][k]+=row[phase][k]||0;
     aggregate.set(id,a);
   }
