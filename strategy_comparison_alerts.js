@@ -66,6 +66,13 @@ function buildDailyStrategyMessage(journal, day) {
     );
     lines.push("TP2 rate on resolved wins/losses: " + (row.tp2Rate === null ? "N/A" : row.tp2Rate + "%"));
   }
+  const qualified = rows.filter(row => row.resolved >= 5 && row.tp2Rate !== null)
+    .sort((a, b) => b.tp2Rate - a.tp2Rate);
+  lines.push("");
+  lines.push(qualified.length
+    ? "Daily leader (minimum 5 resolved signals): " + qualified[0].label +
+      " at " + qualified[0].tp2Rate + "% TP2 (" + qualified[0].resolved + " resolved)."
+    : "Daily leader: not assigned; each strategy needs at least 5 resolved signals.");
   lines.push("");
   lines.push("Pending signals are not counted as wins or losses. Intrabar order can be ambiguous on M15 candles. This is signal-outcome research, not account P/L.");
   return lines.join("\n");
