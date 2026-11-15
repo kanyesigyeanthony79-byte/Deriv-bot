@@ -157,12 +157,14 @@ async function sendDailyStrategyComparisonReport(journal, nowEpoch, env, options
   }).formatToParts(now);
   const hour = Number(parts.find(part => part.type === "hour")?.value);
   const minute = Number(parts.find(part => part.type === "minute")?.value);
-  if (hour !== 23 || minute < 55) {
+  // The collector runs every five minutes. Send shortly after midnight EAT,
+  // when the prior Uganda day is complete and its final M15 candle is available.
+  if (hour !== 0 || minute > 10) {
     result.reason = "not_day_end";
     return result;
   }
   result.enabled = true;
-  const day = ugandaDate(nowEpoch);
+  const day = ugandaDate(nowEpoch - 24 * 60 * 60);
   result.day = day;
   journal.dailyStrategyReports ||= {};
   if (journal.dailyStrategyReports[day]) {
