@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-15T11:26:36.000Z",
+  "updatedAt": "2026-11-15T11:27:33.000Z",
   "markets": {
     "R_10": {
       "lastEvaluatedEpoch": 1794740400,
@@ -29,7 +29,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-15T11:26:36.000Z"
+        "checkedAt": "2026-11-15T11:27:33.000Z"
       }
     },
     "R_25": {
@@ -59,7 +59,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-15T11:26:36.000Z"
+        "checkedAt": "2026-11-15T11:27:33.000Z"
       }
     },
     "R_50": {
@@ -89,7 +89,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-15T11:26:36.000Z"
+        "checkedAt": "2026-11-15T11:27:33.000Z"
       }
     },
     "R_75": {
@@ -119,7 +119,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-15T11:26:36.000Z"
+        "checkedAt": "2026-11-15T11:27:33.000Z"
       }
     },
     "JD100": {
@@ -149,7 +149,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-15T11:26:36.000Z"
+        "checkedAt": "2026-11-15T11:27:33.000Z"
       }
     },
     "frxXAUUSD": {
@@ -169,7 +169,7 @@
             "missingIntervals": 4
           }
         ],
-        "checkedAt": "2026-11-15T11:26:36.000Z"
+        "checkedAt": "2026-11-15T11:27:33.000Z"
       }
     },
     "CRASH500": {
@@ -199,7 +199,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-15T11:26:36.000Z"
+        "checkedAt": "2026-11-15T11:27:33.000Z"
       }
     },
     "BOOM500": {
@@ -229,7 +229,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-15T11:26:36.000Z"
+        "checkedAt": "2026-11-15T11:27:33.000Z"
       }
     }
   },
@@ -22477,7 +22477,7 @@
   ],
   "summary": {
     "version": 1,
-    "generatedAt": "2026-11-15T11:26:36.000Z",
+    "generatedAt": "2026-11-15T11:27:33.000Z",
     "timeframe": "M15",
     "mode": "shadow_observation_only",
     "riskModel": {
@@ -22486,7 +22486,7 @@
       "tp2R": 3,
       "maxAgeSeconds": 86400
     },
-    "winRateDefinition": "TP1 reached before any stop; a later stop is separately counted as stopped_after_tp1.",
+    "winRateDefinition": "TP1 reached and not subsequently stopped; TP1 followed by a stop is excluded from wins and reported separately as stopped_after_tp1.",
     "realizedRNote": "Average realized R includes only unambiguous TP2 (+3R) and full stop-loss (-1R) outcomes. stopped_after_tp1 is excluded until a partial-exit rule is explicitly defined.",
     "sourceNote": "Historical backfill evaluates previously completed candles. Forward shadow signals are evaluated as new M15 candles close. These are analytical signals, not executed demo trades.",
     "markets": {
@@ -22503,10 +22503,12 @@
           "forwardShadowSignals": 0,
           "resolvedSignals": 9,
           "pendingSignals": 0,
-          "winRate": 55.6,
+          "winRate": 44.4,
           "tp1HitRate": 55.6,
           "tp2HitRate": 44.4,
-          "stopLossRate": 55.6,
+          "stopLossRate": 44.4,
+          "stoppedAfterTP1Rate": 11.1,
+          "anyStopRate": 55.6,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 94.9,
@@ -22526,10 +22528,12 @@
           "forwardShadowSignals": 0,
           "resolvedSignals": 20,
           "pendingSignals": 0,
-          "winRate": 40,
+          "winRate": 30,
           "tp1HitRate": 40,
           "tp2HitRate": 30,
-          "stopLossRate": 70,
+          "stopLossRate": 60,
+          "stoppedAfterTP1Rate": 10,
+          "anyStopRate": 70,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 88.6,
@@ -22553,6 +22557,8 @@
           "tp1HitRate": 0,
           "tp2HitRate": 0,
           "stopLossRate": 100,
+          "stoppedAfterTP1Rate": 0,
+          "anyStopRate": 100,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 98.3,
@@ -22578,6 +22584,8 @@
           "tp1HitRate": 14.3,
           "tp2HitRate": 14.3,
           "stopLossRate": 85.7,
+          "stoppedAfterTP1Rate": 0,
+          "anyStopRate": 85.7,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 95.4,
@@ -22597,10 +22605,12 @@
           "forwardShadowSignals": 0,
           "resolvedSignals": 19,
           "pendingSignals": 4,
-          "winRate": 26.3,
+          "winRate": 21.1,
           "tp1HitRate": 26.3,
           "tp2HitRate": 10.5,
-          "stopLossRate": 89.5,
+          "stopLossRate": 84.2,
+          "stoppedAfterTP1Rate": 5.3,
+          "anyStopRate": 89.5,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 86.9,
@@ -22624,6 +22634,8 @@
           "tp1HitRate": 25,
           "tp2HitRate": 25,
           "stopLossRate": 75,
+          "stoppedAfterTP1Rate": 0,
+          "anyStopRate": 75,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 97.1,
@@ -22649,6 +22661,8 @@
           "tp1HitRate": 70,
           "tp2HitRate": 40,
           "stopLossRate": 60,
+          "stoppedAfterTP1Rate": 0,
+          "anyStopRate": 60,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 90.3,
@@ -22672,6 +22686,8 @@
           "tp1HitRate": 47.1,
           "tp2HitRate": 35.3,
           "stopLossRate": 64.7,
+          "stoppedAfterTP1Rate": 0,
+          "anyStopRate": 64.7,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 85.7,
@@ -22695,6 +22711,8 @@
           "tp1HitRate": 100,
           "tp2HitRate": 40,
           "stopLossRate": 60,
+          "stoppedAfterTP1Rate": 0,
+          "anyStopRate": 60,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 94.9,
@@ -22716,10 +22734,12 @@
           "forwardShadowSignals": 0,
           "resolvedSignals": 13,
           "pendingSignals": 0,
-          "winRate": 46.2,
+          "winRate": 38.5,
           "tp1HitRate": 46.2,
           "tp2HitRate": 38.5,
-          "stopLossRate": 61.5,
+          "stopLossRate": 53.8,
+          "stoppedAfterTP1Rate": 7.7,
+          "anyStopRate": 61.5,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 92.6,
@@ -22739,10 +22759,12 @@
           "forwardShadowSignals": 0,
           "resolvedSignals": 22,
           "pendingSignals": 1,
-          "winRate": 27.3,
+          "winRate": 22.7,
           "tp1HitRate": 27.3,
           "tp2HitRate": 22.7,
-          "stopLossRate": 77.3,
+          "stopLossRate": 72.7,
+          "stoppedAfterTP1Rate": 4.5,
+          "anyStopRate": 77.3,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 86.9,
@@ -22766,6 +22788,8 @@
           "tp1HitRate": 44.4,
           "tp2HitRate": 44.4,
           "stopLossRate": 55.6,
+          "stoppedAfterTP1Rate": 0,
+          "anyStopRate": 55.6,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 94.9,
@@ -22791,6 +22815,8 @@
           "tp1HitRate": 50,
           "tp2HitRate": 50,
           "stopLossRate": 50,
+          "stoppedAfterTP1Rate": 0,
+          "anyStopRate": 50,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 96.6,
@@ -22814,6 +22840,8 @@
           "tp1HitRate": 23.5,
           "tp2HitRate": 17.6,
           "stopLossRate": 82.4,
+          "stoppedAfterTP1Rate": 0,
+          "anyStopRate": 82.4,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 89.7,
@@ -22837,6 +22865,8 @@
           "tp1HitRate": 50,
           "tp2HitRate": 50,
           "stopLossRate": 50,
+          "stoppedAfterTP1Rate": 0,
+          "anyStopRate": 50,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 97.7,
@@ -22862,6 +22892,8 @@
           "tp1HitRate": null,
           "tp2HitRate": null,
           "stopLossRate": null,
+          "stoppedAfterTP1Rate": null,
+          "anyStopRate": null,
           "expiredRate": null,
           "ambiguousRate": null,
           "noEntryRate": null,
@@ -22885,6 +22917,8 @@
           "tp1HitRate": null,
           "tp2HitRate": null,
           "stopLossRate": null,
+          "stoppedAfterTP1Rate": null,
+          "anyStopRate": null,
           "expiredRate": null,
           "ambiguousRate": null,
           "noEntryRate": null,
@@ -22908,6 +22942,8 @@
           "tp1HitRate": null,
           "tp2HitRate": null,
           "stopLossRate": null,
+          "stoppedAfterTP1Rate": null,
+          "anyStopRate": null,
           "expiredRate": null,
           "ambiguousRate": null,
           "noEntryRate": null,
@@ -22933,6 +22969,8 @@
           "tp1HitRate": 9.1,
           "tp2HitRate": 0,
           "stopLossRate": 100,
+          "stoppedAfterTP1Rate": 0,
+          "anyStopRate": 100,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 92,
@@ -22952,10 +22990,12 @@
           "forwardShadowSignals": 0,
           "resolvedSignals": 20,
           "pendingSignals": 6,
-          "winRate": 15,
+          "winRate": 10,
           "tp1HitRate": 15,
           "tp2HitRate": 0,
-          "stopLossRate": 100,
+          "stopLossRate": 95,
+          "stoppedAfterTP1Rate": 5,
+          "anyStopRate": 100,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 85.1,
@@ -22979,6 +23019,8 @@
           "tp1HitRate": 0,
           "tp2HitRate": 0,
           "stopLossRate": 100,
+          "stoppedAfterTP1Rate": 0,
+          "anyStopRate": 100,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 96.6,
@@ -23000,10 +23042,12 @@
           "forwardShadowSignals": 0,
           "resolvedSignals": 11,
           "pendingSignals": 1,
-          "winRate": 54.5,
+          "winRate": 45.5,
           "tp1HitRate": 54.5,
           "tp2HitRate": 45.5,
-          "stopLossRate": 54.5,
+          "stopLossRate": 45.5,
+          "stoppedAfterTP1Rate": 9.1,
+          "anyStopRate": 54.5,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 93.1,
@@ -23023,10 +23067,12 @@
           "forwardShadowSignals": 0,
           "resolvedSignals": 23,
           "pendingSignals": 1,
-          "winRate": 47.8,
+          "winRate": 30.4,
           "tp1HitRate": 47.8,
           "tp2HitRate": 26.1,
-          "stopLossRate": 73.9,
+          "stopLossRate": 56.5,
+          "stoppedAfterTP1Rate": 17.4,
+          "anyStopRate": 73.9,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 86.3,
@@ -23050,6 +23096,8 @@
           "tp1HitRate": 33.3,
           "tp2HitRate": 33.3,
           "stopLossRate": 66.7,
+          "stoppedAfterTP1Rate": 0,
+          "anyStopRate": 66.7,
           "expiredRate": 0,
           "ambiguousRate": 0,
           "noEntryRate": 97.7,
@@ -23070,10 +23118,12 @@
         "forwardShadowSignals": 0,
         "resolvedSignals": 67,
         "pendingSignals": 12,
-        "winRate": 43.3,
+        "winRate": 38.8,
         "tp1HitRate": 43.3,
         "tp2HitRate": 32.8,
-        "stopLossRate": 67.2,
+        "stopLossRate": 62.7,
+        "stoppedAfterTP1Rate": 4.5,
+        "anyStopRate": 67.2,
         "expiredRate": 0,
         "ambiguousRate": 0,
         "signalsPerDay": 43.34,
@@ -23090,10 +23140,12 @@
         "forwardShadowSignals": 0,
         "resolvedSignals": 138,
         "pendingSignals": 21,
-        "winRate": 32.6,
+        "winRate": 26.1,
         "tp1HitRate": 32.6,
         "tp2HitRate": 20.3,
-        "stopLossRate": 79.7,
+        "stopLossRate": 73.2,
+        "stoppedAfterTP1Rate": 6.5,
+        "anyStopRate": 79.7,
         "expiredRate": 0,
         "ambiguousRate": 0,
         "signalsPerDay": 87.22,
@@ -23114,6 +23166,8 @@
         "tp1HitRate": 38.2,
         "tp2HitRate": 29.4,
         "stopLossRate": 70.6,
+        "stoppedAfterTP1Rate": 0,
+        "anyStopRate": 70.6,
         "expiredRate": 0,
         "ambiguousRate": 0,
         "signalsPerDay": 21.94,
