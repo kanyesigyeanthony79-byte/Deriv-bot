@@ -86,6 +86,21 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     </div>
   </section>
 
+  <section id="strategy-comparison">
+    <h2>Parallel strategy comparison · M15 shadow test</h2>
+    <div class="muted">EMA20/50 baseline vs EMA9/21 vs EMA20/50 with pullback confirmation. All three use the same completed candles and risk distances. Historical backfill is separated from new forward observations.</div>
+    <div class="card mtf-table-wrap" style="margin-top:10px">
+      <table><thead><tr><th>Strategy</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>Win %</th><th>TP1 %</th><th>TP2 %</th><th>Full SL %</th><th>SL after TP1 %</th><th>Avg R</th><th>/day</th></tr></thead>
+      <tbody id="strategyTotals"><tr><td colspan="11" class="muted">Waiting for comparison data…</td></tr></tbody></table>
+      <div class="muted" id="strategyStatus" style="margin-top:8px">Shadow comparison not loaded yet.</div>
+    </div>
+    <h2 style="margin-top:15px">Market-by-market comparison</h2>
+    <div class="card mtf-table-wrap">
+      <table><thead><tr><th>Market</th><th>Strategy</th><th>Signals</th><th>Resolved</th><th>Win %</th><th>TP1 %</th><th>TP2 %</th><th>Full SL %</th><th>SL after TP1 %</th><th>Expired %</th></tr></thead>
+      <tbody id="strategyMarkets"><tr><td colspan="10" class="muted">Waiting for comparison data…</td></tr></tbody></table>
+    </div>
+  </section>
+
   <section>
     <div class="row" style="justify-content:space-between;align-items:center">
       <h2>Signal journal</h2>
@@ -197,6 +212,35 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     const rows=mtfJournal.slice().sort((a,b)=>(b.entryCandleEpoch||0)-(a.entryCandleEpoch||0)).slice(0,40);
     $("mtfJournal").innerHTML=rows.map(s=>{const review=mtfReviews[s.signalId];const link=review?'<a class="btn smallbtn" href="./signal-review.html?signalId='+encodeURIComponent(s.signalId)+'">REVIEW</a>':'<span class="muted">—</span>';return '<tr><td>'+esc(fmtTime(s.entryCandleEpoch))+'</td><td>'+esc(s.market||s.marketId)+'</td><td>'+esc(categoryNames[s.category]||s.category)+'</td><td class="'+(s.direction==="BUY"?"buy":"sell")+'">'+esc(s.direction)+'</td><td>'+fmt(s.entry)+'</td><td>'+fmt(s.stopLoss)+'</td><td>'+fmt(s.tp1)+' / '+fmt(s.tp2)+'</td><td>'+esc(String(s.status||"pending").replaceAll("_"," ").toUpperCase())+'</td><td>'+link+'</td></tr>';}).join("")||'<tr><td colspan="9" class="muted">No qualifying signals recorded yet.</td></tr>';
   }
+  function renderStrategyComparison(){
+    const comparison=mtfSnapshot?.strategyComparison;
+    if(!comparison?.totals){
+      $("strategyTotals").innerHTML='<tr><td colspan="11" class="muted">Shadow comparison data is not available yet.</td></tr>';
+      $("strategyMarkets").innerHTML='<tr><td colspan="10" class="muted">No market comparison data yet.</td></tr>';
+      $("strategyStatus").textContent="Waiting for the observation collector to publish the strategy journal.";
+      return;
+    }
+    const ids=["EMA20_50","EMA9_21","EMA20_50_PULLBACK"];
+    const pct=v=>v===null||v===undefined?"—":Number(v).toFixed(1)+"%";
+    const num=v=>v===null||v===undefined?"—":Number(v).toFixed(2);
+    $("strategyTotals").innerHTML=ids.map(id=>{
+      const s=comparison.totals[id]||{};
+      return '<tr><td>'+esc(s.label||id)+'</td><td>'+esc(s.signalsGenerated??0)+'</td><td>'+esc(s.resolvedSignals??0)+'</td><td>'+esc(s.pendingSignals??0)+'</td><td>'+pct(s.winRate)+'</td><td>'+pct(s.tp1HitRate)+'</td><td>'+pct(s.tp2HitRate)+'</td><td>'+pct(s.stopLossRate)+'</td><td>'+pct(s.stoppedAfterTP1Rate)+'</td><td>'+num(s.averageRealizedR)+'</td><td>'+num(s.signalsPerDay)+'</td></tr>';
+    }).join("");
+    const marketRows=[];
+    for(const [marketId,strategies] of Object.entries(comparison.markets||{})){
+      for(const id of ids){
+        const s=strategies[id]||{};
+        marketRows.push('<tr><td>'+esc(marketId)+'</td><td>'+esc(s.label||id)+'</td><td>'+esc(s.signalsGenerated??0)+'</td><td>'+esc(s.resolvedSignals??0)+'</td><td>'+pct(s.winRate)+'</td><td>'+pct(s.tp1HitRate)+'</td><td>'+pct(s.tp2HitRate)+'</td><td>'+pct(s.stopLossRate)+'</td><td>'+pct(s.stoppedAfterTP1Rate)+'</td><td>'+pct(s.expiredRate)+'</td></tr>');
+      }
+    }
+    $("strategyMarkets").innerHTML=marketRows.join("")||'<tr><td colspan="10" class="muted">No market comparison data yet.</td></tr>';
+    const totals=Object.values(comparison.totals);
+    const historical=totals.reduce((n,s)=>n+(s.historicalBackfillSignals||0),0);
+    const forward=totals.reduce((n,s)=>n+(s.forwardShadowSignals||0),0);
+    $("strategyStatus").textContent="M15 · "+esc(comparison.mode||"shadow_observation_only")+" · "+historical+" historical backfill signals · "+forward+" forward shadow signals · "+esc(comparison.sourceNote||"No order execution");
+  }
+
   async function refreshMtf(){
     $("mtfStatus").textContent="Refreshing multi-timeframe snapshot…";
     try{
@@ -204,6 +248,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       if(!a.ok)throw new Error("Snapshot HTTP "+a.status);
       mtfSnapshot=await a.json(); mtfJournal=b.ok?(await b.json()).signals||[]:[]; const reviewData=r.ok?await r.json():{reviews:[]}; mtfReviews=Object.fromEntries((reviewData.reviews||[]).map(x=>[x.signalId,x]));
       renderMtf();
+      renderStrategyComparison();
       $("mtfStatus").textContent="Observation-only · "+esc(mtfSnapshot.markets?.length||0)+" markets · Updated "+esc(time(mtfSnapshot.generatedAt));
     }catch(e){$("mtfStatus").textContent="Multi-timeframe data not published yet: "+e.message;}
   }
