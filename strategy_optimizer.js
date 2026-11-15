@@ -81,7 +81,7 @@ function outcome(cs, features, entryIndex, maxIndex = cs.length-1) {
   const direction=f.direction, entry=next.open, risk=f.atr*STOP_ATR;
   if(!(risk>0))return null;
   const stop=direction==="BUY"?entry-risk:entry+risk, tp1=direction==="BUY"?entry+2*risk:entry-2*risk, tp2=direction==="BUY"?entry+3*risk:entry-3*risk;
-  const end=Math.min(cs.length-1,maxIndex,entryIndex+1+HORIZON);
+  const end=Math.min(cs.length-1,maxIndex,entryIndex+HORIZON);
   let tp1Hit=false;
   for(let i=entryIndex+1;i<=end;i++){
     const c=cs[i], sl=direction==="BUY"?c.low<=stop:c.high>=stop, one=direction==="BUY"?c.high>=tp1:c.low<=tp1, two=direction==="BUY"?c.high>=tp2:c.low<=tp2;
@@ -90,7 +90,7 @@ function outcome(cs, features, entryIndex, maxIndex = cs.length-1) {
     if(one)tp1Hit=true;
     if(two)return {status:"tp2_hit",tp1Hit:true,realizedR:3};
   }
-  if(end-(entryIndex+1)<HORIZON)return null;
+  if(end-entryIndex<HORIZON)return null;
   return {status:"expired",tp1Hit,realizedR:null};
 }
 function scoreConfig(cs,features,cfg,start,end) {
