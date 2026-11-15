@@ -3,7 +3,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   forwardSignalsNeedingDelivery, dailyStrategyRows, buildDailyStrategyMessage,
-  sendStrategyComparisonAlerts
+  sendStrategyComparisonAlerts, sendDailyStrategyComparisonReport
 } = require("../strategy_comparison_alerts");
 
 const signal = (overrides = {}) => ({
@@ -68,4 +68,23 @@ test("daily comparison keeps pending and ambiguous outcomes separate", () => {
   const message = buildDailyStrategyMessage(journal, "2026-11-15");
   assert.match(message, /DEMO RESEARCH ONLY/);
   assert.match(message, /Pending: 1/);
+});
+
+test("sends the previous Uganda day's report once just after midnight", async () => {
+  const journal = { signals: [] };
+  const now = Math.floor(Date.parse("2026-11-16T00:02:00+03:00") / 1000);
+  let sentPayload;
+  const result = await sendDailyStrategyComparisonReport(journal, now, env, {
+    fetchImpl: async (_url, options) => {
+      sentPayload = JSON.parse(options.body);
+      return { ok: true, json: async () => ({ success: true }) };
+    }
+  });
+  assert.equal(result.sent, true);
+  assert.equal(result.day, "2026-11-15");
+  assert.match(sentPayload.message, /2026-11-15/);
+  const again = await sendDailyStrategyComparisonReport(journal, now + 300, env, {
+    fetchImpl: async () => { throw new Error("should not send twice"); }
+  });
+  assert.equal(again.reason, "already_sent_or_attempted");
 });
