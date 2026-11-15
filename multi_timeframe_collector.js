@@ -19,7 +19,7 @@ const MARKETS = [
   ["CRASH500", "Crash 500 Index"], ["BOOM500", "Boom 500 Index"]
 ];
 const FRAMES = [
-  ["M1", 60, 240], ["M5", 300, 240], ["M15", 900, 1000],
+  ["M1", 60, 5000], ["M5", 300, 2000], ["M15", 900, 1000],
   ["H1", 3600, 240], ["H4", 14400, 240], ["D1", 86400, 520]
 ];
 const OUTPUT = path.join(__dirname, "multi_timeframe_data.json");
