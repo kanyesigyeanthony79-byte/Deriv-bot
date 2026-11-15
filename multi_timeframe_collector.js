@@ -155,7 +155,7 @@ async function main() {
     output.strategyComparison = summarizeStrategyJournal(strategyJournal);
     const researchArchivePath = path.join(__dirname, "strategy_research_candles.json");
     const researchReportPath = path.join(__dirname, "strategy_research_report.json");
-    let priorResearchArchive = { version: 1, markets: {} };\n    if (fs.existsSync(researchArchivePath)) {\n      const savedArchive = fs.readFileSync(researchArchivePath, "utf8");\n      try { priorResearchArchive = JSON.parse(savedArchive); }\n      catch { priorResearchArchive = JSON.parse(savedArchive.replace(/\\\\n\\s*$/, "")); }\n    }
+      catch { const repairedArchive = savedArchive.endsWith(String.fromCharCode(92) + "n") ? savedArchive.slice(0, -2) : savedArchive; priorResearchArchive = JSON.parse(repairedArchive); }
     const candleArchive = mergeCandleArchive(priorResearchArchive, output.markets);
     const researchReport = researchArchive(candleArchive);
     fs.writeFileSync(researchArchivePath, JSON.stringify(candleArchive, null, 2) + "\n");
