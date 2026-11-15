@@ -3,7 +3,7 @@
 // It never emits alerts or places orders. All candidates share identical entry/exit assumptions.
 const { validateCandleContinuity } = require("./market_quality");
 const TIMEFRAME = 900, STOP_ATR = 1.5, TP1_R = 2, TP2_R = 3, HORIZON = 96;
-const MAX_CANDLES_PER_MARKET = 2000;
+const MAX_CANDLES_PER_MARKET = 2000, MIN_RESEARCH_BARS = 400;
 function mergeCandleArchive(prior, markets) {
   const archive = prior && prior.version === 1 ? prior : { version: 1, updatedAt: null, markets: {} };
   archive.markets ||= {};
@@ -124,9 +124,9 @@ function splitSegments(cs) {
   return parts;
 }
 function researchMarket(candles) {
-  const segments=splitSegments(candles||[]), configsList=configs(), results=[];
-  for(const cs of segments){
-    const features=buildFeatures(cs), split=Math.floor(cs.length*0.60);
+  const segments=splitSegments(candles||[]), qualifiedSegments=segments.filter(cs=>cs.length>=MIN_RESEARCH_BARS), configsList=configs(), results=[];
+  for(const cs of qualifiedSegments){
+    const features=buildFeatures(cs), split=Math.floor(cs.length*0.50);
     for(const cfg of configsList){
       const train=scoreConfig(cs,features,cfg,64,split);
       const validation=scoreConfig(cs,features,cfg,split,cs.length-1);
@@ -142,12 +142,12 @@ function researchMarket(candles) {
   const summarize=x=>{const n=x.resolved;return {...x,winRate:n?Number((Math.max(0,x.tp1Hits-x.stoppedAfterTp1-x.ambiguous)/n*100).toFixed(1)):null,tp1Rate:n?Number((x.tp1Hits/n*100).toFixed(1)):null,tp2Rate:n?Number((x.tp2Hits/n*100).toFixed(1)):null,stopRate:n?Number((x.fullStops/n*100).toFixed(1)):null,anyStopRate:n?Number((x.anyStops/n*100).toFixed(1)):null};};
   const ranked=[...aggregate.values()].map(x=>({...x,train:summarize(x.train),validation:summarize(x.validation)}));
   ranked.sort((a,b)=>(b.train.tp2Hits-b.train.fullStops)-(a.train.tp2Hits-a.train.fullStops)||b.train.resolved-a.train.resolved);
-  const usable=ranked.filter(x=>x.train.resolved>=8);
-  const topValidation=usable.slice(0,20).sort((a,b)=>(b.validation.tp2Hits-b.validation.fullStops)-(a.validation.tp2Hits-a.validation.fullStops)||b.validation.resolved-a.validation.resolved).slice(0,10);
-  return {bars:candles?.length||0,continuousSegments:segments.length,configsTested:configsList.length,
-    status:segments.length?"research_complete":"insufficient_continuous_history",
+  const usable=ranked.filter(x=>x.train.resolved>=15);
+  const topValidation=usable.filter(x=>x.validation.resolved>=10).slice(0,20).sort((a,b)=>(b.validation.tp2Hits-b.validation.fullStops)-(a.validation.tp2Hits-a.validation.fullStops)||b.validation.resolved-a.validation.resolved).slice(0,10);
+  return {bars:candles?.length||0,continuousSegments:segments.length,qualifiedSegments:qualifiedSegments.length,minimumBarsRequired:MIN_RESEARCH_BARS,configsTested:configsList.length,
+    status:qualifiedSegments.length?"research_complete":"collecting_history",
     discoveryTop:usable.slice(0,10),validationOfDiscovery:topValidation,allCandidates:ranked,
-    note:"Discovery uses the first 65% of each continuous segment; validation uses the later 35%. Entry is next candle open. Shared exits: 1.5 ATR stop, TP1=2R, TP2=3R, 96-candle horizon. Same-candle stop/target touches are ambiguous. Expired trades are reported, not counted as wins or losses. This is exploratory research, not a live strategy."};
+    note:"Only continuous segments with at least 400 M15 candles are evaluated. Discovery uses the first 50%; the later 50% is held out for validation. Entry is next candle open. Shared exits: 1.5 ATR stop, TP1=2R, TP2=3R, 96-candle horizon. Same-candle stop/target touches are ambiguous. A candidate is shown in validation only after at least 10 resolved validation signals. Expired trades are reported, not counted as wins or losses. This is exploratory research, not a live strategy."};
 }
 function researchArchive(archive) {
   const markets={};for(const [id,cs] of Object.entries(archive?.markets||{}))markets[id]=researchMarket(cs);
