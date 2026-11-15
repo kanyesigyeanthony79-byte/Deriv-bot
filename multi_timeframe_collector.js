@@ -7,6 +7,7 @@ const { aggregateWeeklyCandles, validCandles, evaluateAllCategories, evaluateRec
 const { updateJournal, summarizeJournal } = require("./multi_timeframe_journal");
 const { sendCandidateAlerts } = require("./multi_timeframe_alerts");
 const { reviewSignal } = require("./signal_review");
+const { updateStrategyJournal, summarizeStrategyJournal } = require("./strategy_comparison");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const MARKETS = [
@@ -144,6 +145,13 @@ async function main() {
 
     const priorJournal = fs.existsSync(JOURNAL) ? JSON.parse(fs.readFileSync(JOURNAL, "utf8")) : { version: 1, signals: [] };
     const journal = updateJournal(priorJournal, output.markets, now);
+    const strategyJournalPath = path.join(__dirname, "strategy_comparison_journal.json");
+    const priorStrategyJournal = fs.existsSync(strategyJournalPath)
+      ? JSON.parse(fs.readFileSync(strategyJournalPath, "utf8"))
+      : { version: 1, updatedAt: null, markets: {}, signals: [] };
+    const strategyJournal = updateStrategyJournal(priorStrategyJournal, output.markets, now);
+    fs.writeFileSync(strategyJournalPath, JSON.stringify(strategyJournal, null, 2) + "\\n");
+    output.strategyComparison = summarizeStrategyJournal(strategyJournal);
     const alertSummary = await sendCandidateAlerts(output.markets, journal, now, process.env, {
       log,
       persist: current => fs.writeFileSync(JOURNAL, JSON.stringify(current, null, 2) + "\n")
@@ -168,6 +176,7 @@ async function main() {
     const dashboard = {
       version: 1, generatedAt: output.generatedAt, generatedEpoch: now,
       mode: alertSummary.enabled ? "signal_alerts_enabled" : "observation_only", summary: output.summary,
+      strategyComparison: output.strategyComparison,
       markets: Object.values(output.markets).map(m => ({
         marketId: m.marketId, marketName: m.marketName, signals: m.signals,
         timeframeCounts: Object.fromEntries(Object.entries(m.timeframes).map(([tf, candles]) => [tf, candles.length])),
