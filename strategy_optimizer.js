@@ -126,7 +126,7 @@ function splitSegments(cs) {
 function researchMarket(candles) {
   const segments=splitSegments(candles||[]), configsList=configs(), results=[];
   for(const cs of segments){
-    const features=buildFeatures(cs), split=Math.floor(cs.length*0.65);
+    const features=buildFeatures(cs), split=Math.floor(cs.length*0.60);
     for(const cfg of configsList){
       const train=scoreConfig(cs,features,cfg,64,split);
       const validation=scoreConfig(cs,features,cfg,split,cs.length-1);
