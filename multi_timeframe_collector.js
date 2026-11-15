@@ -150,7 +150,7 @@ async function main() {
       ? JSON.parse(fs.readFileSync(strategyJournalPath, "utf8"))
       : { version: 1, updatedAt: null, markets: {}, signals: [] };
     const strategyJournal = updateStrategyJournal(priorStrategyJournal, output.markets, now);
-    fs.writeFileSync(strategyJournalPath, JSON.stringify(strategyJournal, null, 2) + "\\n");
+    fs.writeFileSync(strategyJournalPath, JSON.stringify(strategyJournal, null, 2) + "\n");
     output.strategyComparison = summarizeStrategyJournal(strategyJournal);
     const alertSummary = await sendCandidateAlerts(output.markets, journal, now, process.env, {
       log,
