@@ -166,4 +166,4 @@ function researchArchive(archive) {
   return {version:1,generatedAt:new Date().toISOString(),mode:"offline_research_only",markets,pooled:{configsTested:pooledCandidates.length,minimumDiscoverySample:30,minimumMarkets:3,discoveryCandidates:discovery,heldOutValidation:validation},
     caution:"Pooled results combine multiple markets and are exploratory. Require adequate independent validation samples and subsequent forward-shadow results before promoting any rule."};
 }
-module.exports={mergeCandleArchive,buildFeatures,configs,passes,outcome,scoreConfig,researchMarket,researchArchive};
+module.exports={mergeCandleArchive,buildFeatures,configs,passes,outcome,scoreConfig,researchMarket,researchArchive,MIN_RESEARCH_BARS};
