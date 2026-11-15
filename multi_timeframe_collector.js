@@ -8,6 +8,7 @@ const { updateJournal, summarizeJournal } = require("./multi_timeframe_journal")
 const { sendCandidateAlerts } = require("./multi_timeframe_alerts");
 const { reviewSignal } = require("./signal_review");
 const { updateStrategyJournal, summarizeStrategyJournal } = require("./strategy_comparison");
+const { mergeCandleArchive, researchArchive } = require("./strategy_optimizer");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const MARKETS = [
@@ -152,6 +153,14 @@ async function main() {
     const strategyJournal = updateStrategyJournal(priorStrategyJournal, output.markets, now);
     fs.writeFileSync(strategyJournalPath, JSON.stringify(strategyJournal, null, 2) + "\n");
     output.strategyComparison = summarizeStrategyJournal(strategyJournal);
+    const researchArchivePath = path.join(__dirname, "strategy_research_candles.json");
+    const researchReportPath = path.join(__dirname, "strategy_research_report.json");
+    const priorResearchArchive = fs.existsSync(researchArchivePath) ? JSON.parse(fs.readFileSync(researchArchivePath, "utf8")) : { version: 1, markets: {} };
+    const candleArchive = mergeCandleArchive(priorResearchArchive, output.markets);
+    const researchReport = researchArchive(candleArchive);
+    fs.writeFileSync(researchArchivePath, JSON.stringify(candleArchive, null, 2) + "\\n");
+    fs.writeFileSync(researchReportPath, JSON.stringify(researchReport, null, 2) + "\\n");
+    output.strategyResearch = researchReport;
     const alertSummary = await sendCandidateAlerts(output.markets, journal, now, process.env, {
       log,
       persist: current => fs.writeFileSync(JOURNAL, JSON.stringify(current, null, 2) + "\n")
@@ -176,7 +185,7 @@ async function main() {
     const dashboard = {
       version: 1, generatedAt: output.generatedAt, generatedEpoch: now,
       mode: alertSummary.enabled ? "signal_alerts_enabled" : "observation_only", summary: output.summary,
-      strategyComparison: output.strategyComparison,
+      strategyComparison: output.strategyComparison, strategyResearch: output.strategyResearch,
       markets: Object.values(output.markets).map(m => ({
         marketId: m.marketId, marketName: m.marketName, signals: m.signals,
         timeframeCounts: Object.fromEntries(Object.entries(m.timeframes).map(([tf, candles]) => [tf, candles.length])),
