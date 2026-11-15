@@ -1,0 +1,31 @@
+name: Manual Deriv demo read-only snapshot
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  demo-readonly-snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check required secret names are populated
+        env:
+          DERIV_TOKEN: ${{ secrets.DERIV_TOKEN }}
+          DERIV_ACCOUNT_ID: ${{ secrets.DERIV_ACCOUNT_ID }}
+        run: |
+          test -n "$DERIV_TOKEN" || { echo "Missing DERIV_TOKEN secret"; exit 1; }
+          test -n "$DERIV_ACCOUNT_ID" || { echo "Missing DERIV_ACCOUNT_ID secret"; exit 1; }
+          echo "Required Deriv secrets are present (values hidden)."
+      - name: Run authenticated read-only demo snapshot
+        env:
+          DERIV_TOKEN: ${{ secrets.DERIV_TOKEN }}
+          DERIV_ACCOUNT_ID: ${{ secrets.DERIV_ACCOUNT_ID }}
+          DERIV_APP_ID: ${{ secrets.DERIV_APP_ID }}
+        run: node scripts/demo_readonly_account_snapshot.js
