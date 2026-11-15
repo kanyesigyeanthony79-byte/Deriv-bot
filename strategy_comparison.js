@@ -180,8 +180,11 @@ function summarizeStrategyJournal(journal) {
       const signals = (journal.signals || []).filter(s => s.marketId === marketId && s.strategyId === strategy.id);
       const terminal = signals.filter(s => isTerminal(s.status));
       const tp1 = signals.filter(s => s.tp1Hit).length;
+      const wins = signals.filter(s => s.tp1Hit && s.status !== "stopped_after_tp1" && s.status !== "ambiguous").length;
       const tp2 = signals.filter(s => s.status === "tp2_hit").length;
-      const stops = signals.filter(s => s.status === "stopped" || s.status === "stopped_after_tp1").length;
+      const fullStops = signals.filter(s => s.status === "stopped").length;
+      const stoppedAfterTp1 = signals.filter(s => s.status === "stopped_after_tp1").length;
+      const stops = fullStops + stoppedAfterTp1;
       const expired = signals.filter(s => s.status === "expired").length;
       const ambiguous = signals.filter(s => s.status === "ambiguous").length;
       const realized = terminal.map(s => s.realizedR).filter(Number.isFinite);
@@ -193,10 +196,12 @@ function summarizeStrategyJournal(journal) {
         forwardShadowSignals: signals.filter(s => s.evaluationSource === "forward_shadow").length,
         resolvedSignals: terminal.length,
         pendingSignals: signals.filter(s => !isTerminal(s.status)).length,
-        winRate: pct(tp1, terminal.length),
+        winRate: pct(wins, terminal.length),
         tp1HitRate: pct(tp1, terminal.length),
         tp2HitRate: pct(tp2, terminal.length),
-        stopLossRate: pct(stops, terminal.length),
+        stopLossRate: pct(fullStops, terminal.length),
+        stoppedAfterTP1Rate: pct(stoppedAfterTp1, terminal.length),
+        anyStopRate: pct(stops, terminal.length),
         expiredRate: pct(expired, terminal.length),
         ambiguousRate: pct(ambiguous, terminal.length),
         noEntryRate: pct(counters.noSignalBars, counters.barsEvaluated),
@@ -212,8 +217,11 @@ function summarizeStrategyJournal(journal) {
     const signals = (journal.signals || []).filter(s => s.strategyId === strategy.id);
     const terminal = signals.filter(s => isTerminal(s.status));
     const tp1 = signals.filter(s => s.tp1Hit).length;
+    const wins = signals.filter(s => s.tp1Hit && s.status !== "stopped_after_tp1" && s.status !== "ambiguous").length;
     const tp2 = signals.filter(s => s.status === "tp2_hit").length;
-    const stops = signals.filter(s => s.status === "stopped" || s.status === "stopped_after_tp1").length;
+    const fullStops = signals.filter(s => s.status === "stopped").length;
+    const stoppedAfterTp1 = signals.filter(s => s.status === "stopped_after_tp1").length;
+    const stops = fullStops + stoppedAfterTp1;
     const expired = signals.filter(s => s.status === "expired").length;
     const ambiguous = signals.filter(s => s.status === "ambiguous").length;
     const realized = terminal.map(s => s.realizedR).filter(Number.isFinite);
@@ -229,10 +237,12 @@ function summarizeStrategyJournal(journal) {
       forwardShadowSignals: signals.filter(s => s.evaluationSource === "forward_shadow").length,
       resolvedSignals: terminal.length,
       pendingSignals: signals.filter(s => !isTerminal(s.status)).length,
-      winRate: pct(tp1, terminal.length),
+      winRate: pct(wins, terminal.length),
       tp1HitRate: pct(tp1, terminal.length),
       tp2HitRate: pct(tp2, terminal.length),
-      stopLossRate: pct(stops, terminal.length),
+      stopLossRate: pct(fullStops, terminal.length),
+      stoppedAfterTP1Rate: pct(stoppedAfterTp1, terminal.length),
+      anyStopRate: pct(stops, terminal.length),
       expiredRate: pct(expired, terminal.length),
       ambiguousRate: pct(ambiguous, terminal.length),
       signalsPerDay: Number(rows.reduce((sum, row) => sum + row.signalsPerDay, 0).toFixed(2)),
@@ -246,7 +256,7 @@ function summarizeStrategyJournal(journal) {
     timeframe: "M15",
     mode: "shadow_observation_only",
     riskModel: { stopAtr: STOP_ATR, tp1R: TP1_R, tp2R: TP2_R, maxAgeSeconds: MAX_AGE_SECONDS },
-    winRateDefinition: "TP1 reached before any stop; a later stop is separately counted as stopped_after_tp1.",
+    winRateDefinition: "TP1 reached and not subsequently stopped; TP1 followed by a stop is excluded from wins and reported separately as stopped_after_tp1.",
     realizedRNote: "Average realized R includes only unambiguous TP2 (+3R) and full stop-loss (-1R) outcomes. stopped_after_tp1 is excluded until a partial-exit rule is explicitly defined.",
     sourceNote: "Historical backfill evaluates previously completed candles. Forward shadow signals are evaluated as new M15 candles close. These are analytical signals, not executed demo trades.",
     markets,
