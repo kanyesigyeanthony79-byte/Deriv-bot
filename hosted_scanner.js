@@ -4,7 +4,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { evaluate, DEF } = require("./engine");
 const { journalOutcome: recordJournalOutcome, reconcileJournalState, markExpired, updateFavourableMovement } = require("./signal_journal");
-const { dailySummary, buildDailySummaryMessage, previousUgandaDay } = require("./daily_summary");
+const { dailySummary, deliverDailyReport, previousUgandaDay } = require("./daily_summary");
+const { createDerivDemoReadOnlySnapshot } = require("./scripts/demo_readonly_account_snapshot");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const GRANULARITY = 900;
@@ -55,6 +56,24 @@ const saveJournal = () => fs.writeFileSync(JOURNAL_FILE, JSON.stringify(journal,
 if (reconcileJournalState(journal, state, log) > 0) saveJournal();
 const localDate = epoch => new Intl.DateTimeFormat("en-CA", {timeZone:"Africa/Kampala",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(epoch * 1000));
 const findJournalSignal = id => journal.signals.find(s => s.signalId === id);
+
+async function readDemoSnapshotForReport() {
+  if (!process.env.DERIV_TOKEN || !process.env.DERIV_ACCOUNT_ID) {
+    return { status: "not_configured" };
+  }
+  try {
+    const snapshot = await createDerivDemoReadOnlySnapshot({
+      token: process.env.DERIV_TOKEN,
+      accountId: process.env.DERIV_ACCOUNT_ID,
+      appId: process.env.DERIV_APP_ID
+    });
+    return { status: "ok", ...snapshot };
+  } catch (error) {
+    // Do not log credentials, OTP URLs, response bodies, or raw transport details.
+    log("demo_account_snapshot_failed", { reason: String(error.message || "read_only_snapshot_failed").slice(0, 100) });
+    return { status: "unavailable" };
+  }
+}
 function journalCandidate(entry) {
   if (findJournalSignal(entry.signalId)) return;
   journal.signals.push(entry);
@@ -79,18 +98,27 @@ async function maybeSendDailySummary(now) {
     if (mtfJournal && Array.isArray(mtfJournal.signals)) mtfSignals = mtfJournal.signals;
   } catch {}
   const summary = dailySummary(journal.signals, reportDay, MARKETS, mtfSignals);
-  const message = buildDailySummaryMessage(summary);
+  const accountSnapshot = await readDemoSnapshotForReport();
   try {
-    await postTelegram({ event: "daily_summary", message, text: message });
+    await deliverDailyReport(summary, accountSnapshot, postTelegram);
     journal.dailyReports[reportDay] = {
       attemptedAt: new Date(now * 1000).toISOString(),
       delivered: true,
-      stats: summary
+      stats: summary,
+      accountSnapshot: accountSnapshot.status === "ok" ? {
+        status: "ok", mode: accountSnapshot.mode, accountId: accountSnapshot.accountId,
+        currency: accountSnapshot.currency, balance: accountSnapshot.balance,
+        equityEstimate: accountSnapshot.equityEstimate,
+        openContracts: accountSnapshot.openPositions.length,
+        fetchedAt: accountSnapshot.fetchedAt,
+        ordersPlaced: 0
+      } : { status: accountSnapshot.status }
     };
     saveJournal();
     log("daily_summary_delivered", {
       day: reportDay, generated: summary.generated, sent: summary.sent,
-      wins: summary.wins, losses: summary.losses, winRate: summary.winRate
+      wins: summary.wins, losses: summary.losses, winRate: summary.winRate,
+      accountSnapshotStatus: accountSnapshot.status
     });
   } catch (error) {
     log("daily_summary_delivery_failed", {
