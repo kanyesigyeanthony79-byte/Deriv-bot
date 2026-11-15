@@ -1,0 +1,30 @@
+name: Demo read-only account snapshot tests
+
+on:
+  push:
+    branches: [dev/demo-readonly-shadow-snapshot]
+    paths:
+      - "scripts/demo_readonly_account_snapshot.js"
+      - "test/demo_readonly_account_snapshot.test.js"
+      - ".github/workflows/demo-readonly-shadow-snapshot.yml"
+  pull_request:
+    paths:
+      - "scripts/demo_readonly_account_snapshot.js"
+      - "test/demo_readonly_account_snapshot.test.js"
+      - ".github/workflows/demo-readonly-shadow-snapshot.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  demo-readonly-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check syntax
+        run: node --check scripts/demo_readonly_account_snapshot.js
+      - name: Run read-only snapshot tests
+        run: node --test test/demo_readonly_account_snapshot.test.js
