@@ -14,6 +14,7 @@ const MAX_SIGNALS = 10000;
 const STRATEGIES = Object.freeze([
   Object.freeze({ id: "EMA20_50", label: "EMA20/50 baseline", fast: 20, slow: 50, pullback: false }),
   Object.freeze({ id: "EMA9_21", label: "EMA9/21", fast: 9, slow: 21, pullback: false }),
+  Object.freeze({ id: "EMA9_21_BODY_CLOSE", label: "EMA9/21 + body/close quality gate (shadow)", fast: 9, slow: 21, pullback: false, qualityFilter: true }),
   Object.freeze({ id: "EMA20_50_PULLBACK", label: "EMA20/50 + pullback", fast: 20, slow: 50, pullback: true })
 ]);
 
@@ -84,6 +85,19 @@ function evaluateStrategy(candles, strategyId, marketId = "UNKNOWN", marketName 
   }
   if (strategy.pullback && !pullbackConfirmed(candles, result.signal)) {
     return { state: "no_signal", reason: "EMA20/50 trend passed, but no confirmed EMA20 pullback rejection." };
+  }
+  // Frozen research thresholds. This shadow variant deliberately keeps the existing
+  // engine's EMA9/21 base checks and adds the body/close quality gate on top.
+  // It is not yet a replacement for the production scanner or an order signal.
+  if (strategy.qualityFilter) {
+    const bodyRatio = Number(result.metrics?.bodyRatio);
+    const closeLocation = Number(result.metrics?.closeLocation);
+    if (!(bodyRatio >= 0.7360851)) {
+      return { state: "no_signal", reason: "Quality gate rejected: candle body ratio below 0.7360851.", qualityChecks: { bodyRatio, closeLocation, bodyPassed: false, closePassed: closeLocation >= 0.9288402 } };
+    }
+    if (!(closeLocation >= 0.9288402)) {
+      return { state: "no_signal", reason: "Quality gate rejected: direction-adjusted close location below 0.9288402.", qualityChecks: { bodyRatio, closeLocation, bodyPassed: true, closePassed: false } };
+    }
   }
   const latest = candles[candles.length - 1];
   const levels = makeLevels(latest.close, candles, result.signal);
