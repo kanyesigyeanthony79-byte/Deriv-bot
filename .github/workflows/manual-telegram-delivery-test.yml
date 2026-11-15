@@ -1,0 +1,69 @@
+name: Manual Telegram delivery commissioning test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  telegram-delivery-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Validate Telegram secrets are present
+        env:
+          TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
+          SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
+        run: |
+          test -n "$TELEGRAM_WORKER_URL" || { echo "Missing TELEGRAM_WORKER_URL secret"; exit 1; }
+          test -n "$SIGNAL_API_KEY" || { echo "Missing SIGNAL_API_KEY secret"; exit 1; }
+          case "$TELEGRAM_WORKER_URL" in
+            https://*) echo "Telegram Worker URL is HTTPS." ;;
+            *) echo "Telegram Worker URL must use HTTPS."; exit 1 ;;
+          esac
+          echo "Required Telegram secrets are present (values hidden)."
+
+      - name: Send clearly labelled commissioning message
+        env:
+          TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
+          SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
+        run: |
+          node <<'NODE'
+          const url = process.env.TELEGRAM_WORKER_URL;
+          const apiKey = process.env.SIGNAL_API_KEY;
+          const timestamp = new Date().toISOString();
+          const message = [
+            "TELEGRAM DELIVERY TEST — NOT A TRADING SIGNAL",
+            "ByYourSide Deriv-bot commissioning check.",
+            "This is a test message only; no market scan or trade was run.",
+            "Sent at: " + timestamp
+          ].join("\n");
+
+          (async () => {
+            const response = await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-API-Key": apiKey
+              },
+              body: JSON.stringify({
+                event: "daily_summary",
+                message,
+                text: message
+              }),
+              signal: AbortSignal.timeout(15000)
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || result.success !== true) {
+              console.error("Telegram Worker delivery was not confirmed. HTTP status:", response.status);
+              process.exit(1);
+            }
+            console.log("TELEGRAM_WORKER_ACCEPTED_TEST_MESSAGE");
+            console.log("HTTP status:", response.status);
+            console.log("Timestamp:", timestamp);
+          })().catch(error => {
+            console.error("Telegram delivery test failed:", error.name || "network_error");
+            process.exit(1);
+          });
+          NODE
