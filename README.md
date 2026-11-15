@@ -2,17 +2,18 @@
 
 Needs Node 22+ and an always-on machine (VPS, Raspberry Pi or a worker on a host such as Render or Railway). A phone browser tab cannot run it in the background.
 
-1. `cp .env.example .env` and fill it in. `.env` is git-ignored and must never go in `public/`.
-2. **Signal-only first** (default): `node bot.js`. It scans the five markets, logs to `bot.log`, and sends Telegram alerts if `TELEGRAM_*` is set. No orders are possible in this mode.
-3. **Demo trading:** create a Deriv token with the `trade` scope (see developers.deriv.com/llms/authentication.md), set `DERIV_TOKEN`, `DERIV_ACCOUNT_ID` (your DEMO account id, and `DERIV_APP_ID` if it is a PAT), then `TRADE_ENABLED=true`, `TRADE_MODE=demo`. The bot fetches a one-time WebSocket URL per trade and refuses to trade if that URL is not a demo endpoint.
-4. **Kill switch:** create a file named `STOP` next to `bot.js` (`touch STOP`). No new trade is placed while it exists. Delete it to resume.
+1. Copy `.env.example` to `.env` and fill in credentials locally. The `.env` file is git-ignored and must never go in `public/`.
+2. **Read-only demo connection check (recommended first):** set `DERIV_TOKEN`, the DEMO account's `DERIV_ACCOUNT_ID`, and `DERIV_APP_ID` if using a PAT. Run `node scripts/demo_connection_check.js`. This obtains a short-lived demo WebSocket session and reads the demo balance only. It never requests a proposal or places an order.
+3. **Signal-only scanner:** `node bot.js` with `TRADE_ENABLED=false` (default). It scans the five configured markets and sends Telegram alerts if configured. No orders are placed.
+4. **Demo order testing is a separate, explicit step:** the existing bot can place fixed-stake Rise/Fall demo orders only if `TRADE_ENABLED=true` and `TRADE_MODE=demo`. Do not enable this until the strategy has passed replay and you have reviewed the stake, duration, and daily limits. The bot checks that Deriv returns a demo WebSocket endpoint before placing an order.
+5. **Kill switch:** create a file named `STOP` next to `bot.js`. No new trade is placed while it exists.
 
 ## What it does and does not do
-- Same signal rules as the app (`engine.js` is a port of the app's `evaluate`), same cooldown, one signal per candle.
-- Buys a fixed-stake Rise/Fall (`CALL` for BUY, `PUT` for SELL) for `TRADE_DURATION_CANDLES` x 15 minutes, only if the signal is under 2 minutes old and the quoted payout ratio is at least `MIN_PAYOUT_RATIO`.
-- Limits: `MAX_TRADES_PER_DAY`, `MAX_OPEN_TRADES`, one open trade per market, `MAX_DAILY_LOSS` (from account balance), `STAKE` capped at 20.
-- No martingale, no stake increase after losses, no loss recovery. Nothing reads results to change stake.
-- Real money needs `TRADE_MODE=real`, `I_ACCEPT_REAL_MONEY_RISK=yes` and an explicit `MAX_DAILY_LOSS`.
+- The current production scanner uses the existing EMA/RSI/ATR rules in `engine.js`; this branch does not change its signals or Telegram path.
+- The market-structure document in `research/market-structure-experiment.md` is a research specification only. BOS/CHoCH, multi-timeframe confirmation, and trade-management rules have not yet been implemented or validated.
+- The existing demo-order mode buys a fixed-stake Rise/Fall contract for `TRADE_DURATION_CANDLES` x 15 minutes, subject to its age, payout, and risk-limit checks.
+- No martingale, stake increase after losses, or loss recovery.
+- Real-money mode is not part of this setup and must not be enabled.
 
-## Read before enabling real money
-Nothing here shows this strategy is profitable. At an 80% payout a fixed-duration trade must win about 56% of the time just to break even. Run the backtest, then run demo for weeks and judge 100+ trades before considering real money. Not financial advice.
+## Validation warning
+Nothing in the current research proves this strategy is profitable. The read-only demo connection check confirms only that the selected demo account can be authenticated and its balance read. It is not strategy validation or permission to activate automatic trading.
