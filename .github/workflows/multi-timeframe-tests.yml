@@ -13,6 +13,7 @@ on:
       - "market_quality.js"
       - "multi_timeframe_alerts.js"
       - "multi_timeframe_collector.js"
+      - "strategy_comparison.js"
       - "multi_timeframe_journal.js"
       - "multi_timeframe_dashboard.js"
       - "index.html"
@@ -20,6 +21,7 @@ on:
       - "test/multi_timeframe_journal.test.js"
       - "test/dashboard_syntax.test.js"
       - "test/multi_timeframe_alerts.test.js"
+      - "test/strategy_comparison.test.js"
       - ".github/workflows/multi-timeframe-tests.yml"
   pull_request:
     branches:
@@ -40,6 +42,6 @@ jobs:
         with:
           node-version: "22"
       - name: Syntax check
-        run: node --check multi_timeframe_engine.js && node --check market_quality.js && node --check multi_timeframe_alerts.js && node --check multi_timeframe_collector.js
+        run: node --check multi_timeframe_engine.js && node --check market_quality.js && node --check multi_timeframe_alerts.js && node --check multi_timeframe_collector.js && node --check strategy_comparison.js
       - name: Run unit tests
         run: node --test test/multi_timeframe_engine.test.js test/multi_timeframe_journal.test.js test/dashboard_syntax.test.js test/multi_timeframe_alerts.test.js
