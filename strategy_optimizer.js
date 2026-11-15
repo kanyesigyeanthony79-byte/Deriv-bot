@@ -146,12 +146,24 @@ function researchMarket(candles) {
   const topValidation=usable.slice(0,20).sort((a,b)=>(b.validation.tp2Hits-b.validation.fullStops)-(a.validation.tp2Hits-a.validation.fullStops)||b.validation.resolved-a.validation.resolved).slice(0,10);
   return {bars:candles?.length||0,continuousSegments:segments.length,configsTested:configsList.length,
     status:segments.length?"research_complete":"insufficient_continuous_history",
-    discoveryTop:usable.slice(0,10),validationOfDiscovery:topValidation,
+    discoveryTop:usable.slice(0,10),validationOfDiscovery:topValidation,allCandidates:ranked,
     note:"Discovery uses the first 65% of each continuous segment; validation uses the later 35%. Entry is next candle open. Shared exits: 1.5 ATR stop, TP1=2R, TP2=3R, 96-candle horizon. Same-candle stop/target touches are ambiguous. Expired trades are reported, not counted as wins or losses. This is exploratory research, not a live strategy."};
 }
 function researchArchive(archive) {
   const markets={};for(const [id,cs] of Object.entries(archive?.markets||{}))markets[id]=researchMarket(cs);
-  return {version:1,generatedAt:new Date().toISOString(),mode:"offline_research_only",markets,
-    caution:"Do not promote a rule from this report. Require adequate independent validation sample and subsequent forward-shadow results first."};
+  const pooled=new Map();
+  for(const [marketId,report] of Object.entries(markets))for(const candidate of report.allCandidates||[]){
+    const id=candidate.config.id;
+    const row=pooled.get(id)||{config:candidate.config,marketsSeen:0,train:{signals:0,resolved:0,tp1Hits:0,tp2Hits:0,fullStops:0,stoppedAfterTp1:0,anyStops:0,ambiguous:0,expired:0},validation:{signals:0,resolved:0,tp1Hits:0,tp2Hits:0,fullStops:0,stoppedAfterTp1:0,anyStops:0,ambiguous:0,expired:0}};
+    if(candidate.train.resolved>0)row.marketsSeen++;
+    for(const phase of ["train","validation"])for(const key of Object.keys(row[phase]))row[phase][key]+=candidate[phase][key]||0;
+    pooled.set(id,row);
+  }
+  const summarize=x=>{const n=x.resolved;return {...x,winRate:n?Number((Math.max(0,x.tp1Hits-x.stoppedAfterTp1-x.ambiguous)/n*100).toFixed(1)):null,tp1Rate:n?Number((x.tp1Hits/n*100).toFixed(1)):null,tp2Rate:n?Number((x.tp2Hits/n*100).toFixed(1)):null,stopRate:n?Number((x.fullStops/n*100).toFixed(1)):null,anyStopRate:n?Number((x.anyStops/n*100).toFixed(1)):null};};
+  const pooledCandidates=[...pooled.values()].map(x=>({...x,train:summarize(x.train),validation:summarize(x.validation)}));
+  const discovery=pooledCandidates.filter(x=>x.train.resolved>=30&&x.marketsSeen>=3).sort((a,b)=>(b.train.tp1Hits-b.train.stoppedAfterTp1-b.train.fullStops)-(a.train.tp1Hits-a.train.stoppedAfterTp1-a.train.fullStops)||b.train.resolved-a.train.resolved).slice(0,15);
+  const validation=discovery.filter(x=>x.validation.resolved>=15).sort((a,b)=>(b.validation.tp1Hits-b.validation.stoppedAfterTp1-b.validation.fullStops)-(a.validation.tp1Hits-a.validation.stoppedAfterTp1-a.validation.fullStops)||b.validation.resolved-a.validation.resolved).slice(0,10);
+  return {version:1,generatedAt:new Date().toISOString(),mode:"offline_research_only",markets,pooled:{configsTested:pooledCandidates.length,minimumDiscoverySample:30,minimumMarkets:3,discoveryCandidates:discovery,heldOutValidation:validation},
+    caution:"Pooled results combine multiple markets and are exploratory. Require adequate independent validation samples and subsequent forward-shadow results before promoting any rule."};
 }
 module.exports={mergeCandleArchive,buildFeatures,configs,passes,outcome,scoreConfig,researchMarket,researchArchive};
