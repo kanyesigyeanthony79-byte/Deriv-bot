@@ -1,24 +1,24 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-15T02:10:27.000Z",
-  "generatedEpoch": 1794708627,
+  "generatedAt": "2026-11-15T09:29:04.000Z",
+  "generatedEpoch": 1794734944,
   "mode": "signal_alerts_enabled",
   "summary": {
     "markets": 8,
     "signalCounts": {
-      "signal": 1,
-      "no_signal": 15,
-      "timeframe_conflict": 1,
+      "signal": 0,
+      "no_signal": 16,
+      "timeframe_conflict": 0,
       "waiting_pullback": 0,
       "warming": 0,
-      "market_filtered": 11,
+      "market_filtered": 12,
       "data_gap": 4
     },
     "journal": {
       "pending": 5,
+      "expired": 15,
       "stopped": 12,
-      "tp2_hit": 4,
-      "expired": 14
+      "tp2_hit": 4
     },
     "telegram": {
       "enabled": true,
@@ -39,28 +39,46 @@
           "category": "SCALP",
           "label": "Scalping",
           "reason": "Entry timeframe rules did not produce a signal.",
-          "score": 44
+          "score": 37
         },
         {
-          "state": "no_signal",
+          "state": "market_filtered",
           "category": "SHORT_TERM",
           "label": "Short-term",
-          "reason": "Entry timeframe rules did not produce a signal.",
-          "score": 71
+          "timeframe": "H1",
+          "regime": {
+            "state": "transitioning",
+            "direction": "BUY",
+            "separationAtr": 0.3466893906370477,
+            "slopeAtr": -0.27841769739089045,
+            "volatilityRatio": 1.059487185830266,
+            "latestRangeAtr": 1.4163062392213945,
+            "reason": "Market is transitioning; trend conditions are not sufficiently clear."
+          },
+          "reason": "Market conditions are not suitable for this trend-following setup."
         },
         {
-          "state": "no_signal",
+          "state": "market_filtered",
           "category": "SWING",
           "label": "Swing",
-          "reason": "Entry timeframe rules did not produce a signal.",
-          "score": 71
+          "timeframe": "H1",
+          "regime": {
+            "state": "transitioning",
+            "direction": "BUY",
+            "separationAtr": 0.3466893906370477,
+            "slopeAtr": -0.27841769739089045,
+            "volatilityRatio": 1.059487185830266,
+            "latestRangeAtr": 1.4163062392213945,
+            "reason": "Market is transitioning; trend conditions are not sufficiently clear."
+          },
+          "reason": "Market conditions are not suitable for this trend-following setup."
         },
         {
           "state": "no_signal",
           "category": "POSITION",
           "label": "Position",
           "reason": "Entry timeframe rules did not produce a signal.",
-          "score": 83
+          "score": 60
         }
       ],
       "timeframeCounts": {
@@ -79,34 +97,25 @@
       "marketName": "Volatility 25 Index",
       "signals": [
         {
-          "state": "market_filtered",
+          "state": "no_signal",
           "category": "SCALP",
           "label": "Scalping",
-          "timeframe": "M5",
-          "regime": {
-            "state": "transitioning",
-            "direction": "BUY",
-            "separationAtr": 0.47081871697909133,
-            "slopeAtr": -0.013871784299759236,
-            "volatilityRatio": 0.9862022078288742,
-            "latestRangeAtr": 0.8743143102279479,
-            "reason": "Market is transitioning; trend conditions are not sufficiently clear."
-          },
-          "reason": "Market conditions are not suitable for this trend-following setup."
+          "reason": "Entry timeframe rules did not produce a signal.",
+          "score": 57
         },
         {
           "state": "no_signal",
           "category": "SHORT_TERM",
           "label": "Short-term",
           "reason": "Entry timeframe rules did not produce a signal.",
-          "score": 25
+          "score": 69
         },
         {
           "state": "no_signal",
           "category": "SWING",
           "label": "Swing",
           "reason": "Entry timeframe rules did not produce a signal.",
-          "score": 25
+          "score": 69
         },
         {
           "state": "market_filtered",
@@ -145,14 +154,14 @@
           "category": "SCALP",
           "label": "Scalping",
           "reason": "Entry timeframe rules did not produce a signal.",
-          "score": 76
+          "score": 27
         },
         {
           "state": "no_signal",
           "category": "SHORT_TERM",
           "label": "Short-term",
           "reason": "Entry timeframe rules did not produce a signal.",
-          "score": 58
+          "score": 91
         },
         {
           "state": "market_filtered",
@@ -214,14 +223,14 @@
           "category": "SHORT_TERM",
           "label": "Short-term",
           "reason": "Entry timeframe rules did not produce a signal.",
-          "score": 83
+          "score": 73
         },
         {
           "state": "no_signal",
           "category": "SWING",
           "label": "Swing",
           "reason": "Entry timeframe rules did not produce a signal.",
-          "score": 83
+          "score": 73
         },
         {
           "state": "market_filtered",
@@ -260,116 +269,28 @@
           "category": "SCALP",
           "label": "Scalping",
           "reason": "Entry timeframe rules did not produce a signal.",
-          "score": 26
+          "score": 46
         },
         {
-          "state": "signal",
-          "signalId": "JD100-SHORT_TERM-1794708300",
-          "marketId": "JD100",
-          "market": "Jump 100 Index",
+          "state": "no_signal",
           "category": "SHORT_TERM",
-          "categoryLabel": "Short-term",
-          "direction": "SELL",
-          "entryTimeframe": "M5",
-          "confirmationTimeframe": "M15",
-          "contextTimeframe": "H1",
-          "riskTimeframe": "H1",
-          "targetHorizon": "H1",
-          "candleEpoch": 1794708300,
-          "entryCandleEpoch": 1794708300,
-          "score": 93,
-          "entryChecks": [
-            {
-              "passed": true,
-              "reason": "EMA20/EMA50 trend down, gap 1.20 ATR"
-            },
-            {
-              "passed": true,
-              "reason": "Close on the trend side of EMA20"
-            },
-            {
-              "passed": true,
-              "reason": "EMA50 sloping with the trend"
-            },
-            {
-              "passed": true,
-              "reason": "RSI 44.2 inside 32-50"
-            },
-            {
-              "passed": true,
-              "reason": "Bearish candle, body 63% of range"
-            },
-            {
-              "passed": true,
-              "reason": "Lower high formed"
-            },
-            {
-              "passed": true,
-              "reason": "Not extended from EMA20 (0.6 ATR)"
-            },
-            {
-              "passed": true,
-              "reason": "No spike candle"
-            }
-          ],
-          "metrics": {
-            "entry": {
-              "ema20": 62.82721047211312,
-              "ema50": 63.255057010735094,
-              "ema50Previous": 63.38482375787971,
-              "atr": 0.35628572066958286,
-              "emaSeparationAtr": 1.200852332273942,
-              "emaSlopeAtr": 0.36422101593277023,
-              "bodyRatio": 0.6296296296296287,
-              "closeLocation": 0.7777777777777719,
-              "extensionAtr": 0.6377198381291148,
-              "swingAtr": 0.5052125009717627,
-              "candleRange": 0.2700000000000031
-            },
-            "confirmation": {
-              "state": "aligned",
-              "direction": "SELL",
-              "separationAtr": 0.604247351340521,
-              "slopeAtr": 0.08921421687353831
-            },
-            "context": {
-              "state": "aligned",
-              "direction": "SELL",
-              "separationAtr": 1.2326923369603877,
-              "slopeAtr": 0.106934232560045
-            },
-            "swingSetup": null,
-            "swingHigherBias": null,
-            "swingH4Bias": null,
-            "riskAtr": 1.3255297854951784
-          },
-          "entry": 62.6,
-          "stopLoss": 64.59,
-          "tp1": 59.62,
-          "tp2": 58.13,
-          "riskDistance": 1.99,
-          "riskReward": {
-            "tp1": 1.5,
-            "tp2": 2.25
-          },
-          "maxAgeSeconds": 21600
+          "label": "Short-term",
+          "reason": "Entry timeframe rules did not produce a signal.",
+          "score": 56
         },
         {
-          "state": "timeframe_conflict",
+          "state": "no_signal",
           "category": "SWING",
           "label": "Swing",
-          "direction": "SELL",
-          "setupBias": "NO TRADE",
-          "higherTimeframeBias": "SELL",
-          "h4Bias": "SELL",
-          "reason": "Swing entry is withheld unless the H1 setup and D1 trend agree with the M5 direction."
+          "reason": "Entry timeframe rules did not produce a signal.",
+          "score": 56
         },
         {
           "state": "no_signal",
           "category": "POSITION",
           "label": "Position",
           "reason": "Entry timeframe rules did not produce a signal.",
-          "score": 90
+          "score": 65
         }
       ],
       "timeframeCounts": {
@@ -489,27 +410,36 @@
           "category": "SCALP",
           "label": "Scalping",
           "reason": "Entry timeframe rules did not produce a signal.",
-          "score": 70
+          "score": 37
         },
         {
-          "state": "no_signal",
+          "state": "market_filtered",
           "category": "SHORT_TERM",
           "label": "Short-term",
-          "reason": "Entry timeframe rules did not produce a signal.",
-          "score": 90
+          "timeframe": "H1",
+          "regime": {
+            "state": "transitioning",
+            "direction": "SELL",
+            "separationAtr": 0.22335291437587992,
+            "slopeAtr": -0.013189012721637913,
+            "volatilityRatio": 0.9643127457770359,
+            "latestRangeAtr": 0.8357526683186999,
+            "reason": "Market is transitioning; trend conditions are not sufficiently clear."
+          },
+          "reason": "Market conditions are not suitable for this trend-following setup."
         },
         {
           "state": "market_filtered",
           "category": "SWING",
           "label": "Swing",
-          "timeframe": "D1",
+          "timeframe": "H1",
           "regime": {
             "state": "transitioning",
             "direction": "SELL",
-            "separationAtr": 0.18712215196437768,
-            "slopeAtr": 0.03628574064938735,
-            "volatilityRatio": 0.9272550074344086,
-            "latestRangeAtr": 0.9575746110962655,
+            "separationAtr": 0.22335291437587992,
+            "slopeAtr": -0.013189012721637913,
+            "volatilityRatio": 0.9643127457770359,
+            "latestRangeAtr": 0.8357526683186999,
             "reason": "Market is transitioning; trend conditions are not sufficiently clear."
           },
           "reason": "Market conditions are not suitable for this trend-following setup."
@@ -547,33 +477,24 @@
       "marketName": "Boom 500 Index",
       "signals": [
         {
-          "state": "market_filtered",
+          "state": "no_signal",
           "category": "SCALP",
           "label": "Scalping",
-          "timeframe": "M15",
-          "regime": {
-            "state": "transitioning",
-            "direction": "BUY",
-            "separationAtr": 0.19745192917019033,
-            "slopeAtr": -0.1219967690583442,
-            "volatilityRatio": 0.8519951347591487,
-            "latestRangeAtr": 0.6801221047549114,
-            "reason": "Market is transitioning; trend conditions are not sufficiently clear."
-          },
-          "reason": "Market conditions are not suitable for this trend-following setup."
+          "reason": "Entry timeframe rules did not produce a signal.",
+          "score": 57
         },
         {
           "state": "market_filtered",
           "category": "SHORT_TERM",
           "label": "Short-term",
-          "timeframe": "M15",
+          "timeframe": "H1",
           "regime": {
             "state": "transitioning",
-            "direction": "BUY",
-            "separationAtr": 0.19745192917019033,
-            "slopeAtr": -0.1219967690583442,
-            "volatilityRatio": 0.8519951347591487,
-            "latestRangeAtr": 0.6801221047549114,
+            "direction": "SELL",
+            "separationAtr": 0.7372899957468081,
+            "slopeAtr": 0.14712396298652397,
+            "volatilityRatio": 1.1397260441535817,
+            "latestRangeAtr": 1.7340690797568712,
             "reason": "Market is transitioning; trend conditions are not sufficiently clear."
           },
           "reason": "Market conditions are not suitable for this trend-following setup."
@@ -582,14 +503,14 @@
           "state": "market_filtered",
           "category": "SWING",
           "label": "Swing",
-          "timeframe": "M15",
+          "timeframe": "H1",
           "regime": {
             "state": "transitioning",
-            "direction": "BUY",
-            "separationAtr": 0.19745192917019033,
-            "slopeAtr": -0.1219967690583442,
-            "volatilityRatio": 0.8519951347591487,
-            "latestRangeAtr": 0.6801221047549114,
+            "direction": "SELL",
+            "separationAtr": 0.7372899957468081,
+            "slopeAtr": 0.14712396298652397,
+            "volatilityRatio": 1.1397260441535817,
+            "latestRangeAtr": 1.7340690797568712,
             "reason": "Market is transitioning; trend conditions are not sufficiently clear."
           },
           "reason": "Market conditions are not suitable for this trend-following setup."
