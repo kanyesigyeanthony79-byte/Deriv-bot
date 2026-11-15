@@ -55,24 +55,34 @@ test("empty day produces zero counts and an undefined win rate", () => {
   assert.deepEqual(summary.byMarket, []);
 });
 
-test("daily report includes legacy and non-swing MTF maximum favourable movement", () => {
+test("daily report separates legacy and all multi-timeframe MFE observations", () => {
   const legacy = [{ localDate: "2026-11-13", marketId: "R_50", market: "Volatility 50 Index",
     direction: "BUY", status: "sent", maxFavourablePoints: 18.4, maxFavourablePct: 0.74 }];
   const mtf = [
-    { signalId: "a", category: "SCALP", market: "Volatility 25 Index", direction: "SELL",
+    { signalId: "a", category: "SCALP", marketId: "R_25", market: "Volatility 25 Index", direction: "SELL",
       entryTimeframe: "M1", entryCandleEpoch: Date.parse("2026-11-13T10:00:00Z") / 1000,
+      status: "tp2_hit", telegramStatus: "sent", tp1Hit: true,
       maxFavourablePoints: 22, maxFavourablePct: 1.1 },
-    { signalId: "b", category: "SWING", market: "Jump 100 Index", direction: "BUY",
-      entryTimeframe: "M5", entryCandleEpoch: Date.parse("2026-11-13T10:00:00Z") / 1000,
-      maxFavourablePoints: 90, maxFavourablePct: 2.0 }
+    { signalId: "b", category: "SWING", marketId: "JD100", market: "Jump 100 Index", direction: "BUY",
+      entryTimeframe: "H1", entryCandleEpoch: Date.parse("2026-11-13T10:00:00Z") / 1000,
+      status: "expired", maxFavourablePoints: 90, maxFavourablePct: 2.0 }
   ];
   const summary = dailySummary(legacy, "2026-11-13", markets, mtf);
-  assert.equal(summary.mfeCount, 2);
-  assert.equal(summary.mfeTop[0].category, "SCALP");
+  assert.equal(summary.mfeCount, 3);
+  assert.equal(summary.legacyMfeCount, 1);
+  assert.equal(summary.mtfMfeCount, 2);
+  assert.equal(summary.multiTimeframe.generated, 2);
+  assert.equal(summary.multiTimeframe.sent, 1);
+  assert.equal(summary.multiTimeframe.deliveryUntracked, 1);
+  assert.equal(summary.multiTimeframe.wins, 1);
+  assert.equal(summary.multiTimeframe.expired, 1);
+  assert.equal(summary.mfeTop[0].category, "SWING");
   const message = buildDailySummaryMessage(summary);
-  assert.match(message, /MAX FAVOURABLE MOVEMENT/);
+  assert.match(message, /LEGACY 15-MINUTE SIGNALS/);
+  assert.match(message, /MULTI-TIMEFRAME OBSERVATION SIGNALS/);
   assert.match(message, /Volatility 25 Index SELL/);
-  assert.doesNotMatch(message, /SWING/);
+  assert.match(message, /Jump 100 Index BUY/);
+  assert.match(message, /does not prove TP was reached before SL/);
 });
 
 
