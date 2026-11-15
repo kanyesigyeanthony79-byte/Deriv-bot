@@ -8,6 +8,7 @@ const { updateJournal, summarizeJournal } = require("./multi_timeframe_journal")
 const { sendCandidateAlerts } = require("./multi_timeframe_alerts");
 const { reviewSignal } = require("./signal_review");
 const { updateStrategyJournal, summarizeStrategyJournal } = require("./strategy_comparison");
+const { sendStrategyComparisonAlerts, sendDailyStrategyComparisonReport } = require("./strategy_comparison_alerts");
 const { mergeCandleArchive, researchArchive } = require("./strategy_optimizer");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
@@ -151,8 +152,17 @@ async function main() {
       ? JSON.parse(fs.readFileSync(strategyJournalPath, "utf8"))
       : { version: 1, updatedAt: null, markets: {}, signals: [] };
     const strategyJournal = updateStrategyJournal(priorStrategyJournal, output.markets, now);
-    fs.writeFileSync(strategyJournalPath, JSON.stringify(strategyJournal, null, 2) + "\n");
+    const persistStrategyJournal = current =>
+      fs.writeFileSync(strategyJournalPath, JSON.stringify(current, null, 2) + "\n");
+    const strategyShadowTelegram = await sendStrategyComparisonAlerts(
+      strategyJournal, now, process.env, { log, persist: persistStrategyJournal }
+    );
+    const strategyDailyTelegram = await sendDailyStrategyComparisonReport(
+      strategyJournal, now, process.env, { log, persist: persistStrategyJournal }
+    );
+    persistStrategyJournal(strategyJournal);
     output.strategyComparison = summarizeStrategyJournal(strategyJournal);
+    output.strategyComparisonTelegram = { alerts: strategyShadowTelegram, dailyReport: strategyDailyTelegram };
     const researchArchivePath = path.join(__dirname, "strategy_research_candles.json");
     const researchReportPath = path.join(__dirname, "strategy_research_report.json");
     let priorResearchArchive = { version: 1, markets: {} };
