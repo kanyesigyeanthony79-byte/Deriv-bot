@@ -172,6 +172,7 @@ function blankStats() {
 
 function summarizeStrategyJournal(journal) {
   const markets = {};
+  const pct = (n, d) => d ? Number((n / d * 100).toFixed(1)) : null;
   for (const [marketId, marketStats] of Object.entries(journal.markets || {})) {
     markets[marketId] = {};
     for (const strategy of STRATEGIES) {
@@ -184,11 +185,12 @@ function summarizeStrategyJournal(journal) {
       const expired = signals.filter(s => s.status === "expired").length;
       const ambiguous = signals.filter(s => s.status === "ambiguous").length;
       const realized = terminal.map(s => s.realizedR).filter(Number.isFinite);
-      const pct = (n, d) => d ? Number((n / d * 100).toFixed(1)) : null;
       markets[marketId][strategy.id] = {
         label: strategy.label,
         ...counters,
         totalSignalsInJournal: signals.length,
+        historicalBackfillSignals: signals.filter(s => !s.evaluationSource || s.evaluationSource === "historical_backfill").length,
+        forwardShadowSignals: signals.filter(s => s.evaluationSource === "forward_shadow").length,
         resolvedSignals: terminal.length,
         pendingSignals: signals.filter(s => !isTerminal(s.status)).length,
         winRate: pct(tp1, terminal.length),
@@ -207,13 +209,35 @@ function summarizeStrategyJournal(journal) {
   const totals = {};
   for (const strategy of STRATEGIES) {
     const rows = Object.values(markets).map(m => m[strategy.id]).filter(Boolean);
+    const signals = (journal.signals || []).filter(s => s.strategyId === strategy.id);
+    const terminal = signals.filter(s => isTerminal(s.status));
+    const tp1 = signals.filter(s => s.tp1Hit).length;
+    const tp2 = signals.filter(s => s.status === "tp2_hit").length;
+    const stops = signals.filter(s => s.status === "stopped" || s.status === "stopped_after_tp1").length;
+    const expired = signals.filter(s => s.status === "expired").length;
+    const ambiguous = signals.filter(s => s.status === "ambiguous").length;
+    const realized = terminal.map(s => s.realizedR).filter(Number.isFinite);
+    const barsEvaluated = rows.reduce((sum, row) => sum + row.barsEvaluated, 0);
+    const noSignalBars = rows.reduce((sum, row) => sum + row.noSignalBars, 0);
     totals[strategy.id] = {
       label: strategy.label,
-      barsEvaluated: rows.reduce((sum, row) => sum + row.barsEvaluated, 0),
+      barsEvaluated,
+      noSignalBars,
+      noEntryRate: pct(noSignalBars, barsEvaluated),
       signalsGenerated: rows.reduce((sum, row) => sum + row.signalsGenerated, 0),
-      resolvedSignals: rows.reduce((sum, row) => sum + row.resolvedSignals, 0),
-      pendingSignals: rows.reduce((sum, row) => sum + row.pendingSignals, 0),
-      signalsPerDay: Number(rows.reduce((sum, row) => sum + row.signalsPerDay, 0).toFixed(2))
+      historicalBackfillSignals: signals.filter(s => !s.evaluationSource || s.evaluationSource === "historical_backfill").length,
+      forwardShadowSignals: signals.filter(s => s.evaluationSource === "forward_shadow").length,
+      resolvedSignals: terminal.length,
+      pendingSignals: signals.filter(s => !isTerminal(s.status)).length,
+      winRate: pct(tp1, terminal.length),
+      tp1HitRate: pct(tp1, terminal.length),
+      tp2HitRate: pct(tp2, terminal.length),
+      stopLossRate: pct(stops, terminal.length),
+      expiredRate: pct(expired, terminal.length),
+      ambiguousRate: pct(ambiguous, terminal.length),
+      signalsPerDay: Number(rows.reduce((sum, row) => sum + row.signalsPerDay, 0).toFixed(2)),
+      averageRealizedR: realized.length ? Number((realized.reduce((sum, value) => sum + value, 0) / realized.length).toFixed(2)) : null,
+      realizedRObservations: realized.length
     };
   }
   return {
@@ -224,6 +248,7 @@ function summarizeStrategyJournal(journal) {
     riskModel: { stopAtr: STOP_ATR, tp1R: TP1_R, tp2R: TP2_R, maxAgeSeconds: MAX_AGE_SECONDS },
     winRateDefinition: "TP1 reached before any stop; a later stop is separately counted as stopped_after_tp1.",
     realizedRNote: "Average realized R includes only unambiguous TP2 (+3R) and full stop-loss (-1R) outcomes. stopped_after_tp1 is excluded until a partial-exit rule is explicitly defined.",
+    sourceNote: "Historical backfill evaluates previously completed candles. Forward shadow signals are evaluated as new M15 candles close. These are analytical signals, not executed demo trades.",
     markets,
     totals
   };
@@ -262,6 +287,7 @@ function updateStrategyJournal(priorJournal, markets, nowEpoch = Math.floor(Date
         const result = evaluateStrategy(history, strategy.id, marketId, market.marketName || market.market || marketId);
         if (result.state === "signal") {
           if (!byId.has(result.signalId)) {
+            result.evaluationSource = cursor > 0 ? "forward_shadow" : "historical_backfill";
             journal.signals.push(result);
             byId.set(result.signalId, result);
             stats.signalsGenerated++;
@@ -278,6 +304,7 @@ function updateStrategyJournal(priorJournal, markets, nowEpoch = Math.floor(Date
     }
   }
 
+  for (const signal of journal.signals) signal.evaluationSource ||= "historical_backfill";
   journal.updatedAt = new Date(nowEpoch * 1000).toISOString();
   journal.signals.sort((a, b) => b.entryCandleEpoch - a.entryCandleEpoch);
   journal.signals = journal.signals.slice(0, MAX_SIGNALS);
