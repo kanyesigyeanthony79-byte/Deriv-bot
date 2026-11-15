@@ -110,48 +110,48 @@ function buildDailySummaryMessage(summary, accountSnapshot = null) {
   };
   const legacyMfeCount = summary.legacyMfeCount ?? summary.mfeCount;
   const mtfMfeCount = summary.mtfMfeCount ?? mtf.mfeCount;
-  return "DAILY DERIV SIGNAL REPORT (" + summary.day + ")\\n" +
-    "LEGACY 15-MINUTE SIGNALS\\n" +
-    "Generated: " + summary.generated + "\\nSent to Telegram: " + summary.sent +
-    "\\nMissed / not sent: " + summary.missed +
-    "\\nWins (TP2): " + summary.wins + "\\nLosses (SL): " + summary.losses +
-    "\\nWin rate (resolved wins/losses): " + (summary.winRate === null ? "N/A" : summary.winRate + "%") +
-    "\\nNet signal outcomes (wins - losses): " + (summary.netSignalOutcomes > 0 ? "+" : "") + summary.netSignalOutcomes +
-    "\\nTP1 reached: " + summary.tp1 + "\\nExpired: " + summary.expired +
-    "\\nAmbiguous: " + summary.ambiguous + "\\nUnverified (state missing): " + summary.unverified +
-    "\\nStill open/unresolved: " + summary.unresolved +
-    "\\n\\nMULTI-TIMEFRAME OBSERVATION SIGNALS" +
-    "\\nGenerated: " + mtf.generated + "\\nTelegram sent: " + mtf.sent +
-    "\\nDelivery failed: " + mtf.deliveryFailed +
-    "\\nDelivery status untracked: " + mtf.deliveryUntracked +
-    "\\nWins (TP2): " + mtf.wins + "\\nLosses (SL): " + mtf.losses +
-    "\\nWin rate (resolved wins/losses): " + (mtf.winRate === null ? "N/A" : mtf.winRate + "%") +
-    "\\nNet signal outcomes (wins - losses): " + (mtf.netSignalOutcomes > 0 ? "+" : "") + mtf.netSignalOutcomes +
-    "\\nTP1 reached: " + mtf.tp1 + "\\nExpired: " + mtf.expired +
-    "\\nAmbiguous: " + mtf.ambiguous + "\\nUnverified: " + mtf.unverified +
-    "\\nStill open/unresolved: " + mtf.unresolved +
-    "\\n\\nMAX FAVOURABLE MOVEMENT (MFE)" +
-    "\\nLegacy positive-movement records: " + legacyMfeCount +
-    "\\nMulti-timeframe positive-movement records: " + mtfMfeCount +
-    (summary.mfeTop.length ? "\\nTop observations (both sources; not a combined trade count):\\n" + summary.mfeTop.map(item =>
+  return "DAILY DERIV SIGNAL REPORT (" + summary.day + ")\n" +
+    "LEGACY 15-MINUTE SIGNALS\n" +
+    "Generated: " + summary.generated + "\nSent to Telegram: " + summary.sent +
+    "\nMissed / not sent: " + summary.missed +
+    "\nWins (TP2): " + summary.wins + "\nLosses (SL): " + summary.losses +
+    "\nWin rate (resolved wins/losses): " + (summary.winRate === null ? "N/A" : summary.winRate + "%") +
+    "\nNet signal outcomes (wins - losses): " + (summary.netSignalOutcomes > 0 ? "+" : "") + summary.netSignalOutcomes +
+    "\nTP1 reached: " + summary.tp1 + "\nExpired: " + summary.expired +
+    "\nAmbiguous: " + summary.ambiguous + "\nUnverified (state missing): " + summary.unverified +
+    "\nStill open/unresolved: " + summary.unresolved +
+    "\n\nMULTI-TIMEFRAME OBSERVATION SIGNALS" +
+    "\nGenerated: " + mtf.generated + "\nTelegram sent: " + mtf.sent +
+    "\nDelivery failed: " + mtf.deliveryFailed +
+    "\nDelivery status untracked: " + mtf.deliveryUntracked +
+    "\nWins (TP2): " + mtf.wins + "\nLosses (SL): " + mtf.losses +
+    "\nWin rate (resolved wins/losses): " + (mtf.winRate === null ? "N/A" : mtf.winRate + "%") +
+    "\nNet signal outcomes (wins - losses): " + (mtf.netSignalOutcomes > 0 ? "+" : "") + mtf.netSignalOutcomes +
+    "\nTP1 reached: " + mtf.tp1 + "\nExpired: " + mtf.expired +
+    "\nAmbiguous: " + mtf.ambiguous + "\nUnverified: " + mtf.unverified +
+    "\nStill open/unresolved: " + mtf.unresolved +
+    "\n\nMAX FAVOURABLE MOVEMENT (MFE)" +
+    "\nLegacy positive-movement records: " + legacyMfeCount +
+    "\nMulti-timeframe positive-movement records: " + mtfMfeCount +
+    (summary.mfeTop.length ? "\nTop observations (both sources; not a combined trade count):\n" + summary.mfeTop.map(item =>
       item.market + " " + item.direction + " (" + item.category + "/" + item.timeframe + "): +" +
       item.points + " points (" + item.pct + "%)"
-    ).join("\\n") : "\\nNo positive movement recorded or movement data not yet available.") +
-    "\\nMFE is the greatest favourable completed-candle excursion, not realised profit; it does not prove TP was reached before SL. Intrabar order and execution costs may be unknown." +
-    "\\n\\nNote: Signal outcomes only; this is not actual account profit/loss." +
-    (summary.byMarket.length ? "\\n\\nLEGACY BY MARKET\\n" + summary.byMarket.join("\\n") : "") +
-    (mtf.byMarket.length ? "\\n\\nMULTI-TIMEFRAME BY MARKET\\n" + mtf.byMarket.join("\\n") : "") +
-    "\\n\\nDEMO ACCOUNT SNAPSHOT (READ-ONLY)" +
+    ).join("\n") : "\nNo positive movement recorded or movement data not yet available.") +
+    "\nMFE is the greatest favourable completed-candle excursion, not realised profit; it does not prove TP was reached before SL. Intrabar order and execution costs may be unknown." +
+    "\n\nNote: Signal outcomes only; this is not actual account profit/loss." +
+    (summary.byMarket.length ? "\n\nLEGACY BY MARKET\n" + summary.byMarket.join("\n") : "") +
+    (mtf.byMarket.length ? "\n\nMULTI-TIMEFRAME BY MARKET\n" + mtf.byMarket.join("\n") : "") +
+    "\n\nDEMO ACCOUNT SNAPSHOT (READ-ONLY)" +
     (accountSnapshot && accountSnapshot.status === "ok"
-      ? "\\nAccount: " + accountSnapshot.accountId +
-        "\\nBalance: " + accountSnapshot.balance + " " + accountSnapshot.currency +
-        "\\nEstimated equity: " + accountSnapshot.equityEstimate + " " + accountSnapshot.currency +
-        "\\nOpen contracts: " + accountSnapshot.openPositions.length +
-        "\\nCaptured: " + accountSnapshot.fetchedAt +
-        "\\nThis is a point-in-time demo account snapshot, not daily profit/loss."
+      ? "\nAccount: " + accountSnapshot.accountId +
+        "\nBalance: " + accountSnapshot.balance + " " + accountSnapshot.currency +
+        "\nEstimated equity: " + accountSnapshot.equityEstimate + " " + accountSnapshot.currency +
+        "\nOpen contracts: " + accountSnapshot.openPositions.length +
+        "\nCaptured: " + accountSnapshot.fetchedAt +
+        "\nThis is a point-in-time demo account snapshot, not daily profit/loss."
       : accountSnapshot && accountSnapshot.status === "unavailable"
-        ? "\\nUnavailable: the read-only demo account check failed. Signal report is still valid; no account P/L is inferred."
-        : "\\nNot connected: demo account snapshot credentials are not configured. Signal report only; no account P/L is inferred.");
+        ? "\nUnavailable: the read-only demo account check failed. Signal report is still valid; no account P/L is inferred."
+        : "\nNot connected: demo account snapshot credentials are not configured. Signal report only; no account P/L is inferred.");
 }
 
 async function deliverDailyReport(summary, accountSnapshot, postTelegram) {
