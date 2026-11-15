@@ -9,6 +9,7 @@ on:
       - "multi_timeframe_journal.js"
       - "multi_timeframe_engine.js"
       - "multi_timeframe_alerts.js"
+      - "strategy_comparison.js"
       - "signal_review.js"
       - ".github/workflows/multi-timeframe-collector.yml"
   workflow_dispatch:
@@ -45,7 +46,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add multi_timeframe_journal.json multi_timeframe_dashboard.json signal_review_data.json
+          git add multi_timeframe_journal.json multi_timeframe_dashboard.json signal_review_data.json strategy_comparison_journal.json
           if ! git diff --cached --quiet; then
             git commit -m "Update multi-timeframe observation journal"
             for attempt in 1 2 3; do
