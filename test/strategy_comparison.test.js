@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
-  STRATEGIES, pullbackConfirmed, makeLevels, evaluateStrategy,
+  STRATEGIES, ema, atr, pullbackConfirmed, makeLevels, evaluateStrategy,
   updateSignalOutcome, updateStrategyJournal
 } = require("../strategy_comparison");
 
@@ -32,8 +32,9 @@ test("pullback confirmation requires a test of EMA20 and a directional rejection
     return { epoch: 1_700_000_000 + i * 900, open: close - 0.08, high: close + 0.12, low: close - 0.12, close };
   });
   const last = rising[rising.length - 1];
-  const priorEmaApprox = last.close - 0.15;
-  rising[rising.length - 1] = { ...last, open: priorEmaApprox - 0.1, low: priorEmaApprox - 0.2, close: priorEmaApprox + 0.2, high: priorEmaApprox + 0.25 };
+  const ema20 = ema(rising.map(c => c.close), 20);
+  const volatility = atr(rising, 14);
+  rising[rising.length - 1] = { ...last, open: ema20 - 0.1, low: ema20 - 0.2, close: ema20 + 0.2, high: ema20 + Math.max(0.25, volatility * 0.3) };
   assert.equal(pullbackConfirmed(rising, "BUY"), true);
   assert.equal(pullbackConfirmed(rising, "SELL"), false);
 });
