@@ -18,7 +18,7 @@ In the repository, open **Settings → Secrets and variables → Actions → New
 
 Do not paste the token into chat, commit it, put it in a workflow file, or add it to a public issue. The workflow passes these values to the process as GitHub Actions secrets.
 
-The account token has Trade permission selected. Treat it as sensitive. The snapshot module itself allows only balance, portfolio, and status requests for contracts already present in the portfolio. It has no proposal, buy, sell, or contract-update operation. The reporting workflow does not enable the trading bot; keep `TRADE_ENABLED=false`.
+The token configured for this integration should have **Read permission only**. Treat it as sensitive. The snapshot module itself allows only balance, portfolio, and status requests for contracts already present in the portfolio. It has no proposal, buy, sell, or contract-update operation. The reporting workflow does not enable the trading bot; keep `TRADE_ENABLED=false`.
 
 ## Validation boundaries
 
