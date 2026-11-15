@@ -100,20 +100,22 @@ function scoreConfig(cs,features,cfg,start,end) {
     const result=outcome(cs,features,i,Math.min(cs.length-1,end===cs.length-1?cs.length-1:end-1));if(!result)continue;
     trades.push({epoch:cs[i].epoch,...result});last=i;
   }
-  const resolved=trades.filter(t=>["tp2_hit","stopped","stopped_after_tp1","ambiguous","expired"].includes(t.status));
-  const tp1=trades.filter(t=>t.tp1Hit).length, tp2=trades.filter(t=>t.status==="tp2_hit").length, stoppedAfterTp1=trades.filter(t=>t.status==="stopped_after_tp1").length;
-  const stops=trades.filter(t=>t.status==="stopped"||t.status==="stopped_after_tp1").length;
-  const fullStops=trades.filter(t=>t.status==="stopped").length;
+  // Only decisive TP2 or stop outcomes belong in the resolved-rate denominator.
+  // Ambiguous same-candle touches and horizon expiries are reported separately.
+  const settled=trades.filter(t=>["tp2_hit","stopped","stopped_after_tp1"].includes(t.status));
+  const tp1=settled.filter(t=>t.tp1Hit).length, tp2=settled.filter(t=>t.status==="tp2_hit").length, stoppedAfterTp1=settled.filter(t=>t.status==="stopped_after_tp1").length;
+  const stops=settled.filter(t=>t.status==="stopped"||t.status==="stopped_after_tp1").length;
+  const fullStops=settled.filter(t=>t.status==="stopped").length;
   const ambiguous=trades.filter(t=>t.status==="ambiguous").length;
-  const wins=trades.filter(t=>t.tp1Hit&&t.status!=="stopped_after_tp1"&&t.status!=="ambiguous").length;
+  const expired=trades.filter(t=>t.status==="expired").length;
   const realized=trades.map(t=>t.realizedR).filter(Number.isFinite);
-  return {signals:trades.length,resolved:resolved.length,tp1Hits:tp1,tp2Hits:tp2,fullStops,stoppedAfterTp1,anyStops:stops,ambiguous,
-    expired:trades.filter(t=>t.status==="expired").length,
-    winRate:resolved.length?Number((wins/resolved.length*100).toFixed(1)):null,
-    tp1Rate:resolved.length?Number((tp1/resolved.length*100).toFixed(1)):null,
-    tp2Rate:resolved.length?Number((tp2/resolved.length*100).toFixed(1)):null,
-    stopRate:resolved.length?Number((fullStops/resolved.length*100).toFixed(1)):null,
-    anyStopRate:resolved.length?Number((stops/resolved.length*100).toFixed(1)):null,
+  return {signals:trades.length,resolved:settled.length,tp1Hits:tp1,tp2Hits:tp2,fullStops,stoppedAfterTp1,anyStops:stops,ambiguous,
+    expired,
+    winRate:settled.length?Number((tp2/settled.length*100).toFixed(1)):null,
+    tp1Rate:settled.length?Number((tp1/settled.length*100).toFixed(1)):null,
+    tp2Rate:settled.length?Number((tp2/settled.length*100).toFixed(1)):null,
+    stopRate:settled.length?Number((fullStops/settled.length*100).toFixed(1)):null,
+    anyStopRate:settled.length?Number((stops/settled.length*100).toFixed(1)):null,
     averageRealizedR:realized.length?Number((realized.reduce((a,b)=>a+b,0)/realized.length).toFixed(2)):null,
     realizedRCount:realized.length};
 }
@@ -139,7 +141,7 @@ function researchMarket(candles) {
     for(const phase of ["train","validation"])for(const k of Object.keys(a[phase]))a[phase][k]+=row[phase][k]||0;
     aggregate.set(id,a);
   }
-  const summarize=x=>{const n=x.resolved;return {...x,winRate:n?Number((Math.max(0,x.tp1Hits-x.stoppedAfterTp1-x.ambiguous)/n*100).toFixed(1)):null,tp1Rate:n?Number((x.tp1Hits/n*100).toFixed(1)):null,tp2Rate:n?Number((x.tp2Hits/n*100).toFixed(1)):null,stopRate:n?Number((x.fullStops/n*100).toFixed(1)):null,anyStopRate:n?Number((x.anyStops/n*100).toFixed(1)):null};};
+  const summarize=x=>{const n=x.resolved;return {...x,winRate:n?Number((x.tp2Hits/n*100).toFixed(1)):null,tp1Rate:n?Number((x.tp1Hits/n*100).toFixed(1)):null,tp2Rate:n?Number((x.tp2Hits/n*100).toFixed(1)):null,stopRate:n?Number((x.fullStops/n*100).toFixed(1)):null,anyStopRate:n?Number((x.anyStops/n*100).toFixed(1)):null};};
   const ranked=[...aggregate.values()].map(x=>({...x,train:summarize(x.train),validation:summarize(x.validation)}));
   ranked.sort((a,b)=>(b.train.tp2Hits-b.train.fullStops)-(a.train.tp2Hits-a.train.fullStops)||b.train.resolved-a.train.resolved);
   const usable=ranked.filter(x=>x.train.resolved>=15);
@@ -159,7 +161,7 @@ function researchArchive(archive) {
     for(const phase of ["train","validation"])for(const key of Object.keys(row[phase]))row[phase][key]+=candidate[phase][key]||0;
     pooled.set(id,row);
   }
-  const summarize=x=>{const n=x.resolved;return {...x,winRate:n?Number((Math.max(0,x.tp1Hits-x.stoppedAfterTp1-x.ambiguous)/n*100).toFixed(1)):null,tp1Rate:n?Number((x.tp1Hits/n*100).toFixed(1)):null,tp2Rate:n?Number((x.tp2Hits/n*100).toFixed(1)):null,stopRate:n?Number((x.fullStops/n*100).toFixed(1)):null,anyStopRate:n?Number((x.anyStops/n*100).toFixed(1)):null};};
+  const summarize=x=>{const n=x.resolved;return {...x,winRate:n?Number((x.tp2Hits/n*100).toFixed(1)):null,tp1Rate:n?Number((x.tp1Hits/n*100).toFixed(1)):null,tp2Rate:n?Number((x.tp2Hits/n*100).toFixed(1)):null,stopRate:n?Number((x.fullStops/n*100).toFixed(1)):null,anyStopRate:n?Number((x.anyStops/n*100).toFixed(1)):null};};
   const pooledCandidates=[...pooled.values()].map(x=>({...x,train:summarize(x.train),validation:summarize(x.validation)}));
   const discovery=pooledCandidates.filter(x=>x.train.resolved>=30&&x.marketsSeen>=3).sort((a,b)=>(b.train.tp1Hits-b.train.stoppedAfterTp1-b.train.fullStops)-(a.train.tp1Hits-a.train.stoppedAfterTp1-a.train.fullStops)||b.train.resolved-a.train.resolved).slice(0,15);
   const validation=discovery.filter(x=>x.validation.resolved>=15).sort((a,b)=>(b.validation.tp1Hits-b.validation.stoppedAfterTp1-b.validation.fullStops)-(a.validation.tp1Hits-a.validation.stoppedAfterTp1-a.validation.fullStops)||b.validation.resolved-a.validation.resolved).slice(0,10);
