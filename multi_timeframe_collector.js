@@ -69,6 +69,28 @@ function connect(url) {
   });
 }
 
+async function fetchCandleHistory(client, symbol, granularity, count, now) {
+  const byEpoch = new Map();
+  let end = "latest";
+  let remaining = Math.max(0, Number(count) || 0);
+  const maxPages = Math.ceil(remaining / 1000);
+  for (let page = 0; page < maxPages && remaining > 0; page++) {
+    const requested = Math.min(1000, remaining);
+    const reply = await client.ask({
+      ticks_history: symbol, adjust_start_time: 1, count: requested,
+      end, granularity, style: "candles"
+    });
+    const rows = normalizeCandles(reply.candles, granularity, now);
+    if (!rows.length) break;
+    for (const candle of rows) byEpoch.set(candle.epoch, candle);
+    const earliest = rows[0].epoch;
+    end = String(earliest - 1);
+    remaining = Math.max(0, count - byEpoch.size);
+    if (rows.length < requested) break;
+  }
+  return [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch).slice(-count);
+}
+
 const normalize = value => String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
 function resolveSymbol(list, fallback, name) {
   const exactName = list.find(x => normalize(x.underlying_symbol_name || x.display_name) === normalize(name));
@@ -117,11 +139,7 @@ async function main() {
       // Fetch sequentially per market to avoid bursting the public API.
       for (const [tf, granularity, count] of FRAMES) {
         try {
-          const reply = await client.ask({
-            ticks_history: symbol, adjust_start_time: 1, count,
-            end: "latest", granularity, style: "candles"
-          });
-          const candles = normalizeCandles(reply.candles, granularity, now);
+          const candles = await fetchCandleHistory(client, symbol, granularity, count, now);
           marketData.timeframes[tf] = candles;
           if (candles.length < 60) {
             marketData.errors.push({ timeframe: tf, message: "Fewer than 60 completed candles available." });
