@@ -10,6 +10,10 @@ on:
       - "signal_journal.js"
       - "daily_summary.js"
       - "test/daily_summary.test.js"
+      - "priority_pairs.js"
+      - "test/priority_pairs.test.js"
+      - "workers/deriv-telegram-alerts/worker.js"
+      - "cloudflare/deriv-telegram-alerts.js"
       - "test/signal_journal.test.js"
       - ".github/workflows/hosted-scanner-tests.yml"
   push:
@@ -38,6 +42,6 @@ jobs:
         with:
           node-version: "22"
       - name: Check syntax
-        run: node --check hosted_scanner.js && node --check signal_journal.js && node --check daily_summary.js
+        run: node --check hosted_scanner.js && node --check signal_journal.js && node --check daily_summary.js && node --check priority_pairs.js && node --check workers/deriv-telegram-alerts/worker.js && node --check cloudflare/deriv-telegram-alerts.js
       - name: Run journal tests
-        run: node --test test/signal_journal.test.js test/daily_summary.test.js
+        run: node --test test/signal_journal.test.js test/daily_summary.test.js test/priority_pairs.test.js
