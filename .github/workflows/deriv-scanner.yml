@@ -1,4 +1,4 @@
-name: Deriv Hosted Scanner
+name: Deriv Market Monitor
 
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Run signal-only Deriv scanner
+      - name: Run signal-only Deriv market monitor
         run: node hosted_scanner.js
         env:
           TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
