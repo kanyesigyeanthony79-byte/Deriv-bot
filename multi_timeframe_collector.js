@@ -219,7 +219,7 @@ async function fetchLiveQuotes(client, markets, logFn = log) {
     fs.writeFileSync(researchReportPath, JSON.stringify(researchReport, null, 2) + "\n");
     output.strategyResearch = researchReport;
     const alertSummary = await sendCandidateAlerts(output.markets, journal, now, process.env, {
-      log,
+      log, liveQuotes,
       persist: current => fs.writeFileSync(JOURNAL, JSON.stringify(current, null, 2) + "\n")
     });
     fs.writeFileSync(JOURNAL, JSON.stringify(journal, null, 2) + "\n");
