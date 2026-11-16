@@ -84,6 +84,18 @@ async function createMt5DemoReadOnlySnapshot({ token, appId, accountId = EXPECTE
       requestTypes: ["authorize", "mt5_login_list", "mt5_get_settings"], ordersPlaced: 0 };
   } finally { client.close(); }
 }
+async function diagnoseWebSocketHandshake(appId, WebSocketImpl = globalThis.WebSocket) {
+  try {
+    const probe = await createLegacyReadOnlyClient(
+      "wss://ws.derivws.com/websockets/v3?app_id=" + encodeURIComponent(String(appId)),
+      { WebSocketImpl, timeoutMs: 10000 }
+    );
+    probe.close();
+    return true;
+  } catch {
+    return false;
+  }
+}
 if (require.main === module) {
   createMt5DemoReadOnlySnapshot({
     token: process.env.DERIV_TOKEN,
@@ -100,8 +112,16 @@ if (require.main === module) {
       requestTypes: snapshot.requestTypes,
       ordersPlaced: snapshot.ordersPlaced
     }) + "\\n");
-  }).catch(error => {
-    process.stderr.write("MT5 read-only account verification failed: " + String(error && error.message || "unknown_error") + "\\n");
+  }).catch(async error => {
+    const message = String(error && error.message || "unknown_error");
+    let diagnostic = "";
+    if (message.startsWith("mt5_websocket_connection_failed") || message.startsWith("mt5_websocket_closed_before_open")) {
+      const sampleAppHandshakeWorks = await diagnoseWebSocketHandshake("1089");
+      diagnostic = sampleAppHandshakeWorks
+        ? " Diagnostic: Deriv accepted its documented sample App ID, but rejected the configured App ID handshake; check DERIV_APP_ID in GitHub Secrets."
+        : " Diagnostic: the documented sample App ID handshake also failed from this runner; investigate runner network access or WebSocket transport before changing account credentials.";
+    }
+    process.stderr.write("MT5 read-only account verification failed: " + message + diagnostic + "\\n");
     process.exitCode = 1;
   });
 }
