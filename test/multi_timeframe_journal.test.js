@@ -89,3 +89,15 @@ test("live quote immediately resolves TP1, TP2 and stop loss", () => {
   applyLiveQuote(stopped, { price: 89, epoch: 270 }, 270);
   assert.equal(stopped.status, "stopped");
 });
+
+
+test("legacy TP2 and post-TP1 stop records recover their TP1 milestone", () => {
+  const legacy = { version: 1, signals: [
+    { ...signal, signalId: "legacy-tp2", status: "tp2_hit", tp1Hit: false, tp2Epoch: 300 },
+    { ...signal, signalId: "legacy-stop", status: "stopped_after_tp1", tp1Hit: false }
+  ] };
+  const migrated = updateJournal(legacy, {}, 400);
+  assert.equal(migrated.signals.find(s => s.signalId === "legacy-tp2").tp1Hit, true);
+  assert.equal(migrated.signals.find(s => s.signalId === "legacy-tp2").tp1Epoch, 300);
+  assert.equal(migrated.signals.find(s => s.signalId === "legacy-stop").tp1Hit, true);
+});
