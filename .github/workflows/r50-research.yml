@@ -1,0 +1,47 @@
+name: R_50 Research Replay
+
+on:
+  push:
+    branches:
+      - research/r50-first-pass
+    paths:
+      - "scripts/r50_replay.js"
+      - "test/r50_replay.test.js"
+      - "strategy_research_candles.json"
+      - ".github/workflows/r50-research.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "scripts/r50_replay.js"
+      - "test/r50_replay.test.js"
+      - "strategy_research_candles.json"
+      - ".github/workflows/r50-research.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  r50-replay:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout proposed research branch
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax check
+        run: node --check scripts/r50_replay.js
+      - name: Run R_50 unit tests and archived-data replay
+        run: node --test test/r50_replay.test.js
+      - name: Generate complete replay report
+        run: node scripts/r50_replay.js strategy_research_candles.json r50-replay-report.json
+      - name: Upload research report
+        uses: actions/upload-artifact@v4
+        with:
+          name: r50-replay-report
+          path: r50-replay-report.json
+          if-no-files-found: error
+          retention-days: 30
