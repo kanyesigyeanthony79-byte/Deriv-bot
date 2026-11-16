@@ -87,7 +87,7 @@ test("SCALP, SHORT_TERM and POSITION candidates each route with their own horizo
     const { markets, journal } = fixture([item]);
     const requests = [];
     const result = await sendCandidateAlerts(markets, journal, 1000 + (category === "SCALP" ? 60 : category === "SHORT_TERM" ? 300 : 14400) + 10, env, {
-      fetchImpl: async (url, init) => {
+      liveQuotes: { R_50: { price: 100 } }, fetchImpl: async (url, init) => {
         requests.push(JSON.parse(init.body));
         return { ok: true, json: async () => ({ success: true }) };
       }
