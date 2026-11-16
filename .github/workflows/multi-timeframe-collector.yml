@@ -48,6 +48,8 @@ jobs:
           SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
       - name: Archive lower-timeframe candles for entry research
         run: node lower_tf_entry_research.js
+        env:
+          LOWER_TF_FOCUS_MARKET: R_10
       - name: Persist isolated observation journal
         run: |
           git config user.name "github-actions[bot]"
