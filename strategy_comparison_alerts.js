@@ -18,6 +18,7 @@ function forwardSignalsNeedingDelivery(journal) {
     signal &&
     signal.evaluationSource === "forward_shadow" &&
     signal.signalId &&
+    signal.marketId !== "frxXAUUSD" &&
     !signal.telegramStatus
   );
 }
