@@ -57,29 +57,42 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
   const persist = options.persist || (() => {});
   const fetchImpl = options.fetchImpl || fetch;
   const liveQuotes = options.liveQuotes || {};
-  const result = { enabled: false, considered: 0, sent: 0, stale: 0, missed: 0, quoteUnavailable: 0, failed: 0, skipped: 0 };
-  if (env.MTF_TELEGRAM_ALERTS !== "true") {
-    log("mtf_telegram_disabled", { reason: "feature_flag_off" }); return result;
+  const workerUrl = String(env.TELEGRAM_WORKER_URL || "").replace(/\/+$/, "");
+  const hasWorkerAuth = Boolean(workerUrl && env.SIGNAL_API_KEY);
+  const telegramEnabled = env.MTF_TELEGRAM_ALERTS === "true" && hasWorkerAuth;
+  const executionEnabled = env.MT5_EXECUTION_QUEUE_ENABLED === "true" && hasWorkerAuth;
+  const result = { enabled: telegramEnabled, executionEnabled, considered: 0, sent: 0, executionQueued: 0, executionFailed: 0, stale: 0, missed: 0, quoteUnavailable: 0, failed: 0, skipped: 0 };
+  if (!telegramEnabled && !executionEnabled) {
+    log("mtf_alerts_disabled", { reason: "telegram_and_execution_flags_off_or_worker_secrets_missing" });
+    return result;
   }
-  if (!env.TELEGRAM_WORKER_URL || !env.SIGNAL_API_KEY) {
-    log("mtf_telegram_disabled", { reason: "telegram_secrets_missing" }); return result;
-  }
-  result.enabled = true;
+
   const records = new Map((journal.signals || []).map(s => [s.signalId, s]));
   for (const candidate of latestCandidates(markets)) {
     result.considered++;
     const record = records.get(candidate.signalId);
-    if (!record || record.telegramStatus) { result.skipped++; continue; }
+    if (!record) { result.skipped++; continue; }
+    const needQueue = executionEnabled && record.mt5QueueStatus !== "queued" && record.mt5QueueStatus !== "stale";
+    const needTelegram = telegramEnabled && !record.telegramStatus;
+    if (!needQueue && !needTelegram) { result.skipped++; continue; }
+
     const freshness = signalFreshness(candidate, nowEpoch);
     if (!freshness.fresh) {
-      record.telegramStatus = "stale";
-      record.telegramStatusReason = "candidate_outside_close_based_alert_window";
-      record.telegramAgeSeconds = freshness.ageSeconds;
-      record.telegramCandleCloseEpoch = freshness.candleCloseEpoch;
+      if (needQueue) {
+        record.mt5QueueStatus = "stale";
+        record.mt5QueueStatusReason = "candidate_outside_close_based_execution_window";
+      }
+      if (needTelegram) {
+        record.telegramStatus = "stale";
+        record.telegramStatusReason = "candidate_outside_close_based_alert_window";
+        record.telegramAgeSeconds = freshness.ageSeconds;
+        record.telegramCandleCloseEpoch = freshness.candleCloseEpoch;
+      }
       result.stale++; persist(journal);
       log("mtf_candidate_stale", { signalId: candidate.signalId, ageSeconds: freshness.ageSeconds });
       continue;
     }
+
     const quote = liveQuotes[candidate.marketId];
     const priceCheck = assessEntryPrice(candidate, quote && quote.price);
     if (!quote || !Number.isFinite(Number(quote.price))) {
@@ -88,17 +101,25 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
       continue;
     }
     if (!priceCheck.valid) {
-      record.telegramStatus = "missed";
-      record.telegramStatusReason = priceCheck.reason;
-      record.telegramLivePrice = priceCheck.livePrice;
-      record.telegramEntryDeviationR = priceCheck.deviationR;
-      record.telegramCheckedAt = new Date(nowEpoch * 1000).toISOString();
+      if (needQueue) {
+        record.mt5QueueStatus = "missed";
+        record.mt5QueueStatusReason = priceCheck.reason;
+      }
+      if (needTelegram) {
+        record.telegramStatus = "missed";
+        record.telegramStatusReason = priceCheck.reason;
+        record.telegramLivePrice = priceCheck.livePrice;
+        record.telegramEntryDeviationR = priceCheck.deviationR;
+        record.telegramCheckedAt = new Date(nowEpoch * 1000).toISOString();
+      }
       result.missed++; persist(journal);
       log("mtf_candidate_missed", { signalId: candidate.signalId, ...priceCheck });
       continue;
     }
+
     const payload = {
       event: "new_signal", reviewAvailable: true, signalId: candidate.signalId,
+      marketId: candidate.marketId, category: candidate.category,
       market: String(candidate.market || candidate.marketId) + " | " + String(candidate.categoryLabel || candidate.category),
       direction: candidate.direction, entry: candidate.entry, livePrice: priceCheck.livePrice,
       stopLoss: candidate.stopLoss, tp1: candidate.tp1, tp2: candidate.tp2,
@@ -106,23 +127,57 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
       candleCloseEpoch: freshness.candleCloseEpoch, entryDeviationR: Number(priceCheck.deviationR.toFixed(3)),
       priceValidation: "PASS"
     };
-    try {
-      const response = await fetchImpl(env.TELEGRAM_WORKER_URL, {
-        method: "POST", headers: { "Content-Type": "application/json", "X-API-Key": env.SIGNAL_API_KEY },
-        body: JSON.stringify(payload), signal: AbortSignal.timeout(15000)
-      });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok || body.success !== true) throw new Error(body.error || ("Telegram Worker HTTP " + response.status));
-      record.telegramStatus = "sent"; record.telegramSentAt = new Date(nowEpoch * 1000).toISOString();
-      record.telegramAgeSeconds = freshness.ageSeconds; record.telegramCandleCloseEpoch = freshness.candleCloseEpoch;
-      record.telegramLivePrice = priceCheck.livePrice; record.telegramEntryDeviationR = priceCheck.deviationR;
-      result.sent++; persist(journal);
-      log("mtf_telegram_delivered", { signalId: candidate.signalId, market: candidate.market, category: candidate.category,
-        direction: candidate.direction, ageSeconds: freshness.ageSeconds, livePrice: priceCheck.livePrice });
-    } catch (error) {
-      record.telegramStatus = "delivery_failed"; record.telegramStatusReason = String(error.message || error).slice(0, 240);
-      record.telegramAttemptedAt = new Date(nowEpoch * 1000).toISOString(); result.failed++; persist(journal);
-      log("mtf_telegram_delivery_failed", { signalId: candidate.signalId, message: record.telegramStatusReason });
+
+    if (needQueue) {
+      try {
+        const response = await fetchImpl(workerUrl + "/mt5/ingest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-API-Key": env.SIGNAL_API_KEY },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(15000)
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok || body.success !== true) throw new Error(body.error || ("Execution queue HTTP " + response.status));
+        record.mt5QueueStatus = "queued";
+        record.mt5QueueQueuedAt = new Date(nowEpoch * 1000).toISOString();
+        record.mt5QueueDuplicate = Boolean(body.duplicate);
+        result.executionQueued++; persist(journal);
+        log("mt5_signal_queued", { signalId: candidate.signalId, marketId: candidate.marketId, duplicate: Boolean(body.duplicate) });
+      } catch (error) {
+        record.mt5QueueStatus = "failed";
+        record.mt5QueueStatusReason = String(error.message || error).slice(0, 240);
+        record.mt5QueueAttemptedAt = new Date(nowEpoch * 1000).toISOString();
+        result.executionFailed++; persist(journal);
+        log("mt5_signal_queue_failed", { signalId: candidate.signalId, message: record.mt5QueueStatusReason });
+      }
+    }
+
+    if (needTelegram) {
+      try {
+        const response = await fetchImpl(workerUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-API-Key": env.SIGNAL_API_KEY },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(15000)
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok || body.success !== true) throw new Error(body.error || ("Telegram Worker HTTP " + response.status));
+        record.telegramStatus = "sent";
+        record.telegramSentAt = new Date(nowEpoch * 1000).toISOString();
+        record.telegramAgeSeconds = freshness.ageSeconds;
+        record.telegramCandleCloseEpoch = freshness.candleCloseEpoch;
+        record.telegramLivePrice = priceCheck.livePrice;
+        record.telegramEntryDeviationR = priceCheck.deviationR;
+        result.sent++; persist(journal);
+        log("mtf_telegram_delivered", { signalId: candidate.signalId, market: candidate.market, category: candidate.category,
+          direction: candidate.direction, ageSeconds: freshness.ageSeconds, livePrice: priceCheck.livePrice });
+      } catch (error) {
+        record.telegramStatus = "delivery_failed";
+        record.telegramStatusReason = String(error.message || error).slice(0, 240);
+        record.telegramAttemptedAt = new Date(nowEpoch * 1000).toISOString();
+        result.failed++; persist(journal);
+        log("mtf_telegram_delivery_failed", { signalId: candidate.signalId, message: record.telegramStatusReason });
+      }
     }
   }
   return result;
