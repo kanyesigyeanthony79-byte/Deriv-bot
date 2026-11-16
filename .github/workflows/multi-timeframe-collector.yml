@@ -46,6 +46,7 @@ jobs:
           STRATEGY_COMPARISON_TELEGRAM_ALERTS: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
           TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
           SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
+          MT5_EXECUTION_QUEUE_ENABLED: ${{ vars.MT5_EXECUTION_QUEUE_ENABLED || 'false' }} # Enable only after the EA is compiled and demo-validated
       - name: Archive lower-timeframe candles for entry research
         run: node lower_tf_entry_research.js
         env:

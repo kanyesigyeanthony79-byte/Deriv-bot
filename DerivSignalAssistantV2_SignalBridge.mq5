@@ -1,0 +1,644 @@
+//+------------------------------------------------------------------+
+//| Deriv Signal Assistant V2 - Server-Connected Synthetic EA        |
+//| Demo-only. Executes existing MTF server signals; no local signals |
+//+------------------------------------------------------------------+
+#property copyright "Deriv Signal Assistant"
+#property version   "2.10"
+#property strict
+
+#include <Trade/Trade.mqh>
+CTrade trade;
+
+input bool   InpEnableTrading = false; // Keep false until demo validation is complete
+input string InpBridgeUrl = "https://deriv-telegram-alerts.kanyesigyeanthony79-451.workers.dev";
+input string InpApiKey = "";           // Same value as GitHub SIGNAL_API_KEY
+input string InpClientId = "MT5-DEMO-01";
+input string InpSymbolMap = "R_10=Volatility 10 Index;R_25=Volatility 25 Index;R_50=Volatility 50 Index;R_75=Volatility 75 Index;JD100=Jump 100 Index;CRASH500=Crash 500 Index;BOOM500=Boom 500 Index";
+
+input int    InpEntriesPerSignal = 3;
+input double InpRiskPerBasket = 15.0;  // Account currency must be USD
+input double InpTargetProfit = 30.0;   // Combined floating basket profit
+input double InpDailyLossLimitPct = 3.0;
+input double InpMaxEntryDeviationR = 0.20;
+input int    InpPollSeconds = 3;
+input int    InpHttpTimeoutMs = 7000;
+input int    InpDeviationPoints = 30;
+input ulong  InpMagicNumber = 20261117;
+
+string AllowedMarkets[] = {"R_10","R_25","R_50","R_75","JD100","CRASH500","BOOM500"};
+double DayStartEquity = 0.0;
+string DayKey = "";
+datetime LastHealthCheck = 0;
+
+//+------------------------------------------------------------------+
+bool IsAllowedMarket(const string marketId)
+{
+   for(int i=0; i<ArraySize(AllowedMarkets); i++)
+      if(marketId == AllowedMarkets[i]) return true;
+   return false;
+}
+
+//+------------------------------------------------------------------+
+string ResolveBrokerSymbol(const string marketId)
+{
+   string entries[];
+   ushort sep = StringGetCharacter(";",0);
+   int n = StringSplit(InpSymbolMap,sep,entries);
+   for(int i=0; i<n; i++)
+   {
+      string item = entries[i];
+      StringTrimLeft(item); StringTrimRight(item);
+      int eq = StringFind(item,"=");
+      if(eq <= 0) continue;
+      string key = StringSubstr(item,0,eq);
+      string value = StringSubstr(item,eq+1);
+      StringTrimLeft(key); StringTrimRight(key);
+      StringTrimLeft(value); StringTrimRight(value);
+      if(key == marketId) return value;
+   }
+   return "";
+}
+
+//+------------------------------------------------------------------+
+string JsonGetString(const string json,const string key)
+{
+   string token = "\"" + key + "\"";
+   int p = StringFind(json,token);
+   if(p < 0) return "";
+   p = StringFind(json,":",p);
+   if(p < 0) return "";
+   p++;
+   while(p < StringLen(json) && StringGetCharacter(json,p) <= 32) p++;
+   if(p >= StringLen(json) || StringGetCharacter(json,p) != '"') return "";
+   p++;
+   int start = p;
+   bool escaped = false;
+   while(p < StringLen(json))
+   {
+      ushort c = StringGetCharacter(json,p);
+      if(c == '"' && !escaped) break;
+      if(c == '\\' && !escaped) escaped = true;
+      else escaped = false;
+      p++;
+   }
+   if(p <= start) return "";
+   return StringSubstr(json,start,p-start);
+}
+
+//+------------------------------------------------------------------+
+double JsonGetNumber(const string json,const string key)
+{
+   string token = "\"" + key + "\"";
+   int p = StringFind(json,token);
+   if(p < 0) return -1.0;
+   p = StringFind(json,":",p);
+   if(p < 0) return -1.0;
+   p++;
+   while(p < StringLen(json) && StringGetCharacter(json,p) <= 32) p++;
+   int start = p;
+   while(p < StringLen(json))
+   {
+      ushort c = StringGetCharacter(json,p);
+      if(c == ',' || c == '}' || c == ']' || c <= 32) break;
+      p++;
+   }
+   if(p <= start) return -1.0;
+   return StringToDouble(StringSubstr(json,start,p-start));
+}
+
+//+------------------------------------------------------------------+
+string JsonGetObject(const string json,const string key)
+{
+   string token = "\"" + key + "\"";
+   int p = StringFind(json,token);
+   if(p < 0) return "";
+   p = StringFind(json,":",p);
+   if(p < 0) return "";
+   p = StringFind(json,"{",p);
+   if(p < 0) return "";
+   int start = p, depth = 0;
+   bool inString = false, escaped = false;
+   for(int i=p; i<StringLen(json); i++)
+   {
+      ushort c = StringGetCharacter(json,i);
+      if(inString)
+      {
+         if(c == '"' && !escaped) inString = false;
+         if(c == '\\' && !escaped) escaped = true;
+         else escaped = false;
+         continue;
+      }
+      if(c == '"') { inString = true; escaped = false; continue; }
+      if(c == '{') depth++;
+      if(c == '}')
+      {
+         depth--;
+         if(depth == 0) return StringSubstr(json,start,i-start+1);
+      }
+   }
+   return "";
+}
+
+//+------------------------------------------------------------------+
+bool JsonTrue(const string json,const string key)
+{
+   string token = "\"" + key + "\":true";
+   return (StringFind(json,token) >= 0);
+}
+
+//+------------------------------------------------------------------+
+int HttpGet(const string url,string &response)
+{
+   char data[];
+   ArrayResize(data,0);
+   char result[];
+   string resultHeaders;
+   string headers = "X-API-Key: " + InpApiKey + "\r\n";
+   ResetLastError();
+   int status = WebRequest("GET",url,headers,InpHttpTimeoutMs,data,result,resultHeaders);
+   if(status == -1)
+   {
+      Print("WebRequest GET failed. Error ",GetLastError(),
+            ". Add the bridge URL under MT5 Tools > Options > Expert Advisors > Allow WebRequest.");
+      return -1;
+   }
+   response = CharArrayToString(result,0,-1,CP_UTF8);
+   return status;
+}
+
+//+------------------------------------------------------------------+
+int HttpPost(const string url,const string body,string &response)
+{
+   char data[];
+   int copied = StringToCharArray(body,data,0,WHOLE_ARRAY,CP_UTF8);
+   if(copied > 0) ArrayResize(data,copied-1);
+   char result[];
+   string resultHeaders;
+   string headers = "X-API-Key: " + InpApiKey + "\r\nContent-Type: application/json\r\n";
+   ResetLastError();
+   int status = WebRequest("POST",url,headers,InpHttpTimeoutMs,data,result,resultHeaders);
+   if(status == -1)
+   {
+      Print("WebRequest POST failed. Error ",GetLastError());
+      return -1;
+   }
+   response = CharArrayToString(result,0,-1,CP_UTF8);
+   return status;
+}
+
+//+------------------------------------------------------------------+
+string ProcessedKey(const string signalId)
+{
+   uint h = 2166136261;
+   for(int i=0; i<StringLen(signalId); i++)
+      h = (h ^ (uint)StringGetCharacter(signalId,i)) * 16777619;
+   return "DSA2_SIG_" + IntegerToString((long)h);
+}
+
+//+------------------------------------------------------------------+
+bool WasProcessed(const string signalId)
+{
+   return GlobalVariableCheck(ProcessedKey(signalId));
+}
+
+//+------------------------------------------------------------------+
+void MarkProcessed(const string signalId)
+{
+   GlobalVariableSet(ProcessedKey(signalId),(double)TimeCurrent());
+}
+
+//+------------------------------------------------------------------+
+bool AcknowledgeSignal(const string signalId,const string status)
+{
+   string body = "{\"signalId\":\"" + signalId + "\",\"clientId\":\"" +
+                 InpClientId + "\",\"status\":\"" + status + "\"}";
+   string response;
+   int http = HttpPost(InpBridgeUrl + "/mt5/ack",body,response);
+   if(http != 200 || !JsonTrue(response,"success"))
+   {
+      Print("Signal acknowledgement failed for ",signalId,
+            ". HTTP=",http," response=",response);
+      return false;
+   }
+   Print("Signal ",signalId," acknowledged: ",status);
+   return true;
+}
+
+//+------------------------------------------------------------------+
+string CurrentDayKey()
+{
+   string d = TimeToString(TimeCurrent(),TIME_DATE);
+   StringReplace(d,".","");
+   return "DSA2_DAY_" + (string)AccountInfoInteger(ACCOUNT_LOGIN) + "_" + d;
+}
+
+//+------------------------------------------------------------------+
+void RefreshDailyBaseline()
+{
+   string key = CurrentDayKey();
+   if(key != DayKey)
+   {
+      DayKey = key;
+      if(GlobalVariableCheck(DayKey))
+         DayStartEquity = GlobalVariableGet(DayKey);
+      else
+      {
+         DayStartEquity = AccountInfoDouble(ACCOUNT_EQUITY);
+         GlobalVariableSet(DayKey,DayStartEquity);
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
+bool DailyLossLimitReached()
+{
+   RefreshDailyBaseline();
+   if(DayStartEquity <= 0.0) return false;
+   double floorEquity = DayStartEquity * (1.0 - InpDailyLossLimitPct/100.0);
+   return AccountInfoDouble(ACCOUNT_EQUITY) <= floorEquity;
+}
+
+//+------------------------------------------------------------------+
+int CountOurPositions()
+{
+   int count = 0;
+   for(int i=PositionsTotal()-1; i>=0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket == 0) continue;
+      if((ulong)PositionGetInteger(POSITION_MAGIC) == InpMagicNumber) count++;
+   }
+   return count;
+}
+
+//+------------------------------------------------------------------+
+double BasketFloatingProfit()
+{
+   double total = 0.0;
+   for(int i=PositionsTotal()-1; i>=0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket == 0) continue;
+      if((ulong)PositionGetInteger(POSITION_MAGIC) != InpMagicNumber) continue;
+      total += PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
+   }
+   return total;
+}
+
+//+------------------------------------------------------------------+
+bool CloseAllOurPositions()
+{
+   bool allClosed = true;
+   trade.SetExpertMagicNumber(InpMagicNumber);
+   trade.SetDeviationInPoints(InpDeviationPoints);
+   for(int i=PositionsTotal()-1; i>=0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket == 0) continue;
+      if((ulong)PositionGetInteger(POSITION_MAGIC) != InpMagicNumber) continue;
+      if(!trade.PositionClose(ticket) ||
+         (trade.ResultRetcode() != TRADE_RETCODE_DONE &&
+          trade.ResultRetcode() != TRADE_RETCODE_DONE_PARTIAL))
+      {
+         allClosed = false;
+         Print("Could not close position ",ticket,": ",trade.ResultRetcodeDescription());
+      }
+   }
+   return allClosed;
+}
+
+//+------------------------------------------------------------------+
+void ManageBasket()
+{
+   int count = CountOurPositions();
+   if(count <= 0) return;
+   double pnl = BasketFloatingProfit();
+   if(pnl >= InpTargetProfit)
+   {
+      Print("Basket profit target reached: ",DoubleToString(pnl,2),
+            ". Closing all EA positions.");
+      CloseAllOurPositions();
+   }
+   else if(pnl <= -InpRiskPerBasket)
+   {
+      Print("Basket loss limit reached: ",DoubleToString(pnl,2),
+            ". Closing all EA positions.");
+      CloseAllOurPositions();
+   }
+}
+
+//+------------------------------------------------------------------+
+double NormalizeVolumeDown(const string symbol,const double requested)
+{
+   double minVol = SymbolInfoDouble(symbol,SYMBOL_VOLUME_MIN);
+   double maxVol = SymbolInfoDouble(symbol,SYMBOL_VOLUME_MAX);
+   double step = SymbolInfoDouble(symbol,SYMBOL_VOLUME_STEP);
+   if(minVol <= 0.0 || maxVol <= 0.0 || step <= 0.0) return 0.0;
+   double volume = MathMin(maxVol,requested);
+   volume = MathFloor(volume/step + 1e-9) * step;
+   if(volume + 1e-9 < minVol) return 0.0;
+   int digits = 2;
+   if(step < 0.01) digits = 3;
+   if(step < 0.001) digits = 4;
+   if(step < 0.0001) digits = 5;
+   return NormalizeDouble(volume,digits);
+}
+
+//+------------------------------------------------------------------+
+bool OpenSignalBasket(const string signalId,const string marketId,
+                      const string direction,const double signalEntry,
+                      const double stopLoss,const double tp1,
+                      const double signalAge,const string category)
+{
+   if(!IsAllowedMarket(marketId)) { Print("Rejected non-whitelisted market: ",marketId); return false; }
+   if(category == "SWING") { Print("SWING signals are not executable."); return false; }
+   string symbol = ResolveBrokerSymbol(marketId);
+   if(symbol == "") { Print("No MT5 symbol mapping for ",marketId); return false; }
+   if(!SymbolSelect(symbol,true)) { Print("Could not select broker symbol ",symbol); return false; }
+
+   MqlTick tick;
+   if(!SymbolInfoTick(symbol,tick)) { Print("No quote for ",symbol); return false; }
+   bool isBuy = (direction == "BUY");
+   if(!isBuy && direction != "SELL") return false;
+   double price = isBuy ? tick.ask : tick.bid;
+   double riskDistance = MathAbs(signalEntry-stopLoss);
+   if(riskDistance <= 0.0) return false;
+   if(MathAbs(price-signalEntry) > riskDistance*InpMaxEntryDeviationR)
+   {
+      Print("Signal rejected: current price moved too far from entry on ",symbol);
+      return false;
+   }
+   if(isBuy && price >= tp1) { Print("Signal rejected: TP1 already passed."); return false; }
+   if(!isBuy && price <= tp1) { Print("Signal rejected: TP1 already passed."); return false; }
+
+   double point = SymbolInfoDouble(symbol,SYMBOL_POINT);
+   int digits = (int)SymbolInfoInteger(symbol,SYMBOL_DIGITS);
+   long stopsLevel = SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL);
+   if(point <= 0.0) return false;
+   double minStopDistance = (double)stopsLevel*point;
+   if(isBuy && (price-stopLoss) <= minStopDistance) { Print("Stop loss is too close for broker rules."); return false; }
+   if(!isBuy && (stopLoss-price) <= minStopDistance) { Print("Stop loss is too close for broker rules."); return false; }
+
+   double sl = NormalizeDouble(stopLoss,digits);
+   ENUM_ORDER_TYPE orderType = isBuy ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
+   double oneLotPnl = 0.0;
+   if(!OrderCalcProfit(orderType,symbol,1.0,price,sl,oneLotPnl))
+   {
+      Print("OrderCalcProfit failed for ",symbol,". Error ",GetLastError());
+      return false;
+   }
+   double riskPerLot = MathAbs(oneLotPnl);
+   if(riskPerLot <= 0.0) return false;
+   double riskPerEntry = InpRiskPerBasket/(double)InpEntriesPerSignal;
+   double volume = NormalizeVolumeDown(symbol,riskPerEntry/riskPerLot);
+   if(volume <= 0.0)
+   {
+      Print("Broker minimum lot would exceed the per-entry risk budget on ",symbol,
+            ". Signal skipped rather than increasing risk.");
+      return false;
+   }
+   double actualPnl = 0.0;
+   if(!OrderCalcProfit(orderType,symbol,volume,price,sl,actualPnl)) return false;
+   double actualRiskPerEntry = MathAbs(actualPnl);
+   if(actualRiskPerEntry > riskPerEntry + 0.01)
+   {
+      Print("Normalized volume exceeds risk budget. Basket skipped.");
+      return false;
+   }
+
+   double margin = 0.0;
+   if(!OrderCalcMargin(orderType,symbol,volume,price,margin))
+   {
+      Print("Could not calculate margin for ",symbol);
+      return false;
+   }
+   if(AccountInfoDouble(ACCOUNT_MARGIN_FREE) < margin*InpEntriesPerSignal*1.10)
+   {
+      Print("Insufficient free margin for all three entries on ",symbol);
+      return false;
+   }
+
+   trade.SetExpertMagicNumber(InpMagicNumber);
+   trade.SetDeviationInPoints(InpDeviationPoints);
+   trade.SetTypeFillingBySymbol(symbol);
+   string tag = "DSA2-" + StringSubstr(signalId,0,20);
+   int opened = 0;
+   double actualRiskTotal = 0.0;
+   for(int n=1; n<=InpEntriesPerSignal; n++)
+   {
+      // Recheck price before every order; abort and roll back if the signal has moved.
+      MqlTick latestTick;
+      if(!SymbolInfoTick(symbol,latestTick))
+      {
+         CloseAllOurPositions();
+         return false;
+      }
+      double latestPrice = isBuy ? latestTick.ask : latestTick.bid;
+      if(MathAbs(latestPrice-signalEntry) > riskDistance*InpMaxEntryDeviationR ||
+         (isBuy && latestPrice >= tp1) || (!isBuy && latestPrice <= tp1))
+      {
+         Print("Price moved outside the valid signal window during basket submission. Rolling back.");
+         CloseAllOurPositions();
+         return false;
+      }
+
+      bool sent = isBuy ? trade.Buy(volume,symbol,0.0,sl,0.0,tag)
+                        : trade.Sell(volume,symbol,0.0,sl,0.0,tag);
+      uint rc = trade.ResultRetcode();
+      double filled = trade.ResultVolume();
+      double fillPrice = trade.ResultPrice();
+      if(sent && rc == TRADE_RETCODE_DONE &&
+         MathAbs(filled-volume) <= SymbolInfoDouble(symbol,SYMBOL_VOLUME_STEP)*0.5)
+      {
+         double fillPnl = 0.0;
+         if(fillPrice <= 0.0 || !OrderCalcProfit(orderType,symbol,filled,fillPrice,sl,fillPnl))
+         {
+            Print("Could not verify actual filled risk. Rolling back.");
+            CloseAllOurPositions();
+            return false;
+         }
+         actualRiskTotal += MathAbs(fillPnl);
+         if(actualRiskTotal > InpRiskPerBasket + 0.05)
+         {
+            Print("Actual filled prices pushed basket risk above USD ",
+                  DoubleToString(InpRiskPerBasket,2), ". Rolling back.");
+            CloseAllOurPositions();
+            return false;
+         }
+         opened++;
+         Print("Basket entry ",opened,"/",InpEntriesPerSignal," opened on ",symbol,
+               " volume=",DoubleToString(filled,4),
+               " estimated fill risk=",DoubleToString(MathAbs(fillPnl),2));
+      }
+      else
+      {
+         Print("Entry ",n," failed or was partial on ",symbol,
+               ". Retcode=",rc," ",trade.ResultRetcodeDescription(),
+               ". Rolling back any opened entries.");
+         CloseAllOurPositions();
+         return false;
+      }
+   }
+
+   if(opened != InpEntriesPerSignal || CountOurPositions() != InpEntriesPerSignal)
+   {
+      Print("Basket did not reach exactly three positions. Rolling back.");
+      CloseAllOurPositions();
+      return false;
+   }
+   Print("Basket opened for signal ",signalId,". Estimated total SL risk=",
+         DoubleToString(actualRiskPerEntry*InpEntriesPerSignal,2),
+         ", target=",DoubleToString(InpTargetProfit,2));
+   return true;
+}
+
+//+------------------------------------------------------------------+
+void PollSignalQueue()
+{
+   if(CountOurPositions() > 0) return;
+   string response;
+   string url = InpBridgeUrl + "/mt5/next?clientId=" + InpClientId;
+   int http = HttpGet(url,response);
+   if(http != 200)
+   {
+      if(http != -1) Print("Signal poll returned HTTP ",http,": ",response);
+      return;
+   }
+   if(StringFind(response,"\"signal\":null") >= 0) return;
+   string signal = JsonGetObject(response,"signal");
+   if(signal == "") { Print("Could not parse signal response: ",response); return; }
+
+   string signalId = JsonGetString(signal,"signalId");
+   string marketId = JsonGetString(signal,"marketId");
+   string direction = JsonGetString(signal,"direction");
+   string category = JsonGetString(signal,"category");
+   string priceValidation = JsonGetString(signal,"priceValidation");
+   double entry = JsonGetNumber(signal,"entry");
+   double stopLoss = JsonGetNumber(signal,"stopLoss");
+   double tp1 = JsonGetNumber(signal,"tp1");
+   double signalAge = JsonGetNumber(response,"signalAgeSeconds");
+   if(signalId == "" || marketId == "" || direction == "" ||
+      priceValidation != "PASS" || entry <= 0.0 || stopLoss <= 0.0 || tp1 <= 0.0)
+   {
+      Print("Signal rejected due to missing or invalid fields.");
+      if(signalId != "") AcknowledgeSignal(signalId,"rejected");
+      return;
+   }
+
+   if(WasProcessed(signalId))
+   {
+      Print("Duplicate signal blocked locally: ",signalId);
+      AcknowledgeSignal(signalId,"accepted");
+      return;
+   }
+
+   if(!IsAllowedMarket(marketId) || category == "SWING")
+   {
+      MarkProcessed(signalId);
+      AcknowledgeSignal(signalId,"rejected");
+      Print("Unsupported signal rejected: ",marketId," / ",category);
+      return;
+   }
+
+   int maxAge = (category == "SCALP" ? 600 : category == "SHORT_TERM" ? 1800 : category == "POSITION" ? 14400 : 0);
+   if(maxAge == 0 || signalAge < 0.0 || signalAge > maxAge)
+   {
+      MarkProcessed(signalId);
+      AcknowledgeSignal(signalId,"rejected");
+      Print("Stale or unsupported signal category rejected: ",signalId);
+      return;
+   }
+
+   // Persist the signal ID before sending any orders so a restart cannot duplicate it.
+   MarkProcessed(signalId);
+   bool opened = OpenSignalBasket(signalId,marketId,direction,entry,stopLoss,tp1,signalAge,category);
+   if(opened)
+      AcknowledgeSignal(signalId,"accepted");
+   else
+   {
+      // If rollback failed and any position remains, acknowledge to prevent re-entry;
+      // the basket manager will continue protecting the remaining exposure.
+      if(CountOurPositions() > 0) AcknowledgeSignal(signalId,"accepted");
+      else AcknowledgeSignal(signalId,"rejected");
+   }
+}
+
+//+------------------------------------------------------------------+
+void CheckBridgeHealth()
+{
+   if(TimeCurrent()-LastHealthCheck < 60) return;
+   LastHealthCheck = TimeCurrent();
+   string response;
+   int http = HttpGet(InpBridgeUrl + "/mt5/health",response);
+   if(http == 200) Print("MT5 signal bridge health: ",response);
+   else if(http != -1) Print("MT5 bridge health check HTTP ",http,": ",response);
+}
+
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   if(InpEntriesPerSignal != 3 || InpRiskPerBasket <= 0.0 ||
+      InpTargetProfit <= 0.0 || InpDailyLossLimitPct <= 0.0 ||
+      InpMaxEntryDeviationR <= 0.0 || InpPollSeconds < 1 ||
+      InpMagicNumber == 0 || InpApiKey == "" || InpClientId == "")
+   {
+      Print("Invalid settings. Required: 3 entries, positive risk/target, API key and client ID.");
+      return INIT_PARAMETERS_INCORRECT;
+   }
+   if(AccountInfoInteger(ACCOUNT_TRADE_MODE) != ACCOUNT_TRADE_MODE_DEMO)
+   {
+      Print("SAFETY STOP: This EA runs on DEMO accounts only. No orders will be sent.");
+      return INIT_FAILED;
+   }
+   if(AccountInfoString(ACCOUNT_CURRENCY) != "USD")
+   {
+      Print("SAFETY STOP: Account currency must be USD because risk and target are $15/$30.");
+      return INIT_FAILED;
+   }
+   if((ENUM_ACCOUNT_MARGIN_MODE)AccountInfoInteger(ACCOUNT_MARGIN_MODE) != ACCOUNT_MARGIN_MODE_RETAIL_HEDGING)
+   {
+      Print("SAFETY STOP: A hedging account is required for three separate entries.");
+      return INIT_FAILED;
+   }
+   if(StringFind(InpBridgeUrl,"https://") != 0)
+   {
+      Print("Bridge URL must use HTTPS.");
+      return INIT_PARAMETERS_INCORRECT;
+   }
+
+   RefreshDailyBaseline();
+   EventSetTimer(InpPollSeconds);
+   Print("Deriv Signal Assistant V2.10 initialized in DEMO mode. Trading enabled=",
+         (InpEnableTrading ? "true" : "false"),
+         ". Markets: R_10, R_25, R_50, R_75, JD100, CRASH500, BOOM500. Gold excluded.");
+   CheckBridgeHealth();
+   return INIT_SUCCEEDED;
+}
+
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+   EventKillTimer();
+}
+
+//+------------------------------------------------------------------+
+void OnTimer()
+{
+   ManageBasket();
+   if(CountOurPositions() > 0) return;
+   CheckBridgeHealth();
+   if(!InpEnableTrading) return;
+   if(DailyLossLimitReached())
+   {
+      Print("Daily equity loss limit reached. New baskets disabled until next server day.");
+      return;
+   }
+   PollSignalQueue();
+}
+
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   // Basket monitoring and multi-market signal polling run from OnTimer.
+}
+//+------------------------------------------------------------------+
