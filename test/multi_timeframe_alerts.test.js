@@ -153,3 +153,74 @@ test("uncertain delivery failure is recorded and not retried automatically", asy
   assert.equal(second.skipped, 1);
   assert.equal(calls, 1);
 });
+
+
+test("enabled MT5 queue receives validated synthetic signal payload without changing Telegram delivery", async () => {
+  const { markets, journal } = fixture([candidate()]);
+  const calls = [];
+  const env = {
+    MTF_TELEGRAM_ALERTS: "true", MT5_EXECUTION_QUEUE_ENABLED: "true",
+    TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret"
+  };
+  const result = await sendCandidateAlerts(markets, journal, 1061, env, {
+    liveQuotes: { R_50: { price: 100 } },
+    fetchImpl: async (url, init) => {
+      calls.push({ url, payload: JSON.parse(init.body) });
+      return { ok: true, json: async () => ({ success: true, duplicate: false }) };
+    }
+  });
+  assert.equal(result.executionQueued, 1);
+  assert.equal(result.sent, 1);
+  assert.equal(calls[0].url, "https://worker.example/mt5/ingest");
+  assert.equal(calls[0].payload.marketId, "R_50");
+  assert.equal(calls[0].payload.category, "SCALP");
+  assert.equal(calls[0].payload.priceValidation, "PASS");
+  assert.equal(calls[1].url, "https://worker.example");
+  assert.equal(journal.signals[0].mt5QueueStatus, "queued");
+  assert.equal(journal.signals[0].telegramStatus, "sent");
+});
+
+test("failed MT5 queue delivery retries independently without duplicating Telegram alert", async () => {
+  const { markets, journal } = fixture([candidate()]);
+  let queueAttempts = 0, telegramAttempts = 0;
+  const env = {
+    MTF_TELEGRAM_ALERTS: "true", MT5_EXECUTION_QUEUE_ENABLED: "true",
+    TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret"
+  };
+  const options = {
+    liveQuotes: { R_50: { price: 100 } },
+    fetchImpl: async (url) => {
+      if (url.endsWith("/mt5/ingest")) {
+        queueAttempts++;
+        if (queueAttempts === 1) throw new Error("queue unavailable");
+      } else telegramAttempts++;
+      return { ok: true, json: async () => ({ success: true }) };
+    }
+  };
+  const first = await sendCandidateAlerts(markets, journal, 1061, env, options);
+  const second = await sendCandidateAlerts(markets, journal, 1061, env, options);
+  assert.equal(first.executionFailed, 1);
+  assert.equal(first.sent, 1);
+  assert.equal(second.executionQueued, 1);
+  assert.equal(second.sent, 0);
+  assert.equal(queueAttempts, 2);
+  assert.equal(telegramAttempts, 1);
+  assert.equal(journal.signals[0].mt5QueueStatus, "queued");
+  assert.equal(journal.signals[0].telegramStatus, "sent");
+});
+
+test("MT5 queue remains disabled unless its explicit feature flag is true", async () => {
+  const { markets, journal } = fixture([candidate()]);
+  const urls = [];
+  const env = {
+    MTF_TELEGRAM_ALERTS: "true", MT5_EXECUTION_QUEUE_ENABLED: "false",
+    TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret"
+  };
+  const result = await sendCandidateAlerts(markets, journal, 1061, env, {
+    liveQuotes: { R_50: { price: 100 } },
+    fetchImpl: async (url, init) => { urls.push(url); return { ok: true, json: async () => ({ success: true }) }; }
+  });
+  assert.equal(result.executionEnabled, false);
+  assert.deepEqual(urls, ["https://worker.example"]);
+  assert.equal(journal.signals[0].mt5QueueStatus, undefined);
+});
