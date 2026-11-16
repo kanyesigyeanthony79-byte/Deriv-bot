@@ -29,7 +29,7 @@ test("paginates M1 history beyond the 1,000-candle page size without gaps or dup
   assert.equal(requests[1].start, 200 * 60);
   assert.equal(requests[1].end, String(1000 * 60));
   assert.equal(rows.length, 1800);
-  assert.equal(rows[0].epoch, 200);
+  assert.equal(rows[0].epoch, 200 * 60);
   assert.equal(rows.at(-1).epoch, 119940);
   assert.equal(new Set(rows.map(c => c.epoch)).size, 1800);
   assert.ok(rows.slice(1).every((c, i) => c.epoch - rows[i].epoch === 60));
@@ -38,7 +38,7 @@ test("paginates M1 history beyond the 1,000-candle page size without gaps or dup
 test("stops paging when the API returns no earlier candles", async () => {
   let calls = 0;
   const client = { async ask() { calls++; return { candles: calls === 1 ? makeCandles(1000 * 60, 1000) : [] }; } };
-  const rows = await fetchCandleHistory(client, "R_10", 60, 1800, 5000);
+  const rows = await fetchCandleHistory(client, "R_10", 60, 1800, 200000);
   assert.equal(calls, 2);
   assert.equal(rows.length, 1000);
 });
