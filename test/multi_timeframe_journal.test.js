@@ -62,16 +62,18 @@ test("dashboard projection includes only journal-confirmed active signals with a
   const journal = { signals: [
     { ...regular, status: "pending", tp1Hit: false },
     { ...recentOnly, status: "tp1_hit", tp1Hit: true },
+    { ...signal, signalId: "journal-only", marketId: "JD100", status: "pending", tp1Hit: false },
     { ...signal, signalId: "old-sl", marketId: "JD100", status: "stopped" },
     { ...signal, signalId: "old-expired", marketId: "JD100", status: "expired" }
   ] };
   const quote = { JD100: { price: 105, epoch: 250 } };
   const projected = dashboardSignalsForMarket(market, journal, 250, quote);
-  assert.deepEqual(projected.map(item => item.signalId), ["JD100-SWING-100", "JD100-SCALP-200"]);
+  assert.deepEqual(projected.map(item => item.signalId), ["JD100-SWING-100", "JD100-SCALP-200", "journal-only"]);
   assert.equal(projected[0].status, "pending");
   assert.equal(projected[1].status, "tp1_hit");
   assert.equal(projected[1].tp1Hit, true);
-  assert.equal(dashboardSignalsForMarket(market, journal, 500, {}).length, 0, "missing quote must never be shown as live");
+  assert.equal(dashboardSignalsForMarket(market, journal, 250, {}).length, 0, "missing quote must never be shown as live");
+  assert.equal(dashboardSignalsForMarket(market, journal, 600, { JD100: { price: 105, epoch: 250 } }).length, 0, "old quote must never be shown as live");
 });
 
 test("live quote immediately resolves TP1, TP2 and stop loss", () => {
