@@ -53,5 +53,11 @@ jobs:
           git add signal_state.json trade_journal.json
           if ! git diff --cached --quiet; then
             git commit -m "Update Deriv signal history"
-            git push
+            for attempt in 1 2 3; do
+              git fetch origin main
+              git rebase origin/main
+              if git push origin HEAD:main; then exit 0; fi
+              sleep 2
+            done
+            exit 1
           fi
