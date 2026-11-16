@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { touchStatus, updateJournal, summarizeJournal } = require("../multi_timeframe_journal");
+const { touchStatus, updateJournal, summarizeJournal, dashboardSignalsForMarket } = require("../multi_timeframe_journal");
 
 const signal = {
   signalId: "JD100-SWING-100", marketId: "JD100", direction: "BUY",
@@ -53,4 +53,15 @@ test("records maximum favourable movement before a terminal outcome", () => {
 test("journal expires an unclosed observation after its category age limit", () => {
   const result = updateJournal({ version: 1, signals: [{ ...signal, status: "pending", createdEpoch: 100, tp1Hit: false }] }, {}, 1200);
   assert.equal(result.signals[0].status, "expired");
+});
+
+test("dashboard projection includes recent candidates and de-duplicates signal IDs", () => {
+  const regular = { ...signal, signalId: "JD100-SWING-100", state: "signal" };
+  const recentOnly = { ...signal, signalId: "JD100-SCALP-200", category: "SCALP", state: "signal" };
+  const projected = dashboardSignalsForMarket({
+    signals: [regular],
+    recentSignals: [recentOnly, { ...regular, score: 99 }]
+  });
+  assert.deepEqual(projected.map(item => item.signalId), ["JD100-SWING-100", "JD100-SCALP-200"]);
+  assert.equal(projected[0].score, regular.score);
 });

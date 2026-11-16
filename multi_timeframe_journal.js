@@ -70,9 +70,16 @@ function updateJournal(journal, markets, nowEpoch) {
   state.signals = state.signals.slice(0, 500);
   return state;
 }
+function dashboardSignalsForMarket(market) {
+  const byId = new Map();
+  for (const signal of [...(market?.signals || []), ...(market?.recentSignals || [])]) {
+    if (signal && signal.signalId && !byId.has(signal.signalId)) byId.set(signal.signalId, signal);
+  }
+  return [...byId.values()];
+}
 function summarizeJournal(journal) {
   const counts = {};
   for (const s of journal.signals || []) counts[s.status] = (counts[s.status] || 0) + 1;
   return counts;
 }
-module.exports = { TERMINAL, touchStatus, updateJournal, summarizeJournal };
+module.exports = { TERMINAL, touchStatus, updateJournal, summarizeJournal, dashboardSignalsForMarket };
