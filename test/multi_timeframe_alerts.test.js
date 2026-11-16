@@ -33,12 +33,12 @@ test("freshness is measured from entry candle close, not candle open", () => {
   assert.equal(signalFreshness(item, 1060 + ALERT_MAX_AGE_SECONDS.SCALP + 1).fresh, false);
 });
 
-test("latestCandidates keeps only the newest candidate per market and horizon", () => {
+test("alert candidates retain every distinct candle entry and deduplicate repeated IDs", () => {
   const older = candidate({ signalId: "old", entryCandleEpoch: 900 });
   const newer = candidate({ signalId: "new", entryCandleEpoch: 1000 });
   const swing = candidate({ signalId: "swing", category: "SWING" });
-  const found = latestCandidates({ R_50: { signals: [older], recentSignals: [newer, swing] } });
-  assert.deepEqual(found.map(s => s.signalId).sort(), ["new"]);
+  const found = latestCandidates({ R_50: { signals: [older], recentSignals: [newer, older, swing] } });
+  assert.deepEqual(found.map(s => s.signalId), ["old", "new"]);
 });
 
 test("swing candidates remain observation-only and are excluded from Telegram alerts", async () => {
