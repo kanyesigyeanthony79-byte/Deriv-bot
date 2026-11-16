@@ -17,7 +17,7 @@ test("paginates M1 history beyond the 1,000-candle page size without gaps or dup
     async ask(request) {
       requests.push(request);
       if (requests.length === 1) return { candles: makeCandles(1000, 1000) };
-      if (requests.length === 2) return { candles: makeCandles(200, 800) };
+      if (requests.length === 2) return { candles: makeCandles(200, 801) };
       throw new Error("Unexpected extra history request");
     }
   };
@@ -26,7 +26,7 @@ test("paginates M1 history beyond the 1,000-candle page size without gaps or dup
   assert.equal(requests[0].count, 1000);
   assert.equal(requests[0].end, "latest");
   assert.equal(requests[1].count, 800);
-  assert.equal(requests[1].end, "999");
+  assert.equal(requests[1].end, "1000");
   assert.equal(rows.length, 1800);
   assert.equal(rows[0].epoch, 200);
   assert.equal(rows.at(-1).epoch, 1999);
