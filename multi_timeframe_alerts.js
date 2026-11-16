@@ -33,17 +33,23 @@ function assessEntryPrice(candidate, livePrice) {
 }
 
 function latestCandidates(markets) {
-  const latest = new Map();
+  // Keep every distinct completed-candle candidate visible to the dashboard.
+  // The signalId is the deduplication key: the same candidate can appear in
+  // both signals and recentSignals, but separate candle entries remain distinct.
+  const unique = new Map();
   for (const market of Object.values(markets || {})) {
     const candidates = [...(market.signals || []), ...(market.recentSignals || [])]
       .filter(s => s && s.state === "signal" && s.signalId && s.category && s.category !== "SWING");
     for (const candidate of candidates) {
-      const key = candidate.marketId + ":" + candidate.category;
-      const prior = latest.get(key);
-      if (!prior || candidate.entryCandleEpoch > prior.entryCandleEpoch) latest.set(key, candidate);
+      if (!unique.has(candidate.signalId)) unique.set(candidate.signalId, candidate);
     }
   }
-  return [...latest.values()];
+  // Process oldest first so a burst of recovered recent candles is delivered
+  // in chronological order. Freshness and live-entry checks still apply per item.
+  return [...unique.values()].sort((a, b) =>
+    Number(a.entryCandleEpoch) - Number(b.entryCandleEpoch) ||
+    String(a.signalId).localeCompare(String(b.signalId))
+  );
 }
 
 async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}) {
