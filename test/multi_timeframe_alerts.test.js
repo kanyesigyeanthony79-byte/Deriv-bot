@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { latestCandidates, sendCandidateAlerts, ALERT_MAX_AGE_SECONDS, signalFreshness } = require("../multi_timeframe_alerts");
+const { latestCandidates, sendCandidateAlerts, ALERT_MAX_AGE_SECONDS, signalFreshness, assessEntryPrice } = require("../multi_timeframe_alerts");
 
 function candidate(overrides = {}) {
   return {
@@ -18,6 +18,13 @@ function fixture(candidates) {
   };
 }
 
+
+test("live quote must remain within 0.2R of entry", () => {
+  assert.equal(assessEntryPrice(candidate(), 100.3).valid, true);
+  assert.equal(assessEntryPrice(candidate(), 100.5).valid, false);
+  assert.equal(assessEntryPrice(candidate(), 102).reason, "tp1_already_reached");
+  assert.equal(assessEntryPrice(candidate(), null).valid, false);
+});
 
 test("freshness is measured from entry candle close, not candle open", () => {
   const item = candidate({ entryCandleEpoch: 1000, entryTimeframe: "M1" });
@@ -40,7 +47,7 @@ test("swing candidates remain observation-only and are excluded from Telegram al
   let calls = 0;
   const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
   const result = await sendCandidateAlerts(markets, journal, 1061, env, {
-    fetchImpl: async () => { calls++; return { ok: true, json: async () => ({ success: true }) }; }
+    liveQuotes: { R_50: { price: 100 } }, liveQuotes: { R_50: { price: 100 } }, fetchImpl: async () => { calls++; return { ok: true, json: async () => ({ success: true }) }; }
   });
   assert.equal(result.considered, 0);
   assert.equal(result.sent, 0);
@@ -51,7 +58,7 @@ test("swing candidates remain observation-only and are excluded from Telegram al
 test("feature flag off never calls Telegram", async () => {
   const { markets, journal } = fixture([candidate()]);
   let calls = 0;
-  const result = await sendCandidateAlerts(markets, journal, 1010, {}, { fetchImpl: async () => { calls++; } });
+  const result = await sendCandidateAlerts(markets, journal, 1010, {}, { liveQuotes: { R_50: { price: 100 } }, fetchImpl: async () => { calls++; } });
   assert.equal(result.enabled, false);
   assert.equal(calls, 0);
 });
@@ -59,7 +66,7 @@ test("feature flag off never calls Telegram", async () => {
 test("recent candidate is sent once with its horizon in the market label", async () => {
   const { markets, journal } = fixture([candidate()]);
   const requests = [];
-  const options = { fetchImpl: async (url, init) => {
+  const options = { liveQuotes: { R_50: { price: 100 } }, fetchImpl: async (url, init) => {
     requests.push({ url, payload: JSON.parse(init.body) });
     return { ok: true, json: async () => ({ success: true }) };
   }};
@@ -104,6 +111,24 @@ test("SHORT_TERM and POSITION use their own stale-alert cutoffs", async () => {
   }
 });
 
+test("price already moved too far is marked missed and not sent", async () => {
+  const { markets, journal } = fixture([candidate()]);
+  let calls=0;
+  const env={MTF_TELEGRAM_ALERTS:"true",TELEGRAM_WORKER_URL:"https://worker.example",SIGNAL_API_KEY:"secret"};
+  const result=await sendCandidateAlerts(markets,journal,1061,env,{liveQuotes:{R_50:{price:101}},fetchImpl:async()=>{calls++;}});
+  assert.equal(result.missed,1);
+  assert.equal(calls,0);
+  assert.equal(journal.signals[0].telegramStatus,"missed");
+});
+
+test("missing live quote blocks delivery without falsely marking signal sent", async () => {
+  const { markets, journal }=fixture([candidate()]);
+  const env={MTF_TELEGRAM_ALERTS:"true",TELEGRAM_WORKER_URL:"https://worker.example",SIGNAL_API_KEY:"secret"};
+  const result=await sendCandidateAlerts(markets,journal,1061,env,{liveQuotes:{},fetchImpl:async()=>({ok:true,json:async()=>({success:true})})});
+  assert.equal(result.quoteUnavailable,1);
+  assert.equal(journal.signals[0].telegramStatus,null);
+});
+
 test("candidate outside the alert age window is not sent", async () => {
   const old = candidate({ entryCandleEpoch: 1000 });
   const { markets, journal } = fixture([old]);
@@ -121,7 +146,7 @@ test("uncertain delivery failure is recorded and not retried automatically", asy
   const { markets, journal } = fixture([candidate()]);
   let calls = 0;
   const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
-  const options = { fetchImpl: async () => { calls++; throw new Error("network timeout"); } };
+  const options = { liveQuotes: { R_50: { price: 100 } }, fetchImpl: async () => { calls++; throw new Error("network timeout"); } };
   const first = await sendCandidateAlerts(markets, journal, 1061, env, options);
   const second = await sendCandidateAlerts(markets, journal, 1010, env, options);
   assert.equal(first.failed, 1);
