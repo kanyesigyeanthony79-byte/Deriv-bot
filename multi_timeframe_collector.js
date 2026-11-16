@@ -126,7 +126,8 @@ async function fetchLiveQuotes(client, markets, logFn = log) {
   }
   return quotes;
 }
-\nasync function main() {
+
+async function main() {
   const client = await connect(PUBLIC);
   try {
     const timeReply = await client.ask({ time: 1 });
