@@ -1,12 +1,12 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { latestCandidates, sendCandidateAlerts, ALERT_MAX_AGE_SECONDS } = require("../multi_timeframe_alerts");
+const { latestCandidates, sendCandidateAlerts, ALERT_MAX_AGE_SECONDS, signalFreshness } = require("../multi_timeframe_alerts");
 
 function candidate(overrides = {}) {
   return {
     state: "signal", signalId: "R_50-SCALP-1000", marketId: "R_50", market: "Volatility 50 Index",
-    category: "SCALP", categoryLabel: "Scalping", direction: "BUY",
+    category: "SCALP", categoryLabel: "Scalping", direction: "BUY", entryTimeframe: "M1",
     entryCandleEpoch: 1000, entry: 100, stopLoss: 98, tp1: 102, tp2: 103,
     ...overrides
   };
@@ -17,6 +17,14 @@ function fixture(candidates) {
     journal: { version: 1, signals: candidates.map(s => ({ ...s, telegramStatus: null })) }
   };
 }
+
+
+test("freshness is measured from entry candle close, not candle open", () => {
+  const item = candidate({ entryCandleEpoch: 1000, entryTimeframe: "M1" });
+  assert.equal(signalFreshness(item, 1060).ageSeconds, 0);
+  assert.equal(signalFreshness(item, 1060).fresh, true);
+  assert.equal(signalFreshness(item, 1060 + ALERT_MAX_AGE_SECONDS.SCALP + 1).fresh, false);
+});
 
 test("latestCandidates keeps only the newest candidate per market and horizon", () => {
   const older = candidate({ signalId: "old", entryCandleEpoch: 900 });
@@ -31,7 +39,7 @@ test("swing candidates remain observation-only and are excluded from Telegram al
   const { markets, journal } = fixture([swing]);
   let calls = 0;
   const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
-  const result = await sendCandidateAlerts(markets, journal, 1010, env, {
+  const result = await sendCandidateAlerts(markets, journal, 1061, env, {
     fetchImpl: async () => { calls++; return { ok: true, json: async () => ({ success: true }) }; }
   });
   assert.equal(result.considered, 0);
@@ -56,8 +64,8 @@ test("recent candidate is sent once with its horizon in the market label", async
     return { ok: true, json: async () => ({ success: true }) };
   }};
   const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
-  const first = await sendCandidateAlerts(markets, journal, 1010, env, options);
-  const second = await sendCandidateAlerts(markets, journal, 1010, env, options);
+  const first = await sendCandidateAlerts(markets, journal, 1061, env, options);
+  const second = await sendCandidateAlerts(markets, journal, 1061, env, options);
   assert.equal(first.sent, 1);
   assert.equal(second.skipped, 1);
   assert.equal(requests.length, 1);
@@ -68,10 +76,10 @@ test("recent candidate is sent once with its horizon in the market label", async
 test("SCALP, SHORT_TERM and POSITION candidates each route with their own horizon label", async () => {
   const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
   for (const [category, label] of [["SCALP", "Scalping"], ["SHORT_TERM", "Short-term"], ["POSITION", "Position"]]) {
-    const item = candidate({ category, categoryLabel: label, signalId: "R_50-" + category + "-1000" });
+    const item = candidate({ category, categoryLabel: label, entryTimeframe: category === "SCALP" ? "M1" : category === "SHORT_TERM" ? "M5" : "H4", signalId: "R_50-" + category + "-1000" });
     const { markets, journal } = fixture([item]);
     const requests = [];
-    const result = await sendCandidateAlerts(markets, journal, 1010, env, {
+    const result = await sendCandidateAlerts(markets, journal, 1000 + (category === "SCALP" ? 60 : category === "SHORT_TERM" ? 300 : 14400) + 10, env, {
       fetchImpl: async (url, init) => {
         requests.push(JSON.parse(init.body));
         return { ok: true, json: async () => ({ success: true }) };
@@ -85,10 +93,10 @@ test("SCALP, SHORT_TERM and POSITION candidates each route with their own horizo
 test("SHORT_TERM and POSITION use their own stale-alert cutoffs", async () => {
   const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
   for (const category of ["SHORT_TERM", "POSITION"]) {
-    const item = candidate({ category, signalId: "R_50-" + category + "-1000" });
+    const item = candidate({ category, entryTimeframe: category === "SHORT_TERM" ? "M5" : "H4", signalId: "R_50-" + category + "-1000" });
     const { markets, journal } = fixture([item]);
     let calls = 0;
-    const result = await sendCandidateAlerts(markets, journal, 1000 + ALERT_MAX_AGE_SECONDS[category] + 1, env, {
+    const result = await sendCandidateAlerts(markets, journal, 1000 + (category === "SHORT_TERM" ? 300 : 14400) + ALERT_MAX_AGE_SECONDS[category] + 1, env, {
       fetchImpl: async () => { calls++; return { ok: true, json: async () => ({ success: true }) }; }
     });
     assert.equal(result.stale, 1, category + " should be marked stale");
@@ -101,7 +109,7 @@ test("candidate outside the alert age window is not sent", async () => {
   const { markets, journal } = fixture([old]);
   let calls = 0;
   const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
-  const result = await sendCandidateAlerts(markets, journal, 1000 + ALERT_MAX_AGE_SECONDS.SCALP + 1, env, {
+  const result = await sendCandidateAlerts(markets, journal, 1000 + 60 + ALERT_MAX_AGE_SECONDS.SCALP + 1, env, {
     fetchImpl: async () => { calls++; }
   });
   assert.equal(result.stale, 1);
@@ -114,7 +122,7 @@ test("uncertain delivery failure is recorded and not retried automatically", asy
   let calls = 0;
   const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
   const options = { fetchImpl: async () => { calls++; throw new Error("network timeout"); } };
-  const first = await sendCandidateAlerts(markets, journal, 1010, env, options);
+  const first = await sendCandidateAlerts(markets, journal, 1061, env, options);
   const second = await sendCandidateAlerts(markets, journal, 1010, env, options);
   assert.equal(first.failed, 1);
   assert.equal(second.skipped, 1);

@@ -1,12 +1,28 @@
 "use strict";
 
 // Sends only newly observed, recent multi-timeframe candidates to the existing Telegram Worker.
+// Freshness is measured from the CLOSE of the entry candle, not its opening timestamp.
 // No order execution. The feature flag is an independent kill switch.
+const ENTRY_TIMEFRAME_SECONDS = Object.freeze({ M1: 60, M5: 300, H4: 14400 });
 const ALERT_MAX_AGE_SECONDS = Object.freeze({
-  SCALP: 15 * 60,
-  SHORT_TERM: 60 * 60,
-  POSITION: 24 * 60 * 60
+  SCALP: 10 * 60,
+  SHORT_TERM: 30 * 60,
+  POSITION: 4 * 60 * 60
 });
+
+function signalFreshness(candidate, nowEpoch) {
+  const timeframeSeconds = ENTRY_TIMEFRAME_SECONDS[candidate.entryTimeframe];
+  const candleCloseEpoch = Number(candidate.entryCandleEpoch) + Number(timeframeSeconds);
+  const ageSeconds = Number(nowEpoch) - candleCloseEpoch;
+  const maxAgeSeconds = ALERT_MAX_AGE_SECONDS[candidate.category];
+  return {
+    candleCloseEpoch,
+    ageSeconds,
+    maxAgeSeconds,
+    fresh: Number.isFinite(candleCloseEpoch) && Number.isFinite(ageSeconds) &&
+      ageSeconds >= 0 && Boolean(maxAgeSeconds) && ageSeconds <= maxAgeSeconds
+  };
+}
 
 function latestCandidates(markets) {
   const latest = new Map();
@@ -46,14 +62,15 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
       result.skipped++;
       continue;
     }
-    const age = nowEpoch - Number(candidate.entryCandleEpoch);
-    const maxAge = ALERT_MAX_AGE_SECONDS[candidate.category];
-    if (!Number.isFinite(age) || age < 0 || !maxAge || age > maxAge) {
+    const freshness = signalFreshness(candidate, nowEpoch);
+    if (!freshness.fresh) {
       record.telegramStatus = "stale";
-      record.telegramStatusReason = "candidate_outside_alert_age_window";
+      record.telegramStatusReason = "candidate_outside_close_based_alert_window";
+      record.telegramAgeSeconds = freshness.ageSeconds;
+      record.telegramCandleCloseEpoch = freshness.candleCloseEpoch;
       result.stale++;
       persist(journal);
-      log("mtf_candidate_stale", { signalId: candidate.signalId, ageSeconds: age });
+      log("mtf_candidate_stale", { signalId: candidate.signalId, ageSeconds: freshness.ageSeconds, candleCloseEpoch: freshness.candleCloseEpoch });
       continue;
     }
 
@@ -66,7 +83,10 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
       entry: candidate.entry,
       stopLoss: candidate.stopLoss,
       tp1: candidate.tp1,
-      tp2: candidate.tp2
+      tp2: candidate.tp2,
+      signalAgeSeconds: freshness.ageSeconds,
+      entryTimeframe: candidate.entryTimeframe,
+      candleCloseEpoch: freshness.candleCloseEpoch
     };
     try {
       const response = await fetchImpl(env.TELEGRAM_WORKER_URL, {
@@ -79,12 +99,12 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
       if (!response.ok || body.success !== true) throw new Error(body.error || ("Telegram Worker HTTP " + response.status));
       record.telegramStatus = "sent";
       record.telegramSentAt = new Date(nowEpoch * 1000).toISOString();
+      record.telegramAgeSeconds = freshness.ageSeconds;
+      record.telegramCandleCloseEpoch = freshness.candleCloseEpoch;
       result.sent++;
       persist(journal);
-      log("mtf_telegram_delivered", { signalId: candidate.signalId, market: candidate.market, category: candidate.category, direction: candidate.direction });
+      log("mtf_telegram_delivered", { signalId: candidate.signalId, market: candidate.market, category: candidate.category, direction: candidate.direction, ageSeconds: freshness.ageSeconds });
     } catch (error) {
-      // Mark the attempt terminal to avoid duplicate Telegram messages if the relay accepted
-      // the message but its response was lost. A failed/uncertain delivery is visible in the journal.
       record.telegramStatus = "delivery_failed";
       record.telegramStatusReason = String(error.message || error).slice(0, 240);
       record.telegramAttemptedAt = new Date(nowEpoch * 1000).toISOString();
@@ -96,4 +116,4 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
   return result;
 }
 
-module.exports = { ALERT_MAX_AGE_SECONDS, latestCandidates, sendCandidateAlerts };
+module.exports = { ENTRY_TIMEFRAME_SECONDS, ALERT_MAX_AGE_SECONDS, signalFreshness, latestCandidates, sendCandidateAlerts };
