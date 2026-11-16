@@ -69,4 +69,25 @@ async function createMt5DemoReadOnlySnapshot({ token, appId, accountId = EXPECTE
       requestTypes: ["authorize", "mt5_login_list", "mt5_get_settings"], ordersPlaced: 0 };
   } finally { client.close(); }
 }
+if (require.main === module) {
+  createMt5DemoReadOnlySnapshot({
+    token: process.env.DERIV_TOKEN,
+    appId: process.env.DERIV_APP_ID
+  }).then(snapshot => {
+    // Never print credentials or raw API payloads in CI logs.
+    process.stdout.write(JSON.stringify({
+      verified: true,
+      product: snapshot.product,
+      accountId: snapshot.accountId,
+      accountType: snapshot.accountType,
+      currency: snapshot.currency,
+      balance: snapshot.balance,
+      requestTypes: snapshot.requestTypes,
+      ordersPlaced: snapshot.ordersPlaced
+    }) + "\\n");
+  }).catch(error => {
+    process.stderr.write("MT5 read-only account verification failed: " + String(error && error.message || "unknown_error") + "\\n");
+    process.exitCode = 1;
+  });
+}
 module.exports = { EXPECTED_MT5_DEMO_LOGIN, validateMt5DemoAccount, createLegacyReadOnlyClient, createMt5DemoReadOnlySnapshot };
