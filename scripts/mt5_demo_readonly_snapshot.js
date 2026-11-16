@@ -42,8 +42,23 @@ function createLegacyReadOnlyClient(url, { WebSocketImpl = globalThis.WebSocket,
       const item = data && pending.get(Number(data.req_id)); if (!item) return;
       pending.delete(Number(data.req_id)); clearTimeout(item.timer); item.resolve(data);
     });
-    ws.addEventListener("error", () => { if (!opened) { clearTimeout(connectTimer); reject(new Error("mt5_websocket_connection_failed")); } failAll(new Error("mt5_websocket_transport_error")); });
-    ws.addEventListener("close", () => { if (!opened) { clearTimeout(connectTimer); reject(new Error("mt5_websocket_closed_before_open")); } failAll(new Error("mt5_websocket_closed")); });
+    ws.addEventListener("error", event => {
+      if (!opened) {
+        clearTimeout(connectTimer);
+        const detail = String(event && event.message || "no_error_detail").replace(/[^a-zA-Z0-9 _:-]/g, "").slice(0, 120);
+        reject(new Error("mt5_websocket_connection_failed:" + detail));
+      }
+      failAll(new Error("mt5_websocket_transport_error"));
+    });
+    ws.addEventListener("close", event => {
+      if (!opened) {
+        clearTimeout(connectTimer);
+        const code = Number(event && event.code) || 0;
+        const reason = String(event && event.reason || "").replace(/[^a-zA-Z0-9 _:-]/g, "").slice(0, 80);
+        reject(new Error("mt5_websocket_closed_before_open:" + code + ":" + reason));
+      }
+      failAll(new Error("mt5_websocket_closed"));
+    });
   });
 }
 async function createMt5DemoReadOnlySnapshot({ token, appId, accountId = EXPECTED_MT5_DEMO_LOGIN, WebSocketImpl = globalThis.WebSocket, now = () => Date.now(), timeoutMs = 15000 }) {
