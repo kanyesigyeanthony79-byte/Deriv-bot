@@ -58,7 +58,7 @@ test("journal expires an unclosed observation after its category age limit", () 
 test("dashboard projection includes only journal-confirmed active signals with a fresh quote", () => {
   const regular = { ...signal, signalId: "JD100-SWING-100", state: "signal", marketId: "JD100" };
   const recentOnly = { ...signal, signalId: "JD100-SCALP-200", category: "SCALP", state: "signal", marketId: "JD100" };
-  const market = { signals: [regular], recentSignals: [recentOnly, { ...regular, score: 99 }] };
+  const market = { marketId: "JD100", signals: [regular], recentSignals: [recentOnly, { ...regular, score: 99 }] };
   const journal = { signals: [
     { ...regular, status: "pending", tp1Hit: false },
     { ...recentOnly, status: "tp1_hit", tp1Hit: true },
