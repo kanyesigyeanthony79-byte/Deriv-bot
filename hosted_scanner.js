@@ -5,7 +5,7 @@ const path = require("node:path");
 const { evaluate, DEF } = require("./engine");
 const { journalOutcome: recordJournalOutcome, reconcileJournalState, markExpired, updateFavourableMovement } = require("./signal_journal");
 const { dailySummary, deliverDailyReport, previousUgandaDay } = require("./daily_summary");
-const { createDerivDemoReadOnlySnapshot } = require("./scripts/demo_readonly_account_snapshot");
+const { createMt5DemoReadOnlySnapshot, EXPECTED_MT5_DEMO_LOGIN } = require("./scripts/mt5_demo_readonly_snapshot");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const GRANULARITY = 900;
@@ -58,13 +58,13 @@ const localDate = epoch => new Intl.DateTimeFormat("en-CA", {timeZone:"Africa/Ka
 const findJournalSignal = id => journal.signals.find(s => s.signalId === id);
 
 async function readDemoSnapshotForReport() {
-  if (!process.env.DERIV_TOKEN || !process.env.DERIV_ACCOUNT_ID) {
+  if (!process.env.DERIV_TOKEN || !process.env.DERIV_APP_ID) {
     return { status: "not_configured" };
   }
   try {
-    const snapshot = await createDerivDemoReadOnlySnapshot({
+    const snapshot = await createMt5DemoReadOnlySnapshot({
       token: process.env.DERIV_TOKEN,
-      accountId: process.env.DERIV_ACCOUNT_ID,
+      accountId: EXPECTED_MT5_DEMO_LOGIN,
       appId: process.env.DERIV_APP_ID
     });
     return { status: "ok", ...snapshot };
