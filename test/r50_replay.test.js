@@ -86,6 +86,13 @@ test("actual archived R_50 candles replay reproducibly and print holdout compari
   assert.equal(report.split.discoveryBars, 648);
   assert.equal(report.split.holdoutBars, 432);
   assert.ok(report.topDiscoveryCandidates.length > 0);
+  assert.ok(report.frozenCandidate);
+  assert.equal(report.frozenCandidate.config.pullback, true);
+  assert.equal(report.frozenCandidate.config.bodyMin, 0.5);
+  assert.equal(report.frozenCandidate.config.rsiMode, "strong");
+  assert.equal(report.frozenCandidate.config.stopAtr, 1.25);
+  assert.equal(report.frozenCandidate.config.rewardRisk, 1.5);
+  assert.ok(report.baseline);
   console.log("\nR_50 ARCHIVE REPLAY SUMMARY");
   console.log(JSON.stringify({
     bars: report.bars,
@@ -93,6 +100,8 @@ test("actual archived R_50 candles replay reproducibly and print holdout compari
     lastEpoch: report.lastEpoch,
     discoveryBars: report.split.discoveryBars,
     holdoutBars: report.split.holdoutBars,
+    frozenCandidate: report.frozenCandidate,
+    baseline: report.baseline,
     topDiscoveryCandidates: report.topDiscoveryCandidates.slice(0, 10).map(item => ({
       config: item.config,
       discovery: item.discovery,
