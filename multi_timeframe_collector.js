@@ -184,7 +184,10 @@ async function main() {
       output.markets[marketId] = marketData;
     }
 
-    const liveQuotes = await fetchLiveQuotes(client, output.markets);\n    log("live_quotes_collected", { available: Object.keys(liveQuotes).length, expected: Object.keys(output.markets).length });\n\n    const priorJournal = fs.existsSync(JOURNAL) ? JSON.parse(fs.readFileSync(JOURNAL, "utf8")) : { version: 1, signals: [] };
+    const liveQuotes = await fetchLiveQuotes(client, output.markets);
+    log("live_quotes_collected", { available: Object.keys(liveQuotes).length, expected: Object.keys(output.markets).length });
+
+    const priorJournal = fs.existsSync(JOURNAL) ? JSON.parse(fs.readFileSync(JOURNAL, "utf8")) : { version: 1, signals: [] };
     const journal = updateJournal(priorJournal, output.markets, now);
     const strategyJournalPath = path.join(__dirname, "strategy_comparison_journal.json");
     const priorStrategyJournal = fs.existsSync(strategyJournalPath)
