@@ -47,7 +47,7 @@ test("swing candidates remain observation-only and are excluded from Telegram al
   let calls = 0;
   const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
   const result = await sendCandidateAlerts(markets, journal, 1061, env, {
-    liveQuotes: { R_50: { price: 100 } }, liveQuotes: { R_50: { price: 100 } }, fetchImpl: async () => { calls++; return { ok: true, json: async () => ({ success: true }) }; }
+    liveQuotes: { R_50: { price: 100 } }, fetchImpl: async () => { calls++; return { ok: true, json: async () => ({ success: true }) }; }
   });
   assert.equal(result.considered, 0);
   assert.equal(result.sent, 0);
