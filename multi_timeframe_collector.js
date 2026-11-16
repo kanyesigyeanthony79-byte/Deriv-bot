@@ -109,7 +109,24 @@ function normalizeCandles(raw, granularity, now) {
     .filter(c => c.epoch + granularity <= now);
   return validCandles(candles) ? candles : [];
 }
-async function main() {
+
+async function fetchLiveQuotes(client, markets, logFn = log) {
+  const quotes = {};
+  for (const [marketId, market] of Object.entries(markets || {})) {
+    if (!market.symbol) continue;
+    try {
+      const reply = await client.ask({ ticks: market.symbol, subscribe: 0 }, 10000);
+      const tick = reply.tick || {};
+      const price = Number(tick.quote);
+      if (Number.isFinite(price)) quotes[marketId] = { price, epoch: Number(tick.epoch) || null, symbol: market.symbol };
+      else logFn("live_quote_invalid", { marketId, symbol: market.symbol });
+    } catch (error) {
+      logFn("live_quote_failed", { marketId, symbol: market.symbol, message: error.message });
+    }
+  }
+  return quotes;
+}
+\nasync function main() {
   const client = await connect(PUBLIC);
   try {
     const timeReply = await client.ask({ time: 1 });
@@ -166,7 +183,7 @@ async function main() {
       output.markets[marketId] = marketData;
     }
 
-    const priorJournal = fs.existsSync(JOURNAL) ? JSON.parse(fs.readFileSync(JOURNAL, "utf8")) : { version: 1, signals: [] };
+    const liveQuotes = await fetchLiveQuotes(client, output.markets);\n    log("live_quotes_collected", { available: Object.keys(liveQuotes).length, expected: Object.keys(output.markets).length });\n\n    const priorJournal = fs.existsSync(JOURNAL) ? JSON.parse(fs.readFileSync(JOURNAL, "utf8")) : { version: 1, signals: [] };
     const journal = updateJournal(priorJournal, output.markets, now);
     const strategyJournalPath = path.join(__dirname, "strategy_comparison_journal.json");
     const priorStrategyJournal = fs.existsSync(strategyJournalPath)
@@ -176,7 +193,7 @@ async function main() {
     const persistStrategyJournal = current =>
       fs.writeFileSync(strategyJournalPath, JSON.stringify(current, null, 2) + "\n");
     const strategyShadowTelegram = await sendStrategyComparisonAlerts(
-      strategyJournal, now, process.env, { log, persist: persistStrategyJournal }
+      strategyJournal, now, process.env, { log, persist: persistStrategyJournal, liveQuotes }
     );
     const strategyDailyTelegram = await sendDailyStrategyComparisonReport(
       strategyJournal, now, process.env, { log, persist: persistStrategyJournal }
@@ -247,4 +264,4 @@ async function main() {
   }
 }
 if (require.main === module) main().catch(error => { log("collector_failed", { message: error.message }); process.exitCode = 1; });
-module.exports = { fetchCandleHistory, normalizeCandles };
+module.exports = { fetchCandleHistory, normalizeCandles, fetchLiveQuotes };
