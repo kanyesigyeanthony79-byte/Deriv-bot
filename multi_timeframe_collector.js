@@ -115,7 +115,7 @@ async function fetchLiveQuotes(client, markets, logFn = log) {
   for (const [marketId, market] of Object.entries(markets || {})) {
     if (!market.symbol) continue;
     try {
-      const reply = await client.ask({ ticks: market.symbol, subscribe: 0 }, 10000);
+      const reply = await client.ask({ ticks: market.symbol }, 10000);
       const tick = reply.tick || {};
       const price = Number(tick.quote);
       if (Number.isFinite(price)) quotes[marketId] = { price, epoch: Number(tick.epoch) || null, symbol: market.symbol };
