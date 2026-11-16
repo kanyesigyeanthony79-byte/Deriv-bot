@@ -14,7 +14,7 @@ function candidate(overrides = {}) {
 function fixture(candidates) {
   return {
     markets: { R_50: { signals: [], recentSignals: candidates } },
-    journal: { version: 1, signals: candidates.map(s => ({ ...s, telegramStatus: null })) }
+    journal: { version: 1, signals: candidates.map(s => ({ ...s, status: "pending", telegramStatus: null })) }
   };
 }
 
