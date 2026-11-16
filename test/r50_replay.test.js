@@ -34,10 +34,10 @@ test("R_50 replay refuses missing, duplicate, or malformed M15 candles", () => {
   assert.throws(() => validateBars(malformed), /Invalid OHLC range/);
 });
 
-test("candidate grid is deterministic and contains 540 configurations", () => {
+test("candidate grid is deterministic and contains 360 configurations", () => {
   const first = candidateGrid();
   const second = candidateGrid();
-  assert.equal(first.length, 540);
+  assert.equal(first.length, 360);
   assert.deepEqual(first, second);
 });
 
@@ -67,7 +67,7 @@ test("runReplay preserves a chronological split and labels output research-only"
   assert.equal(report.status, "research_only_not_approved_for_promotion");
   assert.equal(report.split.discoveryBars, 300);
   assert.equal(report.split.holdoutBars, 200);
-  assert.equal(report.candidateCount, 540);
+  assert.equal(report.candidateCount, 360);
   assert.ok(Array.isArray(report.topDiscoveryCandidates));
 });
 
