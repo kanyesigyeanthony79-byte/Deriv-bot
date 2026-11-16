@@ -243,4 +243,5 @@ async function main() {
     client.close();
   }
 }
-main().catch(error => { log("collector_failed", { message: error.message }); process.exitCode = 1; });
+if (require.main === module) main().catch(error => { log("collector_failed", { message: error.message }); process.exitCode = 1; });
+module.exports = { fetchCandleHistory, normalizeCandles };
