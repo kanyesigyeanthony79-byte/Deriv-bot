@@ -198,6 +198,27 @@ function runReplay(bars) {
     .filter(item => item.discovery.resolved >= MIN_DISCOVERY_RESOLVED)
     .sort((a, b) => (b.discovery.expectancyR ?? -Infinity) - (a.discovery.expectancyR ?? -Infinity));
 
+  // Freeze the top discovery-ranked configuration before reading its holdout result.
+  // This is a research lock only; it does not enable or publish trading signals.
+  const frozenConfig = ranked[0]?.config ?? null;
+  const frozenCandidate = frozenConfig ? {
+    config: frozenConfig,
+    discovery: scoreCandidate(bars, features, frozenConfig, 0, split),
+    holdout: scoreCandidate(bars, features, frozenConfig, split, bars.length)
+  } : null;
+  const baselineConfig = {
+    pullback: false,
+    bodyMin: 0,
+    rsiMode: "off",
+    stopAtr: 1.5,
+    rewardRisk: 2
+  };
+  const baseline = {
+    config: baselineConfig,
+    discovery: scoreCandidate(bars, features, baselineConfig, 0, split),
+    holdout: scoreCandidate(bars, features, baselineConfig, split, bars.length)
+  };
+
   const report = {
     generatedAt: new Date().toISOString(),
     status: "research_only_not_approved_for_promotion",
@@ -230,6 +251,9 @@ function runReplay(bars) {
     },
     candidateCount: candidateGrid().length,
     minimumDiscoveryResolved: MIN_DISCOVERY_RESOLVED,
+    selectionRule: "Freeze highest discovery expectancy candidate meeting minimum discovery resolved count; do not select or tune using holdout outcomes.",
+    frozenCandidate,
+    baseline,
     topDiscoveryCandidates: ranked.slice(0, 20),
     warning: "Candidate selection and one historical window create selection/regime risk. Holdout counts are not proof of a durable edge. Do not promote without larger unseen and forward shadow samples."
   };
