@@ -57,8 +57,14 @@ export default {
           const outcome = outcomes[data.outcome];
           if (!outcome) return reply({ error: "Invalid outcome type" }, 400);
           if (!data.signalId) return reply({ error: "Missing signalId" }, 400);
+          const priorityLines = data.priorityTier === "RESEARCH_PRIORITY" ? [
+            String(data.priorityLabel || "PRIORITY PAIR — RESEARCH WATCH"),
+            "Historical " + String(data.priorityMetricName || "directional follow-through") + ": " +
+              Number(data.priorityMetricPct).toFixed(1) + "% (not a strategy win rate)"
+          ] : [];
           message = [
             outcome.title,
+            ...priorityLines,
             "━━━━━━━━━━━━━━━━",
             `📊 Market: ${market}`,
             `📈 Direction: ${direction}`,
@@ -75,8 +81,14 @@ export default {
         } else {
           if (data.event && data.event !== "new_signal") return reply({ error: "Invalid event type" }, 400);
           if (data.event === "new_signal" && !data.signalId) return reply({ error: "Missing signalId" }, 400);
+          const priorityLines = data.priorityTier === "RESEARCH_PRIORITY" ? [
+            String(data.priorityLabel || "PRIORITY PAIR — RESEARCH WATCH"),
+            "Historical " + String(data.priorityMetricName || "directional follow-through") + ": " +
+              Number(data.priorityMetricPct).toFixed(1) + "% (not a strategy win rate)"
+          ] : [];
           message = [
             "🆕 NEW SIGNAL ALERT",
+            ...priorityLines,
             "━━━━━━━━━━━━━━━━",
             `📊 Market: ${market}`,
             `📈 Direction: ${direction}`,
