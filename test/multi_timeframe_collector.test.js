@@ -36,7 +36,7 @@ test("paginates M1 history beyond the 1,000-candle page size without gaps or dup
 
 test("stops paging when the API returns no earlier candles", async () => {
   let calls = 0;
-  const client = { async ask() { calls++; return { candles: makeCandles(1000, 1000) }; } };
+  const client = { async ask() { calls++; return { candles: calls === 1 ? makeCandles(1000, 1000) : [] }; } };
   const rows = await fetchCandleHistory(client, "R_10", 60, 1800, 5000);
   assert.equal(calls, 2);
   assert.equal(rows.length, 1000);
