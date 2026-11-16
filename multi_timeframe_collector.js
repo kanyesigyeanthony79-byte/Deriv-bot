@@ -4,7 +4,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { aggregateWeeklyCandles, validCandles, evaluateAllCategories, evaluateRecentSignals } = require("./multi_timeframe_engine");
-const { updateJournal, summarizeJournal } = require("./multi_timeframe_journal");
+const { updateJournal, summarizeJournal, dashboardSignalsForMarket } = require("./multi_timeframe_journal");
 const { sendCandidateAlerts } = require("./multi_timeframe_alerts");
 const { reviewSignal } = require("./signal_review");
 const { updateStrategyJournal, summarizeStrategyJournal } = require("./strategy_comparison");
@@ -227,7 +227,7 @@ async function main() {
       mode: alertSummary.enabled ? "signal_alerts_enabled" : "observation_only", summary: output.summary,
       strategyComparison: output.strategyComparison, strategyResearch: output.strategyResearch,
       markets: Object.values(output.markets).map(m => ({
-        marketId: m.marketId, marketName: m.marketName, signals: m.signals,
+        marketId: m.marketId, marketName: m.marketName, signals: dashboardSignalsForMarket(m),
         timeframeCounts: Object.fromEntries(Object.entries(m.timeframes).map(([tf, candles]) => [tf, candles.length])),
         errors: m.errors
       }))
