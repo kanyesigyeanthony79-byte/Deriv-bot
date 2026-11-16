@@ -196,7 +196,7 @@ async function fetchLiveQuotes(client, markets, logFn = log) {
       strategyJournal, now, process.env, { log, persist: persistStrategyJournal, liveQuotes }
     );
     const strategyDailyTelegram = await sendDailyStrategyComparisonReport(
-      strategyJournal, now, process.env, { log, persist: persistStrategyJournal }
+      strategyJournal, now, process.env, { log, persist: persistStrategyJournal, liveQuotes }
     );
     persistStrategyJournal(strategyJournal);
     output.strategyComparison = summarizeStrategyJournal(strategyJournal);
