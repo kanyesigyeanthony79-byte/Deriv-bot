@@ -1,0 +1,32 @@
+name: Lower-Timeframe Research Tests
+
+on:
+  push:
+    branches:
+      - main
+      - research/lower-timeframe-precision-entry
+    paths:
+      - "lower_tf_entry_research.js"
+      - "lower_tf_entry_research.test.js"
+      - ".github/workflows/lower-tf-research-tests.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "lower_tf_entry_research.js"
+      - "lower_tf_entry_research.test.js"
+      - ".github/workflows/lower-tf-research-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test

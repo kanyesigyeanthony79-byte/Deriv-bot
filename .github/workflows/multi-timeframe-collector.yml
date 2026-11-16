@@ -12,6 +12,7 @@ on:
       - "strategy_comparison.js"
       - "strategy_comparison_alerts.js"
       - "strategy_optimizer.js"
+      - "lower_tf_entry_research.js"
       - "signal_review.js"
       - ".github/workflows/multi-timeframe-collector.yml"
   workflow_dispatch:
@@ -45,11 +46,13 @@ jobs:
           STRATEGY_COMPARISON_TELEGRAM_ALERTS: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
           TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
           SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
+      - name: Archive lower-timeframe candles for entry research
+        run: node lower_tf_entry_research.js
       - name: Persist isolated observation journal
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add multi_timeframe_journal.json multi_timeframe_dashboard.json signal_review_data.json strategy_comparison_journal.json strategy_research_candles.json strategy_research_report.json
+          git add multi_timeframe_journal.json multi_timeframe_dashboard.json signal_review_data.json strategy_comparison_journal.json strategy_research_candles.json strategy_research_report.json lower_tf_research_candles.json lower_tf_entry_research_report.json
           if ! git diff --cached --quiet; then
             git commit -m "Update multi-timeframe observation journal"
             for attempt in 1 2 3; do
