@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { fetchCandleHistory } = require("../multi_timeframe_collector");
+const { fetchCandleHistory, fetchLiveQuotes } = require("../multi_timeframe_collector");
 
 function makeCandles(start, count) {
   return Array.from({ length: count }, (_, i) => {
@@ -41,4 +41,13 @@ test("stops paging when the API returns no earlier candles", async () => {
   const rows = await fetchCandleHistory(client, "R_10", 60, 1800, 200000);
   assert.equal(calls, 2);
   assert.equal(rows.length, 1000);
+});
+
+test("fetches one-shot live Deriv quotes without opening tick subscriptions", async () => {
+  const requests=[];
+  const client={async ask(request){requests.push(request);return {tick:{quote:123.45,epoch:4567}};}};
+  const quotes=await fetchLiveQuotes(client,{R_50:{symbol:"R_50"}});
+  assert.deepEqual(requests,[{ticks:"R_50"}]);
+  assert.equal(quotes.R_50.price,123.45);
+  assert.equal(quotes.R_50.epoch,4567);
 });
