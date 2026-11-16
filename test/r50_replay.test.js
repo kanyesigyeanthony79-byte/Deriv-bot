@@ -7,7 +7,8 @@ const {
   candidateGrid,
   buildFeatures,
   scoreCandidate,
-  runReplay
+  runReplay,
+  loadArchive
 } = require("../scripts/r50_replay");
 
 function syntheticBars(count = 260) {
@@ -75,4 +76,27 @@ test("R_50 replay does not silently accept a non-contiguous series", () => {
   const bars = syntheticBars(500);
   bars[250].epoch += 900;
   assert.throws(() => runReplay(bars), /gap or duplicate/);
+});
+
+test("actual archived R_50 candles replay reproducibly and print holdout comparison", () => {
+  const bars = loadArchive();
+  const report = runReplay(bars);
+  assert.equal(report.market, "R_50");
+  assert.equal(report.bars, 1080);
+  assert.equal(report.split.discoveryBars, 648);
+  assert.equal(report.split.holdoutBars, 432);
+  assert.ok(report.topDiscoveryCandidates.length > 0);
+  console.log("\nR_50 ARCHIVE REPLAY SUMMARY");
+  console.log(JSON.stringify({
+    bars: report.bars,
+    firstEpoch: report.firstEpoch,
+    lastEpoch: report.lastEpoch,
+    discoveryBars: report.split.discoveryBars,
+    holdoutBars: report.split.holdoutBars,
+    topDiscoveryCandidates: report.topDiscoveryCandidates.slice(0, 10).map(item => ({
+      config: item.config,
+      discovery: item.discovery,
+      holdout: item.holdout
+    }))
+  }, null, 2));
 });
