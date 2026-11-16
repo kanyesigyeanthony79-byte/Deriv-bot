@@ -1,0 +1,28 @@
+name: MT5 execution integration tests
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "multi_timeframe_alerts.js"
+      - "test/**"
+      - "workers/deriv-telegram-alerts/**"
+      - ".github/workflows/mt5-execution-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run complete Node test suite
+        run: node --test
