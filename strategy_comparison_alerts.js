@@ -4,7 +4,8 @@
 // Every message is explicitly shadow-only; this module never places orders.
 const { STRATEGIES } = require("./strategy_comparison");
 const TIMEFRAME_SECONDS = 15 * 60;
-const MAX_ALERT_AGE_SECONDS = 15 * 60;
+// The collector runs every five minutes; allow a small delivery buffer after candle close.
+const MAX_ALERT_AGE_SECONDS = 10 * 60;
 const TERMINAL = new Set(["tp2_hit", "stopped", "stopped_after_tp1", "ambiguous", "expired"]);
 
 function ugandaDate(epochSeconds) {
@@ -111,7 +112,9 @@ async function sendStrategyComparisonAlerts(journal, nowEpoch, env, options = {}
     const age = nowEpoch - signalCloseEpoch;
     if (!Number.isFinite(age) || age < 0 || age > MAX_ALERT_AGE_SECONDS) {
       signal.telegramStatus = "stale";
-      signal.telegramStatusReason = "outside_15_minute_shadow_alert_window";
+      signal.telegramStatusReason = "outside_10_minute_shadow_close_based_alert_window";
+      signal.telegramAgeSeconds = age;
+      signal.telegramCandleCloseEpoch = signalCloseEpoch;
       result.stale++;
       persist(journal);
       continue;
@@ -124,15 +127,20 @@ async function sendStrategyComparisonAlerts(journal, nowEpoch, env, options = {}
       entry: signal.entry,
       stopLoss: signal.stopLoss,
       tp1: signal.tp1,
-      tp2: signal.tp2
+      tp2: signal.tp2,
+      signalAgeSeconds: age,
+      entryTimeframe: "M15",
+      candleCloseEpoch: signalCloseEpoch
     };
     try {
       await postWorker(env, payload, fetchImpl);
       signal.telegramStatus = "sent";
       signal.telegramSentAt = new Date(nowEpoch * 1000).toISOString();
+      signal.telegramAgeSeconds = age;
+      signal.telegramCandleCloseEpoch = signalCloseEpoch;
       result.sent++;
       persist(journal);
-      log("strategy_comparison_shadow_delivered", { signalId: signal.signalId, strategy: signal.strategyId, market: signal.marketId });
+      log("strategy_comparison_shadow_delivered", { signalId: signal.signalId, strategy: signal.strategyId, market: signal.marketId, ageSeconds: age });
     } catch (error) {
       signal.telegramStatus = "delivery_failed";
       signal.telegramStatusReason = String(error.message || error).slice(0, 240);
@@ -186,8 +194,6 @@ async function sendDailyStrategyComparisonReport(journal, nowEpoch, env, options
     persist(journal);
     log("strategy_comparison_daily_report_sent", { day });
   } catch (error) {
-    // Record an uncertain attempt to prevent duplicate reports if Telegram accepted
-    // the message but the relay response was lost.
     journal.dailyStrategyReports[day] = {
       status: "delivery_failed",
       attemptedAt: new Date(nowEpoch * 1000).toISOString(),
