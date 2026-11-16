@@ -186,7 +186,7 @@ test("failed outcome delivery is retried and does not suppress later terminal up
   }};
   const first = await sendOutcomeAlerts(journal, 2000, env, failFirst);
   assert.equal(first.failed, 1);
-  assert.equal(journal.signals[0].telegramOutcomeEvents, undefined);
+  assert.deepEqual(journal.signals[0].telegramOutcomeEvents, {}, "failed event must remain unsent and retryable");
   const retry = await sendOutcomeAlerts(journal, 2010, env, failFirst);
   assert.equal(retry.sent, 2);
   assert.equal(calls, 3);
