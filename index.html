@@ -214,7 +214,8 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     const cat=$("mtfCategory").value, market=$("mtfMarket").value;
     const collectorAgeSeconds=(Date.now()-Date.parse(mtfSnapshot.generatedAt))/1000;
     const collectorFresh=Number.isFinite(collectorAgeSeconds)&&collectorAgeSeconds>=-60&&collectorAgeSeconds<=600;
-    const all=collectorFresh?(mtfSnapshot.markets||[]).flatMap(m=>(m.signals||[]).map(s=>({...s,marketId:m.marketId,marketName:m.marketName}))).filter(s=>Number(s.createdEpoch||s.candleEpoch||0)>=DASHBOARD_RESET_EPOCH):[];
+    const pageNowEpoch=Math.floor(Date.now()/1000);
+    const all=collectorFresh?(mtfSnapshot.markets||[]).flatMap(m=>(m.signals||[]).map(s=>({...s,marketId:m.marketId,marketName:m.marketName}))).filter(s=>Number(s.createdEpoch||s.candleEpoch||0)>=DASHBOARD_RESET_EPOCH&&Number.isFinite(Number(s.quoteEpoch))&&pageNowEpoch-Number(s.quoteEpoch)>=-60&&pageNowEpoch-Number(s.quoteEpoch)<=300):[];
     const filtered=all.filter(s=>(cat==="ALL"||s.category===cat)&&(market==="ALL"||s.marketId===market));
     // Show only actionable MTF signals. Markets with no signal in the selected horizon(s) stay hidden.
     const ordered=filtered.filter(s=>s.state==="signal"&&["pending","tp1_hit"].includes(s.status)).sort((a,b)=>(a.marketName||"").localeCompare(b.marketName||"")||["SCALP","SHORT_TERM","SWING","POSITION"].indexOf(a.category)-["SCALP","SHORT_TERM","SWING","POSITION"].indexOf(b.category));
