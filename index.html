@@ -212,17 +212,19 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   function renderMtf(){
     if(!mtfSnapshot)return;
     const cat=$("mtfCategory").value, market=$("mtfMarket").value;
-    const all=(mtfSnapshot.markets||[]).flatMap(m=>(m.signals||[]).map(s=>({...s,marketId:m.marketId,marketName:m.marketName}))).filter(s=>Number(s.createdEpoch||s.candleEpoch||0)>=DASHBOARD_RESET_EPOCH);
+    const collectorAgeSeconds=(Date.now()-Date.parse(mtfSnapshot.generatedAt))/1000;
+    const collectorFresh=Number.isFinite(collectorAgeSeconds)&&collectorAgeSeconds>=-60&&collectorAgeSeconds<=600;
+    const all=collectorFresh?(mtfSnapshot.markets||[]).flatMap(m=>(m.signals||[]).map(s=>({...s,marketId:m.marketId,marketName:m.marketName}))).filter(s=>Number(s.createdEpoch||s.candleEpoch||0)>=DASHBOARD_RESET_EPOCH):[];
     const filtered=all.filter(s=>(cat==="ALL"||s.category===cat)&&(market==="ALL"||s.marketId===market));
     // Show only actionable MTF signals. Markets with no signal in the selected horizon(s) stay hidden.
-    const ordered=filtered.filter(s=>s.state==="signal").sort((a,b)=>(a.marketName||"").localeCompare(b.marketName||"")||["SCALP","SHORT_TERM","SWING","POSITION"].indexOf(a.category)-["SCALP","SHORT_TERM","SWING","POSITION"].indexOf(b.category));
+    const ordered=filtered.filter(s=>s.state==="signal"&&["pending","tp1_hit"].includes(s.status)).sort((a,b)=>(a.marketName||"").localeCompare(b.marketName||"")||["SCALP","SHORT_TERM","SWING","POSITION"].indexOf(a.category)-["SCALP","SHORT_TERM","SWING","POSITION"].indexOf(b.category));
     $("mtfSignals").innerHTML=ordered.map(s=>{
       const cls=s.direction==="BUY"?"buy":"sell";
-      const state=s.direction+" SIGNAL";
-      const levels='<br>Entry: '+fmt(s.entry)+' · SL: '+fmt(s.stopLoss)+'<br>TP1: '+fmt(s.tp1)+' · TP2: '+fmt(s.tp2)+'<br>Score: '+esc(s.score??"—");
+      const state=s.tp1Hit||s.status==="tp1_hit"?s.direction+" · TP1 HIT — RUNNING TO TP2":s.direction+" SIGNAL";
+      const levels='<br>Entry: '+fmt(s.entry)+' · Live: '+fmt(s.currentPrice)+'<br>SL: '+fmt(s.stopLoss)+' · TP1: '+fmt(s.tp1)+' · TP2: '+fmt(s.tp2)+'<br>Score: '+esc(s.score??"—");
       return '<div class="mtf-card"><div class="mtf-head"><span>'+esc(s.marketName)+'</span><span class="mtf-tag">'+esc(categoryNames[s.category]||s.category)+'</span></div><div class="mtf-state '+cls+'">'+esc(state)+'</div><div class="detail">Entry '+esc(s.entryTimeframe||"—")+' · Confirm '+esc(s.confirmationTimeframe||"—")+' · Context '+esc(s.contextTimeframe||"—")+levels+'</div><a class="btn smallbtn" href="./signal-review.html?signalId='+encodeURIComponent(s.signalId)+'">REVIEW</a></div>';
     }).join("")||'<div class="card muted">No active signals for the selected horizon/market. Markets without a signal are hidden; scanning and data collection continue normally.</div>';
-    $("mtfStatus").textContent="Showing "+ordered.length+" active signal(s) · markets without signals hidden · Updated "+time(mtfSnapshot.generatedAt);
+    $("mtfStatus").textContent=collectorFresh?"Showing "+ordered.length+" price-verified active signal(s) · TP1-hit signals remain marked · Updated "+time(mtfSnapshot.generatedAt):"MONITORING STALE · Last collector update "+time(mtfSnapshot.generatedAt)+" · Active signals hidden until fresh data returns.";
     const counts={...(mtfSnapshot.summary?.signalCounts||{}),signal:all.filter(s=>s.state==="signal").length};
     $("mtfSummary").innerHTML=['signal','timeframe_conflict','warming','no_signal'].map(k=>'<div class="card"><div class="detail">'+esc(k.replaceAll("_"," ").toUpperCase())+'</div><div class="signal">'+esc(counts[k]??0)+'</div></div>').join("");
     const rows=mtfJournal.filter(s=>Number(s.createdEpoch||s.entryCandleEpoch||0)>=DASHBOARD_RESET_EPOCH).slice().sort((a,b)=>(b.entryCandleEpoch||0)-(a.entryCandleEpoch||0)).slice(0,40);
