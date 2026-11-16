@@ -118,28 +118,27 @@ function updateJournal(journal, markets, nowEpoch, liveQuotes = {}) {
 }
 
 function dashboardSignalsForMarket(market, journal, nowEpoch, liveQuotes = {}) {
-  const byId = new Map();
-  for (const signal of [...(market?.signals || []), ...(market?.recentSignals || [])]) {
-    if (signal && signal.signalId && !byId.has(signal.signalId)) byId.set(signal.signalId, signal);
-  }
-  const records = new Map((journal?.signals || []).map(s => [s.signalId, s]));
-  return [...byId.values()].flatMap(candidate => {
-    const record = records.get(candidate.signalId);
-    if (!record || !["pending", "tp1_hit"].includes(record.status)) return [];
+  const marketId = market?.marketId;
+  if (!marketId) return [];
+  // The journal is the source of truth: older still-valid signals may no longer
+  // appear in the scanner's short recent-candidate window.
+  return (journal?.signals || []).filter(record =>
+    record.marketId === marketId && ["pending", "tp1_hit"].includes(record.status)
+  ).flatMap(record => {
     const maxAge = Number(record.maxAgeSeconds || DEFAULT_MAX_AGE_SECONDS[record.category] || 1800);
     if (!Number.isFinite(Number(nowEpoch)) || Number(nowEpoch) - Number(record.entryCandleEpoch) > maxAge) return [];
-    const quote = liveQuotes[record.marketId];
+    const quote = liveQuotes[marketId];
     const quoteEpoch = Number(quote?.epoch);
     const quoteAge = Number(nowEpoch) - quoteEpoch;
-    if (!Number.isFinite(Number(quote?.price)) || !Number.isFinite(quoteEpoch) || quoteAge < -60 || quoteAge > 120) return [];
+    if (!Number.isFinite(Number(quote?.price)) || !Number.isFinite(quoteEpoch) || quoteAge < -60 || quoteAge > 300) return [];
     const price = Number(quote.price);
     const buy = record.direction === "BUY";
+    if (record.direction !== "BUY" && record.direction !== "SELL") return [];
     if (buy ? price <= Number(record.stopLoss) || price >= Number(record.tp2)
       : price >= Number(record.stopLoss) || price <= Number(record.tp2)) return [];
-    return [{ ...candidate, ...record, state: "signal", currentPrice: price, quoteEpoch }];
+    return [{ ...record, state: "signal", currentPrice: price, quoteEpoch }];
   });
 }
-
 function summarizeJournal(journal) {
   const counts = {};
   for (const s of journal.signals || []) counts[s.status] = (counts[s.status] || 0) + 1;
