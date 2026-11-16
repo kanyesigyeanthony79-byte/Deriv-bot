@@ -357,6 +357,13 @@ async function main() {
 
         await monitorSignals(id, candles, now);
 
+        // Gold remains in candle collection and existing-signal outcome monitoring,
+        // but new Gold alerts are paused while its strategy is researched separately.
+        if (id === "frxXAUUSD") {
+          log("market_signal_delivery_paused", { market: name, reason: "gold_strategy_research_only" });
+          continue;
+        }
+
         const result = evaluate(candles);
         if (result.state !== "ok" || result.signal === "NO TRADE") {
           log("no_signal", { market: name, state: result.state || "unknown" });
