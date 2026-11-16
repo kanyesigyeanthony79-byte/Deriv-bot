@@ -34,17 +34,31 @@ test("only new forward-shadow signals are eligible for Telegram", () => {
 
 test("sends a labelled shadow alert and records delivery to prevent duplicates", async () => {
   const journal = { signals: [signal()] };
-  const result = await sendStrategyComparisonAlerts(journal, 1901, env, { fetchImpl: fakeFetch });
+  const result = await sendStrategyComparisonAlerts(journal, 2416, env, { liveQuotes: { R_25: { price: 100 } }, fetchImpl: fakeFetch });
   assert.equal(result.sent, 1);
   assert.equal(journal.signals[0].telegramStatus, "sent");
   assert.match(journal.signals[0].telegramSentAt, /^1970-/);
-  const again = await sendStrategyComparisonAlerts(journal, 1902, env, { fetchImpl: fakeFetch });
+  const again = await sendStrategyComparisonAlerts(journal, 2417, env, { liveQuotes: { R_25: { price: 100 } }, fetchImpl: fakeFetch });
   assert.equal(again.sent, 0);
+});
+
+test("shadow alerts require live price to be close to entry", async () => {
+  const journal={signals:[signal()]};
+  const result=await sendStrategyComparisonAlerts(journal,1901,env,{liveQuotes:{R_25:{price:103}},fetchImpl:fakeFetch});
+  assert.equal(result.missed,1);
+  assert.equal(journal.signals[0].telegramStatus,"missed");
+});
+
+test("missing shadow live quote blocks delivery", async () => {
+  const journal={signals:[signal()]};
+  const result=await sendStrategyComparisonAlerts(journal,1901,env,{liveQuotes:{},fetchImpl:fakeFetch});
+  assert.equal(result.quoteUnavailable,1);
+  assert.equal(journal.signals[0].telegramStatus,undefined);
 });
 
 test("does not send stale shadow signals", async () => {
   const journal = { signals: [signal()] };
-  const result = await sendStrategyComparisonAlerts(journal, 3000, env, { fetchImpl: fakeFetch });
+  const result = await sendStrategyComparisonAlerts(journal, 3000, env, { liveQuotes: { R_25: { price: 100 } }, fetchImpl: fakeFetch });
   assert.equal(result.stale, 1);
   assert.equal(journal.signals[0].telegramStatus, "stale");
 });
