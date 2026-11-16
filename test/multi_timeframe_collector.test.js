@@ -7,7 +7,7 @@ function makeCandles(start, count) {
   return Array.from({ length: count }, (_, i) => {
     const open = 100 + (start + i) * 0.001;
     const close = open + 0.01;
-    return { epoch: start + i, open, high: close + 0.01, low: open - 0.01, close };
+    return { epoch: start + i * 60, open, high: close + 0.01, low: open - 0.01, close };
   });
 }
 
@@ -30,9 +30,9 @@ test("paginates M1 history beyond the 1,000-candle page size without gaps or dup
   assert.equal(requests[1].end, String(1000 * 60));
   assert.equal(rows.length, 1800);
   assert.equal(rows[0].epoch, 200);
-  assert.equal(rows.at(-1).epoch, 1999);
+  assert.equal(rows.at(-1).epoch, 119940);
   assert.equal(new Set(rows.map(c => c.epoch)).size, 1800);
-  assert.ok(rows.slice(1).every((c, i) => c.epoch - rows[i].epoch === 1));
+  assert.ok(rows.slice(1).every((c, i) => c.epoch - rows[i].epoch === 60));
 });
 
 test("stops paging when the API returns no earlier candles", async () => {
