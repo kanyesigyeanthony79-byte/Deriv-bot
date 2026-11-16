@@ -21,7 +21,7 @@ test("paginates M1 history beyond the 1,000-candle page size without gaps or dup
       throw new Error("Unexpected extra history request");
     }
   };
-  const rows = await fetchCandleHistory(client, "R_10", 60, 1800, 5000);
+  const rows = await fetchCandleHistory(client, "R_10", 60, 1800, 200000);
   assert.equal(requests.length, 2);
   assert.equal(requests[0].count, 1000);
   assert.equal(requests[0].end, "latest");
