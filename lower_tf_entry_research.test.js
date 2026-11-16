@@ -53,3 +53,28 @@ for (const [label, mutate] of [
     if (label === "unaligned timestamps") assert.equal(stats.unalignedEpochs, 1);
   });
 }
+
+test("an older M1 gap does not block a fresh 24-hour continuous segment", () => {
+  const { archive, incoming } = fixture();
+  const rows = archive.markets.R_10.timeframes.M1;
+  rows.unshift({ ...rows[0], epoch: rows[0].epoch - 30_000 });
+  const report = buildReport(archive, incoming, { focusMarket: "R_10" });
+  assert.equal(report.markets.R_10.frames.M1.gaps, 1);
+  assert.equal(report.markets.R_10.frames.M1.latestSegmentCandles, 1440);
+  assert.equal(report.marketsReady, 1);
+  assert.equal(report.mode, "ready_for_lower_timeframe_replay");
+  assert.equal(report.focusMarket, "R_10");
+});
+
+test("focused pair qualification does not wait for three markets", () => {
+  const { archive, incoming } = fixture();
+  archive.markets.R_25.timeframes.M1 = candles("M1", 900);
+  archive.markets.R_50.timeframes.M1 = candles("M1", 900);
+  const focused = buildReport(archive, incoming, { focusMarket: "R_10" });
+  const portfolio = buildReport(archive, incoming);
+  assert.equal(focused.marketsReady, 1);
+  assert.equal(focused.marketsRequired, 1);
+  assert.equal(focused.mode, "ready_for_lower_timeframe_replay");
+  assert.equal(portfolio.marketsReady, 1);
+  assert.equal(portfolio.mode, "collecting_lower_timeframe_history");
+});

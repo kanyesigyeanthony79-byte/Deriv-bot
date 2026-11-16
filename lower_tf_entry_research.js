@@ -53,19 +53,27 @@ function frameStats(rows, tf, rawRows = rows) {
     if (seen.has(epoch)) duplicateEpochs += 1;
     seen.add(epoch);
   }
+  let segmentStartIndex = Math.max(0, data.length - 1);
+  while (segmentStartIndex > 0 && data[segmentStartIndex].epoch - data[segmentStartIndex - 1].epoch === SECONDS[tf]) {
+    segmentStartIndex -= 1;
+  }
+  const latestSegment = data.slice(segmentStartIndex);
   return {
     candles: data.length,
     firstEpoch: data.length ? data[0].epoch : null,
     lastEpoch: data.length ? data[data.length - 1].epoch : null,
     expectedIntervalSeconds: SECONDS[tf],
     gaps: diffs.filter(d => d !== SECONDS[tf]).length,
+    latestSegmentCandles: latestSegment.length,
+    latestSegmentStartEpoch: latestSegment.length ? latestSegment[0].epoch : null,
+    latestSegmentEndEpoch: latestSegment.length ? latestSegment[latestSegment.length - 1].epoch + SECONDS[tf] : null,
     duplicateEpochs,
     invalidCandles: raw.filter(c => !validCandle(c)).length,
     unalignedEpochs: raw.filter(c => Number.isFinite(Number(c?.epoch)) && Number(c.epoch) % SECONDS[tf] !== 0).length,
     largestIntervalSeconds: diffs.length ? Math.max(...diffs) : null
   };
 }
-function buildReport(archive, incoming = {}) {
+function buildReport(archive, incoming = {}, options = {}) {
   const markets = {};
   for (const id of MARKETS) {
     const m = archive.markets?.[id] || { timeframes: {} };
@@ -73,8 +81,8 @@ function buildReport(archive, incoming = {}) {
     for (const tf of Object.keys(LIMITS)) {
       frames[tf] = frameStats(m.timeframes?.[tf], tf, incoming[id]?.timeframes?.[tf] || m.timeframes?.[tf]);
     }
-    const starts = Object.values(frames).map(x => x.firstEpoch).filter(Number.isFinite);
-    const ends = Object.values(frames).map(x => Number.isFinite(x.lastEpoch) ? x.lastEpoch + x.expectedIntervalSeconds : null).filter(Number.isFinite);
+    const starts = Object.values(frames).map(x => x.latestSegmentStartEpoch).filter(Number.isFinite);
+    const ends = Object.values(frames).map(x => x.latestSegmentEndEpoch).filter(Number.isFinite);
     const overlapStart = starts.length ? Math.max(...starts) : null;
     const overlapEnd = ends.length ? Math.min(...ends) : null;
     markets[id] = {
@@ -83,18 +91,28 @@ function buildReport(archive, incoming = {}) {
         ? Math.max(0, (overlapEnd - overlapStart) / 3600) : 0
     };
   }
-  const readyMarkets = Object.values(markets).filter(m =>
-    m.frames.M1.candles >= 1440 && m.frames.M5.candles >= 500 &&
-    m.frames.M15.candles >= 400 && m.commonOverlapHours >= 24 &&
-    Object.values(m.frames).every(f => f.gaps === 0 && f.duplicateEpochs === 0 &&
+  const qualifiedMarketIds = Object.entries(markets).filter(([, m]) =>
+    m.frames.M1.latestSegmentCandles >= 1440 &&
+    m.frames.M5.latestSegmentCandles >= 500 &&
+    m.frames.M15.latestSegmentCandles >= 400 &&
+    m.commonOverlapHours >= 24 &&
+    Object.values(m.frames).every(f => f.duplicateEpochs === 0 &&
       f.invalidCandles === 0 && f.unalignedEpochs === 0)
-  ).length;
+  ).map(([id]) => id);
+  const focusMarket = MARKETS.includes(options.focusMarket) ? options.focusMarket : null;
+  const readyMarketIds = focusMarket
+    ? qualifiedMarketIds.filter(id => id === focusMarket)
+    : qualifiedMarketIds;
+  const marketsRequired = focusMarket ? 1 : 3;
+  const ready = readyMarketIds.length >= marketsRequired;
   return {
     version: 1,
     generatedAt: new Date().toISOString(),
-    mode: readyMarkets >= 3 ? "ready_for_lower_timeframe_replay" : "collecting_lower_timeframe_history",
-    marketsReady: readyMarkets,
-    marketsRequired: 3,
+    mode: ready ? "ready_for_lower_timeframe_replay" : "collecting_lower_timeframe_history",
+    focusMarket,
+    marketsReady: readyMarketIds.length,
+    marketsRequired,
+    qualifiedMarketIds,
     markets,
     researchDesign: {
       setup: "Completed M15 candidate from the existing EMA strategy comparison; direction is frozen at the M15 close.",
@@ -111,7 +129,7 @@ function buildReport(archive, incoming = {}) {
         "Do not promote on a smaller stop alone; compare stop frequency and expectancy."
       ]
     },
-    note: "This report audits retained data coverage only. No lower-timeframe backtest result is claimed until the overlap and sample requirements are met."
+    note: "Readiness is based on the latest continuous segment in each timeframe, so an older historical gap no longer blocks research forever. No strategy performance result is claimed until replay completes."
   };
 }
 function main() {
@@ -120,7 +138,7 @@ function main() {
   let prior = { version: 1, markets: {} };
   if (fs.existsSync(ARCHIVE)) prior = JSON.parse(fs.readFileSync(ARCHIVE, "utf8"));
   const archive = mergeLowerTimeframeArchive(prior, latest.markets);
-  const report = buildReport(archive, latest.markets);
+  const report = buildReport(archive, latest.markets, { focusMarket: process.env.LOWER_TF_FOCUS_MARKET || null });
   fs.writeFileSync(ARCHIVE, JSON.stringify(archive, null, 2) + "\n");
   fs.writeFileSync(REPORT, JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify({
