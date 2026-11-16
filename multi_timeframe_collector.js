@@ -84,7 +84,7 @@ async function fetchCandleHistory(client, symbol, granularity, count, now) {
     if (!rows.length) break;
     for (const candle of rows) byEpoch.set(candle.epoch, candle);
     const earliest = rows[0].epoch;
-    end = String(earliest - 1);
+    end = String(earliest);
     remaining = Math.max(0, count - byEpoch.size);
     if (rows.length < requested) break;
   }
