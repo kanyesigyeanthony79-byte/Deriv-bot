@@ -423,17 +423,52 @@ bool OpenSignalBasket(const string signalId,const string marketId,
    trade.SetTypeFillingBySymbol(symbol);
    string tag = "DSA2-" + StringSubstr(signalId,0,20);
    int opened = 0;
+   double actualRiskTotal = 0.0;
    for(int n=1; n<=InpEntriesPerSignal; n++)
    {
+      // Recheck price before every order; abort and roll back if the signal has moved.
+      MqlTick latestTick;
+      if(!SymbolInfoTick(symbol,latestTick))
+      {
+         CloseAllOurPositions();
+         return false;
+      }
+      double latestPrice = isBuy ? latestTick.ask : latestTick.bid;
+      if(MathAbs(latestPrice-signalEntry) > riskDistance*InpMaxEntryDeviationR ||
+         (isBuy && latestPrice >= tp1) || (!isBuy && latestPrice <= tp1))
+      {
+         Print("Price moved outside the valid signal window during basket submission. Rolling back.");
+         CloseAllOurPositions();
+         return false;
+      }
+
       bool sent = isBuy ? trade.Buy(volume,symbol,0.0,sl,0.0,tag)
                         : trade.Sell(volume,symbol,0.0,sl,0.0,tag);
       uint rc = trade.ResultRetcode();
       double filled = trade.ResultVolume();
-      if(sent && rc == TRADE_RETCODE_DONE && MathAbs(filled-volume) <= SymbolInfoDouble(symbol,SYMBOL_VOLUME_STEP)*0.5)
+      double fillPrice = trade.ResultPrice();
+      if(sent && rc == TRADE_RETCODE_DONE &&
+         MathAbs(filled-volume) <= SymbolInfoDouble(symbol,SYMBOL_VOLUME_STEP)*0.5)
       {
+         double fillPnl = 0.0;
+         if(fillPrice <= 0.0 || !OrderCalcProfit(orderType,symbol,filled,fillPrice,sl,fillPnl))
+         {
+            Print("Could not verify actual filled risk. Rolling back.");
+            CloseAllOurPositions();
+            return false;
+         }
+         actualRiskTotal += MathAbs(fillPnl);
+         if(actualRiskTotal > InpRiskPerBasket + 0.05)
+         {
+            Print("Actual filled prices pushed basket risk above USD ",
+                  DoubleToString(InpRiskPerBasket,2), ". Rolling back.");
+            CloseAllOurPositions();
+            return false;
+         }
          opened++;
          Print("Basket entry ",opened,"/",InpEntriesPerSignal," opened on ",symbol,
-               " volume=",DoubleToString(filled,4));
+               " volume=",DoubleToString(filled,4),
+               " estimated fill risk=",DoubleToString(MathAbs(fillPnl),2));
       }
       else
       {
