@@ -106,10 +106,10 @@ async function maybeSendDailySummary(now) {
       delivered: true,
       stats: summary,
       accountSnapshot: accountSnapshot.status === "ok" ? {
-        status: "ok", mode: accountSnapshot.mode, accountId: accountSnapshot.accountId,
+        status: "ok", mode: accountSnapshot.mode, product: accountSnapshot.product,
+        accountId: accountSnapshot.accountId, accountType: accountSnapshot.accountType,
         currency: accountSnapshot.currency, balance: accountSnapshot.balance,
-        equityEstimate: accountSnapshot.equityEstimate,
-        openContracts: accountSnapshot.openPositions.length,
+        equityEstimate: null, openContracts: null,
         fetchedAt: accountSnapshot.fetchedAt,
         ordersPlaced: 0
       } : { status: accountSnapshot.status }
