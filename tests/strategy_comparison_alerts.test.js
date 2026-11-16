@@ -34,11 +34,11 @@ test("only new forward-shadow signals are eligible for Telegram", () => {
 
 test("sends a labelled shadow alert and records delivery to prevent duplicates", async () => {
   const journal = { signals: [signal()] };
-  const result = await sendStrategyComparisonAlerts(journal, 1901, env, { liveQuotes: { R_25: { price: 100 } }, fetchImpl: fakeFetch });
+  const result = await sendStrategyComparisonAlerts(journal, 1516, env, { liveQuotes: { R_25: { price: 100 } }, fetchImpl: fakeFetch });
   assert.equal(result.sent, 1);
   assert.equal(journal.signals[0].telegramStatus, "sent");
   assert.match(journal.signals[0].telegramSentAt, /^1970-/);
-  const again = await sendStrategyComparisonAlerts(journal, 1902, env, { liveQuotes: { R_25: { price: 100 } }, fetchImpl: fakeFetch });
+  const again = await sendStrategyComparisonAlerts(journal, 1517, env, { liveQuotes: { R_25: { price: 100 } }, fetchImpl: fakeFetch });
   assert.equal(again.sent, 0);
 });
 
