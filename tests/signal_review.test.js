@@ -42,3 +42,21 @@ test("does not report an old stop touch as safe when latest candle recovers",()=
  const r=reviewSignal({...signal,entryCandleEpoch:1000},{M1:series},1000+60*60);
  assert.equal(r.status,"STOP_LEVEL_TOUCHED");
 });
+
+test("intact thesis includes clear recommendation options",()=>{
+ const descending=Array.from({length:60},(_,i)=>{const close=108-i*0.1;return {epoch:1000+i*60,open:close+0.03,high:close+0.05,low:close-0.05,close};});
+ const sell={...signal,direction:"SELL",entry:100,stopLoss:120,tp1:80,tp2:60};
+ const r=reviewSignal(sell,{M1:descending},1000+60*60);
+ assert.equal(r.status,"THESIS_INTACT");
+ assert.ok(r.recommendationOptions.some(x=>x.label==="Continue monitoring"));
+});
+test("weakening thesis offers risk reassessment options",()=>{
+ const r=reviewSignal(signal,{M1:candles(60)},1000+60*60);
+ assert.equal(r.status,"THESIS_WEAKENING");
+ assert.ok(r.recommendationOptions.some(x=>x.label==="Reassess risk or consider exiting"));
+});
+test("stale data offers a fresh-data option, not a hold recommendation",()=>{
+ const r=reviewSignal(signal,{M1:candles(60)},100000);
+ assert.equal(r.status,"STALE_DATA");
+ assert.ok(r.recommendationOptions.some(x=>x.label==="Wait for fresh completed candles"));
+});
