@@ -23,6 +23,9 @@ const STATE_FILE = path.join(__dirname, "signal_state.json");
 const WORKER_URL = process.env.TELEGRAM_WORKER_URL;
 const API_KEY = process.env.SIGNAL_API_KEY;
 const MAX_SIGNAL_AGE = 360;
+// R_50 is the only market above 60% in the descriptive M15 context screen.
+// This is a research-priority label, not a strategy win-rate claim.
+const isPriorityPair = marketId => marketId === "R_50";
 const MAX_MONITOR_AGE = 96 * GRANULARITY; // expire unresolved signals after 24 hours
 
 if (!WORKER_URL || !API_KEY) {
@@ -245,7 +248,8 @@ async function sendOutcome(signal, outcome, candle) {
     stopLoss: signal.stopLoss,
     tp1: signal.tp1,
     tp2: signal.tp2,
-    currentPrice: candle.close
+    currentPrice: candle.close,
+    priorityPair: signal.priorityPair === true
   });
   log("outcome_delivered", { signalId: signal.signalId, market: signal.market, outcome, candle_epoch: candle.epoch, observed_close: candle.close });
   recordJournalOutcome(journal, signal.signalId, outcome, candle);
@@ -361,7 +365,7 @@ async function main() {
         const candleEpoch = result.c.epoch;
         const signalId = id + "-" + candleEpoch;
         journalCandidate({
-          signalId, marketId:id, market:name, direction:result.signal, localDate:localDate(candleEpoch),
+          signalId, marketId:id, market:name, direction:result.signal, priorityPair:isPriorityPair(id), localDate:localDate(candleEpoch),
           createdAt:new Date(candleEpoch*1000).toISOString(), candleEpoch, score:result.score,
           entry:result.c.close, metrics:result.metrics || {}, checks:result.checks || [],
           status:"detected", tp1Hit:false, tp2Hit:false, finalOutcome:null, events:[]
@@ -381,12 +385,13 @@ async function main() {
         }
 
         const levels = makeLevels(candles, result.signal);
-        await postTelegram({ event: "new_signal", signalId, market: name, direction: result.signal, ...levels });
+        await postTelegram({ event: "new_signal", signalId, market: name, direction: result.signal, priorityPair:isPriorityPair(id), ...levels });
         journalStatus(signalId, "sent");
         state.lastSig[id] = candleEpoch;
         state.activeSignals.push({
           signalId,
           marketId: id,
+          priorityPair: isPriorityPair(id),
           market: name,
           direction: result.signal,
           ...levels,
