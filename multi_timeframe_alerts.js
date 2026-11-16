@@ -40,8 +40,18 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
   const records = new Map((journal.signals || []).map(s => [s.signalId, s]));
 
   for (const candidate of latestCandidates(markets)) {
-    result.considered++;
     const record = records.get(candidate.signalId);
+    if (candidate.marketId === "frxXAUUSD") {
+      if (record && !record.telegramStatus) {
+        record.telegramStatus = "paused_market_excluded";
+        record.telegramStatusReason = "Gold alerts paused during separate strategy research.";
+        persist(journal);
+      }
+      result.skipped++;
+      log("mtf_candidate_delivery_paused", { signalId: candidate.signalId, marketId: candidate.marketId, reason: "gold_strategy_research_only" });
+      continue;
+    }
+    result.considered++;
     if (!record || record.telegramStatus) {
       result.skipped++;
       continue;
