@@ -91,7 +91,7 @@ export default {
             `🎯 Entry: ${data.entry}`,
             `🛑 Stop Loss: ${data.stopLoss}`,
             `💰 Take Profit 1: ${data.tp1}`,
-            `💰 Take Profit 2: ${data.tp2}`,
+            `💰 Take Profit 2: ${data.tp2}`,\n            data.livePrice !== undefined ? `📍 Live price at alert: ${data.livePrice}` : null,\n            data.signalAgeSeconds !== undefined ? `⏱ Signal age: ${Math.round(Number(data.signalAgeSeconds))}s` : null,\n            data.priceValidation === "PASS" ? `✅ Entry distance check: PASS (${data.entryDeviationR}R)` : null,
             data.signalId ? `🔖 Signal: ${String(data.signalId).slice(0, 60)}` : null,
             "━━━━━━━━━━━━━━━━",
             "⚠️ Signal only. Verify conditions before trading; no trade is executed automatically."
