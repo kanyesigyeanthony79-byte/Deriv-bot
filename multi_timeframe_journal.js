@@ -70,9 +70,12 @@ function updateJournal(journal, markets, nowEpoch) {
   state.signals = state.signals.slice(0, 500);
   return state;
 }
+function isReviewableSignal(signal) {
+  return Boolean(signal && signal.signalId && (signal.status === "pending" || signal.status === "tp1_hit"));
+}
 function summarizeJournal(journal) {
   const counts = {};
   for (const s of journal.signals || []) counts[s.status] = (counts[s.status] || 0) + 1;
   return counts;
 }
-module.exports = { TERMINAL, touchStatus, updateJournal, summarizeJournal };
+module.exports = { TERMINAL, touchStatus, updateJournal, isReviewableSignal, summarizeJournal };
