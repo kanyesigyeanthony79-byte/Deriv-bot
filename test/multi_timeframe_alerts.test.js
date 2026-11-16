@@ -76,10 +76,10 @@ test("recent candidate is sent once with its horizon in the market label", async
 test("SCALP, SHORT_TERM and POSITION candidates each route with their own horizon label", async () => {
   const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
   for (const [category, label] of [["SCALP", "Scalping"], ["SHORT_TERM", "Short-term"], ["POSITION", "Position"]]) {
-    const item = candidate({ category, categoryLabel: label, signalId: "R_50-" + category + "-1000" });
+    const item = candidate({ category, categoryLabel: label, entryTimeframe: category === "SCALP" ? "M1" : category === "SHORT_TERM" ? "M5" : "H4", signalId: "R_50-" + category + "-1000" });
     const { markets, journal } = fixture([item]);
     const requests = [];
-    const result = await sendCandidateAlerts(markets, journal, 1010, env, {
+    const result = await sendCandidateAlerts(markets, journal, 1000 + (category === "SCALP" ? 60 : category === "SHORT_TERM" ? 300 : 14400) + 10, env, {
       fetchImpl: async (url, init) => {
         requests.push(JSON.parse(init.body));
         return { ok: true, json: async () => ({ success: true }) };
