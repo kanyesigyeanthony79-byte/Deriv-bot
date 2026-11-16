@@ -69,7 +69,7 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
   for (const candidate of latestCandidates(markets)) {
     result.considered++;
     const record = records.get(candidate.signalId);
-    if (!record || record.telegramStatus) { result.skipped++; continue; }
+    if (!record || record.telegramStatus || !["pending", "tp1_hit"].includes(record.status)) { result.skipped++; continue; }
     const freshness = signalFreshness(candidate, nowEpoch);
     if (!freshness.fresh) {
       record.telegramStatus = "stale";
@@ -127,4 +127,72 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
   }
   return result;
 }
-module.exports = { ENTRY_TIMEFRAME_SECONDS, ALERT_MAX_AGE_SECONDS, MAX_ENTRY_DEVIATION_R, signalFreshness, assessEntryPrice, latestCandidates, sendCandidateAlerts };
+
+const OUTCOME_EVENTS = Object.freeze({
+  tp1_hit: "TP1_HIT",
+  tp2_hit: "TP2_HIT",
+  stopped: "SL_HIT",
+  stopped_after_tp1: "SL_AFTER_TP1",
+  expired: "EXPIRED",
+  ambiguous: "AMBIGUOUS"
+});
+
+async function sendOutcomeAlerts(journal, nowEpoch, env, options = {}) {
+  const log = options.log || (() => {});
+  const persist = options.persist || (() => {});
+  const fetchImpl = options.fetchImpl || fetch;
+  const liveQuotes = options.liveQuotes || {};
+  const result = { enabled: false, considered: 0, sent: 0, failed: 0, skipped: 0 };
+  if (env.MTF_TELEGRAM_ALERTS !== "true" || !env.TELEGRAM_WORKER_URL || !env.SIGNAL_API_KEY) {
+    log("mtf_outcome_alerts_disabled", { reason: "feature_flag_or_secrets_missing" });
+    return result;
+  }
+  result.enabled = true;
+  for (const record of journal.signals || []) {
+    if (record.telegramStatus !== "sent") continue;
+    const terminal = OUTCOME_EVENTS[record.status];
+    const events = [];
+    if (record.tp1Hit) events.push("TP1_HIT");
+    if (terminal && terminal !== "TP1_HIT") events.push(terminal);
+    if (!events.length) continue;
+    record.telegramOutcomeEvents ||= {};
+    for (const outcome of [...new Set(events)]) {
+      if (record.telegramOutcomeEvents[outcome] === "sent") { result.skipped++; continue; }
+      result.considered++;
+      const quote = liveQuotes[record.marketId];
+      const payload = {
+        event: "outcome", outcome, signalId: record.signalId,
+        market: String(record.market || record.marketId) + " | " + String(record.categoryLabel || record.category || ""),
+        direction: record.direction, entry: record.entry, stopLoss: record.stopLoss,
+        tp1: record.tp1, tp2: record.tp2,
+        currentPrice: Number.isFinite(Number(quote?.price)) ? Number(quote.price) : undefined,
+        afterTp1: record.status === "stopped_after_tp1"
+      };
+      try {
+        const response = await fetchImpl(env.TELEGRAM_WORKER_URL, {
+          method: "POST", headers: { "Content-Type": "application/json", "X-API-Key": env.SIGNAL_API_KEY },
+          body: JSON.stringify(payload), signal: AbortSignal.timeout(15000)
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok || body.success !== true) throw new Error(body.error || ("Telegram Worker HTTP " + response.status));
+        record.telegramOutcomeEvents[outcome] = "sent";
+        record.telegramOutcomeSentAt = new Date(nowEpoch * 1000).toISOString();
+        result.sent++;
+        persist(journal);
+        log("mtf_outcome_delivered", { signalId: record.signalId, outcome });
+      } catch (error) {
+        record.telegramOutcomeAttempts ||= {};
+        record.telegramOutcomeAttempts[outcome] = Number(record.telegramOutcomeAttempts[outcome] || 0) + 1;
+        record.telegramOutcomeError = String(error.message || error).slice(0, 240);
+        result.failed++;
+        persist(journal);
+        log("mtf_outcome_delivery_failed", { signalId: record.signalId, outcome, message: record.telegramOutcomeError });
+        // Do not send a later terminal update before an earlier TP1 update is confirmed.
+        break;
+      }
+    }
+  }
+  return result;
+}
+
+module.exports = { ENTRY_TIMEFRAME_SECONDS, ALERT_MAX_AGE_SECONDS, MAX_ENTRY_DEVIATION_R, signalFreshness, assessEntryPrice, latestCandidates, sendCandidateAlerts, sendOutcomeAlerts, OUTCOME_EVENTS };

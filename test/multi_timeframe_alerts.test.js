@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { latestCandidates, sendCandidateAlerts, ALERT_MAX_AGE_SECONDS, signalFreshness, assessEntryPrice } = require("../multi_timeframe_alerts");
+const { latestCandidates, sendCandidateAlerts, sendOutcomeAlerts, ALERT_MAX_AGE_SECONDS, signalFreshness, assessEntryPrice } = require("../multi_timeframe_alerts");
 
 function candidate(overrides = {}) {
   return {
@@ -14,7 +14,7 @@ function candidate(overrides = {}) {
 function fixture(candidates) {
   return {
     markets: { R_50: { signals: [], recentSignals: candidates } },
-    journal: { version: 1, signals: candidates.map(s => ({ ...s, telegramStatus: null })) }
+    journal: { version: 1, signals: candidates.map(s => ({ ...s, status: "pending", telegramStatus: null })) }
   };
 }
 
@@ -152,4 +152,55 @@ test("uncertain delivery failure is recorded and not retried automatically", asy
   assert.equal(first.failed, 1);
   assert.equal(second.skipped, 1);
   assert.equal(calls, 1);
+});
+
+
+test("TP1 and terminal outcomes are sent once, in order", async () => {
+  const journal = { version: 1, signals: [{
+    ...candidate(), status: "tp2_hit", tp1Hit: true, telegramStatus: "sent"
+  }] };
+  const requests = [];
+  const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
+  const options = { fetchImpl: async (url, init) => {
+    requests.push(JSON.parse(init.body));
+    return { ok: true, json: async () => ({ success: true }) };
+  }};
+  const first = await sendOutcomeAlerts(journal, 2000, env, options);
+  const second = await sendOutcomeAlerts(journal, 2001, env, options);
+  assert.equal(first.sent, 2);
+  assert.equal(second.sent, 0);
+  assert.deepEqual(requests.map(item => item.outcome), ["TP1_HIT", "TP2_HIT"]);
+  assert.deepEqual(journal.signals[0].telegramOutcomeEvents, { TP1_HIT: "sent", TP2_HIT: "sent" });
+});
+
+test("failed outcome delivery is retried and does not suppress later terminal update", async () => {
+  const journal = { version: 1, signals: [{
+    ...candidate(), status: "tp2_hit", tp1Hit: true, telegramStatus: "sent"
+  }] };
+  let calls = 0;
+  const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
+  const failFirst = { fetchImpl: async () => {
+    calls++;
+    if (calls === 1) return { ok: false, json: async () => ({ success: false, error: "temporary" }) };
+    return { ok: true, json: async () => ({ success: true }) };
+  }};
+  const first = await sendOutcomeAlerts(journal, 2000, env, failFirst);
+  assert.equal(first.failed, 1);
+  assert.deepEqual(journal.signals[0].telegramOutcomeEvents, {}, "failed event must remain unsent and retryable");
+  const retry = await sendOutcomeAlerts(journal, 2010, env, failFirst);
+  assert.equal(retry.sent, 2);
+  assert.equal(calls, 3);
+});
+
+test("stop after TP1 has a distinct Telegram outcome", async () => {
+  const journal = { version: 1, signals: [{
+    ...candidate(), status: "stopped_after_tp1", tp1Hit: true, telegramStatus: "sent"
+  }] };
+  const outcomes = [];
+  const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
+  await sendOutcomeAlerts(journal, 2000, env, { fetchImpl: async (url, init) => {
+    outcomes.push(JSON.parse(init.body).outcome);
+    return { ok: true, json: async () => ({ success: true }) };
+  }});
+  assert.deepEqual(outcomes, ["TP1_HIT", "SL_AFTER_TP1"]);
 });

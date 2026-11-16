@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { aggregateWeeklyCandles, validCandles, evaluateAllCategories, evaluateRecentSignals } = require("./multi_timeframe_engine");
 const { updateJournal, summarizeJournal, dashboardSignalsForMarket } = require("./multi_timeframe_journal");
-const { sendCandidateAlerts } = require("./multi_timeframe_alerts");
+const { sendCandidateAlerts, sendOutcomeAlerts } = require("./multi_timeframe_alerts");
 const { reviewSignal } = require("./signal_review");
 const { updateStrategyJournal, summarizeStrategyJournal } = require("./strategy_comparison");
 const { sendStrategyComparisonAlerts, sendDailyStrategyComparisonReport } = require("./strategy_comparison_alerts");
@@ -188,7 +188,7 @@ async function main() {
     log("live_quotes_collected", { available: Object.keys(liveQuotes).length, expected: Object.keys(output.markets).length });
 
     const priorJournal = fs.existsSync(JOURNAL) ? JSON.parse(fs.readFileSync(JOURNAL, "utf8")) : { version: 1, signals: [] };
-    const journal = updateJournal(priorJournal, output.markets, now);
+    const journal = updateJournal(priorJournal, output.markets, now, liveQuotes);
     const strategyJournalPath = path.join(__dirname, "strategy_comparison_journal.json");
     const priorStrategyJournal = fs.existsSync(strategyJournalPath)
       ? JSON.parse(fs.readFileSync(strategyJournalPath, "utf8"))
@@ -222,9 +222,12 @@ async function main() {
     fs.writeFileSync(researchArchivePath, JSON.stringify(candleArchive, null, 2) + "\n");
     fs.writeFileSync(researchReportPath, JSON.stringify(researchReport, null, 2) + "\n");
     output.strategyResearch = researchReport;
+    const persistJournal = current => fs.writeFileSync(JOURNAL, JSON.stringify(current, null, 2) + "\n");
     const alertSummary = await sendCandidateAlerts(output.markets, journal, now, process.env, {
-      log, liveQuotes,
-      persist: current => fs.writeFileSync(JOURNAL, JSON.stringify(current, null, 2) + "\n")
+      log, liveQuotes, persist: persistJournal
+    });
+    const outcomeAlertSummary = await sendOutcomeAlerts(journal, now, process.env, {
+      log, liveQuotes, persist: persistJournal
     });
     fs.writeFileSync(JOURNAL, JSON.stringify(journal, null, 2) + "\n");
     fs.writeFileSync(OUTPUT, JSON.stringify(output, null, 2) + "\n");
@@ -242,13 +245,13 @@ async function main() {
     const signalCounts = Object.fromEntries(["signal", "no_signal", "timeframe_conflict", "waiting_pullback", "warming", "market_filtered", "data_gap"].map(state =>
       [state, allSignals.filter(s => s.state === state).length]
     ));
-    output.summary = { markets: Object.keys(output.markets).length, signalCounts, journal: summarizeJournal(journal), telegram: alertSummary };
+    output.summary = { markets: Object.keys(output.markets).length, signalCounts, journal: summarizeJournal(journal), telegram: alertSummary, outcomeTelegram: outcomeAlertSummary };
     const dashboard = {
       version: 1, generatedAt: output.generatedAt, generatedEpoch: now,
       mode: alertSummary.enabled ? "signal_alerts_enabled" : "observation_only", summary: output.summary,
       strategyComparison: output.strategyComparison, strategyResearch: output.strategyResearch,
       markets: Object.values(output.markets).map(m => ({
-        marketId: m.marketId, marketName: m.marketName, signals: dashboardSignalsForMarket(m),
+        marketId: m.marketId, marketName: m.marketName, signals: dashboardSignalsForMarket(m, journal, now, liveQuotes),
         timeframeCounts: Object.fromEntries(Object.entries(m.timeframes).map(([tf, candles]) => [tf, candles.length])),
         errors: m.errors
       }))

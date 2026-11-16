@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { touchStatus, updateJournal, summarizeJournal, dashboardSignalsForMarket } = require("../multi_timeframe_journal");
+const { touchStatus, applyLiveQuote, updateJournal, summarizeJournal, dashboardSignalsForMarket } = require("../multi_timeframe_journal");
 
 const signal = {
   signalId: "JD100-SWING-100", marketId: "JD100", direction: "BUY",
@@ -55,13 +55,49 @@ test("journal expires an unclosed observation after its category age limit", () 
   assert.equal(result.signals[0].status, "expired");
 });
 
-test("dashboard projection includes recent candidates and de-duplicates signal IDs", () => {
-  const regular = { ...signal, signalId: "JD100-SWING-100", state: "signal" };
-  const recentOnly = { ...signal, signalId: "JD100-SCALP-200", category: "SCALP", state: "signal" };
-  const projected = dashboardSignalsForMarket({
-    signals: [regular],
-    recentSignals: [recentOnly, { ...regular, score: 99 }]
-  });
+test("dashboard projection includes only journal-confirmed active signals with a fresh quote", () => {
+  const regular = { ...signal, signalId: "JD100-SWING-100", state: "signal", marketId: "JD100" };
+  const recentOnly = { ...signal, signalId: "JD100-SCALP-200", category: "SCALP", state: "signal", marketId: "JD100" };
+  const market = { signals: [regular], recentSignals: [recentOnly, { ...regular, score: 99 }] };
+  const journal = { signals: [
+    { ...regular, status: "pending", tp1Hit: false },
+    { ...recentOnly, status: "tp1_hit", tp1Hit: true },
+    { ...signal, signalId: "old-sl", marketId: "JD100", status: "stopped" },
+    { ...signal, signalId: "old-expired", marketId: "JD100", status: "expired" }
+  ] };
+  const quote = { JD100: { price: 105, epoch: 250 } };
+  const projected = dashboardSignalsForMarket(market, journal, 250, quote);
   assert.deepEqual(projected.map(item => item.signalId), ["JD100-SWING-100", "JD100-SCALP-200"]);
-  assert.equal(projected[0].score, regular.score);
+  assert.equal(projected[0].status, "pending");
+  assert.equal(projected[1].status, "tp1_hit");
+  assert.equal(projected[1].tp1Hit, true);
+  assert.equal(dashboardSignalsForMarket(market, journal, 500, {}).length, 0, "missing quote must never be shown as live");
+});
+
+test("live quote immediately resolves TP1, TP2 and stop loss", () => {
+  const tp1 = { ...signal, status: "pending", tp1Hit: false };
+  applyLiveQuote(tp1, { price: 112, epoch: 250 }, 250);
+  assert.equal(tp1.status, "tp1_hit");
+  assert.equal(tp1.tp1Hit, true);
+
+  const tp2 = { ...signal, status: "pending", tp1Hit: false };
+  applyLiveQuote(tp2, { price: 122, epoch: 260 }, 260);
+  assert.equal(tp2.status, "tp2_hit");
+  assert.equal(tp2.tp1Hit, true, "TP2 necessarily implies TP1 was crossed");
+
+  const stopped = { ...signal, status: "pending", tp1Hit: false };
+  applyLiveQuote(stopped, { price: 89, epoch: 270 }, 270);
+  assert.equal(stopped.status, "stopped");
+});
+
+
+test("legacy TP2 and post-TP1 stop records recover their TP1 milestone", () => {
+  const legacy = { version: 1, signals: [
+    { ...signal, signalId: "legacy-tp2", status: "tp2_hit", tp1Hit: false, tp2Epoch: 300 },
+    { ...signal, signalId: "legacy-stop", status: "stopped_after_tp1", tp1Hit: false }
+  ] };
+  const migrated = updateJournal(legacy, {}, 400);
+  assert.equal(migrated.signals.find(s => s.signalId === "legacy-tp2").tp1Hit, true);
+  assert.equal(migrated.signals.find(s => s.signalId === "legacy-tp2").tp1Epoch, 300);
+  assert.equal(migrated.signals.find(s => s.signalId === "legacy-stop").tp1Hit, true);
 });
