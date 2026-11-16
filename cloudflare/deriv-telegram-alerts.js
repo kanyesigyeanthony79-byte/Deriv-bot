@@ -52,6 +52,14 @@ export default {
             SL_HIT: {
               title: "❌ STOP LOSS HIT",
               description: "Price reached the stop-loss level."
+            },
+            SL_AFTER_TP1: {
+              title: "⚠️ STOP LOSS HIT AFTER TP1",
+              description: "TP1 was reached earlier; price subsequently reached the stop-loss level."
+            },
+            AMBIGUOUS: {
+              title: "⚠️ OUTCOME AMBIGUOUS",
+              description: "The same completed candle crossed both a target and the stop-loss. Intrabar order cannot be confirmed."
             }
           };
           const outcome = outcomes[data.outcome];
