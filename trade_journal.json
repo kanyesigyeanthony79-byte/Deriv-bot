@@ -774,8 +774,8 @@
       ],
       "status": "sent",
       "tp1Hit": true,
-      "tp2Hit": false,
-      "finalOutcome": null,
+      "tp2Hit": true,
+      "finalOutcome": "TP2",
       "events": [
         {
           "outcome": "TP1_HIT",
@@ -787,12 +787,87 @@
             "low": 84.8818,
             "close": 84.9116
           }
+        },
+        {
+          "outcome": "TP2_HIT",
+          "observedAt": "2026-11-16T07:59:59.784Z",
+          "candleEpoch": 1794795300,
+          "candle": {
+            "open": 84.8122,
+            "high": 84.8122,
+            "low": 84.2956,
+            "close": 84.5488
+          }
         }
       ],
-      "maxFavourablePrice": 84.8643,
-      "maxFavourablePoints": 1.3594,
-      "maxFavourablePct": 1.5766,
-      "maxFavourableEpoch": 1794785400
+      "maxFavourablePrice": 84.2956,
+      "maxFavourablePoints": 1.9281,
+      "maxFavourablePct": 2.23616,
+      "maxFavourableEpoch": 1794795300
+    },
+    {
+      "signalId": "frxXAUUSD-1794814200",
+      "marketId": "frxXAUUSD",
+      "market": "Gold/USD",
+      "direction": "SELL",
+      "localDate": "2026-11-16",
+      "createdAt": "2026-11-16T07:30:00.000Z",
+      "candleEpoch": 1794814200,
+      "score": 94,
+      "entry": 3854.43,
+      "metrics": {
+        "ema20": 3861.5034866950164,
+        "ema50": 3871.5880247894875,
+        "ema50Previous": 3875.782247953438,
+        "atr": 10.955715203110529,
+        "emaSeparationAtr": 0.9204819500609065,
+        "emaSlopeAtr": 0.3828342637785679,
+        "bodyRatio": 0.6864640883978459,
+        "closeLocation": 0.9820441988950748,
+        "extensionAtr": 0.645643535258039,
+        "swingAtr": 1.2769590794061316,
+        "candleRange": 7.239999999999782
+      },
+      "checks": [
+        {
+          "passed": true,
+          "reason": "EMA20/EMA50 trend down, gap 0.92 ATR"
+        },
+        {
+          "passed": true,
+          "reason": "Close on the trend side of EMA20"
+        },
+        {
+          "passed": true,
+          "reason": "EMA50 sloping with the trend"
+        },
+        {
+          "passed": true,
+          "reason": "RSI 43.4 inside 32-50"
+        },
+        {
+          "passed": true,
+          "reason": "Bearish candle, body 69% of range"
+        },
+        {
+          "passed": true,
+          "reason": "Lower high formed"
+        },
+        {
+          "passed": true,
+          "reason": "Not extended from EMA20 (0.6 ATR)"
+        },
+        {
+          "passed": true,
+          "reason": "No spike candle"
+        }
+      ],
+      "status": "stale",
+      "tp1Hit": false,
+      "tp2Hit": false,
+      "finalOutcome": null,
+      "events": [],
+      "statusReason": "too_old_for_alert"
     }
   ],
   "dailyReports": {
