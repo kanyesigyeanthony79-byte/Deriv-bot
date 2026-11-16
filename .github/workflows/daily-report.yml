@@ -29,6 +29,9 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Check JavaScript syntax
+        run: node --check daily_report_runner.js && node --check daily_summary.js
+
       - name: Generate and deliver daily report
         run: node daily_report_runner.js
         env:
