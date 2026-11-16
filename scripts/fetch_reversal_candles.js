@@ -252,11 +252,13 @@ async function main() {
     const symbolsReply = await client.ask({ active_symbols: "brief" });
     const active = new Set((symbolsReply.active_symbols || []).map(item => item.underlying_symbol || item.symbol).filter(Boolean));
     const summary = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       capturedAt: new Date(snapshotEpoch * 1000).toISOString(),
       requestedDays: DAYS,
       marketsRequested: MARKETS,
       capturedMarkets: [],
+      marketsWithCompleteM15: [],
+      partialMarkets: {},
       failedMarkets: {}
     };
     for (const market of MARKETS) {
@@ -286,10 +288,13 @@ async function main() {
         }
       }
       const marketComplete = Object.keys(frameErrors).length === 0;
+      const m15Complete = coverage.M15?.complete === true;
       const payload = {
-        schemaVersion: 3,
+        schemaVersion: 4,
         market,
         complete: marketComplete,
+        researchReady: m15Complete,
+        researchRequiredFrame: "M15",
         source: "Deriv public ticks_history candles; missing intervals reconstructed only from returned ticks",
         endpoint: ENDPOINT,
         capturedAt: new Date(snapshotEpoch * 1000).toISOString(),
@@ -302,13 +307,27 @@ async function main() {
       };
       fs.writeFileSync(path.join(OUT, `${market}.json`), JSON.stringify(payload, null, 2) + "\n");
       if (marketComplete) summary.capturedMarkets.push(market);
-      else summary.failedMarkets[market] = { frameErrors, savedPartialData: true };
+      if (m15Complete) summary.marketsWithCompleteM15.push(market);
+      if (!marketComplete && m15Complete) {
+        // Keep verified M15 history usable while explicitly recording incomplete
+        // M1/M5 frames. Downstream lower-timeframe research must still honor
+        // each frame's coverage.complete flag and must never fill these gaps.
+        summary.partialMarkets[market] = { frameErrors, savedPartialData: true, m15ResearchReady: true };
+      } else if (!m15Complete) {
+        summary.failedMarkets[market] = { frameErrors, savedPartialData: true, m15ResearchReady: false };
+      }
     }
     fs.writeFileSync(path.join(OUT, "capture-summary.json"), JSON.stringify(summary, null, 2) + "\n");
     if (Object.keys(summary.failedMarkets).length > 0) {
       throw new Error(
-        `Capture incomplete: ${summary.capturedMarkets.length}/${MARKETS.length} markets passed all-frame validation. ` +
-        `See capture-summary.json for per-market failures.`
+        `M15 research capture incomplete: ${summary.marketsWithCompleteM15.length}/${MARKETS.length} markets passed strict M15 validation. ` +
+        `See capture-summary.json for per-market failures. M1/M5 gaps are reported separately in partialMarkets.`
+      );
+    }
+    if (Object.keys(summary.partialMarkets).length > 0) {
+      console.warn(
+        `M15 capture passed for all markets; ${Object.keys(summary.partialMarkets).length} markets have incomplete M1/M5 history. ` +
+        `Those frames remain flagged incomplete and must not be used as continuous lower-timeframe samples.`
       );
     }
   } finally {
