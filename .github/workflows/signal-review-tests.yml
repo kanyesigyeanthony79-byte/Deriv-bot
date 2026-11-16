@@ -1,8 +1,15 @@
 name: Signal Review Validation
 on:
+  pull_request:
+    paths:
+      - "signal_review.js"
+      - "signal-review.html"
+      - "tests/signal_review.test.js"
+      - ".github/workflows/signal-review-tests.yml"
   push:
     branches:
       - feature/on-demand-signal-review
+      - feature/review-recommendation-options
     paths:
       - "signal_review.js"
       - "multi_timeframe_collector.js"
