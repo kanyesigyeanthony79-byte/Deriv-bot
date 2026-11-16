@@ -42,26 +42,39 @@ function mergeLowerTimeframeArchive(prior, incoming) {
   archive.updatedAt = new Date().toISOString();
   return archive;
 }
-function frameStats(rows, tf) {
+function frameStats(rows, tf, rawRows = rows) {
   const data = Array.isArray(rows) ? rows : [];
+  const raw = Array.isArray(rawRows) ? rawRows : [];
   const diffs = data.slice(1).map((c, i) => c.epoch - data[i].epoch);
+  const seen = new Set();
+  let duplicateEpochs = 0;
+  for (const candle of raw) {
+    const epoch = Number(candle?.epoch);
+    if (seen.has(epoch)) duplicateEpochs += 1;
+    seen.add(epoch);
+  }
   return {
     candles: data.length,
     firstEpoch: data.length ? data[0].epoch : null,
     lastEpoch: data.length ? data[data.length - 1].epoch : null,
     expectedIntervalSeconds: SECONDS[tf],
     gaps: diffs.filter(d => d !== SECONDS[tf]).length,
+    duplicateEpochs,
+    invalidCandles: raw.filter(c => !validCandle(c)).length,
+    unalignedEpochs: raw.filter(c => Number.isFinite(Number(c?.epoch)) && Number(c.epoch) % SECONDS[tf] !== 0).length,
     largestIntervalSeconds: diffs.length ? Math.max(...diffs) : null
   };
 }
-function buildReport(archive) {
+function buildReport(archive, incoming = {}) {
   const markets = {};
   for (const id of MARKETS) {
     const m = archive.markets?.[id] || { timeframes: {} };
     const frames = {};
-    for (const tf of Object.keys(LIMITS)) frames[tf] = frameStats(m.timeframes?.[tf], tf);
+    for (const tf of Object.keys(LIMITS)) {
+      frames[tf] = frameStats(m.timeframes?.[tf], tf, incoming[id]?.timeframes?.[tf] || m.timeframes?.[tf]);
+    }
     const starts = Object.values(frames).map(x => x.firstEpoch).filter(Number.isFinite);
-    const ends = Object.values(frames).map(x => x.lastEpoch).filter(Number.isFinite);
+    const ends = Object.values(frames).map(x => Number.isFinite(x.lastEpoch) ? x.lastEpoch + x.expectedIntervalSeconds : null).filter(Number.isFinite);
     const overlapStart = starts.length ? Math.max(...starts) : null;
     const overlapEnd = ends.length ? Math.min(...ends) : null;
     markets[id] = {
@@ -71,9 +84,10 @@ function buildReport(archive) {
     };
   }
   const readyMarkets = Object.values(markets).filter(m =>
-    m.frames.M1.candles >= 1000 && m.frames.M5.candles >= 500 &&
+    m.frames.M1.candles >= 1440 && m.frames.M5.candles >= 500 &&
     m.frames.M15.candles >= 400 && m.commonOverlapHours >= 24 &&
-    m.frames.M1.gaps === 0 && m.frames.M5.gaps === 0 && m.frames.M15.gaps === 0
+    Object.values(m.frames).every(f => f.gaps === 0 && f.duplicateEpochs === 0 &&
+      f.invalidCandles === 0 && f.unalignedEpochs === 0)
   ).length;
   return {
     version: 1,
@@ -106,7 +120,7 @@ function main() {
   let prior = { version: 1, markets: {} };
   if (fs.existsSync(ARCHIVE)) prior = JSON.parse(fs.readFileSync(ARCHIVE, "utf8"));
   const archive = mergeLowerTimeframeArchive(prior, latest.markets);
-  const report = buildReport(archive);
+  const report = buildReport(archive, latest.markets);
   fs.writeFileSync(ARCHIVE, JSON.stringify(archive, null, 2) + "\n");
   fs.writeFileSync(REPORT, JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify({
