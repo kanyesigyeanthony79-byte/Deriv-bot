@@ -63,6 +63,7 @@ test("recent candidate is sent once with its horizon in the market label", async
   assert.equal(requests.length, 1);
   assert.match(requests[0].payload.market, /Scalping/);
   assert.equal(requests[0].payload.event, "new_signal");
+  assert.equal(requests[0].payload.priorityPair, true);
 });
 
 test("SCALP, SHORT_TERM and POSITION candidates each route with their own horizon label", async () => {
@@ -119,4 +120,18 @@ test("uncertain delivery failure is recorded and not retried automatically", asy
   assert.equal(first.failed, 1);
   assert.equal(second.skipped, 1);
   assert.equal(calls, 1);
+});
+
+test("only R_50 receives the research-priority classification", async () => {
+  const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
+  for (const [marketId, expected] of [["R_50", true], ["JD100", false]]) {
+    const item = candidate({ marketId, signalId: marketId + "-SCALP-1000" });
+    const { markets, journal } = fixture([item]);
+    let payload;
+    const result = await sendCandidateAlerts(markets, journal, 1010, env, {
+      fetchImpl: async (_url, init) => { payload = JSON.parse(init.body); return { ok: true, json: async () => ({ success: true }) }; }
+    });
+    assert.equal(result.sent, 1);
+    assert.equal(payload.priorityPair, expected);
+  }
 });

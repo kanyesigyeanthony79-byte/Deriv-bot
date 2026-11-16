@@ -62,6 +62,7 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
       reviewAvailable: true,
       signalId: candidate.signalId,
       market: String(candidate.market || candidate.marketId) + " | " + String(candidate.categoryLabel || candidate.category),
+      priorityPair: candidate.marketId === "R_50",
       direction: candidate.direction,
       entry: candidate.entry,
       stopLoss: candidate.stopLoss,
