@@ -89,16 +89,17 @@ test("daily report separates legacy and all multi-timeframe MFE observations", (
 test("daily report labels the demo snapshot as point-in-time, not daily profit/loss", () => {
   const summary = dailySummary(signals, "2026-11-13", markets);
   const snapshot = {
-    status: "ok", mode: "demo", accountId: "DOT91725732",
-    balance: 10000, currency: "USD", equityEstimate: 10000,
-    openPositions: [], fetchedAt: "2026-11-14T00:20:00.000Z"
+    status: "ok", mode: "demo", product: "MT5 CFDs", accountId: "32478970", accountType: "demo",
+    balance: 10000, currency: "USD", equityEstimate: null,
+    openPositions: null, fetchedAt: "2026-11-14T00:20:00.000Z"
   };
   const message = buildDailySummaryMessage(summary, snapshot);
   assert.match(message, /DEMO ACCOUNT SNAPSHOT \(READ-ONLY\)/);
-  assert.match(message, /Account: DOT91725732/);
+  assert.match(message, /Platform: MT5 CFDs/);
+  assert.match(message, /Account: 32478970 \(demo\)/);
   assert.match(message, /Balance: 10000 USD/);
-  assert.match(message, /Open contracts: 0/);
-  assert.match(message, /point-in-time demo account snapshot, not daily profit\/loss/);
+  assert.match(message, /Open positions: Not available from the MT5 read-only account settings response/);
+  assert.match(message, /point-in-time MT5 demo balance snapshot, not daily profit\/loss/);
 });
 
 test("daily report delivery sends one daily_summary payload through the injected relay", async () => {

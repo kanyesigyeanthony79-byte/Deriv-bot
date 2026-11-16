@@ -143,12 +143,13 @@ function buildDailySummaryMessage(summary, accountSnapshot = null) {
     (mtf.byMarket.length ? "\n\nMULTI-TIMEFRAME BY MARKET\n" + mtf.byMarket.join("\n") : "") +
     "\n\nDEMO ACCOUNT SNAPSHOT (READ-ONLY)" +
     (accountSnapshot && accountSnapshot.status === "ok"
-      ? "\nAccount: " + accountSnapshot.accountId +
+      ? "\nPlatform: " + (accountSnapshot.product || "MT5 CFDs") +
+        "\nAccount: " + accountSnapshot.accountId + " (" + (accountSnapshot.accountType || "demo") + ")" +
         "\nBalance: " + accountSnapshot.balance + " " + accountSnapshot.currency +
-        "\nEstimated equity: " + accountSnapshot.equityEstimate + " " + accountSnapshot.currency +
-        "\nOpen contracts: " + accountSnapshot.openPositions.length +
+        "\nEquity: Not available from the MT5 read-only account settings response." +
+        "\nOpen positions: Not available from the MT5 read-only account settings response." +
         "\nCaptured: " + accountSnapshot.fetchedAt +
-        "\nThis is a point-in-time demo account snapshot, not daily profit/loss."
+        "\nThis is a point-in-time MT5 demo balance snapshot, not daily profit/loss."
       : accountSnapshot && accountSnapshot.status === "unavailable"
         ? "\nUnavailable: the read-only demo account check failed. Signal report is still valid; no account P/L is inferred."
         : "\nNot connected: demo account snapshot credentials are not configured. Signal report only; no account P/L is inferred.");

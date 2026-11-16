@@ -7,16 +7,22 @@ on:
       - "daily_summary.js"
       - "hosted_scanner.js"
       - "scripts/demo_readonly_account_snapshot.js"
+      - "scripts/mt5_demo_readonly_snapshot.js"
+      - "scripts/mt5_demo_readonly_snapshot.test.js"
       - "test/daily_summary.test.js"
       - "test/demo_readonly_account_snapshot.test.js"
+      - "scripts/mt5_demo_readonly_snapshot.test.js"
       - ".github/workflows/daily-report-shadow-tests.yml"
   pull_request:
     paths:
       - "daily_summary.js"
       - "hosted_scanner.js"
       - "scripts/demo_readonly_account_snapshot.js"
+      - "scripts/mt5_demo_readonly_snapshot.js"
+      - "scripts/mt5_demo_readonly_snapshot.test.js"
       - "test/daily_summary.test.js"
       - "test/demo_readonly_account_snapshot.test.js"
+      - "scripts/mt5_demo_readonly_snapshot.test.js"
       - ".github/workflows/daily-report-shadow-tests.yml"
 
 permissions:
@@ -35,5 +41,14 @@ jobs:
           node --check daily_summary.js
           node --check hosted_scanner.js
           node --check scripts/demo_readonly_account_snapshot.js
+          node --check scripts/mt5_demo_readonly_snapshot.js
       - name: Run reporting and read-only account tests
-        run: node --test test/daily_summary.test.js test/demo_readonly_account_snapshot.test.js test/signal_journal.test.js
+        run: node --test test/daily_summary.test.js test/demo_readonly_account_snapshot.test.js test/signal_journal.test.js scripts/mt5_demo_readonly_snapshot.test.js
+      - name: Verify the configured MT5 CFDs demo account (read-only)
+        env:
+          DERIV_TOKEN: ${{ secrets.DERIV_TOKEN }}
+          DERIV_APP_ID: ${{ secrets.DERIV_APP_ID }}
+        run: |
+          test -n "$DERIV_TOKEN" || { echo "DERIV_TOKEN secret is missing"; exit 1; }
+          test -n "$DERIV_APP_ID" || { echo "DERIV_APP_ID secret is missing"; exit 1; }
+          node scripts/mt5_demo_readonly_snapshot.js
