@@ -35,6 +35,24 @@ test("daily summary separates resolved wins, losses and non-final states", () =>
   assert.equal(summary.byMarket.length, 2);
 });
 
+test("daily summary separately tracks research-priority pair signal outcomes", () => {
+  const tagged = [
+    { localDate:"2026-11-13", marketId:"R_50", priorityTier:"RESEARCH_PRIORITY", status:"sent", finalOutcome:"TP2" },
+    { localDate:"2026-11-13", marketId:"R_50", priorityTier:"RESEARCH_PRIORITY", status:"sent", finalOutcome:"SL" },
+    { localDate:"2026-11-13", marketId:"R_50", status:"sent", finalOutcome:"TP2" }
+  ];
+  const summary = dailySummary(tagged, "2026-11-13", markets);
+  assert.equal(summary.priorityPairs.generated, 2);
+  assert.equal(summary.priorityPairs.sent, 2);
+  assert.equal(summary.priorityPairs.wins, 1);
+  assert.equal(summary.priorityPairs.losses, 1);
+  assert.equal(summary.priorityPairs.resolved, 2);
+  assert.equal(summary.priorityPairs.winRate, 50);
+  const message = buildDailySummaryMessage(summary);
+  assert.match(message, /PRIORITY PAIR RESEARCH WATCH \(R_50\)/);
+  assert.match(message, /Historical 62\.9% directional follow-through is context only, not a strategy win rate/);
+});
+
 test("daily report clearly says metrics are signal outcomes, not account P/L", () => {
   const message = buildDailySummaryMessage(dailySummary(signals, "2026-11-13", markets));
   assert.match(message, /Signal outcomes only; this is not actual account profit\/loss/);

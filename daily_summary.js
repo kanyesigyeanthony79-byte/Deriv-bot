@@ -33,6 +33,21 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
   const resolved = wins + losses;
   const winRate = resolved ? Number((wins / resolved * 100).toFixed(1)) : null;
   const netSignalOutcomes = wins - losses;
+  const priorityRows = rows.filter(signal => signal.priorityTier === "RESEARCH_PRIORITY");
+  const priorityWins = priorityRows.filter(signal => signal.finalOutcome === "TP2").length;
+  const priorityLosses = priorityRows.filter(signal => ["SL", "SL_AFTER_TP1"].includes(signal.finalOutcome)).length;
+  const priorityResolved = priorityWins + priorityLosses;
+  const priority = {
+    generated: priorityRows.length,
+    sent: priorityRows.filter(signal => signal.status === "sent").length,
+    wins: priorityWins,
+    losses: priorityLosses,
+    resolved: priorityResolved,
+    winRate: priorityResolved ? Number((priorityWins / priorityResolved * 100).toFixed(1)) : null,
+    unresolved: priorityRows.filter(signal => signal.status === "sent" && !signal.finalOutcome).length,
+    expired: priorityRows.filter(signal => signal.finalOutcome === "EXPIRED").length,
+    ambiguous: priorityRows.filter(signal => signal.finalOutcome === "AMBIGUOUS").length
+  };
 
   const localDate = epoch => new Intl.DateTimeFormat("en-CA", {
     timeZone: "Africa/Kampala", year: "numeric", month: "2-digit", day: "2-digit"
@@ -88,6 +103,7 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
   return {
     day, generated: rows.length, sent, missed, tp1, tp2, wins, losses, resolved, winRate,
     netSignalOutcomes, expired, ambiguous, unverified, unresolved, byMarket: legacyByMarket,
+    priorityPairs: priority,
     mfeCount: movementRows.length, mfeTop: movementRows.slice(0, 12),
     legacyMfeCount: legacyMfe.length, mtfMfeCount: mtfMfe.length,
     multiTimeframe: {
@@ -120,6 +136,16 @@ function buildDailySummaryMessage(summary, accountSnapshot = null) {
     "\nTP1 reached: " + summary.tp1 + "\nExpired: " + summary.expired +
     "\nAmbiguous: " + summary.ambiguous + "\nUnverified (state missing): " + summary.unverified +
     "\nStill open/unresolved: " + summary.unresolved +
+    "\n\nPRIORITY PAIR RESEARCH WATCH (R_50)" +
+    "\nGenerated: " + (summary.priorityPairs?.generated ?? 0) +
+    "\nSent: " + (summary.priorityPairs?.sent ?? 0) +
+    "\nWins (TP2): " + (summary.priorityPairs?.wins ?? 0) +
+    "\nLosses (SL): " + (summary.priorityPairs?.losses ?? 0) +
+    "\nResolved win rate: " + (summary.priorityPairs?.winRate == null ? "N/A" : summary.priorityPairs.winRate + "%") +
+    "\nUnresolved: " + (summary.priorityPairs?.unresolved ?? 0) +
+    "\nExpired: " + (summary.priorityPairs?.expired ?? 0) +
+    "\nAmbiguous: " + (summary.priorityPairs?.ambiguous ?? 0) +
+    "\nHistorical 62.9% directional follow-through is context only, not a strategy win rate." +
     "\n\nMULTI-TIMEFRAME OBSERVATION SIGNALS" +
     "\nGenerated: " + mtf.generated + "\nTelegram sent: " + mtf.sent +
     "\nDelivery failed: " + mtf.deliveryFailed +

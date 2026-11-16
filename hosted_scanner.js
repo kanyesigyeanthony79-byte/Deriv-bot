@@ -6,6 +6,7 @@ const { evaluate, DEF } = require("./engine");
 const { journalOutcome: recordJournalOutcome, reconcileJournalState, markExpired, updateFavourableMovement } = require("./signal_journal");
 const { dailySummary, deliverDailyReport, previousUgandaDay } = require("./daily_summary");
 const { createDerivDemoReadOnlySnapshot } = require("./scripts/demo_readonly_account_snapshot");
+const { priorityForMarket } = require("./priority_pairs");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const GRANULARITY = 900;
@@ -241,6 +242,10 @@ async function sendOutcome(signal, outcome, candle) {
     signalId: signal.signalId,
     market: signal.market,
     direction: signal.direction,
+    priorityTier: signal.priorityTier || null,
+    priorityLabel: signal.priorityLabel || null,
+    priorityMetricName: signal.priorityMetricName || null,
+    priorityMetricPct: signal.priorityMetricPct ?? null,
     entry: signal.entry,
     stopLoss: signal.stopLoss,
     tp1: signal.tp1,
@@ -360,8 +365,14 @@ async function main() {
 
         const candleEpoch = result.c.epoch;
         const signalId = id + "-" + candleEpoch;
+        const priority = priorityForMarket(id);
         journalCandidate({
           signalId, marketId:id, market:name, direction:result.signal, localDate:localDate(candleEpoch),
+          ...(priority ? {
+            priorityTier: priority.tier, priorityLabel: priority.label,
+            priorityMetricName: priority.metricName, priorityMetricPct: priority.metricPct,
+            prioritySampleBars: priority.sampleBars, priorityEvidenceAsOf: priority.asOf
+          } : {}),
           createdAt:new Date(candleEpoch*1000).toISOString(), candleEpoch, score:result.score,
           entry:result.c.close, metrics:result.metrics || {}, checks:result.checks || [],
           status:"detected", tp1Hit:false, tp2Hit:false, finalOutcome:null, events:[]
@@ -381,7 +392,13 @@ async function main() {
         }
 
         const levels = makeLevels(candles, result.signal);
-        await postTelegram({ event: "new_signal", signalId, market: name, direction: result.signal, ...levels });
+        await postTelegram({
+          event: "new_signal", signalId, market: name, direction: result.signal, ...levels,
+          ...(priority ? {
+            priorityTier: priority.tier, priorityLabel: priority.label,
+            priorityMetricName: priority.metricName, priorityMetricPct: priority.metricPct
+          } : {})
+        });
         journalStatus(signalId, "sent");
         state.lastSig[id] = candleEpoch;
         state.activeSignals.push({
@@ -389,6 +406,10 @@ async function main() {
           marketId: id,
           market: name,
           direction: result.signal,
+          ...(priority ? {
+            priorityTier: priority.tier, priorityLabel: priority.label,
+            priorityMetricName: priority.metricName, priorityMetricPct: priority.metricPct
+          } : {}),
           ...levels,
           createdEpoch: candleEpoch,
           lastCheckedEpoch: candleEpoch,
