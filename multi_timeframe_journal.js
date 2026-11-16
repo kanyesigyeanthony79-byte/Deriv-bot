@@ -46,6 +46,14 @@ function updateJournal(journal, markets, nowEpoch, liveQuotes = {}) {
   const state = journal && journal.version === 1 && Array.isArray(journal.signals)
     ? journal : { version: 1, updatedAt: null, signals: [] };
   const byId = new Map(state.signals.map(s => [s.signalId, s]));
+  // Backfill milestones for records resolved by older collector versions.
+  for (const record of state.signals) {
+    if (record.status === "tp2_hit" && !record.tp1Hit) {
+      record.tp1Hit = true;
+      record.tp1Epoch = record.tp1Epoch || record.tp2Epoch || record.lastProcessedEpoch || null;
+    }
+    if (record.status === "stopped_after_tp1") record.tp1Hit = true;
+  }
   for (const market of Object.values(markets || {})) {
     const candidates = [...(market.signals || []), ...(market.recentSignals || [])].filter(s => s.state === "signal" && s.signalId);
     for (const candidate of candidates) {
