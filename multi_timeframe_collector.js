@@ -76,10 +76,13 @@ async function fetchCandleHistory(client, symbol, granularity, count, now) {
   const maxPages = Math.ceil(remaining / 1000);
   for (let page = 0; page < maxPages && remaining > 0; page++) {
     const requested = Math.min(1000, remaining);
-    const reply = await client.ask({
-      ticks_history: symbol, adjust_start_time: 1, count: requested,
+    const pageRequest = {
+      ticks_history: symbol, adjust_start_time: 1,
+      count: page === 0 ? requested : requested + 1,
       end, granularity, style: "candles"
-    });
+    };
+    if (page > 0) pageRequest.start = Math.max(0, Number(end) - requested * granularity);
+    const reply = await client.ask(pageRequest);
     const rows = normalizeCandles(reply.candles, granularity, now);
     if (!rows.length) break;
     for (const candle of rows) byEpoch.set(candle.epoch, candle);
