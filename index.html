@@ -132,7 +132,9 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <script>
 (() => {
   const MARKETS = [["R_10","Volatility 10 Index"],["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],["R_75","Volatility 75 Index"],["JD100","Jump 100 Index"],["frxXAUUSD","Gold/USD"],["CRASH500","Crash 500 Index"],["BOOM500","Boom 500 Index"]];
-  // Dashboard-only reset: hide all signals created before this UTC epoch without deleting audit history or Telegram messages.\n  const DASHBOARD_RESET_EPOCH = 1794822510; // 2026-11-16T09:48:30Z\n  const JOURNAL_URL = "./trade_journal.json";
+  // Dashboard-only reset: hide all signals created before this UTC epoch without deleting audit history or Telegram messages.
+  const DASHBOARD_RESET_EPOCH = 1794822510; // 2026-11-16T09:48:30Z
+  const JOURNAL_URL = "./trade_journal.json";
   let latestSignals = [];
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
