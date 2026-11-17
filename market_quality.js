@@ -59,6 +59,40 @@ function classifyMarketRegime(candles, options = {}) {
   return { state: "transitioning", direction: fast > slow ? "BUY" : fast < slow ? "SELL" : "NEUTRAL", separationAtr, slopeAtr, volatilityRatio, latestRangeAtr, reason: "Market is transitioning; trend conditions are not sufficiently clear." };
 }
 
+// Gold D1 data also omits selected exchange holidays.
+function easterSundayUtc(year) {
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return Date.UTC(year, month - 1, day) / 1000;
+}
+function isGoldMarketHolidayUtc(epoch) {
+  const date = new Date(epoch * 1000);
+  const month = date.getUTCMonth() + 1, day = date.getUTCDate();
+  if ((month === 12 && day === 25) || (month === 1 && day === 1)) return true;
+  const goodFriday = easterSundayUtc(date.getUTCFullYear()) - 2 * 86400;
+  return Math.floor(epoch / 86400) === Math.floor(goodFriday / 86400);
+}
+function isGoldD1ClosureGap(fromEpoch, toEpoch) {
+  const from = new Date(fromEpoch * 1000), to = new Date(toEpoch * 1000);
+  if (from.getUTCHours() || from.getUTCMinutes() || from.getUTCSeconds() ||
+      to.getUTCHours() || to.getUTCMinutes() || to.getUTCSeconds()) return false;
+  const dayCount = (toEpoch - fromEpoch) / 86400;
+  if (!Number.isInteger(dayCount) || dayCount < 2 || dayCount > 5) return false;
+  for (let offset = 1; offset < dayCount; offset++) {
+    const skippedEpoch = fromEpoch + offset * 86400;
+    const weekday = new Date(skippedEpoch * 1000).getUTCDay();
+    if (weekday !== 0 && weekday !== 6 && !isGoldMarketHolidayUtc(skippedEpoch)) return false;
+  }
+  return true;
+}
+
 // Flags missing bars while allowing the normal weekend closure for Gold/USD.
 function validateCandleContinuity(candles, timeframeSeconds, marketId) {
   if (!Array.isArray(candles) || candles.length < 2 || !(timeframeSeconds > 0)) {
@@ -81,6 +115,8 @@ function validateCandleContinuity(candles, timeframeSeconds, marketId) {
     // H1 bars whose opens naturally sit on either side of the one-hour break.
     const fromMinute = from.getUTCHours() * 60 + from.getUTCMinutes();
     const toMinute = to.getUTCHours() * 60 + to.getUTCMinutes();
+    const dailyGoldHolidayClosure = isGold && timeframeSeconds === 86400 &&
+      isGoldD1ClosureGap(candles[i - 1].epoch, candles[i].epoch);
     const dailyGoldSessionBreak = isGold &&
       from.getUTCFullYear() === to.getUTCFullYear() &&
       from.getUTCMonth() === to.getUTCMonth() &&
@@ -88,7 +124,7 @@ function validateCandleContinuity(candles, timeframeSeconds, marketId) {
       fromMinute >= 20 * 60 + 30 && fromMinute <= 22 * 60 + 15 &&
       toMinute >= 22 * 60 + 45 && toMinute <= 23 * 60 + 59 &&
       delta <= 3 * 3600 + timeframeSeconds;
-    if (!weekendClosure && !dailyGoldSessionBreak) gaps.push({ afterEpoch: candles[i - 1].epoch, beforeEpoch: candles[i].epoch, missingIntervals: Math.max(1, Math.round(delta / timeframeSeconds) - 1) });
+    if (!weekendClosure && !dailyGoldSessionBreak && !dailyGoldHolidayClosure) gaps.push({ afterEpoch: candles[i - 1].epoch, beforeEpoch: candles[i].epoch, missingIntervals: Math.max(1, Math.round(delta / timeframeSeconds) - 1) });
   }
   return { valid: gaps.length === 0, gaps, reason: gaps.length ? "Missing candle intervals detected." : "Candle sequence is continuous." };
 }
