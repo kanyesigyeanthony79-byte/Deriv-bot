@@ -25,8 +25,8 @@ function validateMt5TradeEvent(d){
  if(!d.signalId||!/^[A-Za-z0-9._:-]{1,120}$/.test(String(d.signalId)))return "Invalid signalId";
  if(!/^[A-Za-z0-9._-]{1,80}$/.test(String(d.clientId||"")))return "Invalid clientId";
  if(!MT5_ALLOWED_MARKETS.has(String(d.marketId||"")))return "Market is not on the synthetic allow-list";
- if(!/^\\d{1,24}$/.test(String(d.dealTicket||"")))return "Invalid dealTicket";
- if(!/^\\d{1,24}$/.test(String(d.positionId||"")))return "Invalid positionId";
+ if(!/^\d{1,24}$/.test(String(d.dealTicket||"")))return "Invalid dealTicket";
+ if(!/^\d{1,24}$/.test(String(d.positionId||"")))return "Invalid positionId";
  if(!["TP1","TP2"].includes(String(d.targetLeg||"")))return "Invalid targetLeg";
  if(!["TP","SL","MANUAL","OTHER"].includes(String(d.closeReason||"")))return "Invalid closeReason";
  if(!["BUY","SELL"].includes(String(d.direction||"")))return "Invalid direction";
