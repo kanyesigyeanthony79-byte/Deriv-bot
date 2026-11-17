@@ -99,6 +99,18 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <table><thead><tr><th>Market</th><th>Strategy</th><th>Signals</th><th>Resolved</th><th>Win %</th><th>TP1 %</th><th>TP2 %</th><th>Full SL %</th><th>SL after TP1 %</th><th>Expired %</th></tr></thead>
       <tbody id="strategyMarkets"><tr><td colspan="10" class="muted">Waiting for comparison data…</td></tr></tbody></table>
     </div>
+    <h2 style="margin-top:18px">Breakout–retest candidate · forward shadow</h2>
+    <div class="muted">Separate research track: M5 breakout setup, M1 retest confirmation and next-M1-open observation. Historical final holdout was 13 targets from 26 trades (50.0%) across seven synthetic markets. This is not the approved M5/M15 production signal format and is not eligible for MT5 execution.</div>
+    <div class="card mtf-table-wrap" style="margin-top:10px">
+      <table><thead><tr><th>Signals</th><th>Resolved</th><th>Pending</th><th>Target before SL</th><th>SL before target</th><th>Time exits</th><th>Ambiguous</th><th>Average R</th></tr></thead>
+      <tbody id="breakoutRetestTotals"><tr><td colspan="8" class="muted">Waiting for forward-shadow data…</td></tr></tbody></table>
+      <div class="muted" id="breakoutRetestStatus" style="margin-top:8px">Forward shadow has not initialized yet.</div>
+    </div>
+    <h3 style="margin-top:14px">Breakout–retest market results</h3>
+    <div class="card mtf-table-wrap">
+      <table><thead><tr><th>Market</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>Target %</th><th>Average R</th><th>Risk rejected</th><th>Overlap suppressed</th></tr></thead>
+      <tbody id="breakoutRetestMarkets"><tr><td colspan="8" class="muted">Waiting for market results…</td></tr></tbody></table>
+    </div>
     <h2 style="margin-top:18px">Research lab · 162 rule combinations</h2>
     <div class="muted">Offline candle research only. It does not send alerts or place orders. Rules are screened on an earlier sample and then checked on a later, held-out sample.</div>
     <div class="status" id="researchStatus">Waiting for archived M15 candle history…</div>
@@ -266,6 +278,23 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     $("strategyStatus").textContent="M15 · "+esc(comparison.mode||"shadow_observation_only")+" · "+historical+" historical backfill signals · "+forward+" forward shadow signals · "+esc(comparison.sourceNote||"No order execution");
   }
 
+  function renderBreakoutRetestShadow(){
+    const shadow=mtfSnapshot?.breakoutRetestShadow;
+    if(!shadow){
+      $("breakoutRetestTotals").innerHTML='<tr><td colspan="8" class="muted">Forward-shadow data is not available yet.</td></tr>';
+      $("breakoutRetestMarkets").innerHTML='<tr><td colspan="8" class="muted">No market results yet.</td></tr>';
+      $("breakoutRetestStatus").textContent="Waiting for the collector to publish the breakout–retest journal.";
+      return;
+    }
+    const pct=v=>v===null||v===undefined?"—":Number(v).toFixed(1)+"%";
+    const num=v=>v===null||v===undefined?"—":Number(v).toFixed(2);
+    $("breakoutRetestTotals").innerHTML='<tr><td>'+esc(shadow.signalsGenerated??0)+'</td><td>'+esc(shadow.resolvedSignals??0)+'</td><td>'+esc(shadow.pendingSignals??0)+'</td><td>'+esc(shadow.targetBeforeStop??0)+'</td><td>'+esc(shadow.stopBeforeTarget??0)+'</td><td>'+esc(shadow.timeExit??0)+'</td><td>'+esc(shadow.ambiguous??0)+'</td><td>'+num(shadow.averageRealizedR)+'</td></tr>';
+    const rows=Object.entries(shadow.markets||{}).map(([id,s])=>'<tr><td>'+esc(id)+'</td><td>'+esc(s.signals??0)+'</td><td>'+esc(s.resolved??0)+'</td><td>'+esc(s.pending??0)+'</td><td>'+pct(s.targetRatePct)+'</td><td>'+num(s.averageRealizedR)+'</td><td>'+esc(s.riskRejected??0)+'</td><td>'+esc(s.overlapSuppressed??0)+'</td></tr>');
+    $("breakoutRetestMarkets").innerHTML=rows.join("")||'<tr><td colspan="8" class="muted">No market results yet.</td></tr>';
+    const h=shadow.historicalHoldout||{};
+    $("breakoutRetestStatus").textContent="Forward-only · "+esc(shadow.mode||"shadow_observation_only")+" · Historical holdout: "+(h.targetBeforeStop??0)+"/"+(h.trades??0)+" ("+pct(h.targetRatePct)+") · historical expectancy "+num(h.expectancyR)+"R before costs · "+esc(shadow.note||"No production alerts or execution.");
+  }
+
   function renderStrategyResearch(){
     const research=mtfSnapshot?.strategyResearch;
     if(!research?.markets){
@@ -296,6 +325,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       mtfSnapshot=await a.json(); mtfJournal=b.ok?(await b.json()).signals||[]:[]; const reviewData=r.ok?await r.json():{reviews:[]}; mtfReviews=Object.fromEntries((reviewData.reviews||[]).map(x=>[x.signalId,x]));
       renderMtf();
       renderStrategyComparison();
+      renderBreakoutRetestShadow();
       renderStrategyResearch();
       $("mtfStatus").textContent="Observation-only · "+esc(mtfSnapshot.markets?.length||0)+" markets · Updated "+esc(time(mtfSnapshot.generatedAt));
     }catch(e){$("mtfStatus").textContent="Multi-timeframe data not published yet: "+e.message;}
