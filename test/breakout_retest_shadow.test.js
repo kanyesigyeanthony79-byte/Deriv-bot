@@ -95,18 +95,18 @@ test("forward journal records a new M5 breakout and its next-M1-open retest entr
   const market = { marketName: "Volatility 10 Index", timeframes: { M1: m1, M5: m5.slice(0, 80), M15: m15 } };
   let journal = updateBreakoutRetestJournal(null, { R_10: market }, start + 80 * 300);
   m5[80] = { epoch: start + 80 * 300, open: 100.2, high: 100.6, low: 100.1, close: 100.5 };
-  m1[401] = { epoch: start + 401 * 60, open: 100.1, high: 100.9, low: 99.9, close: 100.8 };
+  m1[406] = { epoch: start + 406 * 60, open: 100.1, high: 100.9, low: 99.9, close: 100.8 };
   market.timeframes.M5 = m5;
   journal = updateBreakoutRetestJournal(journal, { R_10: market }, start + 80 * 300 + 600);
   assert.equal(journal.signals.length, 1);
   assert.equal(journal.signals[0].strategyId, "M5_BREAKOUT_M1_RETEST");
-  assert.equal(journal.signals[0].entryCandleEpoch, start + 402 * 60);
+  assert.equal(journal.signals[0].entryCandleEpoch, start + 407 * 60);
   assert.equal(journal.signals[0].direction, "BUY");
   assert.equal(journal.signals[0].status, "pending");
 });
 
 test("forward journal initializes at the latest M5 candle without historical backfill", () => {
-  const start = 1_700_000_000;
+  const start = Math.floor(1_700_000_000 / 900) * 900;
   const market = {
     marketName: "Volatility 10 Index",
     timeframes: {
