@@ -130,6 +130,8 @@ function createSignal(marketId, marketName, setup, m5, confirmation) {
   const riskAtr = riskDistance / confirmation.atr5;
   if (!(riskDistance > 0) || riskAtr < MIN_STOP_ATR_M5 || riskAtr > MAX_STOP_ATR_M5) return null;
   const tp2 = entry + setup.direction * TARGET_R * riskDistance;
+  const productionTp1 = entry + setup.direction * 1.5 * riskDistance;
+  const productionTp2 = entry + setup.direction * 3.0 * riskDistance;
   return {
     signalId: marketId + "-BREAKOUT_RETEST_M5_M15-" + setup.setupCloseEpoch,
     strategyId: "M5_BREAKOUT_M5_RETEST_M15_CONFIRM",
@@ -148,10 +150,19 @@ function createSignal(marketId, marketName, setup, m5, confirmation) {
     entry,
     stopLoss,
     tp2,
+    productionTp1,
+    productionTp2,
     riskDistance,
     riskAtr: Number(riskAtr.toFixed(3)),
-    riskReward: { target: TARGET_R },
+    riskReward: { comparisonTarget: TARGET_R, productionTp1: 1.5, productionTp2: 3.0 },
     status: "pending",
+    productionStatus: "pending",
+    productionTp1Hit: false,
+    productionTp1Epoch: null,
+    productionLastProcessedEpoch: entryCandle.epoch - M5_SECONDS,
+    productionOutcomeCandles: 0,
+    productionRealizedR: null,
+    productionBookedPartialR: 0,
     evaluationSource: "forward_shadow",
     lastProcessedEpoch: entryCandle.epoch - M5_SECONDS,
     outcomeCandles: 0,
@@ -162,8 +173,13 @@ function createSignal(marketId, marketName, setup, m5, confirmation) {
   };
 }
 
-function updateSignalOutcome(signal, candles) {
-  if (!signal || TERMINAL.has(signal.status)) return signal;
+const PRODUCTION_TERMINAL = new Set([
+  "tp2_hit", "stopped_before_tp1", "stopped_after_tp1", "ambiguous",
+  "ambiguous_after_tp1", "time_exit"
+]);
+
+function updateComparisonOutcome(signal, candles) {
+  if (TERMINAL.has(signal.status)) return;
   const later = (candles || []).filter(c =>
     c.epoch > Number(signal.lastProcessedEpoch || (signal.entryCandleEpoch - M5_SECONDS))
   );
@@ -203,6 +219,82 @@ function updateSignalOutcome(signal, candles) {
       break;
     }
   }
+}
+
+function updateProductionManagementOutcome(signal, candles) {
+  if (PRODUCTION_TERMINAL.has(signal.productionStatus)) return;
+  const later = (candles || []).filter(c =>
+    c.epoch > Number(signal.productionLastProcessedEpoch || (signal.entryCandleEpoch - M5_SECONDS))
+  );
+  for (const candle of later) {
+    if (candle.epoch < signal.entryCandleEpoch) continue;
+    signal.productionOutcomeCandles += 1;
+    signal.productionLastProcessedEpoch = candle.epoch;
+    const buy = signal.direction === "BUY";
+    const stop = buy ? candle.low <= signal.stopLoss : candle.high >= signal.stopLoss;
+    const tp1 = buy ? candle.high >= signal.productionTp1 : candle.low <= signal.productionTp1;
+    const tp2 = buy ? candle.high >= signal.productionTp2 : candle.low <= signal.productionTp2;
+
+    if (!signal.productionTp1Hit) {
+      if (stop && (tp1 || tp2)) {
+        signal.productionStatus = "ambiguous";
+        signal.productionExitEpoch = candle.epoch;
+        signal.productionRealizedR = null;
+        break;
+      }
+      if (stop) {
+        signal.productionStatus = "stopped_before_tp1";
+        signal.productionExitEpoch = candle.epoch;
+        signal.productionRealizedR = -1;
+        break;
+      }
+      if (tp2) {
+        // TP1 and TP2 were both crossed within one M5 candle; do not assume path.
+        signal.productionStatus = "ambiguous";
+        signal.productionExitEpoch = candle.epoch;
+        signal.productionRealizedR = null;
+        break;
+      }
+      if (tp1) {
+        signal.productionTp1Hit = true;
+        signal.productionTp1Epoch = candle.epoch;
+        signal.productionBookedPartialR = 1.0; // 2/3 positions x +1.5R
+      }
+    } else {
+      if (stop && tp2) {
+        signal.productionStatus = "ambiguous_after_tp1";
+        signal.productionExitEpoch = candle.epoch;
+        signal.productionRealizedR = null;
+        break;
+      }
+      if (stop) {
+        signal.productionStatus = "stopped_after_tp1";
+        signal.productionExitEpoch = candle.epoch;
+        signal.productionRealizedR = Number((2 / 3 * 1.5 + 1 / 3 * -1).toFixed(4));
+        break;
+      }
+      if (tp2) {
+        signal.productionStatus = "tp2_hit";
+        signal.productionExitEpoch = candle.epoch;
+        signal.productionRealizedR = Number((2 / 3 * 1.5 + 1 / 3 * 3).toFixed(4));
+        break;
+      }
+    }
+
+    if (signal.productionOutcomeCandles >= HORIZON_M5) {
+      const marketR = ((buy ? 1 : -1) * (candle.close - signal.entry)) / signal.riskDistance;
+      signal.productionStatus = "time_exit";
+      signal.productionExitEpoch = candle.epoch;
+      signal.productionRealizedR = Number((signal.productionTp1Hit ? 1 + marketR / 3 : marketR).toFixed(4));
+      break;
+    }
+  }
+}
+
+function updateSignalOutcome(signal, candles) {
+  if (!signal) return signal;
+  updateComparisonOutcome(signal, candles);
+  updateProductionManagementOutcome(signal, candles);
   return signal;
 }
 
