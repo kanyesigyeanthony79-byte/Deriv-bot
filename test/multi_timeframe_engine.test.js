@@ -172,7 +172,7 @@ test("continuity validation still rejects unrelated or oversized Gold intraday g
   ];
   assert.equal(validateCandleContinuity(unrelated, 300, "frxXAUUSD").valid, false);
   const oversized = [
-    { epoch: Date.UTC(2026, 10, 17, 21, 0, 0) / 1000, open: 4000, high: 4002, low: 3998, close: 4001 },
+    { epoch: Date.UTC(2026, 10, 17, 20, 30, 0) / 1000, open: 4000, high: 4002, low: 3998, close: 4001 },
     { epoch: Date.UTC(2026, 10, 17, 23, 59, 0) / 1000, open: 4001, high: 4004, low: 4000, close: 4003 }
   ];
   assert.equal(validateCandleContinuity(oversized, 300, "frxXAUUSD").valid, false);
