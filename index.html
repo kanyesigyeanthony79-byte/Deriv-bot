@@ -119,14 +119,14 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <h3 style="margin-top:18px">Approved-format candidate · M5 entry / M15 confirmation</h3>
     <div class="muted">M5 breakout beyond the previous 12 M5 candles; M15 EMA20/EMA50 direction must agree using only completed M15 candles; wait for an M5 retest candle to close, then observe entry at the next M5 open. Stop is structure-based. This forward shadow uses a single 2R target over one hour only for comparison; production TP1/TP2 management is not enabled.</div>
     <div class="card mtf-table-wrap" style="margin-top:10px">
-      <table><thead><tr><th>Setups</th><th>M15 confirmed</th><th>M15 rejected</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>Target before SL</th><th>SL before target</th><th>Average R</th></tr></thead>
-      <tbody id="breakoutRetestM5M15Totals"><tr><td colspan="9" class="muted">Waiting for M5/M15 shadow data…</td></tr></tbody></table>
+      <table><thead><tr><th>Setups</th><th>M15 confirmed</th><th>M15 rejected</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>Target before SL</th><th>SL before target</th><th>M15 recheck rejected</th><th>Average R</th></tr></thead>
+      <tbody id="breakoutRetestM5M15Totals"><tr><td colspan="10" class="muted">Waiting for M5/M15 shadow data…</td></tr></tbody></table>
       <div class="muted" id="breakoutRetestM5M15Status" style="margin-top:8px">M5/M15 forward shadow has not initialized yet.</div>
     </div>
     <h4 style="margin-top:12px">M5/M15 market results</h4>
     <div class="card mtf-table-wrap">
-      <table><thead><tr><th>Market</th><th>Data</th><th>Setups</th><th>M15 confirmed</th><th>M15 rejected</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>Target %</th><th>Average R</th><th>Risk rejected</th></tr></thead>
-      <tbody id="breakoutRetestM5M15Markets"><tr><td colspan="11" class="muted">Waiting for market results…</td></tr></tbody></table>
+      <table><thead><tr><th>Market</th><th>Data</th><th>Setups</th><th>M15 confirmed</th><th>M15 rejected</th><th>M15 recheck rejected</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>Target %</th><th>Average R</th><th>Risk rejected</th></tr></thead>
+      <tbody id="breakoutRetestM5M15Markets"><tr><td colspan="12" class="muted">Waiting for market results…</td></tr></tbody></table>
     </div>
     <h2 style="margin-top:18px">Research lab · 162 rule combinations</h2>
     <div class="muted">Offline candle research only. It does not send alerts or place orders. Rules are screened on an earlier sample and then checked on a later, held-out sample.</div>
@@ -317,14 +317,14 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     const pct=v=>v===null||v===undefined?"—":Number(v).toFixed(1)+"%";
     const num=v=>v===null||v===undefined?"—":Number(v).toFixed(2);
     if(!shadow){
-      $("breakoutRetestM5M15Totals").innerHTML='<tr><td colspan="9" class="muted">M5/M15 shadow data is not available yet.</td></tr>';
-      $("breakoutRetestM5M15Markets").innerHTML='<tr><td colspan="11" class="muted">No M5/M15 market results yet.</td></tr>';
+      $("breakoutRetestM5M15Totals").innerHTML='<tr><td colspan="10" class="muted">M5/M15 shadow data is not available yet.</td></tr>';
+      $("breakoutRetestM5M15Markets").innerHTML='<tr><td colspan="12" class="muted">No M5/M15 market results yet.</td></tr>';
       $("breakoutRetestM5M15Status").textContent="Waiting for the collector to publish the M5/M15 shadow journal.";
       return;
     }
-    const rows=Object.entries(shadow.markets||{}).map(([id,s])=>'<tr><td>'+esc(id)+'</td><td>'+esc(s.dataQuality||"warming")+'</td><td>'+esc(s.setupsDetected??0)+'</td><td>'+esc(s.m15Confirmed??0)+'</td><td>'+esc(s.m15Rejected??0)+'</td><td>'+esc(s.signals??0)+'</td><td>'+esc(s.resolved??0)+'</td><td>'+esc(s.pending??0)+'</td><td>'+pct(s.targetRatePct)+'</td><td>'+num(s.averageRealizedR)+'</td><td>'+esc(s.riskRejected??0)+'</td></tr>');
-    $("breakoutRetestM5M15Markets").innerHTML=rows.join("")||'<tr><td colspan="11" class="muted">No market results yet.</td></tr>';
-    $("breakoutRetestM5M15Totals").innerHTML='<tr><td>'+esc(Object.values(shadow.markets||{}).reduce((n,s)=>n+(s.setupsDetected||0),0))+'</td><td>'+esc(Object.values(shadow.markets||{}).reduce((n,s)=>n+(s.m15Confirmed||0),0))+'</td><td>'+esc(Object.values(shadow.markets||{}).reduce((n,s)=>n+(s.m15Rejected||0),0))+'</td><td>'+esc(shadow.signalsGenerated??0)+'</td><td>'+esc(shadow.resolvedSignals??0)+'</td><td>'+esc(shadow.pendingSignals??0)+'</td><td>'+esc(shadow.targetBeforeStop??0)+'</td><td>'+esc(shadow.stopBeforeTarget??0)+'</td><td>'+num(shadow.averageRealizedR)+'</td></tr>';
+    const rows=Object.entries(shadow.markets||{}).map(([id,s])=>'<tr><td>'+esc(id)+'</td><td>'+esc(s.dataQuality||"warming")+'</td><td>'+esc(s.setupsDetected??0)+'</td><td>'+esc(s.m15Confirmed??0)+'</td><td>'+esc(s.m15Rejected??0)+'</td><td>'+esc(s.m15ReconfirmRejected??0)+'</td><td>'+esc(s.signals??0)+'</td><td>'+esc(s.resolved??0)+'</td><td>'+esc(s.pending??0)+'</td><td>'+pct(s.targetRatePct)+'</td><td>'+num(s.averageRealizedR)+'</td><td>'+esc(s.riskRejected??0)+'</td></tr>');
+    $("breakoutRetestM5M15Markets").innerHTML=rows.join("")||'<tr><td colspan="12" class="muted">No market results yet.</td></tr>';
+    $("breakoutRetestM5M15Totals").innerHTML='<tr><td>'+esc(Object.values(shadow.markets||{}).reduce((n,s)=>n+(s.setupsDetected||0),0))+'</td><td>'+esc(Object.values(shadow.markets||{}).reduce((n,s)=>n+(s.m15Confirmed||0),0))+'</td><td>'+esc(Object.values(shadow.markets||{}).reduce((n,s)=>n+(s.m15Rejected||0),0))+'</td><td>'+esc(shadow.signalsGenerated??0)+'</td><td>'+esc(shadow.resolvedSignals??0)+'</td><td>'+esc(shadow.pendingSignals??0)+'</td><td>'+esc(shadow.targetBeforeStop??0)+'</td><td>'+esc(shadow.stopBeforeTarget??0)+'</td><td>'+esc(shadow.m15ReconfirmRejected??0)+'</td><td>'+num(shadow.averageRealizedR)+'</td></tr>';
     $("breakoutRetestM5M15Status").textContent="Forward-only · normalized 2R target / one-hour horizon · "+esc(shadow.note||"No Telegram or MT5 execution.");
   }
 
