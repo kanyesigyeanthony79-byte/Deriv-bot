@@ -11,8 +11,8 @@ const TIMEFRAMES = Object.freeze({
 // Category = intended trade horizon, not merely the chart used for entry.
 // A lower-timeframe entry must agree with both higher-timeframe context checks.
 const CATEGORIES = Object.freeze({
-  SCALP: Object.freeze({ label: "Scalping", entry: "M1", confirmation: "M5", context: "M15", risk: "M15", targetHorizon: "M15", maxAgeSeconds: 30 * 60, stopAtr: 1.25, tp1R: 1.25, tp2R: 1.8 }),
-  SHORT_TERM: Object.freeze({ label: "Short-term", entry: "M5", confirmation: "M15", context: "H1", risk: "H1", targetHorizon: "H1", maxAgeSeconds: 6 * 3600, stopAtr: 1.5, tp1R: 1.5, tp2R: 2.25 }),
+  SCALP: Object.freeze({ label: "Scalping", entry: "M1", confirmation: "M5", context: "M15", risk: "M15", targetHorizon: "M15", maxAgeSeconds: 30 * 60, stopAtr: 1.25, tp1R: 1.5, tp2R: 3.0 }),
+  SHORT_TERM: Object.freeze({ label: "Short-term", entry: "M5", confirmation: "M15", context: "H1", risk: "H1", targetHorizon: "H1", maxAgeSeconds: 6 * 3600, stopAtr: 1.5, tp1R: 1.5, tp2R: 3.0 }),
   SWING: Object.freeze({ label: "Swing", entry: "M5", confirmation: "M15", context: "H1", risk: "H4", targetHorizon: "H4", maxAgeSeconds: 7 * 86400, stopAtr: 1.75, tp1R: 1.5, tp2R: 2.5 }),
   POSITION: Object.freeze({ label: "Position", entry: "H4", confirmation: "D1", context: "W1", risk: "D1", targetHorizon: "D1", maxAgeSeconds: 30 * 86400, stopAtr: 2, tp1R: 2, tp2R: 3 })
 });
