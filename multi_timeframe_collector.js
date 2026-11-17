@@ -12,11 +12,14 @@ const { sendStrategyComparisonAlerts, sendDailyStrategyComparisonReport } = requ
 const { mergeCandleArchive, researchArchive } = require("./strategy_optimizer");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
+// Gold is scanned for observation and Telegram alerts only. The MT5 execution
+// allow-list remains restricted to the synthetic indices.
 const MARKETS = [
   ["R_10", "Volatility 10 Index"], ["R_25", "Volatility 25 Index"],
   ["R_50", "Volatility 50 Index"], ["R_75", "Volatility 75 Index"],
   ["JD100", "Jump 100 Index"],
-  ["CRASH500", "Crash 500 Index"], ["BOOM500", "Boom 500 Index"]
+  ["CRASH500", "Crash 500 Index"], ["BOOM500", "Boom 500 Index"],
+  ["frxXAUUSD", "Gold (XAUUSD)"]
 ];
 const FRAMES = [
   ["M1", 60, 1800], ["M5", 300, 240], ["M15", 900, 1000], ["M30", 1800, 240],
@@ -318,4 +321,4 @@ async function main() {
   }
 }
 if (require.main === module) main().catch(error => { log("collector_failed", { message: error.message }); process.exitCode = 1; });
-module.exports = { fetchCandleHistory, normalizeCandles, fetchLiveQuotes, fetchMt5TradeLedger, summarizeMt5TradeLedger };
+module.exports = { MARKETS, resolveSymbol, fetchCandleHistory, normalizeCandles, fetchLiveQuotes, fetchMt5TradeLedger, summarizeMt5TradeLedger };
