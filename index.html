@@ -41,7 +41,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   </div>
   <div class="hero">
     <h1>15-minute market monitor</h1>
-    <p>Displays hosted signal observations across seven synthetic markets. MT5 trade outcomes are reported separately from price-only signal observations.</p>
+    <p>Displays hosted signal observations across eight synthetic markets. MT5 trade outcomes are reported separately from price-only signal observations.</p>
     <div class="row"><button class="btn primary" id="refresh">Refresh hosted signals</button></div>
     <div class="status"><span class="dot on" id="dot"></span><span id="status">Loading hosted scanner history…</span></div>
   </div>
@@ -52,6 +52,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <div class="card" data-market="R_25"><div class="name">Volatility 25 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="R_50"><div class="name">Volatility 50 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="R_75"><div class="name">Volatility 75 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
+      <div class="card" data-market="JD75"><div class="name">Jump 75 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="JD100"><div class="name">Jump 100 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="CRASH500"><div class="name">Crash 500 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="BOOM500"><div class="name">Boom 500 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div></div>
@@ -59,7 +60,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 
   <section id="multi-timeframe">
     <h2>Multi-timeframe signals · 4 horizons</h2>
-    <div class="muted">Separate analysis for Scalping, Short-term, Swing and Position. All seven synthetic markets are assessed independently. Gold is excluded.</div>
+    <div class="muted">Separate analysis for Scalping, Short-term, Swing and Position. All eight synthetic markets are assessed independently. Gold is excluded.</div>
     <div class="filters">
       <select id="mtfCategory" aria-label="Filter signal category">
         <option value="ALL">All categories</option><option value="SCALP">Scalping · M5</option>
@@ -70,7 +71,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
         <option value="ALL">All markets</option>
         <option value="R_10">Volatility 10</option><option value="R_25">Volatility 25</option>
         <option value="R_50">Volatility 50</option><option value="R_75">Volatility 75</option>
-        <option value="JD100">Jump 100</option>
+        <option value="JD75">Jump 75</option><option value="JD100">Jump 100</option>
         <option value="CRASH500">Crash 500</option><option value="BOOM500">Boom 500</option>
       </select>
       <button class="btn smallbtn" id="mtfRefresh">Refresh horizons</button>
@@ -126,11 +127,11 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   </section>
 
   <div class="notice"><b>Important:</b> Signal observations are based on market prices and do not prove a trade was executed. MT5 trade status and realized P/L appear only after broker-confirmed deal closures. Use demo observation only; historical outcomes do not establish future profitability.</div>
-  <div class="foot">Hosted scanner: seven synthetic markets · M5/M15/M30 multi-timeframe analysis · scheduled every five minutes. MT5 execution outcomes appear only after broker deal-history confirmation. No private API key is required in this page.</div>
+  <div class="foot">Hosted scanner: eight synthetic markets · M5/M15/M30 multi-timeframe analysis · scheduled every five minutes. MT5 execution outcomes appear only after broker deal-history confirmation. No private API key is required in this page.</div>
 </main>
 <script>
 (() => {
-  const MARKETS = [["R_10","Volatility 10 Index"],["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],["R_75","Volatility 75 Index"],["JD100","Jump 100 Index"],["CRASH500","Crash 500 Index"],["BOOM500","Boom 500 Index"]];
+  const MARKETS = [["R_10","Volatility 10 Index"],["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],["R_75","Volatility 75 Index"],["JD75","Jump 75 Index"],["JD100","Jump 100 Index"],["CRASH500","Crash 500 Index"],["BOOM500","Boom 500 Index"]];
   // Dashboard-only reset: hide all signals created before this UTC epoch without deleting audit history or Telegram messages.
   const DASHBOARD_RESET_EPOCH = 1794822510; // 2026-11-16T09:48:30Z
   const JOURNAL_URL = "./trade_journal.json";
