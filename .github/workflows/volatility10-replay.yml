@@ -1,0 +1,45 @@
+name: Volatility 10 Precision Replay
+
+on:
+  push:
+    branches:
+      - research/volatility10-precision-replay
+    paths:
+      - "volatility10_precision_replay.js"
+      - "test/volatility10_precision_replay.test.js"
+      - "lower_tf_research_candles.json"
+      - "engine.js"
+      - ".github/workflows/volatility10-replay.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "volatility10_precision_replay.js"
+      - "test/volatility10_precision_replay.test.js"
+      - "lower_tf_research_candles.json"
+      - "engine.js"
+      - ".github/workflows/volatility10-replay.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test replay safeguards
+        run: node --test test/volatility10_precision_replay.test.js
+      - name: Run the R_10 historical replay
+        run: node volatility10_precision_replay.js
+      - name: Upload reproducible replay report
+        uses: actions/upload-artifact@v4
+        with:
+          name: volatility10-precision-replay-report
+          path: volatility10_precision_replay_report.json
+          if-no-files-found: error
+          retention-days: 14
