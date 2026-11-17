@@ -23,6 +23,7 @@ test("defines all four horizons and required chart intervals", () => {
   assert.equal(CATEGORIES.SHORT_TERM.entry, "M5");
   assert.equal(CATEGORIES.SHORT_TERM.context, "M15");
   assert.equal(CATEGORIES.SHORT_TERM.confirmation, "M30");
+  assert.equal(CATEGORIES.SHORT_TERM.risk, "H1");
   assert.equal(CATEGORIES.SCALP.tp1R, 1.5);
   assert.equal(CATEGORIES.SCALP.tp2R, 3.0);
   assert.equal(CATEGORIES.SHORT_TERM.tp1R, 1.5);
