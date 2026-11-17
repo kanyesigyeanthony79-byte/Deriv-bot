@@ -34,6 +34,7 @@ function validateMt5TradeEvent(d){
   if(!Number.isFinite(Number(d[field])))return "Invalid numeric field: "+field;
  if(Number(d.entryPrice)<=0||Number(d.closePrice)<=0||Number(d.volume)<=0||Number(d.closeTime)<=0)return "Prices, volume and close time must be positive";
  if(String(d.accountCurrency||"")!=="USD")return "Only USD demo trade reports are accepted";
+ if(String(d.accountMode||"")!=="DEMO")return "Only demo-account trade reports are accepted";
  return null;
 }
 function summarizeTradeRecord(rec){
@@ -140,8 +141,9 @@ async function deliverPendingTradeNotifications(queue,notifications,env){
       category:String(event.category||""),direction:String(event.direction),entryPrice:Number(event.entryPrice),
       stopLoss:Number(event.stopLoss),tp1:Number(event.tp1),tp2:Number(event.tp2),positions:{},dealTickets:[],
       notifications:{},createdAt:now,updatedAt:now};
-     const ids=(await t.get("trade_ids"))||[];ids.push(id);await t.put("trade_ids",ids);
+     const ids=(await t.get("trade_ids"))||[];ids.push(id);if(ids.length>1000)ids.splice(0,ids.length-1000);await t.put("trade_ids",ids);
     }
+    if(rec.clientId!==String(event.clientId))return {success:false,error:"client_id_mismatch"};
     const duplicate=rec.dealTickets.includes(dealTicket);
     if(!duplicate){
      rec.positions[positionId]={...event,dealTicket,positionId,closed:true};
