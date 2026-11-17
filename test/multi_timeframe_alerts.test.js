@@ -298,6 +298,34 @@ test("Gold signals are sent to Telegram but never queued for synthetic MT5 execu
   assert.equal(journal.signals[0].mt5QueueStatus, undefined);
 });
 
+test("Jump 75 signals are sent to Telegram but never queued for synthetic MT5 execution", async () => {
+  const jump75 = candidate({
+    signalId: "JD75-SCALP-1000",
+    marketId: "JD75",
+    market: "Jump 75 Index"
+  });
+  const { markets, journal } = fixture([jump75]);
+  const requests = [];
+  const env = {
+    MTF_TELEGRAM_ALERTS: "true", MT5_EXECUTION_QUEUE_ENABLED: "true",
+    TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret"
+  };
+  const result = await sendCandidateAlerts(markets, journal, 1301, env, {
+    liveQuotes: { JD75: { price: 100 } },
+    fetchImpl: async (url, init) => {
+      requests.push({ url, payload: JSON.parse(init.body) });
+      return { ok: true, json: async () => ({ success: true }) };
+    }
+  });
+  assert.equal(result.sent, 1);
+  assert.equal(result.executionQueued, 0);
+  assert.deepEqual(requests.map(request => request.url), ["https://worker.example"]);
+  assert.equal(requests[0].payload.marketId, "JD75");
+  assert.equal(requests[0].payload.market, "Jump 75 Index | Scalping");
+  assert.equal(journal.signals[0].telegramStatus, "sent");
+  assert.equal(journal.signals[0].mt5QueueStatus, undefined);
+});
+
 test("MT5 queue remains disabled unless its explicit feature flag is true", async () => {
   const { markets, journal } = fixture([candidate()]);
   const urls = [];
