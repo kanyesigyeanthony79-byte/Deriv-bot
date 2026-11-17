@@ -34,7 +34,7 @@ function validateMt5TradeEvent(d){
   if(!Array.isArray(d.positions)||d.positions.length!==3)return "A basket must report exactly three positions";
   const ids=new Set();let tp1Count=0,tp2Count=0;
   for(const p of d.positions){
-   if(!/^\\d{1,24}$/.test(String(p.positionId||"")))return "Invalid opened positionId";
+   if(!/^\d{1,24}$/.test(String(p.positionId||"")))return "Invalid opened positionId";
    if(ids.has(String(p.positionId)))return "Duplicate opened positionId";
    ids.add(String(p.positionId));
    if(p.targetLeg==="TP1")tp1Count++;else if(p.targetLeg==="TP2")tp2Count++;else return "Invalid opened targetLeg";
@@ -44,8 +44,8 @@ function validateMt5TradeEvent(d){
   if(tp1Count!==2||tp2Count!==1)return "A basket must contain two TP1 positions and one TP2 position";
   return null;
  }
- if(!/^\\d{1,24}$/.test(String(d.dealTicket||"")))return "Invalid dealTicket";
- if(!/^\\d{1,24}$/.test(String(d.positionId||"")))return "Invalid positionId";
+ if(!/^\d{1,24}$/.test(String(d.dealTicket||"")))return "Invalid dealTicket";
+ if(!/^\d{1,24}$/.test(String(d.positionId||"")))return "Invalid positionId";
  if(!["TP1","TP2"].includes(String(d.targetLeg||"")))return "Invalid targetLeg";
  if(!["TP","SL","MANUAL","OTHER"].includes(String(d.closeReason||"")))return "Invalid closeReason";
  for(const field of ["closePrice","volume","realizedProfit","closeTime"])
