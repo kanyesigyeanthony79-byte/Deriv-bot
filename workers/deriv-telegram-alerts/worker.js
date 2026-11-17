@@ -169,11 +169,14 @@ async function deliverPendingTradeNotifications(queue,notifications,env){
   }
   if(request.method==="GET"&&u.pathname==="/trades"){
    const ids=(await this.ctx.storage.get("trade_ids"))||[];
-   const trades=[];
+   const trades=[],notifications=[];
    for(const id of ids.slice(-200).reverse()){
-    const rec=await this.ctx.storage.get("trade:"+id);if(rec)trades.push(summarizeTradeRecord(rec));
+    const rec=await this.ctx.storage.get("trade:"+id);if(!rec)continue;
+    trades.push(summarizeTradeRecord(rec));
+    for(const [notificationId,value] of Object.entries(rec.notifications||{}))
+     if(value.status==="pending")notifications.push({id:notificationId,signalId:id,...value});
    }
-   return Response.json({success:true,trades});
+   return Response.json({success:true,trades,notifications});
   }
 \n  if(request.method==="GET"&&u.pathname==="/health")  if(request.method==="GET"&&u.pathname==="/health"){const ids=(await this.ctx.storage.get("queue_ids"))||[];let pending=0;for(const id of ids){const x=await this.ctx.storage.get("signal:"+id);if(x&&x.status==="pending")pending++;}return Response.json({success:true,queueDepth:pending});}
   return Response.json({error:"Not found"},{status:404});
@@ -228,7 +231,10 @@ export default {
       }
       if (url.pathname === "/mt5/trades" && request.method === "GET") {
         const r = await q.fetch("https://queue/trades");
-        return reply(await r.json(), r.status);
+        const v = await r.json();
+        if (!r.ok || !v.success) return reply(v, r.status);
+        const telegram = await deliverPendingTradeNotifications(q, v.notifications, env);
+        return reply({ success: true, trades: v.trades || [], telegram });
       }
       if (url.pathname === "/mt5/health" && request.method === "GET")      if (url.pathname === "/mt5/health" && request.method === "GET") {
         const r = await q.fetch("https://queue/health");
