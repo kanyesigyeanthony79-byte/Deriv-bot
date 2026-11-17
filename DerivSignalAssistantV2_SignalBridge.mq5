@@ -418,6 +418,93 @@ void SyncClosedTradeDeals()
 //+------------------------------------------------------------------+
 
 //+------------------------------------------------------------------+
+string OpenReportedKey(const string signalId)
+{
+   uint h=2166136261;
+   for(int i=0; i<StringLen(signalId); i++)
+      h=(h ^ (uint)StringGetCharacter(signalId,i))*16777619;
+   return "DSA2_OPEN_"+IntegerToString((long)AccountInfoInteger(ACCOUNT_LOGIN))+
+          "_"+IntegerToString((long)h);
+}
+
+//+------------------------------------------------------------------+
+void SyncOpenTradeBaskets()
+{
+   for(int i=PositionsTotal()-1; i>=0; i--)
+   {
+      ulong ticket=PositionGetTicket(i);
+      if(ticket==0 || (ulong)PositionGetInteger(POSITION_MAGIC)!=InpMagicNumber) continue;
+      ulong positionId=(ulong)PositionGetInteger(POSITION_IDENTIFIER);
+      string signalId,marketId,category,direction,targetLeg,symbol;
+      double entryPrice,stopLoss,tp1,tp2,entryVolume;
+      if(!LoadPositionMap(positionId,signalId,marketId,category,direction,targetLeg,
+                          entryPrice,stopLoss,tp1,tp2,entryVolume,symbol)) continue;
+      string reportKey=OpenReportedKey(signalId);
+      if(GlobalVariableCheck(reportKey)) continue;
+
+      ulong positionIds[3];
+      double fillPrices[3],volumes[3];
+      string targetLegs[3];
+      int found=0;
+      double weightedEntry=0.0,totalVolume=0.0;
+      for(int j=PositionsTotal()-1; j>=0; j--)
+      {
+         ulong otherTicket=PositionGetTicket(j);
+         if(otherTicket==0 || (ulong)PositionGetInteger(POSITION_MAGIC)!=InpMagicNumber) continue;
+         ulong otherId=(ulong)PositionGetInteger(POSITION_IDENTIFIER);
+         string otherSignal,otherMarket,otherCategory,otherDirection,otherLeg,otherSymbol;
+         double otherEntry,otherStop,otherTp1,otherTp2,otherVolume;
+         if(!LoadPositionMap(otherId,otherSignal,otherMarket,otherCategory,otherDirection,otherLeg,
+                             otherEntry,otherStop,otherTp1,otherTp2,otherVolume,otherSymbol)) continue;
+         if(otherSignal!=signalId || found>=3) continue;
+         double liveEntry=PositionGetDouble(POSITION_PRICE_OPEN);
+         double liveVolume=PositionGetDouble(POSITION_VOLUME);
+         positionIds[found]=otherId;
+         fillPrices[found]=liveEntry;
+         volumes[found]=liveVolume;
+         targetLegs[found]=otherLeg;
+         weightedEntry+=liveEntry*liveVolume;
+         totalVolume+=liveVolume;
+         found++;
+      }
+      if(found!=3 || totalVolume<=0.0) continue;
+
+      string positionsJson="[";
+      for(int n=0; n<found; n++)
+      {
+         if(n>0) positionsJson+=",";
+         positionsJson+="{\"positionId\":\""+IntegerToString((long)positionIds[n])+
+            "\",\"targetLeg\":\""+targetLegs[n]+"\",\"entryPrice\":"+
+            DoubleToString(fillPrices[n],8)+",\"volume\":"+DoubleToString(volumes[n],8)+"}";
+      }
+      positionsJson+="]";
+      string body="{\"event\":\"basket_opened\",\"signalId\":\""+signalId+
+         "\",\"clientId\":\""+InpClientId+"\",\"marketId\":\""+marketId+
+         "\",\"market\":\""+symbol+"\",\"category\":\""+category+
+         "\",\"direction\":\""+direction+"\",\"entryPrice\":"+
+         DoubleToString(weightedEntry/totalVolume,8)+",\"stopLoss\":"+
+         DoubleToString(stopLoss,8)+",\"tp1\":"+DoubleToString(tp1,8)+
+         ",\"tp2\":"+DoubleToString(tp2,8)+",\"positions\":"+positionsJson+
+         ",\"accountCurrency\":\""+AccountInfoString(ACCOUNT_CURRENCY)+
+         "\",\"accountMode\":\"DEMO\"}";
+      string response;
+      int http=HttpPost(InpBridgeUrl+"/mt5/basket-opened",body,response);
+      if(http==200 && JsonTrue(response,"success"))
+      {
+         GlobalVariableSet(reportKey,(double)TimeCurrent());
+         Print("MT5 basket-open event reported for ",signalId," with three positions.");
+      }
+      else
+      {
+         Print("MT5 basket-open report failed for ",signalId,
+               ". HTTP=",http," response=",response);
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
+
+//+------------------------------------------------------------------+
 string CurrentDayKey()
 {
    string d = TimeToString(TimeCurrent(),TIME_DATE);
@@ -886,6 +973,7 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTimer()
 {
+   SyncOpenTradeBaskets();
    SyncClosedTradeDeals();
    ManageBasket();
    if(CountOurPositions() > 0) return;
