@@ -258,7 +258,7 @@ async function main() {
       ? JSON.parse(fs.readFileSync(BREAKOUT_RETEST_JOURNAL, "utf8"))
       : { version: 1, updatedAt: null, markets: {}, signals: [] };
     const breakoutRetestJournal = updateBreakoutRetestJournal(priorBreakoutRetestJournal, output.markets, now);
-    fs.writeFileSync(BREAKOUT_RETEST_JOURNAL, JSON.stringify(breakoutRetestJournal, null, 2) + "\\n");
+    fs.writeFileSync(BREAKOUT_RETEST_JOURNAL, JSON.stringify(breakoutRetestJournal, null, 2) + "\n");
     output.breakoutRetestShadow = breakoutRetestJournal.summary;
     output.strategyComparisonTelegram = { alerts: strategyShadowTelegram, dailyReport: strategyDailyTelegram };
     const researchArchivePath = path.join(__dirname, "strategy_research_candles.json");
