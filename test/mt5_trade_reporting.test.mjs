@@ -93,7 +93,8 @@ test("final stop loss after two confirmed TP1 closures is classified separately"
 
 test("authenticated Worker endpoint stores trade events and exposes the ledger", async () => {
   const queue = new api.ExecutionQueue({ storage: new MemoryStorage() }, {});
-  const binding = { idFromName: () => "global-synthetic-signal-queue", get: () => queue };
+  const stub = { fetch: (url, init = {}) => queue.fetch(new Request(url, init)) };
+  const binding = { idFromName: () => "global-synthetic-signal-queue", get: () => stub };
   const env = { SIGNAL_API_KEY: "secret", EXECUTION_QUEUE: binding };
   const unauthorized = await api.Worker.fetch(new Request("https://worker/mt5/trade-event", {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(makeEvent())
