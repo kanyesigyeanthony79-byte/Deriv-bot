@@ -53,10 +53,12 @@ test("M5 retest rejects weak or wrong-side closes", () => {
 
 function sampleSignal() {
   return {
-    direction: "BUY", entry: 100, stopLoss: 99, tp2: 102, riskDistance: 1,
-    entryCandleEpoch: START, lastProcessedEpoch: START - 300,
-    status: "pending", outcomeCandles: 0, maxFavourableR: 0, maxAdverseR: 0,
-    realizedR: null
+    direction: "BUY", entry: 100, stopLoss: 99, tp2: 102,
+    productionTp1: 101.5, productionTp2: 103,
+    riskDistance: 1, entryCandleEpoch: START, lastProcessedEpoch: START - 300,
+    productionStatus: "pending", productionTp1Hit: false, productionLastProcessedEpoch: START - 300,
+    productionOutcomeCandles: 0, productionRealizedR: null, productionBookedPartialR: 0,
+    status: "pending", outcomeCandles: 0, maxFavourableR: 0, maxAdverseR: 0, realizedR: null
   };
 }
 
@@ -75,6 +77,37 @@ test("M5 outcome monitor resolves target, stop and same-candle ambiguity", () =>
   updateSignalOutcome(ambiguous, [{ epoch: START, open: 100, high: 102.1, low: 98.9, close: 100 }]);
   assert.equal(ambiguous.status, "ambiguous");
   assert.equal(ambiguous.realizedR, null);
+});
+
+test("three-entry management books TP1 partials and resolves the runner at TP2", () => {
+  const s = sampleSignal();
+  updateSignalOutcome(s, [{ epoch: START, open: 100, high: 101.6, low: 99.5, close: 101.5 }]);
+  assert.equal(s.productionTp1Hit, true);
+  assert.equal(s.productionStatus, "pending");
+  const next = START + 300;
+  updateSignalOutcome(s, [{ epoch: next, open: 101.5, high: 103.1, low: 101.4, close: 103 }]);
+  assert.equal(s.productionStatus, "tp2_hit");
+  assert.equal(s.productionRealizedR, 2);
+});
+
+test("runner stop after TP1 produces the approved weighted basket result", () => {
+  const s = sampleSignal();
+  updateSignalOutcome(s, [{ epoch: START, open: 100, high: 101.6, low: 99.5, close: 101.5 }]);
+  updateSignalOutcome(s, [{ epoch: START + 300, open: 101.5, high: 101.6, low: 98.9, close: 99 }]);
+  assert.equal(s.productionStatus, "stopped_after_tp1");
+  assert.equal(s.productionRealizedR, 0.6667);
+});
+
+test("stop before TP1 loses one R and same-candle TP1/stop is ambiguous", () => {
+  const stopped = sampleSignal();
+  updateSignalOutcome(stopped, [{ epoch: START, open: 100, high: 101, low: 98.9, close: 99 }]);
+  assert.equal(stopped.productionStatus, "stopped_before_tp1");
+  assert.equal(stopped.productionRealizedR, -1);
+
+  const ambiguous = sampleSignal();
+  updateSignalOutcome(ambiguous, [{ epoch: START, open: 100, high: 101.6, low: 98.9, close: 100 }]);
+  assert.equal(ambiguous.productionStatus, "ambiguous");
+  assert.equal(ambiguous.productionRealizedR, null);
 });
 
 test("forward journal waits for fresh bars, then creates only M15-aligned M5-entry signal", () => {
@@ -98,7 +131,7 @@ test("forward journal waits for fresh bars, then creates only M15-aligned M5-ent
   assert.equal(journal.signals[0].entryCandleEpoch, START + 82 * 300);
   assert.equal(journal.signals[0].status, "pending");
   assert.equal(journal.summary.comparisonModel.targetR, 2);
-  assert.equal(journal.summary.productionCompatibility.productionStatus, "not_enabled; research shadow only");
+  assert.equal(journal.summary.productionCompatibility.productionStatus, "not_enabled; management outcomes simulated only");
   assert.ok(TERMINAL.has("ambiguous"));
 });
 
