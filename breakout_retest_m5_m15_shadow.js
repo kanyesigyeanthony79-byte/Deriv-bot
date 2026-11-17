@@ -245,7 +245,7 @@ function summarizeJournal(journal) {
       pending: rows.filter(s => s.status === "pending").length,
       targetBeforeStop: wins,
       stopBeforeTarget: losses,
-      ambiguous,
+      ambiguous: done.filter(s => s.status === "ambiguous").length,
       timeExit: done.filter(s => s.status === "time_exit").length,
       targetRatePct: wins + losses ? Number((wins / (wins + losses) * 100).toFixed(1)) : null,
       averageRealizedR: rs.length ? Number((rs.reduce((a, b) => a + b, 0) / rs.length).toFixed(3)) : null,
