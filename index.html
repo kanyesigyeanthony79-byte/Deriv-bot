@@ -111,6 +111,14 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <table><thead><tr><th>Market</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>Target %</th><th>Average R</th><th>Risk rejected</th><th>Overlap suppressed</th></tr></thead>
       <tbody id="breakoutRetestMarkets"><tr><td colspan="8" class="muted">Waiting for market results…</td></tr></tbody></table>
     </div>
+    <h2 style="margin-top:18px">M15 trend + M5 EMA pullback · forward shadow</h2>
+    <div class="muted">Separate test of the approved M5 execution / M15 confirmation structure: completed M15 EMA20/50 direction, M5 EMA9/21 alignment, EMA9 pullback/reclaim, next-M5-open entry, structure stop and 2R research target. Observation-only; no Telegram or MT5 execution.</div>
+    <div class="table-wrap"><table><thead><tr><th>Signals</th><th>Resolved</th><th>Pending</th><th>2R targets</th><th>Stops</th><th>Target rate</th><th>Avg realized R</th></tr></thead>
+      <tbody id="m5PullbackTotals"><tr><td colspan="7" class="muted">Waiting for forward-shadow data…</td></tr></tbody></table></div>
+    <div class="muted" id="m5PullbackStatus" style="margin-top:8px">Forward shadow has not initialized yet.</div>
+    <div class="table-wrap"><table><thead><tr><th>Market</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>2R target rate</th><th>Avg realized R</th></tr></thead>
+      <tbody id="m5PullbackMarkets"><tr><td colspan="6" class="muted">Waiting for market results…</td></tr></tbody></table></div>
+
     <h2 style="margin-top:18px">Research lab · 162 rule combinations</h2>
     <div class="muted">Offline candle research only. It does not send alerts or place orders. Rules are screened on an earlier sample and then checked on a later, held-out sample.</div>
     <div class="status" id="researchStatus">Waiting for archived M15 candle history…</div>
@@ -295,6 +303,19 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     $("breakoutRetestStatus").textContent="Forward-only · "+esc(shadow.mode||"shadow_observation_only")+" · Historical holdout: "+(h.targetBeforeStop??0)+"/"+(h.trades??0)+" ("+pct(h.targetRatePct)+") · historical expectancy "+num(h.expectancyR)+"R before costs · "+esc(shadow.note||"No production alerts or execution.");
   }
 
+  function renderM5PullbackShadow(){
+    const shadow=mtfSnapshot?.m5EmaPullbackShadow;
+    if(!shadow){
+      $("m5PullbackTotals").innerHTML='<tr><td colspan="7" class="muted">M5 pullback shadow data is not available yet.</td></tr>';
+      $("m5PullbackMarkets").innerHTML='<tr><td colspan="6" class="muted">No market results yet.</td></tr>';
+      $("m5PullbackStatus").textContent="Waiting for the collector to publish the M15/M5 pullback journal.";
+      return;
+    }
+    $("m5PullbackTotals").innerHTML='<tr><td>'+esc(shadow.signalsGenerated??0)+'</td><td>'+esc(shadow.resolvedSignals??0)+'</td><td>'+esc(shadow.pendingSignals??0)+'</td><td>'+esc(shadow.targetBeforeStop??0)+'</td><td>'+esc(shadow.stopBeforeTarget??0)+'</td><td>'+pct(shadow.targetRatePct)+'</td><td>'+num(shadow.averageRealizedR)+'</td></tr>';
+    const rows=Object.entries(shadow.markets||{}).map(([id,v])=>'<tr><td>'+esc(id)+'</td><td>'+esc(v.signals??0)+'</td><td>'+esc(v.resolved??0)+'</td><td>'+esc(v.pending??0)+'</td><td>'+pct(v.targetRatePct)+'</td><td>'+num(v.averageRealizedR)+'</td></tr>');
+    $("m5PullbackMarkets").innerHTML=rows.join("")||'<tr><td colspan="6" class="muted">No market results yet.</td></tr>';
+    $("m5PullbackStatus").textContent="Forward-only · "+esc(shadow.mode||"forward_shadow_observation_only")+" · "+esc(shadow.strategy||"M15 confirmation / M5 pullback")+". Historical backfill is disabled; percentages appear only after outcomes resolve.";
+  }
   function renderStrategyResearch(){
     const research=mtfSnapshot?.strategyResearch;
     if(!research?.markets){
@@ -326,6 +347,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       renderMtf();
       renderStrategyComparison();
       renderBreakoutRetestShadow();
+      renderM5PullbackShadow();
       renderStrategyResearch();
       $("mtfStatus").textContent="Observation-only · "+esc(mtfSnapshot.markets?.length||0)+" markets · Updated "+esc(time(mtfSnapshot.generatedAt));
     }catch(e){$("mtfStatus").textContent="Multi-timeframe data not published yet: "+e.message;}
