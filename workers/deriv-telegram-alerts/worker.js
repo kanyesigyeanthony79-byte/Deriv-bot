@@ -12,6 +12,7 @@ function validateMt5Signal(d){
  if(e<=0||sl<=0||a<=0||b<=0)return "Prices must be positive";
  if(dir==="BUY"&&!(sl<e&&a>e&&b>=a))return "BUY levels are inconsistent";
  if(dir==="SELL"&&!(sl>e&&a<e&&b<=a))return "SELL levels are inconsistent";
+ const quality=String(d.quality||"").toUpperCase();if(!["STRONG","VALID"].includes(quality))return "Signal quality is not actionable";
  if(d.priceValidation!=="PASS")return "Signal price validation did not pass";
  const dev=Number(d.entryDeviationR);if(!Number.isFinite(dev)||dev>0.2)return "Entry deviation exceeds limit";
  const cat=String(d.category||"").toUpperCase();if(!Object.prototype.hasOwnProperty.call(MT5_MAX_AGE,cat))return "Unsupported signal category";
@@ -175,6 +176,8 @@ export default {
             ...priorityLines,
             "━━━━━━━━━━━━━━━━",
             `📊 Market: ${market}`,
+            `🏅 Quality: ${String(data.quality || "UNRATED")}`,
+            `⏱ Timeframes: ${data.entryTimeframe || "?"} entry / ${data.setupTimeframe || "?"} setup / ${data.confirmationTimeframe || "?"} confirmation`,
             `📈 Direction: ${direction}`,
             `🎯 Entry: ${data.entry}`,
             `🛑 Stop Loss: ${data.stopLoss}`,
