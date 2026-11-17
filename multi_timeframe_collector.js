@@ -15,11 +15,11 @@ const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const MARKETS = [
   ["R_10", "Volatility 10 Index"], ["R_25", "Volatility 25 Index"],
   ["R_50", "Volatility 50 Index"], ["R_75", "Volatility 75 Index"],
-  ["JD100", "Jump 100 Index"], ["frxXAUUSD", "Gold/USD"],
+  ["JD100", "Jump 100 Index"],
   ["CRASH500", "Crash 500 Index"], ["BOOM500", "Boom 500 Index"]
 ];
 const FRAMES = [
-  ["M1", 60, 1800], ["M5", 300, 240], ["M15", 900, 1000],
+  ["M1", 60, 1800], ["M5", 300, 240], ["M15", 900, 1000], ["M30", 1800, 240],
   ["H1", 3600, 240], ["H4", 14400, 240], ["D1", 86400, 520]
 ];
 const OUTPUT = path.join(__dirname, "multi_timeframe_data.json");
