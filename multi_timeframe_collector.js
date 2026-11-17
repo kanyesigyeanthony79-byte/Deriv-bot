@@ -11,6 +11,7 @@ const { updateStrategyJournal, summarizeStrategyJournal } = require("./strategy_
 const { sendStrategyComparisonAlerts, sendDailyStrategyComparisonReport } = require("./strategy_comparison_alerts");
 const { mergeCandleArchive, researchArchive } = require("./strategy_optimizer");
 const { updateBreakoutRetestJournal } = require("./breakout_retest_shadow");
+const { updateM5PullbackJournal } = require("./m5_ema_pullback_shadow");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 // Jump 75 and Gold are scanned for observation and Telegram alerts only.
@@ -260,6 +261,13 @@ async function main() {
     const breakoutRetestJournal = updateBreakoutRetestJournal(priorBreakoutRetestJournal, output.markets, now);
     fs.writeFileSync(BREAKOUT_RETEST_JOURNAL, JSON.stringify(breakoutRetestJournal, null, 2) + "\n");
     output.breakoutRetestShadow = breakoutRetestJournal.summary;
+    const m5PullbackJournalPath = path.join(__dirname, "m5_ema_pullback_shadow_journal.json");
+    const priorM5PullbackJournal = fs.existsSync(m5PullbackJournalPath)
+      ? JSON.parse(fs.readFileSync(m5PullbackJournalPath, "utf8"))
+      : { version: 1, updatedAt: null, markets: {}, signals: [] };
+    const m5PullbackJournal = updateM5PullbackJournal(priorM5PullbackJournal, output.markets, now);
+    fs.writeFileSync(m5PullbackJournalPath, JSON.stringify(m5PullbackJournal, null, 2) + "\\n");
+    output.m5EmaPullbackShadow = m5PullbackJournal.summary;
     output.strategyComparisonTelegram = { alerts: strategyShadowTelegram, dailyReport: strategyDailyTelegram };
     const researchArchivePath = path.join(__dirname, "strategy_research_candles.json");
     const researchReportPath = path.join(__dirname, "strategy_research_report.json");
@@ -309,6 +317,7 @@ async function main() {
       mt5TradeReporting: mt5TradeSummary, mt5Trades: mt5TradeLedger.trades,
       strategyComparison: output.strategyComparison, strategyResearch: output.strategyResearch,
       breakoutRetestShadow: output.breakoutRetestShadow,
+      m5EmaPullbackShadow: output.m5EmaPullbackShadow,
       markets: Object.values(output.markets).map(m => ({
         marketId: m.marketId, marketName: m.marketName, signals: dashboardSignalsForMarket(m, journal, now, liveQuotes),
         timeframeCounts: Object.fromEntries(Object.entries(m.timeframes).map(([tf, candles]) => [tf, candles.length])),
