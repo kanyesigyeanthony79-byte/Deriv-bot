@@ -47,7 +47,7 @@ test("WATCH candidates are excluded while STRONG and VALID candidates remain act
   const strong = candidate({ signalId: "strong", quality: "STRONG" });
   const watch = candidate({ signalId: "watch", quality: "WATCH" });
   const found = latestCandidates({ R_50: { signals: [], recentSignals: [valid, strong, watch] } });
-  assert.deepEqual(found.map(s => s.signalId), ["valid", "strong"]);
+  assert.deepEqual(found.map(s => s.signalId), ["strong", "valid"]);
 });
 
 test("swing candidates remain observation-only and are excluded from Telegram alerts", async () => {
@@ -87,6 +87,10 @@ test("recent candidate is sent once with its horizon in the market label", async
   assert.equal(requests.length, 1);
   assert.match(requests[0].payload.market, /Scalping/);
   assert.equal(requests[0].payload.event, "new_signal");
+  assert.equal(requests[0].payload.quality, "VALID");
+  assert.equal(requests[0].payload.entryTimeframe, "M5");
+  assert.equal(requests[0].payload.setupTimeframe, "M15");
+  assert.equal(requests[0].payload.confirmationTimeframe, "M15");
 });
 
 test("SCALP, SHORT_TERM and POSITION candidates each route with their own horizon label", async () => {
