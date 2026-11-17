@@ -29,7 +29,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 .mtf-tag{font-size:10px;color:var(--gold);border:1px solid var(--line);padding:3px 6px;border-radius:20px}
 .mtf-state{font-size:17px;font-weight:850;margin:9px 0 4px}
 .mtf-table-wrap{overflow-x:auto}
-.foot{margin-top:22px;color:var(--muted);font-size:11px;line-height:1.6}
+.system-tabs{display:flex;gap:9px;margin:14px 0 4px;position:sticky;top:0;z-index:5;padding:8px 0;background:rgba(11,23,18,.96)}.system-tab{flex:1;min-width:0}.system-tab[aria-pressed="true"]{background:var(--gold);color:#17170f;border-color:var(--gold)}.system-view[hidden]{display:none!important}.foot{margin-top:22px;color:var(--muted);font-size:11px;line-height:1.6}
 @media(max-width:420px){.brand{font-size:16px}.hero{padding:14px}h1{font-size:22px}}
 </style>
 </head>
@@ -39,14 +39,19 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <div><div class="brand">DERIV SIGNAL ASSISTANT</div><div class="sub">V2 · Android-friendly market scanner</div></div>
     <div class="pill">DEMO ONLY · NO LIVE TRADING</div>
   </div>
-  <div class="hero">
-    <h1>15-minute market monitor</h1>
+  <div class="hero" id="original-refresh" data-system-view="original">
+    <h1>Original system · 15-minute market monitor</h1>
     <p>Displays hosted signal observations across eight synthetic markets. MT5 trade outcomes are reported separately from price-only signal observations.</p>
     <div class="row"><button class="btn primary" id="refresh">Refresh hosted signals</button></div>
     <div class="status"><span class="dot on" id="dot"></span><span id="status">Loading hosted scanner history…</span></div>
   </div>
 
-  <section id="promoted-system" class="hero" style="margin-top:20px">
+  <nav class="system-tabs" aria-label="Signal system dashboard">
+    <button class="btn system-tab" type="button" data-system-tab="promoted" aria-pressed="true">Promoted System</button>
+    <button class="btn system-tab" type="button" data-system-tab="original" aria-pressed="false">Original System</button>
+  </nav>
+
+  <section id="promoted-system" class="hero system-view" data-system-view="promoted" style="margin-top:12px">
     <div class="top"><h2 style="margin:0">Promoted system · production signals</h2><span class="pill">APPROVED RULESET</span></div>
     <p style="margin-top:8px">This panel shows the strategy currently authorized for production Telegram signals. Research candidates below remain isolated and cannot promote themselves.</p>
     <div class="grid" id="promotedMetrics">
@@ -73,8 +78,8 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <div class="notice">Production status is read from the latest collector snapshot. A signal is shown only while its price-observation state is pending or TP1 touched and its quote is fresh. This is not proof of an MT5 order. Research/shadow strategies are not promoted or executed here.</div>
   </section>
 
-  <section>
-    <h2>Live analysis</h2>
+  <section class="system-view" data-system-view="original">
+    <h2>Original system · live analysis</h2>
     <div class="grid" id="markets"><div class="card" data-market="R_10"><div class="name">Volatility 10 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="R_25"><div class="name">Volatility 25 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="R_50"><div class="name">Volatility 50 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
@@ -85,7 +90,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <div class="card" data-market="BOOM500"><div class="name">Boom 500 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div></div>
   </section>
 
-  <section id="multi-timeframe">
+  <section id="multi-timeframe" class="system-view" data-system-view="promoted">
     <h2>Multi-timeframe signals · 4 horizons</h2>
     <div class="muted">Separate analysis for Scalping, Short-term, Swing and Position. All eight synthetic markets are assessed independently. Gold is excluded.</div>
     <div class="filters">
@@ -186,9 +191,9 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <div class="muted" id="researchCaution" style="margin-top:8px">No candidate will be promoted automatically. Validation sample size and forward-shadow performance must be adequate first.</div>
   </section>
 
-  <section>
+  <section class="system-view" data-system-view="original">
     <div class="row" style="justify-content:space-between;align-items:center">
-      <h2>Signal journal</h2>
+      <h2>Original system · signal journal</h2>
       <button class="btn smallbtn" id="export">Export CSV</button>
     </div>
     <div class="card" style="overflow-x:auto">
@@ -202,6 +207,14 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 </main>
 <script>
 (() => {
+  const systemTabs=[...document.querySelectorAll("[data-system-tab]")];
+  function showSystem(name){
+    document.querySelectorAll("[data-system-view]").forEach(el=>{el.hidden=el.dataset.systemView!==name;});
+    systemTabs.forEach(btn=>btn.setAttribute("aria-pressed",String(btn.dataset.systemTab===name)));
+  }
+  systemTabs.forEach(btn=>btn.addEventListener("click",()=>showSystem(btn.dataset.systemTab)));
+  showSystem("promoted");
+
   const MARKETS = [["R_10","Volatility 10 Index"],["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],["R_75","Volatility 75 Index"],["JD75","Jump 75 Index"],["JD100","Jump 100 Index"],["CRASH500","Crash 500 Index"],["BOOM500","Boom 500 Index"]];
   // Dashboard-only reset: hide all signals created before this UTC epoch without deleting audit history or Telegram messages.
   const DASHBOARD_RESET_EPOCH = 1794822510; // 2026-11-16T09:48:30Z
