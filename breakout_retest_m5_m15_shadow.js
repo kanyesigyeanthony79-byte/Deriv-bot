@@ -399,7 +399,7 @@ function summarizeJournal(journal) {
     comparisonModel: {
       targetR: TARGET_R,
       horizonMinutes: HORIZON_M5 * M5_SECONDS / 60,
-      note: "Same single 2R target and one-hour horizon as the M1 research candidate, to compare entry logic on a common basis. This is not the production three-entry TP1/TP2 management model."
+      note: "Same single 2R target and one-hour horizon as the M1 research candidate for entry comparison. A separate outcome stream simulates the approved three-entry TP1 1.5R / TP2 3R management."
     },
     productionCompatibility: {
       entry: "M5",
