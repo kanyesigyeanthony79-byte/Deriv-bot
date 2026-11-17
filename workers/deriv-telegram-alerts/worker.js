@@ -328,6 +328,11 @@ export default {
           if (!Number.isFinite(Number(data[field]))) return reply({ error: `Invalid number: ${field}` }, 400);
         }
         const market = String(data.market).slice(0, 80);
+        const sourceIdentity = data.source === "PROMOTED_MTF"
+          ? { header: "🚀 DERIV SIGNAL ASSISTANT — PROMOTED MTF", label: "PROMOTED MULTI-TIMEFRAME" }
+          : data.source === "LEGACY_15M"
+            ? { header: "📊 DERIV SIGNAL ASSISTANT — ORIGINAL 15-MINUTE", label: "ORIGINAL 15-MINUTE SYSTEM" }
+            : { header: "DERIV SIGNAL ASSISTANT", label: "SIGNAL SOURCE NOT SPECIFIED" };
 
         if (data.event === "outcome") {
           const outcomes = {
@@ -353,6 +358,8 @@ export default {
               Number(data.priorityMetricPct).toFixed(1) + "% (not a strategy win rate)"
           ] : [];
           message = [
+            sourceIdentity.header,
+            sourceIdentity.label,
             outcome.title,
             ...priorityLines,
             "━━━━━━━━━━━━━━━━",
@@ -377,6 +384,8 @@ export default {
               Number(data.priorityMetricPct).toFixed(1) + "% (not a strategy win rate)"
           ] : [];
           message = [
+            sourceIdentity.header,
+            sourceIdentity.label,
             "🆕 NEW SIGNAL ALERT",
             ...priorityLines,
             "━━━━━━━━━━━━━━━━",
