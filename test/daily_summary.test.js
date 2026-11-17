@@ -122,3 +122,45 @@ test("failed Telegram relay rejects delivery so the scanner can retry", async ()
     /relay unavailable/
   );
 });
+
+
+test("multi-timeframe daily cohort uses generation date and separates missed from untracked delivery", () => {
+  const generatedToday = Date.parse("2026-11-16T01:06:00Z") / 1000;
+  const priorCandle = Date.parse("2026-11-15T20:40:00Z") / 1000;
+  const mtf = [
+    { signalId: "sent-prior-candle", marketId: "R_50", createdEpoch: generatedToday,
+      entryCandleEpoch: priorCandle, status: "tp2_hit", telegramStatus: "sent", tp1Hit: true },
+    { signalId: "missed", marketId: "R_25", createdEpoch: generatedToday,
+      entryCandleEpoch: generatedToday, status: "stopped", telegramStatus: "missed" },
+    { signalId: "untracked", marketId: "JD100", createdEpoch: generatedToday,
+      entryCandleEpoch: generatedToday, status: "expired", telegramStatus: null },
+    { signalId: "created-yesterday", marketId: "R_50",
+      createdEpoch: Date.parse("2026-11-15T20:00:00Z") / 1000,
+      entryCandleEpoch: priorCandle, status: "tp2_hit", telegramStatus: "sent" }
+  ];
+  const summary = dailySummary([], "2026-11-16", markets, mtf);
+  assert.equal(summary.multiTimeframe.generated, 3);
+  assert.equal(summary.multiTimeframe.sent, 1);
+  assert.equal(summary.multiTimeframe.deliveryMissed, 1);
+  assert.equal(summary.multiTimeframe.deliveryUntracked, 1);
+  assert.equal(summary.multiTimeframe.entryCandleDateMismatch, 1);
+  assert.equal(summary.multiTimeframe.wins, 1);
+  assert.equal(summary.multiTimeframe.losses, 1);
+  const message = buildDailySummaryMessage(summary);
+  assert.match(message, /Delivery missed \(price moved\): 1/);
+  assert.match(message, /Delivery status unknown\/untracked: 1/);
+  assert.match(message, /Signals generated today using an earlier entry candle: 1/);
+});
+
+test("multi-timeframe delivery failure, stale and explicit not-sent states are not called untracked", () => {
+  const epoch = Date.parse("2026-11-16T10:00:00Z") / 1000;
+  const mtf = ["delivery_failed", "stale", "not_sent"].map((telegramStatus, i) => ({
+    signalId: "delivery-" + i, marketId: "R_50", createdEpoch: epoch + i,
+    entryCandleEpoch: epoch + i, status: "expired", telegramStatus
+  }));
+  const summary = dailySummary([], "2026-11-16", markets, mtf);
+  assert.equal(summary.multiTimeframe.deliveryFailed, 1);
+  assert.equal(summary.multiTimeframe.deliveryStale, 1);
+  assert.equal(summary.multiTimeframe.deliveryNotSent, 1);
+  assert.equal(summary.multiTimeframe.deliveryUntracked, 0);
+});
