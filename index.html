@@ -29,7 +29,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 .mtf-tag{font-size:10px;color:var(--gold);border:1px solid var(--line);padding:3px 6px;border-radius:20px}
 .mtf-state{font-size:17px;font-weight:850;margin:9px 0 4px}
 .mtf-table-wrap{overflow-x:auto}
-.system-tabs{display:flex;gap:9px;margin:14px 0 4px;position:sticky;top:0;z-index:5;padding:8px 0;background:rgba(11,23,18,.96)}.system-tab{flex:1;min-width:0}.system-tab[aria-pressed="true"]{background:var(--gold);color:#17170f;border-color:var(--gold)}.system-view[hidden]{display:none!important}.foot{margin-top:22px;color:var(--muted);font-size:11px;line-height:1.6}
+.system-tabs{display:flex;gap:9px;margin:14px 0 4px;position:sticky;top:0;z-index:5;padding:8px 0;background:rgba(11,23,18,.96)}.system-tab{flex:1;min-width:0}.system-tab[aria-pressed="true"]{background:var(--gold);color:#17170f;border-color:var(--gold)}.system-view[hidden]{display:none!important}.foot{margin-top:22px;color:var(--muted);font-size:11px;line-height:1.6}.metric-click{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}.metric-click:focus-visible,.signal-filter:focus-visible{outline:2px solid var(--gold);outline-offset:3px}.signal-filter-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.signal-filter{flex:1;min-width:100px}.signal-filter[aria-pressed="true"]{background:var(--gold);color:#17170f;border-color:var(--gold)}.signal-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-top:10px}.signal-item{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px;min-width:0}.signal-item-head{display:flex;justify-content:space-between;gap:8px;align-items:center;font-weight:750;font-size:13px}.signal-item .detail{margin-top:7px}.signal-empty{padding:14px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:13px}
 @media(max-width:420px){.brand{font-size:16px}.hero{padding:14px}h1{font-size:22px}}
 </style>
 </head>
@@ -70,11 +70,14 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       </tbody></table>
       <div class="muted" id="promotedStatus" style="margin-top:9px">Waiting for the latest production snapshot…</div>
     </div>
-    <h3 style="margin-top:14px">Current production signals</h3>
-    <div class="card mtf-table-wrap">
-      <table><thead><tr><th>Market</th><th>Horizon</th><th>Direction</th><th>Quality</th><th>Entry</th><th>SL</th><th>TP1</th><th>TP2</th><th>Observation</th></tr></thead>
-      <tbody id="promotedSignals"><tr><td colspan="9" class="muted">Loading current signal states…</td></tr></tbody></table>
-    </div>
+    <h3 style="margin-top:14px">Production signal views</h3>
+    <p class="muted">Choose a view to see only the matching signals. Active is a live status; Valid and Strong are separate quality grades.</p>
+    <nav class="signal-filter-tabs" aria-label="Filter promoted signals">
+      <button class="btn signal-filter" type="button" data-signal-filter="active" aria-pressed="true">Active <span id="activeTabCount">—</span></button>
+      <button class="btn signal-filter" type="button" data-signal-filter="valid" aria-pressed="false">Valid <span id="validTabCount">—</span></button>
+      <button class="btn signal-filter" type="button" data-signal-filter="strong" aria-pressed="false">Strong <span id="strongTabCount">—</span></button>
+    </nav>
+    <div class="signal-list" id="promotedSignals" aria-live="polite"><div class="signal-empty">Loading current signal states…</div></div>
     <div class="notice">Production status is read from the latest collector snapshot. A signal is shown only while its price-observation state is pending or TP1 touched and its quote is fresh. This is not proof of an MT5 order. Research/shadow strategies are not promoted or executed here.</div>
   </section>
 
@@ -214,6 +217,12 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   }
   systemTabs.forEach(btn=>btn.addEventListener("click",()=>showSystem(btn.dataset.systemTab)));
   showSystem("promoted");
+  document.addEventListener("click",event=>{
+    const filterButton=event.target.closest("[data-signal-filter]");
+    const metricButton=event.target.closest("[data-metric-filter]");
+    if(filterButton)setPromotedSignalFilter(filterButton.dataset.signalFilter);
+    if(metricButton&&metricButton.dataset.metricFilter)setPromotedSignalFilter(metricButton.dataset.metricFilter);
+  });
 
   const MARKETS = [["R_10","Volatility 10 Index"],["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],["R_75","Volatility 75 Index"],["JD75","Jump 75 Index"],["JD100","Jump 100 Index"],["CRASH500","Crash 500 Index"],["BOOM500","Boom 500 Index"]];
   // Dashboard-only reset: hide all signals created before this UTC epoch without deleting audit history or Telegram messages.
@@ -293,6 +302,24 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   let mtfSnapshot=null, mtfJournal=[], mtfReviews={};
   const categoryNames={SCALP:"Scalping",SHORT_TERM:"Short-term",SWING:"Swing",POSITION:"Position"};
   const fmtTime=epoch=>epoch?new Date(epoch*1000).toLocaleString():"—";
+  let promotedSignalFilter="active";
+  let promotedSignalCache={all:[],fresh:false};
+  function setPromotedSignalFilter(filter){
+    promotedSignalFilter=filter;
+    document.querySelectorAll("[data-signal-filter]").forEach(btn=>btn.setAttribute("aria-pressed",String(btn.dataset.signalFilter===filter)));
+    renderPromotedSignalList();
+  }
+  function renderPromotedSignalList(){
+    const {all,fresh}=promotedSignalCache;
+    const selected=promotedSignalFilter==="strong"?all.filter(s=>s.quality==="STRONG"):promotedSignalFilter==="valid"?all.filter(s=>s.quality==="VALID"):all;
+    const label=promotedSignalFilter==="strong"?"STRONG":promotedSignalFilter==="valid"?"VALID":"ACTIVE";
+    $("promotedSignals").innerHTML=selected.length?selected.slice().sort((a,b)=>(b.createdEpoch||b.candleEpoch||0)-(a.createdEpoch||a.candleEpoch||0)).map(s=>{
+      const directionClass=s.direction==="BUY"?"buy":"sell";
+      const status=s.status==="tp1_hit"?"TP1 level touched · runner remains":"Pending · monitoring";
+      return '<article class="signal-item"><div class="signal-item-head"><span>'+esc(s.marketName||s.marketId)+'</span><span class="mtf-tag">'+esc(s.quality)+' · '+esc(s.score??"—")+'</span></div><div class="signal '+directionClass+'">'+esc(s.direction||"—")+'</div><div class="detail">'+esc(categoryNames[s.category]||s.category||"—")+' · '+esc(status)+'<br>Entry: '+fmt(s.entry)+' · SL: '+fmt(s.stopLoss)+'<br>TP1: '+fmt(s.tp1)+' · TP2: '+fmt(s.tp2)+'<br>Updated quote: '+esc(fmtTime(s.quoteEpoch))+'</div><a class="btn smallbtn" href="./signal-review.html?signalId='+encodeURIComponent(s.signalId)+'">REVIEW</a></article>';
+    }).join(""):'<div class="signal-empty">'+(fresh?"No "+label+" signals currently match this view. The scanner continues monitoring.":"Signals are hidden because the collector snapshot or quotes are stale.")+'</div>';
+    document.querySelectorAll("[data-signal-filter]").forEach(btn=>btn.setAttribute("aria-pressed",String(btn.dataset.signalFilter===promotedSignalFilter)));
+  }
   function renderPromotedSystem(){
     if(!mtfSnapshot)return;
     const generated=Date.parse(mtfSnapshot.generatedAt||"");
@@ -306,18 +333,19 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     ):[];
     const strong=all.filter(s=>s.quality==="STRONG").length;
     const valid=all.filter(s=>s.quality==="VALID").length;
+    promotedSignalCache={all,fresh};
     $("promotedMetrics").innerHTML=[
       ["SYSTEM STATUS",fresh?"COLLECTOR FRESH":"STALE · CHECK COLLECTOR"],
-      ["ACTIVE VALID SIGNALS",all.length],
+      ["ACTIVE SIGNALS",all.length],
       ["STRONG SIGNALS",strong],
       ["VALID SIGNALS",valid]
-    ].map(([label,value])=>'<div class="card"><div class="detail">'+esc(label)+'</div><div class="signal '+(fresh?"buy":"none")+'">'+esc(value)+'</div></div>').join("");
+    ].map(([label,value],i)=>'<button type="button" class="card metric-click" data-metric-filter="'+(["","active","strong","valid"][i])+'" '+(i===0?'disabled':'')+'><span class="detail">'+esc(label)+'</span><span class="signal '+(fresh?"buy":"none")+'">'+esc(value)+'</span></button>').join("");
+    $("activeTabCount").textContent="("+all.length+")";
+    $("strongTabCount").textContent="("+strong+")";
+    $("validTabCount").textContent="("+valid+")";
     $("promotedStatus").textContent=(fresh?"Last snapshot: "+time(mtfSnapshot.generatedAt)+" · quote-verified active signals only":"Last snapshot: "+time(mtfSnapshot.generatedAt)+" · stale snapshots are not treated as active")+
       " · "+(mtfSnapshot.markets?.length||0)+" markets scanned in this production snapshot.";
-    const rows=all.slice().sort((a,b)=>(b.createdEpoch||b.candleEpoch||0)-(a.createdEpoch||a.candleEpoch||0)).map(s=>
-      '<tr><td>'+esc(s.marketName||s.marketId)+'</td><td>'+esc(categoryNames[s.category]||s.category||"—")+'</td><td class="'+(s.direction==="BUY"?"buy":"sell")+'">'+esc(s.direction||"—")+'</td><td>'+esc(s.quality||"—")+' ('+esc(s.score??"—")+' )</td><td>'+fmt(s.entry)+'</td><td>'+fmt(s.stopLoss)+'</td><td>'+fmt(s.tp1)+'</td><td>'+fmt(s.tp2)+'</td><td>'+esc(s.status==="tp1_hit"?"TP1 level touched · runner remains":"Pending · monitoring")+'</td></tr>'
-    );
-    $("promotedSignals").innerHTML=rows.join("")||'<tr><td colspan="9" class="muted">'+(fresh?"No current STRONG or VALID production signals. Scanner remains active.":"No signals shown because the production snapshot is stale or unavailable.")+'</td></tr>';
+    renderPromotedSignalList();
   }
 
   function renderMtf(){
