@@ -1,7 +1,7 @@
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict");
 const {ema,m15Bias,m5Trigger,makeSignal,updateOutcome,updateM5PullbackJournal}=require("../m5_ema_pullback_shadow");
-const base=1_700_000_000;
+const base=Math.floor(1_700_000_000/900)*900;
 function frame(n,step,price=100){return Array.from({length:n},(_,i)=>({epoch:base+i*step,open:price,high:price+0.2,low:price-0.2,close:price}));}
 test("M15 bias only returns a direction from completed valid engine signals",()=>{assert.equal(m15Bias(frame(64,900)),null);});
 test("M5 trigger requires EMA alignment and EMA9 pullback/reclaim",()=>{const rows=Array.from({length:70},(_,i)=>{const p=100+i*.1;return{epoch:base+i*300,open:p-.05,high:p+.15,low:p-.15,close:p};});const fast=ema(rows.map(c=>c.close),9);rows[69]={...rows[69],open:fast-.1,low:fast-.05,close:fast+.1,high:fast+.15};const t=m5Trigger(rows,"BUY");assert.equal(t.direction,"BUY");});
