@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
-  TIMEFRAMES, CATEGORIES, validCandles, trendBias,
+  TIMEFRAMES, CATEGORIES, validCandles, trendBias, makeLevels,
   evaluateCategory, evaluateAllCategories, evaluateRecentSignals, aggregateWeeklyCandles,
   classifyMarketRegime, validateCandleContinuity
 } = require("../multi_timeframe_engine");
@@ -23,6 +23,18 @@ test("defines all four horizons and required chart intervals", () => {
   assert.equal(CATEGORIES.SHORT_TERM.tp1R, 1.5);
   assert.equal(CATEGORIES.SHORT_TERM.tp2R, 3.0);
   assert.equal(CATEGORIES.POSITION.context, "W1");
+});
+
+test("calculates the agreed 1.5R and 3R targets for executable strategies", () => {
+  const riskCandles = candles(30, 900);
+  const scalp = makeLevels(110, riskCandles, "BUY", CATEGORIES.SCALP);
+  const shortTerm = makeLevels(110, riskCandles, "SELL", CATEGORIES.SHORT_TERM);
+  assert.equal(scalp.riskReward.tp1, 1.5);
+  assert.equal(scalp.riskReward.tp2, 3.0);
+  assert.ok(scalp.tp2 > scalp.tp1);
+  assert.equal(shortTerm.riskReward.tp1, 1.5);
+  assert.equal(shortTerm.riskReward.tp2, 3.0);
+  assert.ok(shortTerm.tp2 < shortTerm.tp1);
 });
 
 test("validates candle order and OHLC structure", () => {
