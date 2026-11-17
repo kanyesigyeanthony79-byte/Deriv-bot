@@ -321,6 +321,14 @@ function summarizeJournal(journal) {
   const ambiguous = terminal.filter(s => s.status === "ambiguous").length;
   const decisive = targets + stops;
   const realized = terminal.map(s => s.realizedR).filter(Number.isFinite);
+  const productionTerminal = signals.filter(s => PRODUCTION_TERMINAL.has(s.productionStatus));
+  const productionRealized = productionTerminal.map(s => s.productionRealizedR).filter(Number.isFinite);
+  const productionTp1Hits = signals.filter(s => s.productionTp1Hit).length;
+  const productionTp2Hits = productionTerminal.filter(s => s.productionStatus === "tp2_hit").length;
+  const productionStoppedBeforeTp1 = productionTerminal.filter(s => s.productionStatus === "stopped_before_tp1").length;
+  const productionStoppedAfterTp1 = productionTerminal.filter(s => s.productionStatus === "stopped_after_tp1").length;
+  const productionAmbiguous = productionTerminal.filter(s => s.productionStatus === "ambiguous" || s.productionStatus === "ambiguous_after_tp1").length;
+  const productionTimeExit = productionTerminal.filter(s => s.productionStatus === "time_exit").length;
   const markets = {};
   for (const id of SYNTHETIC_MARKETS) {
     const rows = signals.filter(s => s.marketId === id);
@@ -344,7 +352,12 @@ function summarizeJournal(journal) {
       targetRatePct: wins + losses ? Number((wins / (wins + losses) * 100).toFixed(1)) : null,
       averageRealizedR: rs.length ? Number((rs.reduce((a, b) => a + b, 0) / rs.length).toFixed(3)) : null,
       riskRejected: journal?.markets?.[id]?.stats?.riskRejected || 0,
-      overlapSuppressed: journal?.markets?.[id]?.stats?.overlapSuppressed || 0
+      overlapSuppressed: journal?.markets?.[id]?.stats?.overlapSuppressed || 0,
+      productionTp1Hits: rows.filter(s => s.productionTp1Hit).length,
+      productionTp2Hits: done.filter(s => s.productionStatus === "tp2_hit").length,
+      productionStoppedBeforeTp1: done.filter(s => s.productionStatus === "stopped_before_tp1").length,
+      productionStoppedAfterTp1: done.filter(s => s.productionStatus === "stopped_after_tp1").length,
+      productionAverageRealizedR: (() => { const v = done.map(s => s.productionRealizedR).filter(Number.isFinite); return v.length ? Number((v.reduce((x, y) => x + y, 0) / v.length).toFixed(3)) : null; })()
     };
   }
   return {
@@ -364,6 +377,22 @@ function summarizeJournal(journal) {
     targetRatePct: decisive ? Number((targets / decisive * 100).toFixed(1)) : null,
     averageRealizedR: realized.length ? Number((realized.reduce((a, b) => a + b, 0) / realized.length).toFixed(3)) : null,
     markets,
+    productionManagementSimulation: {
+      entriesPerSignal: 3,
+      tp1R: 1.5,
+      tp2R: 3.0,
+      tp1Hits: productionTp1Hits,
+      tp2Hits: productionTp2Hits,
+      resolvedSignals: productionTerminal.length,
+      pendingSignals: signals.filter(s => s.productionStatus === "pending").length,
+      stoppedBeforeTp1: productionStoppedBeforeTp1,
+      stoppedAfterTp1: productionStoppedAfterTp1,
+      ambiguous: productionAmbiguous,
+      timeExit: productionTimeExit,
+      averageRealizedR: productionRealized.length ? Number((productionRealized.reduce((x, y) => x + y, 0) / productionRealized.length).toFixed(3)) : null,
+      realizedObservations: productionRealized.length,
+      weighting: "Two equal-sized entries close at +1.5R; the third closes at +3R or stop. Weighted basket R is +2R at TP2 and +0.667R if the runner stops after TP1."
+    },
     comparisonModel: {
       targetR: TARGET_R,
       horizonMinutes: HORIZON_M5 * M5_SECONDS / 60,
@@ -374,7 +403,7 @@ function summarizeJournal(journal) {
       confirmation: "M15",
       minimumRewardRisk: 2,
       productionTargetManagement: "TP1 1.5R on first two entries; TP2 3R on third entry",
-      productionStatus: "not_enabled; research shadow only"
+      productionStatus: "not_enabled; management outcomes simulated only"
     },
     note: "No Telegram alerts, no production signal routing, and no MT5 execution. M15 direction must be confirmed by the last fully closed M15 candle; incomplete M15 candles are excluded."
   };
