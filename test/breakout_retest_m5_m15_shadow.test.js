@@ -33,7 +33,7 @@ test("M15 direction uses only fully closed M15 candles", () => {
   const setupClose = START + 80 * 300 + 300;
   assert.equal(m15ContextAt(m15, setupClose), "up");
   const only54Closed = m15.filter(c => c.epoch + 900 <= setupClose).slice(-54);
-  const futureCandle = m15.find(c => c.epoch + 900 > setupClose);
+  const futureCandle = { epoch: setupClose, open: 100, high: 100.2, low: 99.8, close: 100 };
   assert.equal(m15ContextAt([...only54Closed, futureCandle], setupClose), "unknown");
 });
 
