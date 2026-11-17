@@ -140,7 +140,8 @@ function createSignal(marketId, marketName, setup, m5, confirmation) {
     setupTimeframe: "M5",
     entryTimeframe: "M5",
     confirmationTimeframe: "M15",
-    m15Context: setup.m15Context,
+    m15ContextAtBreakout: setup.m15Context,
+    m15ContextAtEntry: setup.m15ContextAtEntry,
     setupCloseEpoch: setup.setupCloseEpoch,
     triggerEpoch: m5[j].epoch,
     entryCandleEpoch: entryCandle.epoch,
@@ -213,7 +214,7 @@ function blankMarketState() {
     initializedAt: null,
     dataQuality: "warming",
     stats: {
-      setupsDetected: 0, m15Confirmed: 0, m15Rejected: 0, signalsGenerated: 0,
+      setupsDetected: 0, m15Confirmed: 0, m15Rejected: 0, m15ReconfirmRejected: 0, signalsGenerated: 0,
       riskRejected: 0, overlapSuppressed: 0, confirmationExpired: 0
     }
   };
@@ -240,6 +241,7 @@ function summarizeJournal(journal) {
       setupsDetected: journal?.markets?.[id]?.stats?.setupsDetected || 0,
       m15Confirmed: journal?.markets?.[id]?.stats?.m15Confirmed || 0,
       m15Rejected: journal?.markets?.[id]?.stats?.m15Rejected || 0,
+      m15ReconfirmRejected: journal?.markets?.[id]?.stats?.m15ReconfirmRejected || 0,
       signals: rows.length,
       resolved: done.length,
       pending: rows.filter(s => s.status === "pending").length,
@@ -364,7 +366,14 @@ function updateJournal(priorJournal, markets, nowEpoch = Math.floor(Date.now() /
         state.stats.overlapSuppressed += 1;
         continue;
       }
-      const signal = createSignal(marketId, market.marketName || market.market || marketId, setup, m5, confirmation);
+      const entryM15Context = m15ContextAt(m15, m5[confirmation.triggerIndex].epoch + M5_SECONDS);
+      if ((setup.direction === 1 && entryM15Context !== "up") ||
+          (setup.direction === -1 && entryM15Context !== "down")) {
+        state.stats.m15ReconfirmRejected += 1;
+        continue;
+      }
+      const signal = createSignal(marketId, market.marketName || market.market || marketId,
+        { ...setup, m15ContextAtEntry: entryM15Context }, m5, confirmation);
       if (!signal) {
         state.stats.riskRejected += 1;
         continue;
