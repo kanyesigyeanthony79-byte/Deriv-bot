@@ -9,7 +9,7 @@ const ARCHIVE = path.join(__dirname, "lower_tf_research_candles.json");
 const REPORT = path.join(__dirname, "lower_tf_entry_research_report.json");
 const LIMITS = Object.freeze({ M1: 5000, M5: 2000, M15: 1200 });
 const SECONDS = Object.freeze({ M1: 60, M5: 300, M15: 900 });
-const MARKETS = ["R_10", "R_25", "R_50", "R_75", "JD100", "CRASH500", "BOOM500"];
+const MARKETS = ["R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500"];
 
 function validCandle(c) {
   return c && [c.epoch, c.open, c.high, c.low, c.close].every(Number.isFinite) &&
@@ -154,4 +154,4 @@ function main() {
   }));
 }
 if (require.main === module) main();
-module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, LIMITS, SECONDS };
+module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, LIMITS, SECONDS, MARKETS };

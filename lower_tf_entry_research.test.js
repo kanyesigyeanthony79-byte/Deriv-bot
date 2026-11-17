@@ -1,10 +1,14 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { buildReport, SECONDS } = require("./lower_tf_entry_research");
+const { buildReport, SECONDS, MARKETS } = require("./lower_tf_entry_research");
 
 const IDS = ["R_10", "R_25", "R_50"];
 const BASE = Math.floor(1794000000 / 900) * 900;
+
+test("includes Jump 75 in the lower-timeframe research archive", () => {
+  assert.ok(MARKETS.includes("JD75"));
+});
 
 function candles(tf, count) {
   const step = SECONDS[tf];
