@@ -11,6 +11,7 @@ const { updateStrategyJournal, summarizeStrategyJournal } = require("./strategy_
 const { sendStrategyComparisonAlerts, sendDailyStrategyComparisonReport } = require("./strategy_comparison_alerts");
 const { mergeCandleArchive, researchArchive } = require("./strategy_optimizer");
 const { updateBreakoutRetestJournal } = require("./breakout_retest_shadow");
+const { updateJournal: updateBreakoutRetestM5M15Journal } = require("./breakout_retest_m5_m15_shadow");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 // Jump 75 and Gold are scanned for observation and Telegram alerts only.
@@ -31,6 +32,7 @@ const JOURNAL = path.join(__dirname, "multi_timeframe_journal.json");
 const DASHBOARD = path.join(__dirname, "multi_timeframe_dashboard.json");
 const REVIEW_DATA = path.join(__dirname, "signal_review_data.json");
 const BREAKOUT_RETEST_JOURNAL = path.join(__dirname, "breakout_retest_shadow_journal.json");
+const BREAKOUT_RETEST_M5_M15_JOURNAL = path.join(__dirname, "breakout_retest_m5_m15_shadow_journal.json");
 const log = (event, details = {}) => console.log(JSON.stringify({ time: new Date().toISOString(), event, ...details }));
 
 function connect(url) {
@@ -260,6 +262,14 @@ async function main() {
     const breakoutRetestJournal = updateBreakoutRetestJournal(priorBreakoutRetestJournal, output.markets, now);
     fs.writeFileSync(BREAKOUT_RETEST_JOURNAL, JSON.stringify(breakoutRetestJournal, null, 2) + "\n");
     output.breakoutRetestShadow = breakoutRetestJournal.summary;
+    const priorBreakoutRetestM5M15Journal = fs.existsSync(BREAKOUT_RETEST_M5_M15_JOURNAL)
+      ? JSON.parse(fs.readFileSync(BREAKOUT_RETEST_M5_M15_JOURNAL, "utf8"))
+      : { version: 1, updatedAt: null, markets: {}, signals: [] };
+    const breakoutRetestM5M15Journal = updateBreakoutRetestM5M15Journal(
+      priorBreakoutRetestM5M15Journal, output.markets, now
+    );
+    fs.writeFileSync(BREAKOUT_RETEST_M5_M15_JOURNAL, JSON.stringify(breakoutRetestM5M15Journal, null, 2) + "\\n");
+    output.breakoutRetestM5M15Shadow = breakoutRetestM5M15Journal.summary;
     output.strategyComparisonTelegram = { alerts: strategyShadowTelegram, dailyReport: strategyDailyTelegram };
     const researchArchivePath = path.join(__dirname, "strategy_research_candles.json");
     const researchReportPath = path.join(__dirname, "strategy_research_report.json");
@@ -309,6 +319,7 @@ async function main() {
       mt5TradeReporting: mt5TradeSummary, mt5Trades: mt5TradeLedger.trades,
       strategyComparison: output.strategyComparison, strategyResearch: output.strategyResearch,
       breakoutRetestShadow: output.breakoutRetestShadow,
+      breakoutRetestM5M15Shadow: output.breakoutRetestM5M15Shadow,
       markets: Object.values(output.markets).map(m => ({
         marketId: m.marketId, marketName: m.marketName, signals: dashboardSignalsForMarket(m, journal, now, liveQuotes),
         timeframeCounts: Object.fromEntries(Object.entries(m.timeframes).map(([tf, candles]) => [tf, candles.length])),
