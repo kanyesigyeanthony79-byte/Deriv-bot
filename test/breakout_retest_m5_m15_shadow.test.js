@@ -98,7 +98,7 @@ test("forward journal waits for fresh bars, then creates only M15-aligned M5-ent
   assert.equal(journal.signals[0].entryCandleEpoch, START + 82 * 300);
   assert.equal(journal.signals[0].status, "pending");
   assert.equal(journal.summary.comparisonModel.targetR, 2);
-  assert.equal(journal.summary.productionCompatibility.productionStatus, "not_enabled");
+  assert.equal(journal.summary.productionCompatibility.productionStatus, "not_enabled; research shadow only");
   assert.ok(TERMINAL.has("ambiguous"));
 });
 
