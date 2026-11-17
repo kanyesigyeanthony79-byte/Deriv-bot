@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
-  TIMEFRAMES, CATEGORIES, validCandles, trendBias, makeLevels,
+  TIMEFRAMES, CATEGORIES, validCandles, trendBias, makeLevels, classifySignalQuality,
   evaluateCategory, evaluateAllCategories, evaluateRecentSignals, aggregateWeeklyCandles,
   classifyMarketRegime, validateCandleContinuity
 } = require("../multi_timeframe_engine");
@@ -17,12 +17,21 @@ function candles(count, stepSeconds, start = 1_700_000_000, startPrice = 100) {
 test("defines all four horizons and required chart intervals", () => {
   assert.deepEqual(Object.keys(CATEGORIES), ["SCALP", "SHORT_TERM", "SWING", "POSITION"]);
   assert.equal(TIMEFRAMES.M1, 60);
-  assert.equal(CATEGORIES.SCALP.entry, "M1");
+  assert.equal(TIMEFRAMES.M30, 1800);
+  assert.equal(CATEGORIES.SCALP.entry, "M5");
+  assert.equal(CATEGORIES.SCALP.confirmation, "M15");
+  assert.equal(CATEGORIES.SHORT_TERM.entry, "M5");
+  assert.equal(CATEGORIES.SHORT_TERM.context, "M15");
+  assert.equal(CATEGORIES.SHORT_TERM.confirmation, "M30");
   assert.equal(CATEGORIES.SCALP.tp1R, 1.5);
   assert.equal(CATEGORIES.SCALP.tp2R, 3.0);
   assert.equal(CATEGORIES.SHORT_TERM.tp1R, 1.5);
   assert.equal(CATEGORIES.SHORT_TERM.tp2R, 3.0);
   assert.equal(CATEGORIES.POSITION.context, "W1");
+  assert.equal(classifySignalQuality(80), "STRONG");
+  assert.equal(classifySignalQuality(79), "VALID");
+  assert.equal(classifySignalQuality(65), "VALID");
+  assert.equal(classifySignalQuality(64), "WATCH");
 });
 
 test("calculates the agreed 1.5R and 3R targets for executable strategies", () => {
@@ -60,7 +69,7 @@ test("category-specific analysis does not throw on valid but conflicting frames"
     const close = 130 - i * 0.2;
     return { ...c, open: close + 0.08, high: close + 0.12, low: close - 0.12, close };
   });
-  const result = evaluateCategory("JD100", "Jump 100 Index", "SCALP", { M1: rising, M5: falling, M15: rising });
+  const result = evaluateCategory("JD100", "Jump 100 Index", "SCALP", { M5: falling, M15: rising });
   assert.ok(["warming", "no_signal", "timeframe_conflict", "signal"].includes(result.state));
 });
 
@@ -80,16 +89,15 @@ test("weekly aggregation excludes the current incomplete week and aggregates OHL
 });
 
 test("historical entry evaluation excludes higher-timeframe candles that had not closed yet", () => {
-  const m1 = candles(100, 60);
   const m5 = candles(100, 300);
   const m15 = candles(100, 900);
-  const result = evaluateCategory("JD100", "Jump 100 Index", "SCALP", { M1: m1, M5: m5, M15: m15 }, 70);
+  const result = evaluateCategory("JD100", "Jump 100 Index", "SCALP", { M5: m5, M15: m15 }, 70);
   assert.equal(result.state, "warming");
   assert.match(result.reason, /completed candles/);
 });
 
 test("recent-signal recovery returns only candidates with unique entry-candle IDs", () => {
-  const frames = { M1: candles(240, 60), M5: candles(240, 300), M15: candles(240, 900), H1: candles(240, 3600), H4: candles(240, 14400), D1: candles(365, 86400), W1: candles(52, 604800) };
+  const frames = { M1: candles(240, 60), M5: candles(240, 300), M15: candles(240, 900), M30: candles(240, 1800), H1: candles(240, 3600), H4: candles(240, 14400), D1: candles(365, 86400), W1: candles(52, 604800) };
   const results = evaluateRecentSignals("JD100", "Jump 100 Index", frames, 6);
   assert.ok(Array.isArray(results));
   assert.ok(results.length <= 24, "at most six recent entries per each of four categories");
