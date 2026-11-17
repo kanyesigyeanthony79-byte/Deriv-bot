@@ -55,7 +55,7 @@ function validFrame(candles, seconds, minimum) {
     const c = candles[i];
     if (!c || ![c.epoch, c.open, c.high, c.low, c.close].every(Number.isFinite) ||
         c.high < Math.max(c.open, c.close, c.low) || c.low > Math.min(c.open, c.close) ||
-        (i > 0 && c.epoch - candles[i - 1].epoch !== seconds)) return false;
+        c.epoch % seconds !== 0 || (i > 0 && c.epoch - candles[i - 1].epoch !== seconds)) return false;
   }
   return true;
 }
@@ -231,6 +231,7 @@ function summarizeBreakoutRetestJournal(journal) {
     const losses = done.filter(s => s.status === "stopped").length;
     const rs = done.map(s => s.realizedR).filter(Number.isFinite);
     markets[id] = {
+      dataQuality: journal?.markets?.[id]?.dataQuality || "not_collected",
       signals: rows.length,
       resolved: done.length,
       pending: rows.filter(s => s.status === "pending").length,
@@ -257,7 +258,7 @@ function summarizeBreakoutRetestJournal(journal) {
     targetRatePct: decisive ? Number((target / decisive * 100).toFixed(1)) : null,
     averageRealizedR: realized.length ? Number((realized.reduce((a, b) => a + b, 0) / realized.length).toFixed(3)) : null,
     markets,
-    historicalHoldout: { targetRatePct: 50, targetBeforeStop: 13, stopBeforeTarget: 13, trades: 26, expectancyR: 0.5, assumedCostAdjustedExpectancyRAt010: 0.4 },
+    historicalHoldout: { sourceCommit: "40dd1ce9f035b789d0708e7da440c36ab59eef3", archiveGitBlobSha: "9c5fb79fcae81378cef069948ac0dd9999e256ed", targetRatePct: 50, targetBeforeStop: 13, stopBeforeTarget: 13, trades: 26, expectancyR: 0.5, assumedCostAdjustedExpectancyRAt010: 0.4 },
     note: "Research-only forward shadow. Historical M1-entry results are not the production M5/M15 signal rules. M15 context is recorded, not used as a directional filter. No Telegram alerts or MT5 execution."
   };
 }
