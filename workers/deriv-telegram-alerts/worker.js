@@ -19,7 +19,82 @@ function validateMt5Signal(d){
  const age=Number(d.signalAgeSeconds);if(!Number.isFinite(age)||age<0||age>MT5_MAX_AGE[cat])return "Signal is stale";
  return null;
 }
-export class ExecutionQueue{
+
+function validateMt5TradeEvent(d){
+ if(!d||d.event!=="position_closed")return "Only position_closed events are accepted";
+ if(!d.signalId||!/^[A-Za-z0-9._:-]{1,120}$/.test(String(d.signalId)))return "Invalid signalId";
+ if(!/^[A-Za-z0-9._-]{1,80}$/.test(String(d.clientId||"")))return "Invalid clientId";
+ if(!MT5_ALLOWED_MARKETS.has(String(d.marketId||"")))return "Market is not on the synthetic allow-list";
+ if(!/^\\d{1,24}$/.test(String(d.dealTicket||"")))return "Invalid dealTicket";
+ if(!/^\\d{1,24}$/.test(String(d.positionId||"")))return "Invalid positionId";
+ if(!["TP1","TP2"].includes(String(d.targetLeg||"")))return "Invalid targetLeg";
+ if(!["TP","SL","MANUAL","OTHER"].includes(String(d.closeReason||"")))return "Invalid closeReason";
+ if(!["BUY","SELL"].includes(String(d.direction||"")))return "Invalid direction";
+ for(const field of ["entryPrice","stopLoss","tp1","tp2","closePrice","volume","realizedProfit","closeTime"])
+  if(!Number.isFinite(Number(d[field])))return "Invalid numeric field: "+field;
+ if(Number(d.entryPrice)<=0||Number(d.closePrice)<=0||Number(d.volume)<=0||Number(d.closeTime)<=0)return "Prices, volume and close time must be positive";
+ if(String(d.accountCurrency||"")!=="USD")return "Only USD demo trade reports are accepted";
+ return null;
+}
+function summarizeTradeRecord(rec){
+ const positions=Object.values(rec.positions||{});
+ const tp1Wins=positions.filter(p=>p.targetLeg==="TP1"&&p.closeReason==="TP").length;
+ const tp2Wins=positions.filter(p=>p.targetLeg==="TP2"&&p.closeReason==="TP").length;
+ const closed=positions.length, expected=3, tp1Complete=tp1Wins>=2, allClosed=closed>=expected;
+ const anyStop=positions.some(p=>p.closeReason==="SL");
+ let terminalOutcome=null,status="OPEN";
+ if(allClosed){
+  if(tp1Complete&&tp2Wins>=1){terminalOutcome="TP2_HIT";status="CLOSED_TP2";}
+  else if(anyStop){terminalOutcome=tp1Complete?"SL_AFTER_TP1":"SL_HIT";status=terminalOutcome;}
+  else {terminalOutcome="CLOSED_OTHER";status="CLOSED_OTHER";}
+ }else if(tp1Complete)status="TP1_HIT_RUNNER_OPEN";
+ else if(closed>0)status="PARTIALLY_CLOSED";
+ const realizedProfit=positions.reduce((sum,p)=>sum+Number(p.realizedProfit||0),0);
+ return {signalId:rec.signalId,clientId:rec.clientId,marketId:rec.marketId,market:rec.market,category:rec.category,
+  direction:rec.direction,entryPrice:rec.entryPrice,stopLoss:rec.stopLoss,tp1:rec.tp1,tp2:rec.tp2,
+  expectedEntries:expected,closedEntries:closed,openEntries:Math.max(0,expected-closed),
+  tp1ClosedEntries:tp1Wins,tp2ClosedEntries:tp2Wins,tp1Complete,allClosed,status,terminalOutcome,
+  realizedProfit:Number(realizedProfit.toFixed(2)),currency:"USD",
+  positions:positions.map(p=>({positionId:p.positionId,targetLeg:p.targetLeg,closeReason:p.closeReason,
+   closePrice:p.closePrice,volume:p.volume,realizedProfit:p.realizedProfit,closeTime:p.closeTime,dealTicket:p.dealTicket})),
+  updatedAt:rec.updatedAt||null};
+}
+function tradeNotificationText(notification){
+ const s=notification.snapshot||{},id=notification.id;
+ const titles={TP1_HIT:"🎯 MT5 DEMO · TP1 CONFIRMED",TP2_HIT:"🏁 MT5 DEMO · TP2 CONFIRMED",
+  SL_HIT:"🛑 MT5 DEMO · STOP LOSS CLOSED",SL_AFTER_TP1:"⚠️ MT5 DEMO · STOP LOSS AFTER TP1",
+  CLOSED_OTHER:"ℹ️ MT5 DEMO · BASKET CLOSED"};
+ const lines=[titles[id]||"MT5 DEMO · TRADE UPDATE","━━━━━━━━━━━━━━━━",
+  "Market: "+String(s.market||s.marketId||"—"),"Strategy: "+String(s.category||"—"),
+  "Direction: "+String(s.direction||"—"),"Entries closed: "+String(s.closedEntries||0)+"/3",
+  "Entries remaining: "+String(s.openEntries||0),"TP1 entries confirmed: "+String(s.tp1ClosedEntries||0)+"/2",
+  "Realized net P/L: $"+Number(s.realizedProfit||0).toFixed(2),
+  "Signal: "+String(s.signalId||"").slice(0,60)];
+ if(id==="TP1_HIT")lines.push("The two TP1 positions are confirmed closed. The TP2 runner remains open.");
+ else lines.push("All three positions are confirmed closed. This result is based on MT5 deal history.");
+ return lines.join("\\n");
+}
+async function deliverPendingTradeNotifications(queue,notifications,env){
+ const result={sent:0,pending:0,failed:0};
+ for(const notification of notifications||[]){
+  if(notification.status!=="pending")continue;
+  if(!env.TELEGRAM_BOT_TOKEN||!env.TELEGRAM_CHAT_ID){result.pending++;continue;}
+  try{
+   const telegramResponse=await fetch("https://api.telegram.org/bot"+env.TELEGRAM_BOT_TOKEN+"/sendMessage",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID,text:tradeNotificationText(notification)})});
+   const telegramResult=await telegramResponse.json();
+   if(!telegramResponse.ok||!telegramResult.ok)throw new Error("Telegram delivery failed");
+   const ack=await queue.fetch("https://queue/trade-notification-ack",{method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({signalId:notification.signalId,notificationId:notification.id})});
+   if(!ack.ok)throw new Error("Notification acknowledgement failed");
+   result.sent++;
+  }catch(error){result.failed++;result.pending++;break;}
+ }
+ return result;
+}
+\nexport class ExecutionQueue{export class ExecutionQueue{
  constructor(ctx,env){this.ctx=ctx;}
  async fetch(request){
   const u=new URL(request.url);
@@ -54,7 +129,53 @@ export class ExecutionQueue{
     rec.status=status;rec.ackAt=now;rec.result=String(b.reason||status).slice(0,240);await t.put(k,rec);return {acknowledged:true,status};
    });return Response.json({success:Boolean(r.acknowledged),...r},{status:r.acknowledged?200:409});
   }
-  if(request.method==="GET"&&u.pathname==="/health"){const ids=(await this.ctx.storage.get("queue_ids"))||[];let pending=0;for(const id of ids){const x=await this.ctx.storage.get("signal:"+id);if(x&&x.status==="pending")pending++;}return Response.json({success:true,queueDepth:pending});}
+
+  if(request.method==="POST"&&u.pathname==="/trade-event"){
+   const event=await request.json(),id=String(event.signalId),dealTicket=String(event.dealTicket),positionId=String(event.positionId),now=new Date().toISOString();
+   const result=await this.ctx.storage.transaction(async t=>{
+    const key="trade:"+id;
+    let rec=await t.get(key);
+    if(!rec){
+     rec={signalId:id,clientId:String(event.clientId),marketId:String(event.marketId),market:String(event.market||event.marketId),
+      category:String(event.category||""),direction:String(event.direction),entryPrice:Number(event.entryPrice),
+      stopLoss:Number(event.stopLoss),tp1:Number(event.tp1),tp2:Number(event.tp2),positions:{},dealTickets:[],
+      notifications:{},createdAt:now,updatedAt:now};
+     const ids=(await t.get("trade_ids"))||[];ids.push(id);await t.put("trade_ids",ids);
+    }
+    const duplicate=rec.dealTickets.includes(dealTicket);
+    if(!duplicate){
+     rec.positions[positionId]={...event,dealTicket,positionId,closed:true};
+     rec.dealTickets.push(dealTicket);rec.updatedAt=now;
+     const summary=summarizeTradeRecord(rec);
+     if(summary.tp1Complete&&!rec.notifications.TP1_HIT)
+      rec.notifications.TP1_HIT={status:"pending",createdAt:now,snapshot:summary};
+     if(summary.terminalOutcome&&!rec.notifications[summary.terminalOutcome])
+      rec.notifications[summary.terminalOutcome]={status:"pending",createdAt:now,snapshot:summary};
+     await t.put(key,rec);
+    }
+    return {success:true,duplicate,trade:summarizeTradeRecord(rec),
+     notifications:Object.entries(rec.notifications).map(([notificationId,value])=>({id:notificationId,signalId:id,...value}))};
+   });
+   return Response.json(result);
+  }
+  if(request.method==="POST"&&u.pathname==="/trade-notification-ack"){
+   const b=await request.json(),id=String(b.signalId||""),notificationId=String(b.notificationId||"");
+   const r=await this.ctx.storage.transaction(async t=>{
+    const rec=await t.get("trade:"+id);if(!rec||!rec.notifications||!rec.notifications[notificationId])return {acknowledged:false};
+    rec.notifications[notificationId].status="sent";rec.notifications[notificationId].sentAt=new Date().toISOString();
+    await t.put("trade:"+id,rec);return {acknowledged:true};
+   });
+   return Response.json({success:Boolean(r.acknowledged),...r},{status:r.acknowledged?200:404});
+  }
+  if(request.method==="GET"&&u.pathname==="/trades"){
+   const ids=(await this.ctx.storage.get("trade_ids"))||[];
+   const trades=[];
+   for(const id of ids.slice(-200).reverse()){
+    const rec=await this.ctx.storage.get("trade:"+id);if(rec)trades.push(summarizeTradeRecord(rec));
+   }
+   return Response.json({success:true,trades});
+  }
+\n  if(request.method==="GET"&&u.pathname==="/health")  if(request.method==="GET"&&u.pathname==="/health"){const ids=(await this.ctx.storage.get("queue_ids"))||[];let pending=0;for(const id of ids){const x=await this.ctx.storage.get("signal:"+id);if(x&&x.status==="pending")pending++;}return Response.json({success:true,queueDepth:pending});}
   return Response.json({error:"Not found"},{status:404});
  }
 }
@@ -94,7 +215,22 @@ export default {
         const r = await q.fetch("https://queue/ack", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(await request.json()) });
         return reply(await r.json(), r.status);
       }
-      if (url.pathname === "/mt5/health" && request.method === "GET") {
+
+      if (url.pathname === "/mt5/trade-event" && request.method === "POST") {
+        const d = await request.json();
+        const reason = validateMt5TradeEvent(d);
+        if (reason) return reply({ error: reason }, 422);
+        const r = await q.fetch("https://queue/trade-event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) });
+        const v = await r.json();
+        if (!r.ok || !v.success) return reply({ error: "Could not store MT5 trade closure" }, 503);
+        const telegram = await deliverPendingTradeNotifications(q, v.notifications, env);
+        return reply({ success: true, accepted: true, duplicate: v.duplicate, trade: v.trade, telegram });
+      }
+      if (url.pathname === "/mt5/trades" && request.method === "GET") {
+        const r = await q.fetch("https://queue/trades");
+        return reply(await r.json(), r.status);
+      }
+      if (url.pathname === "/mt5/health" && request.method === "GET")      if (url.pathname === "/mt5/health" && request.method === "GET") {
         const r = await q.fetch("https://queue/health");
         return reply(await r.json(), r.status);
       }
