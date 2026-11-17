@@ -630,6 +630,12 @@ bool OpenSignalBasket(const string signalId,const string marketId,
    string tag = "DSA2-" + StringSubstr(signalId,0,18);
    int opened = 0;
    double actualRiskTotal = 0.0;
+   ulong positionIds[];
+   double filledPrices[];
+   double filledVolumes[];
+   ArrayResize(positionIds,InpEntriesPerSignal);
+   ArrayResize(filledPrices,InpEntriesPerSignal);
+   ArrayResize(filledVolumes,InpEntriesPerSignal);
    for(int n=1; n<=InpEntriesPerSignal; n++)
    {
       // Recheck price before every order; abort and roll back if the signal has moved.
@@ -674,6 +680,23 @@ bool OpenSignalBasket(const string signalId,const string marketId,
             CloseAllOurPositions();
             return false;
          }
+         ulong openingDeal = trade.ResultDeal();
+         if(openingDeal==0 || !HistoryDealSelect(openingDeal))
+         {
+            Print("Could not identify opening deal for entry ",n,". Rolling back.");
+            CloseAllOurPositions();
+            return false;
+         }
+         ulong positionId = (ulong)HistoryDealGetInteger(openingDeal,DEAL_POSITION_ID);
+         if(positionId==0)
+         {
+            Print("Broker did not return a position identifier for entry ",n,". Rolling back.");
+            CloseAllOurPositions();
+            return false;
+         }
+         positionIds[opened]=positionId;
+         filledPrices[opened]=fillPrice;
+         filledVolumes[opened]=filled;
          opened++;
          Print("Basket entry ",opened,"/",InpEntriesPerSignal," opened on ",symbol,
                " volume=",DoubleToString(filled,4),
@@ -694,6 +717,19 @@ bool OpenSignalBasket(const string signalId,const string marketId,
       Print("Basket did not reach exactly three positions. Rolling back.");
       CloseAllOurPositions();
       return false;
+   }
+   for(int mapIndex=0; mapIndex<opened; mapIndex++)
+   {
+      string leg = (mapIndex<2 ? "TP1" : "TP2");
+      if(!SavePositionMap(positionIds[mapIndex],signalId,marketId,category,direction,leg,
+                          filledPrices[mapIndex],sl,tp1Price,tp2Price,filledVolumes[mapIndex],symbol))
+      {
+         for(int cleanup=0; cleanup<mapIndex; cleanup++)
+            FileDelete(PositionMapFileName(positionIds[cleanup]),FILE_COMMON);
+         Print("Trade mapping could not be persisted. Rolling back the entire basket.");
+         CloseAllOurPositions();
+         return false;
+      }
    }
    Print("Basket opened for signal ",signalId,". Estimated total SL risk=",
          DoubleToString(actualRiskPerEntry*InpEntriesPerSignal,2),
@@ -838,6 +874,7 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTimer()
 {
+   SyncClosedTradeDeals();
    ManageBasket();
    if(CountOurPositions() > 0) return;
    CheckBridgeHealth();
