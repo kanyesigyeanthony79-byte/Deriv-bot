@@ -154,6 +154,27 @@ test("continuity validation allows the scheduled Gold/USD weekend closure", () =
   assert.equal(validateCandleContinuity(gold, 3600, "frxXAUUSD").valid, true);
 });
 
+test("continuity validation accepts Gold D1 Christmas, New Year, and Good Friday closures", () => {
+  const daily = (year, month, day) => Date.UTC(year, month - 1, day) / 1000;
+  const gold = [
+    { epoch: daily(2025, 12, 24), open: 4000, high: 4002, low: 3998, close: 4001 },
+    { epoch: daily(2025, 12, 26), open: 4001, high: 4004, low: 4000, close: 4003 },
+    { epoch: daily(2025, 12, 31), open: 4003, high: 4005, low: 4001, close: 4004 },
+    { epoch: daily(2026, 1, 2), open: 4004, high: 4006, low: 4002, close: 4005 },
+    { epoch: daily(2026, 4, 2), open: 4005, high: 4007, low: 4003, close: 4006 },
+    { epoch: daily(2026, 4, 6), open: 4006, high: 4008, low: 4004, close: 4007 }
+  ];
+  assert.equal(validateCandleContinuity(gold, 86400, "frxXAUUSD").valid, true);
+});
+
+test("continuity validation still rejects an unexplained Gold D1 gap", () => {
+  const gold = [
+    { epoch: Date.UTC(2026, 1, 10) / 1000, open: 4000, high: 4002, low: 3998, close: 4001 },
+    { epoch: Date.UTC(2026, 1, 12) / 1000, open: 4001, high: 4004, low: 4000, close: 4003 }
+  ];
+  assert.equal(validateCandleContinuity(gold, 86400, "frxXAUUSD").valid, false);
+});
+
 test("continuity validation accepts Gold's scheduled daily maintenance break", () => {
   const close = Date.UTC(2026, 10, 17, 21, 55, 0) / 1000;
   const reopen = Date.UTC(2026, 10, 17, 23, 0, 0) / 1000;
