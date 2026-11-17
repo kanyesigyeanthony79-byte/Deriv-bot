@@ -46,6 +46,33 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <div class="status"><span class="dot on" id="dot"></span><span id="status">Loading hosted scanner history…</span></div>
   </div>
 
+  <section id="promoted-system" class="hero" style="margin-top:20px">
+    <div class="top"><h2 style="margin:0">Promoted system · production signals</h2><span class="pill">APPROVED RULESET</span></div>
+    <p style="margin-top:8px">This panel shows the strategy currently authorized for production Telegram signals. Research candidates below remain isolated and cannot promote themselves.</p>
+    <div class="grid" id="promotedMetrics">
+      <div class="card"><div class="detail">SYSTEM STATUS</div><div class="signal none">LOADING</div></div>
+      <div class="card"><div class="detail">ACTIVE VALID SIGNALS</div><div class="signal">—</div></div>
+      <div class="card"><div class="detail">STRONG SIGNALS</div><div class="signal">—</div></div>
+      <div class="card"><div class="detail">VALID SIGNALS</div><div class="signal">—</div></div>
+    </div>
+    <div class="card mtf-table-wrap">
+      <table><thead><tr><th>Approved rules</th><th>Execution</th><th>Confirmation</th><th>Risk plan</th></tr></thead>
+      <tbody>
+        <tr><td>Scalping</td><td>M5 candle close</td><td>M15</td><td>Minimum 1:2 RR</td></tr>
+        <tr><td>Short-term</td><td>M5 candle close</td><td>M15 + M30 direction</td><td>Minimum 1:2 RR</td></tr>
+        <tr><td>Signal quality</td><td>STRONG ≥80 / VALID 65–79</td><td>WATCH below 65 · not sent</td><td>Only STRONG and VALID sent</td></tr>
+        <tr><td>Trade management</td><td>3 equal entries</td><td>2 entries close at TP1 = 1.5R</td><td>Runner targets TP2 = 3R</td></tr>
+      </tbody></table>
+      <div class="muted" id="promotedStatus" style="margin-top:9px">Waiting for the latest production snapshot…</div>
+    </div>
+    <h3 style="margin-top:14px">Current production signals</h3>
+    <div class="card mtf-table-wrap">
+      <table><thead><tr><th>Market</th><th>Horizon</th><th>Direction</th><th>Quality</th><th>Entry</th><th>SL</th><th>TP1</th><th>TP2</th><th>Observation</th></tr></thead>
+      <tbody id="promotedSignals"><tr><td colspan="9" class="muted">Loading current signal states…</td></tr></tbody></table>
+    </div>
+    <div class="notice">Production status is read from the latest collector snapshot. A signal is shown only while its price-observation state is pending or TP1 touched and its quote is fresh. This is not proof of an MT5 order. Research/shadow strategies are not promoted or executed here.</div>
+  </section>
+
   <section>
     <h2>Live analysis</h2>
     <div class="grid" id="markets"><div class="card" data-market="R_10"><div class="name">Volatility 10 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
@@ -253,6 +280,33 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   let mtfSnapshot=null, mtfJournal=[], mtfReviews={};
   const categoryNames={SCALP:"Scalping",SHORT_TERM:"Short-term",SWING:"Swing",POSITION:"Position"};
   const fmtTime=epoch=>epoch?new Date(epoch*1000).toLocaleString():"—";
+  function renderPromotedSystem(){
+    if(!mtfSnapshot)return;
+    const generated=Date.parse(mtfSnapshot.generatedAt||"");
+    const age=(Date.now()-generated)/1000;
+    const fresh=Number.isFinite(age)&&age>=-60&&age<=600;
+    const now=Math.floor(Date.now()/1000);
+    const all=fresh?(mtfSnapshot.markets||[]).flatMap(m=>(m.signals||[]).map(s=>({...s,marketId:m.marketId,marketName:m.marketName}))).filter(s=>
+      Number(s.createdEpoch||s.candleEpoch||0)>=DASHBOARD_RESET_EPOCH &&
+      Number.isFinite(Number(s.quoteEpoch)) && now-Number(s.quoteEpoch)>=-60 && now-Number(s.quoteEpoch)<=300 &&
+      s.state==="signal" && ["pending","tp1_hit"].includes(s.status) && ["STRONG","VALID"].includes(s.quality)
+    ):[];
+    const strong=all.filter(s=>s.quality==="STRONG").length;
+    const valid=all.filter(s=>s.quality==="VALID").length;
+    $("promotedMetrics").innerHTML=[
+      ["SYSTEM STATUS",fresh?"COLLECTOR FRESH":"STALE · CHECK COLLECTOR"],
+      ["ACTIVE VALID SIGNALS",all.length],
+      ["STRONG SIGNALS",strong],
+      ["VALID SIGNALS",valid]
+    ].map(([label,value])=>'<div class="card"><div class="detail">'+esc(label)+'</div><div class="signal '+(fresh?"buy":"none")+'">'+esc(value)+'</div></div>').join("");
+    $("promotedStatus").textContent=(fresh?"Last snapshot: "+time(mtfSnapshot.generatedAt)+" · quote-verified active signals only":"Last snapshot: "+time(mtfSnapshot.generatedAt)+" · stale snapshots are not treated as active")+
+      " · "+(mtfSnapshot.markets?.length||0)+" markets scanned in this production snapshot.";
+    const rows=all.slice().sort((a,b)=>(b.createdEpoch||b.candleEpoch||0)-(a.createdEpoch||a.candleEpoch||0)).map(s=>
+      '<tr><td>'+esc(s.marketName||s.marketId)+'</td><td>'+esc(categoryNames[s.category]||s.category||"—")+'</td><td class="'+(s.direction==="BUY"?"buy":"sell")+'">'+esc(s.direction||"—")+'</td><td>'+esc(s.quality||"—")+' ('+esc(s.score??"—")+' )</td><td>'+fmt(s.entry)+'</td><td>'+fmt(s.stopLoss)+'</td><td>'+fmt(s.tp1)+'</td><td>'+fmt(s.tp2)+'</td><td>'+esc(s.status==="tp1_hit"?"TP1 level touched · runner remains":"Pending · monitoring")+'</td></tr>'
+    );
+    $("promotedSignals").innerHTML=rows.join("")||'<tr><td colspan="9" class="muted">'+(fresh?"No current STRONG or VALID production signals. Scanner remains active.":"No signals shown because the production snapshot is stale or unavailable.")+'</td></tr>';
+  }
+
   function renderMtf(){
     if(!mtfSnapshot)return;
     const cat=$("mtfCategory").value, market=$("mtfMarket").value;
@@ -403,7 +457,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     try{
       const [a,b,r]=await Promise.all([fetch(MTF_URL+"?v="+Date.now(),{cache:"no-store"}),fetch(MTF_JOURNAL_URL+"?v="+Date.now(),{cache:"no-store"}),fetch("./signal_review_data.json?v="+Date.now(),{cache:"no-store"})]);
       if(!a.ok)throw new Error("Snapshot HTTP "+a.status);
-      mtfSnapshot=await a.json(); mtfJournal=b.ok?(await b.json()).signals||[]:[]; const reviewData=r.ok?await r.json():{reviews:[]}; mtfReviews=Object.fromEntries((reviewData.reviews||[]).map(x=>[x.signalId,x]));
+      mtfSnapshot=await a.json(); renderPromotedSystem(); mtfJournal=b.ok?(await b.json()).signals||[]:[]; const reviewData=r.ok?await r.json():{reviews:[]}; mtfReviews=Object.fromEntries((reviewData.reviews||[]).map(x=>[x.signalId,x]));
       renderMtf();
       renderStrategyComparison();
       renderBreakoutRetestShadow();
