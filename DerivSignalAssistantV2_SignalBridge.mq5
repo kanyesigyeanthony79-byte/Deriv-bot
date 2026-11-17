@@ -225,6 +225,187 @@ bool AcknowledgeSignal(const string signalId,const string status)
 }
 
 //+------------------------------------------------------------------+
+string PositionMapFileName(const ulong positionId)
+{
+   return "DSA2_" + IntegerToString((long)AccountInfoInteger(ACCOUNT_LOGIN)) +
+          "_" + IntegerToString((long)positionId) + ".map";
+}
+
+//+------------------------------------------------------------------+
+bool SavePositionMap(const ulong positionId,const string signalId,
+                     const string marketId,const string category,
+                     const string direction,const string targetLeg,
+                     const double entryPrice,const double stopLoss,
+                     const double tp1,const double tp2,const double volume,
+                     const string symbol)
+{
+   int handle = FileOpen(PositionMapFileName(positionId),
+                         FILE_WRITE|FILE_TXT|FILE_ANSI|FILE_COMMON);
+   if(handle == INVALID_HANDLE)
+   {
+      Print("Could not persist trade map for position ",positionId,
+            ". Error ",GetLastError());
+      return false;
+   }
+   string row = signalId+"|"+marketId+"|"+category+"|"+direction+"|"+
+                targetLeg+"|"+DoubleToString(entryPrice,8)+"|"+
+                DoubleToString(stopLoss,8)+"|"+DoubleToString(tp1,8)+"|"+
+                DoubleToString(tp2,8)+"|"+DoubleToString(volume,8)+"|"+symbol;
+   FileWriteString(handle,row);
+   FileClose(handle);
+   return true;
+}
+
+//+------------------------------------------------------------------+
+bool LoadPositionMap(const ulong positionId,string &signalId,
+                     string &marketId,string &category,string &direction,
+                     string &targetLeg,double &entryPrice,double &stopLoss,
+                     double &tp1,double &tp2,double &entryVolume,string &symbol)
+{
+   int handle = FileOpen(PositionMapFileName(positionId),
+                         FILE_READ|FILE_TXT|FILE_ANSI|FILE_COMMON);
+   if(handle == INVALID_HANDLE) return false;
+   string row = FileReadString(handle);
+   FileClose(handle);
+   string fields[];
+   ushort delimiter = (ushort)StringGetCharacter("|",0);
+   int count = StringSplit(row,delimiter,fields);
+   if(count < 11) return false;
+   signalId = fields[0]; marketId = fields[1]; category = fields[2];
+   direction = fields[3]; targetLeg = fields[4];
+   entryPrice = StringToDouble(fields[5]); stopLoss = StringToDouble(fields[6]);
+   tp1 = StringToDouble(fields[7]); tp2 = StringToDouble(fields[8]);
+   entryVolume = StringToDouble(fields[9]); symbol = fields[10];
+   return (signalId!="" && marketId!="" && (targetLeg=="TP1" || targetLeg=="TP2"));
+}
+
+//+------------------------------------------------------------------+
+bool PositionIdentifierIsOpen(const ulong positionId)
+{
+   for(int i=PositionsTotal()-1; i>=0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket==0) continue;
+      if((ulong)PositionGetInteger(POSITION_IDENTIFIER)==positionId) return true;
+   }
+   return false;
+}
+
+//+------------------------------------------------------------------+
+string ProcessedDealKey(const ulong dealTicket)
+{
+   return "DSA2_DEAL_"+IntegerToString((long)AccountInfoInteger(ACCOUNT_LOGIN))+
+          "_"+IntegerToString((long)dealTicket);
+}
+
+//+------------------------------------------------------------------+
+bool ReportClosedPosition(const ulong closingDeal,const ulong positionId)
+{
+   string signalId,marketId,category,direction,targetLeg,symbol;
+   double entryPrice,stopLoss,tp1,tp2,entryVolume;
+   if(!LoadPositionMap(positionId,signalId,marketId,category,direction,targetLeg,
+                       entryPrice,stopLoss,tp1,tp2,entryVolume,symbol))
+      return false;
+   if(!HistorySelectByPosition(positionId)) return false;
+
+   int total = HistoryDealsTotal();
+   double realized = 0.0, closeVolume = 0.0, closeValue = 0.0;
+   long latestCloseTimeMsc = -1, closeReason = -1;
+   ulong latestCloseDeal = 0;
+   datetime closeTime = 0;
+   for(int i=0; i<total; i++)
+   {
+      ulong ticket = HistoryDealGetTicket(i);
+      if(ticket==0) continue;
+      realized += HistoryDealGetDouble(ticket,DEAL_PROFIT);
+      realized += HistoryDealGetDouble(ticket,DEAL_COMMISSION);
+      realized += HistoryDealGetDouble(ticket,DEAL_SWAP);
+      realized += HistoryDealGetDouble(ticket,DEAL_FEE);
+      long entryType = HistoryDealGetInteger(ticket,DEAL_ENTRY);
+      if(entryType==DEAL_ENTRY_OUT || entryType==DEAL_ENTRY_OUT_BY ||
+         entryType==DEAL_ENTRY_INOUT)
+      {
+         double vol = HistoryDealGetDouble(ticket,DEAL_VOLUME);
+         closeVolume += vol;
+         closeValue += HistoryDealGetDouble(ticket,DEAL_PRICE)*vol;
+         long timeMsc = HistoryDealGetInteger(ticket,DEAL_TIME_MSC);
+         if(timeMsc >= latestCloseTimeMsc)
+         {
+            latestCloseTimeMsc = timeMsc;
+            latestCloseDeal = ticket;
+            closeReason = HistoryDealGetInteger(ticket,DEAL_REASON);
+            closeTime = (datetime)HistoryDealGetInteger(ticket,DEAL_TIME);
+         }
+      }
+   }
+   // Send one final, aggregated record per position, not one per partial fill.
+   if(latestCloseDeal!=closingDeal || closeVolume<=0.0) return false;
+   double closePrice = closeValue/closeVolume;
+   string reason = "OTHER";
+   if(closeReason==DEAL_REASON_TP) reason = "TP";
+   else if(closeReason==DEAL_REASON_SL) reason = "SL";
+   else if(closeReason==DEAL_REASON_CLIENT) reason = "MANUAL";
+
+   string body = "{\"event\":\"position_closed\",\"signalId\":\""+signalId+
+      "\",\"clientId\":\""+InpClientId+"\",\"dealTicket\":\""+
+      IntegerToString((long)closingDeal)+"\",\"positionId\":\""+
+      IntegerToString((long)positionId)+"\",\"marketId\":\""+marketId+
+      "\",\"market\":\""+marketId+"\",\"category\":\""+category+
+      "\",\"direction\":\""+direction+"\",\"targetLeg\":\""+targetLeg+
+      "\",\"closeReason\":\""+reason+"\",\"entryPrice\":"+
+      DoubleToString(entryPrice,8)+",\"stopLoss\":"+DoubleToString(stopLoss,8)+
+      ",\"tp1\":"+DoubleToString(tp1,8)+",\"tp2\":"+DoubleToString(tp2,8)+
+      ",\"closePrice\":"+DoubleToString(closePrice,8)+",\"volume\":"+
+      DoubleToString(closeVolume,8)+",\"realizedProfit\":"+DoubleToString(realized,2)+
+      ",\"closeTime\":"+IntegerToString((long)closeTime)+
+      ",\"accountCurrency\":\""+AccountInfoString(ACCOUNT_CURRENCY)+"\"}";
+   string response;
+   int http = HttpPost(InpBridgeUrl+"/mt5/trade-event",body,response);
+   if(http!=200 || !JsonTrue(response,"success"))
+   {
+      Print("MT5 closure report failed for position ",positionId,
+            ". HTTP=",http," response=",response);
+      return false;
+   }
+   GlobalVariableSet(ProcessedDealKey(closingDeal),(double)TimeCurrent());
+   FileDelete(PositionMapFileName(positionId),FILE_COMMON);
+   Print("MT5 position closure reported. Signal=",signalId,
+         " leg=",targetLeg," reason=",reason,
+         " net realized P/L=",DoubleToString(realized,2));
+   return true;
+}
+
+//+------------------------------------------------------------------+
+void SyncClosedTradeDeals()
+{
+   datetime now = TimeCurrent();
+   if(!HistorySelect(now-60*86400,now+60)) return;
+   ulong candidates[];
+   int total = HistoryDealsTotal();
+   for(int i=0; i<total; i++)
+   {
+      ulong ticket = HistoryDealGetTicket(i);
+      if(ticket==0 || GlobalVariableCheck(ProcessedDealKey(ticket))) continue;
+      if((ulong)HistoryDealGetInteger(ticket,DEAL_MAGIC)!=InpMagicNumber) continue;
+      long entryType = HistoryDealGetInteger(ticket,DEAL_ENTRY);
+      if(entryType!=DEAL_ENTRY_OUT && entryType!=DEAL_ENTRY_OUT_BY &&
+         entryType!=DEAL_ENTRY_INOUT) continue;
+      ArrayResize(candidates,ArraySize(candidates)+1);
+      candidates[ArraySize(candidates)-1]=ticket;
+   }
+   for(int i=0; i<ArraySize(candidates); i++)
+   {
+      ulong ticket=candidates[i];
+      if(!HistoryDealSelect(ticket)) continue;
+      ulong positionId=(ulong)HistoryDealGetInteger(ticket,DEAL_POSITION_ID);
+      if(positionId==0 || PositionIdentifierIsOpen(positionId)) continue;
+      ReportClosedPosition(ticket,positionId);
+   }
+}
+
+//+------------------------------------------------------------------+
+
+//+------------------------------------------------------------------+
 string CurrentDayKey()
 {
    string d = TimeToString(TimeCurrent(),TIME_DATE);
