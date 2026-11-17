@@ -12,12 +12,12 @@ const { sendStrategyComparisonAlerts, sendDailyStrategyComparisonReport } = requ
 const { mergeCandleArchive, researchArchive } = require("./strategy_optimizer");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
-// Gold is scanned for observation and Telegram alerts only. The MT5 execution
-// allow-list remains restricted to the synthetic indices.
+// Jump 75 and Gold are scanned for observation and Telegram alerts only.
+// The MT5 execution allow-list remains restricted to approved synthetic CFDs.
 const MARKETS = [
   ["R_10", "Volatility 10 Index"], ["R_25", "Volatility 25 Index"],
   ["R_50", "Volatility 50 Index"], ["R_75", "Volatility 75 Index"],
-  ["JD100", "Jump 100 Index"],
+  ["JD75", "Jump 75 Index"], ["JD100", "Jump 100 Index"],
   ["CRASH500", "Crash 500 Index"], ["BOOM500", "Boom 500 Index"],
   ["frxXAUUSD", "Gold (XAUUSD)"]
 ];

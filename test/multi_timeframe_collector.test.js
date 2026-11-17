@@ -18,6 +18,13 @@ test("includes Deriv Gold/USD (frxXAUUSD) in the observation-only market scanner
   ], "frxXAUUSD", "Gold (XAUUSD)"), "frxXAUUSD");
 });
 
+test("includes Deriv Jump 75 (JD75) in the observation-only market scanner", () => {
+  assert.ok(MARKETS.some(([id, name]) => id === "JD75" && name === "Jump 75 Index"));
+  assert.equal(resolveSymbol([
+    { underlying_symbol: "JD75", underlying_symbol_name: "Jump 75 Index" }
+  ], "JD75", "Jump 75 Index"), "JD75");
+});
+
 test("paginates M1 history beyond the 1,000-candle page size without gaps or duplicates", async () => {
   const requests = [];
   const client = {
