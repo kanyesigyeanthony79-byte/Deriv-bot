@@ -399,10 +399,12 @@ function updateJournal(priorJournal, markets, nowEpoch = Math.floor(Date.now() /
     const atr5 = atrSeries(m5, 14);
 
     // Resolve open observations first so no market has overlapping shadow trades.
-    for (const signal of journal.signals.filter(s => s.marketId === marketId && s.status === "pending")) {
+    for (const signal of journal.signals.filter(s => s.marketId === marketId &&
+      (s.status === "pending" || s.productionStatus === "pending"))) {
       updateSignalOutcome(signal, m5);
-      if (TERMINAL.has(signal.status) && Number.isFinite(signal.exitEpoch)) {
-        state.cooldownUntilEpoch = signal.exitEpoch + COOLDOWN_M5 * M5_SECONDS;
+      if (TERMINAL.has(signal.status) && PRODUCTION_TERMINAL.has(signal.productionStatus)) {
+        const finalExitEpoch = Math.max(Number(signal.exitEpoch || 0), Number(signal.productionExitEpoch || 0));
+        if (finalExitEpoch > 0) state.cooldownUntilEpoch = finalExitEpoch + COOLDOWN_M5 * M5_SECONDS;
       }
     }
 
@@ -456,7 +458,8 @@ function updateJournal(priorJournal, markets, nowEpoch = Math.floor(Date.now() /
         continue;
       }
       const entryEpoch = m5[confirmation.entryIndex].epoch;
-      const active = journal.signals.some(s => s.marketId === marketId && s.status === "pending");
+      const active = journal.signals.some(s => s.marketId === marketId &&
+        (s.status === "pending" || s.productionStatus === "pending"));
       if (active || (Number.isFinite(state.cooldownUntilEpoch) && entryEpoch <= state.cooldownUntilEpoch)) {
         state.stats.overlapSuppressed += 1;
         continue;
