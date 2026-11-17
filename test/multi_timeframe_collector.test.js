@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { fetchCandleHistory, fetchLiveQuotes } = require("../multi_timeframe_collector");
+const { fetchCandleHistory, fetchLiveQuotes, fetchMt5TradeLedger, summarizeMt5TradeLedger } = require("../multi_timeframe_collector");
 
 function makeCandles(start, count) {
   return Array.from({ length: count }, (_, i) => {
@@ -50,4 +50,42 @@ test("fetches one-shot live Deriv quotes without opening tick subscriptions", as
   assert.deepEqual(requests,[{ticks:"R_50"}]);
   assert.equal(quotes.R_50.price,123.45);
   assert.equal(quotes.R_50.epoch,4567);
+});
+
+test("MT5 trade ledger stays disabled unless explicitly enabled", async () => {
+  let called = false;
+  const result = await fetchMt5TradeLedger({}, () => {}, async () => { called = true; });
+  assert.equal(called, false);
+  assert.equal(result.enabled, false);
+  assert.equal(result.connected, false);
+});
+
+test("fetches broker-confirmed MT5 trade records through the authenticated Worker route", async () => {
+  let request;
+  const trade = { signalId: "R_50-SCALP-123", status: "TP1_HIT_RUNNER_OPEN", closedEntries: 2, openEntries: 1, tp1Complete: true, allClosed: false, realizedProfit: 4.25 };
+  const result = await fetchMt5TradeLedger({
+    MT5_TRADE_REPORTING_ENABLED: "true",
+    TELEGRAM_WORKER_URL: "https://worker.example/",
+    SIGNAL_API_KEY: "test-key"
+  }, () => {}, async (url, options) => {
+    request = { url, options };
+    return { ok: true, status: 200, json: async () => ({ success: true, trades: [trade] }) };
+  });
+  assert.equal(request.url, "https://worker.example/mt5/trades");
+  assert.equal(request.options.headers["X-API-Key"], "test-key");
+  assert.equal(result.connected, true);
+  assert.deepEqual(result.trades, [trade]);
+});
+
+test("summarizes actual MT5 basket states and realized net profit separately", () => {
+  const summary = summarizeMt5TradeLedger({ enabled: true, connected: true, trades: [
+    { status: "TP1_HIT_RUNNER_OPEN", closedEntries: 2, openEntries: 1, tp1Complete: true, allClosed: false, realizedProfit: 4.25 },
+    { status: "CLOSED_TP2", closedEntries: 3, openEntries: 0, tp1Complete: true, allClosed: true, realizedProfit: 8.75 },
+    { status: "SL_HIT", closedEntries: 3, openEntries: 0, tp1Complete: false, allClosed: true, realizedProfit: -15.10 }
+  ] });
+  assert.equal(summary.tradeBaskets, 3);
+  assert.equal(summary.openBaskets, 1);
+  assert.equal(summary.closedBaskets, 2);
+  assert.equal(summary.tp1Confirmed, 2);
+  assert.equal(summary.realizedNetProfit, -2.10);
 });

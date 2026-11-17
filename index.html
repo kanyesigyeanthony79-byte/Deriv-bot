@@ -37,11 +37,11 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <main>
   <div class="top">
     <div><div class="brand">DERIV SIGNAL ASSISTANT</div><div class="sub">V2 · Android-friendly market scanner</div></div>
-    <div class="pill">DEMO / SIGNALS ONLY</div>
+    <div class="pill">DEMO ONLY · NO LIVE TRADING</div>
   </div>
   <div class="hero">
     <h1>15-minute market monitor</h1>
-    <p>Displays the same hosted 15-minute signal history used by Telegram alerts across eight markets. The GitHub Actions scanner runs every five minutes. No account login or trade execution.</p>
+    <p>Displays hosted signal observations across seven synthetic markets. MT5 trade outcomes are reported separately from price-only signal observations.</p>
     <div class="row"><button class="btn primary" id="refresh">Refresh hosted signals</button></div>
     <div class="status"><span class="dot on" id="dot"></span><span id="status">Loading hosted scanner history…</span></div>
   </div>
@@ -53,17 +53,16 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <div class="card" data-market="R_50"><div class="name">Volatility 50 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="R_75"><div class="name">Volatility 75 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="JD100"><div class="name">Jump 100 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
-      <div class="card" data-market="frxXAUUSD"><div class="name">Gold/USD</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="CRASH500"><div class="name">Crash 500 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="BOOM500"><div class="name">Boom 500 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div></div>
   </section>
 
   <section id="multi-timeframe">
     <h2>Multi-timeframe signals · 4 horizons</h2>
-    <div class="muted">Separate analysis for Scalping, Short-term, Swing and Position. All eight markets are assessed independently.</div>
+    <div class="muted">Separate analysis for Scalping, Short-term, Swing and Position. All seven synthetic markets are assessed independently. Gold is excluded.</div>
     <div class="filters">
       <select id="mtfCategory" aria-label="Filter signal category">
-        <option value="ALL">All categories</option><option value="SCALP">Scalping · M1</option>
+        <option value="ALL">All categories</option><option value="SCALP">Scalping · M5</option>
         <option value="SHORT_TERM">Short-term · M5</option><option value="SWING">Swing · H1</option>
         <option value="POSITION">Position · H4</option>
       </select>
@@ -71,7 +70,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
         <option value="ALL">All markets</option>
         <option value="R_10">Volatility 10</option><option value="R_25">Volatility 25</option>
         <option value="R_50">Volatility 50</option><option value="R_75">Volatility 75</option>
-        <option value="JD100">Jump 100</option><option value="frxXAUUSD">Gold/USD</option>
+        <option value="JD100">Jump 100</option>
         <option value="CRASH500">Crash 500</option><option value="BOOM500">Boom 500</option>
       </select>
       <button class="btn smallbtn" id="mtfRefresh">Refresh horizons</button>
@@ -79,10 +78,10 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <div class="status" id="mtfStatus">Loading multi-timeframe analysis…</div>
     <div class="grid" id="mtfSummary"></div>
     <div class="mtf-grid" id="mtfSignals"><div class="card">Waiting for multi-timeframe data…</div></div>
-    <h2 style="margin-top:18px">Multi-timeframe outcome journal</h2>
+    <h2 style="margin-top:18px">Signal observations and MT5 trade journal</h2>
     <div class="card mtf-table-wrap">
-      <table><thead><tr><th>Time</th><th>Market</th><th>Category</th><th>Direction</th><th>Entry</th><th>SL</th><th>TP1 / TP2</th><th>Outcome</th><th>Review</th></tr></thead>
-      <tbody id="mtfJournal"><tr><td colspan="9" class="muted">No multi-timeframe observations recorded yet.</td></tr></tbody></table>
+      <table><thead><tr><th>Time</th><th>Market</th><th>Category</th><th>Direction</th><th>Entry</th><th>SL</th><th>TP1 / TP2</th><th>Signal observation</th><th>MT5 trade status</th><th>MT5 entry details</th><th>Realized net P/L</th><th>Review</th></tr></thead>
+      <tbody id="mtfJournal"><tr><td colspan="12" class="muted">No multi-timeframe observations recorded yet.</td></tr></tbody></table>
     </div>
   </section>
 
@@ -126,12 +125,12 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     </div>
   </section>
 
-  <div class="notice"><b>Important:</b> This dashboard displays signals recorded by the hosted scanner and their reported outcomes. A signal is a research alert, not a guaranteed result or instruction to trade. Historical outcomes do not establish future profitability. Use demo observation only.</div>
-  <div class="foot">Hosted scanner: eight markets · completed 15-minute candles · scheduled every five minutes. Dashboard refreshes the public signal journal automatically. Telegram delivery and outcome monitoring remain on the server; no private API key is required in this page.</div>
+  <div class="notice"><b>Important:</b> Signal observations are based on market prices and do not prove a trade was executed. MT5 trade status and realized P/L appear only after broker-confirmed deal closures. Use demo observation only; historical outcomes do not establish future profitability.</div>
+  <div class="foot">Hosted scanner: seven synthetic markets · M5/M15/M30 multi-timeframe analysis · scheduled every five minutes. MT5 execution outcomes appear only after broker deal-history confirmation. No private API key is required in this page.</div>
 </main>
 <script>
 (() => {
-  const MARKETS = [["R_10","Volatility 10 Index"],["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],["R_75","Volatility 75 Index"],["JD100","Jump 100 Index"],["frxXAUUSD","Gold/USD"],["CRASH500","Crash 500 Index"],["BOOM500","Boom 500 Index"]];
+  const MARKETS = [["R_10","Volatility 10 Index"],["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],["R_75","Volatility 75 Index"],["JD100","Jump 100 Index"],["CRASH500","Crash 500 Index"],["BOOM500","Boom 500 Index"]];
   // Dashboard-only reset: hide all signals created before this UTC epoch without deleting audit history or Telegram messages.
   const DASHBOARD_RESET_EPOCH = 1794822510; // 2026-11-16T09:48:30Z
   const JOURNAL_URL = "./trade_journal.json";
@@ -221,15 +220,21 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     const ordered=filtered.filter(s=>s.state==="signal"&&["pending","tp1_hit"].includes(s.status)).sort((a,b)=>(a.marketName||"").localeCompare(b.marketName||"")||["SCALP","SHORT_TERM","SWING","POSITION"].indexOf(a.category)-["SCALP","SHORT_TERM","SWING","POSITION"].indexOf(b.category));
     $("mtfSignals").innerHTML=ordered.map(s=>{
       const cls=s.direction==="BUY"?"buy":"sell";
-      const state=s.tp1Hit||s.status==="tp1_hit"?s.direction+" · TP1 HIT — RUNNING TO TP2":s.direction+" SIGNAL";
+      const signalState=s.tp1Hit||s.status==="tp1_hit"?"PRICE OBSERVATION: TP1 LEVEL TOUCHED":"PRICE OBSERVATION: SIGNAL PENDING";
+      const trade=s.mt5Trade;
+      const tradeState=trade?String(trade.status||"UNKNOWN").replaceAll("_"," ")+" · "+String(trade.closedEntries||0)+"/3 closed":"NOT REPORTED · NOT ASSUMED EXECUTED";
+      const tradePnl=trade?" · Realized net P/L: $"+Number(trade.realizedProfit||0).toFixed(2):"";
+      const entryDetails=trade&&Array.isArray(trade.positions)?trade.positions.map((p,i)=>"Entry "+(i+1)+" · "+p.targetLeg+" · "+String(p.status||"UNKNOWN").replaceAll("_"," ")+(p.closePrice?" · close "+fmt(p.closePrice):"")+(p.status==="OPEN"?"":" · net $"+Number(p.realizedProfit||0).toFixed(2))).join(" | "):"";
       const levels='<br>Entry: '+fmt(s.entry)+' · Live: '+fmt(s.currentPrice)+'<br>SL: '+fmt(s.stopLoss)+' · TP1: '+fmt(s.tp1)+' · TP2: '+fmt(s.tp2)+'<br>Score: '+esc(s.score??"—");
-      return '<div class="mtf-card"><div class="mtf-head"><span>'+esc(s.marketName)+'</span><span class="mtf-tag">'+esc(categoryNames[s.category]||s.category)+'</span></div><div class="mtf-state '+cls+'">'+esc(state)+'</div><div class="detail">Entry '+esc(s.entryTimeframe||"—")+' · Confirm '+esc(s.confirmationTimeframe||"—")+' · Context '+esc(s.contextTimeframe||"—")+levels+'</div><a class="btn smallbtn" href="./signal-review.html?signalId='+encodeURIComponent(s.signalId)+'">REVIEW</a></div>';
+      return '<div class="mtf-card"><div class="mtf-head"><span>'+esc(s.marketName)+'</span><span class="mtf-tag">'+esc(categoryNames[s.category]||s.category)+'</span></div><div class="mtf-state '+cls+'">'+esc(signalState)+'</div><div class="detail">MT5 execution: '+esc(tradeState+tradePnl)+'<br>'+esc(entryDetails)+'<br>Entry '+esc(s.entryTimeframe||"—")+' · Confirm '+esc(s.confirmationTimeframe||"—")+' · Context '+esc(s.contextTimeframe||"—")+levels+'</div><a class="btn smallbtn" href="./signal-review.html?signalId='+encodeURIComponent(s.signalId)+'">REVIEW</a></div>';
     }).join("")||'<div class="card muted">No active signals for the selected horizon/market. Markets without a signal are hidden; scanning and data collection continue normally.</div>';
-    $("mtfStatus").textContent=collectorFresh?"Showing "+ordered.length+" price-verified active signal(s) · TP1-hit signals remain marked · Updated "+time(mtfSnapshot.generatedAt):"MONITORING STALE · Last collector update "+time(mtfSnapshot.generatedAt)+" · Active signals hidden until fresh data returns.";
+    const ledger=mtfSnapshot.mt5TradeReporting||{};
+    const ledgerText=!ledger.enabled?"MT5 trade ledger disabled":!ledger.connected?"MT5 trade ledger unavailable":("MT5 ledger: "+(ledger.tradeBaskets||0)+" baskets · "+(ledger.openBaskets||0)+" open · "+(ledger.closedBaskets||0)+" closed · net $"+Number(ledger.realizedNetProfit||0).toFixed(2));
+    $("mtfStatus").textContent=(collectorFresh?"Showing "+ordered.length+" price-verified active signal(s) · Updated "+time(mtfSnapshot.generatedAt):"MONITORING STALE · Last collector update "+time(mtfSnapshot.generatedAt)+" · Active signals hidden until fresh data returns.")+" · "+ledgerText;
     const counts={...(mtfSnapshot.summary?.signalCounts||{}),signal:all.filter(s=>s.state==="signal").length};
     $("mtfSummary").innerHTML=['signal','timeframe_conflict','warming','no_signal'].map(k=>'<div class="card"><div class="detail">'+esc(k.replaceAll("_"," ").toUpperCase())+'</div><div class="signal">'+esc(counts[k]??0)+'</div></div>').join("");
     const rows=mtfJournal.filter(s=>Number(s.createdEpoch||s.entryCandleEpoch||0)>=DASHBOARD_RESET_EPOCH).slice().sort((a,b)=>(b.entryCandleEpoch||0)-(a.entryCandleEpoch||0)).slice(0,40);
-    $("mtfJournal").innerHTML=rows.map(s=>{const review=mtfReviews[s.signalId];const link=review?'<a class="btn smallbtn" href="./signal-review.html?signalId='+encodeURIComponent(s.signalId)+'">REVIEW</a>':'<span class="muted">—</span>';return '<tr><td>'+esc(fmtTime(s.entryCandleEpoch))+'</td><td>'+esc(s.market||s.marketId)+'</td><td>'+esc(categoryNames[s.category]||s.category)+'</td><td class="'+(s.direction==="BUY"?"buy":"sell")+'">'+esc(s.direction)+'</td><td>'+fmt(s.entry)+'</td><td>'+fmt(s.stopLoss)+'</td><td>'+fmt(s.tp1)+' / '+fmt(s.tp2)+'</td><td>'+esc(String(s.status||"pending").replaceAll("_"," ").toUpperCase())+'</td><td>'+link+'</td></tr>';}).join("")||'<tr><td colspan="9" class="muted">No qualifying signals recorded yet.</td></tr>';
+    $("mtfJournal").innerHTML=rows.map(s=>{const review=mtfReviews[s.signalId];const link=review?'<a class="btn smallbtn" href="./signal-review.html?signalId='+encodeURIComponent(s.signalId)+'">REVIEW</a>':'<span class="muted">—</span>';const trade=s.mt5Trade;const tradeStatus=trade?String(trade.status||"UNKNOWN").replaceAll("_"," ").toUpperCase()+" ("+String(trade.closedEntries||0)+"/3)": "NOT REPORTED";const entryDetails=trade&&Array.isArray(trade.positions)?trade.positions.map((p,i)=>"Entry "+(i+1)+" "+p.targetLeg+" "+String(p.status||"UNKNOWN").replaceAll("_"," ")+(p.closePrice?" @ "+fmt(p.closePrice):"")+(p.status==="OPEN"?"":" · $"+Number(p.realizedProfit||0).toFixed(2))).join(" | "):"—";const pnl=trade?"$"+Number(trade.realizedProfit||0).toFixed(2):"—";return '<tr><td>'+esc(fmtTime(s.entryCandleEpoch))+'</td><td>'+esc(s.market||s.marketId)+'</td><td>'+esc(categoryNames[s.category]||s.category)+'</td><td class="'+(s.direction==="BUY"?"buy":"sell")+'">'+esc(s.direction)+'</td><td>'+fmt(s.entry)+'</td><td>'+fmt(s.stopLoss)+'</td><td>'+fmt(s.tp1)+' / '+fmt(s.tp2)+'</td><td>'+esc(String(s.status||"pending").replaceAll("_"," ").toUpperCase())+'</td><td>'+esc(tradeStatus)+'</td><td>'+esc(entryDetails)+'</td><td>'+esc(pnl)+'</td><td>'+link+'</td></tr>';}).join("")||'<tr><td colspan="12" class="muted">No qualifying signals recorded yet.</td></tr>';
   }
   function renderStrategyComparison(){
     const comparison=mtfSnapshot?.strategyComparison;

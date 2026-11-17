@@ -3,7 +3,7 @@
 //| Demo-only. Executes existing MTF server signals; no local signals |
 //+------------------------------------------------------------------+
 #property copyright "Deriv Signal Assistant"
-#property version   "2.10"
+#property version   "2.11"
 #property strict
 
 #include <Trade/Trade.mqh>
@@ -17,7 +17,7 @@ input string InpSymbolMap = "R_10=Volatility 10 Index;R_25=Volatility 25 Index;R
 
 input int    InpEntriesPerSignal = 3;
 input double InpRiskPerBasket = 15.0;  // Account currency must be USD
-input double InpTargetProfit = 30.0;   // Combined floating basket profit
+input double InpTargetProfit = 30.0;   // Expected full-basket profit if all three targets fill; informational only
 input double InpDailyLossLimitPct = 3.0;
 input double InpMaxEntryDeviationR = 0.20;
 input int    InpPollSeconds = 3;
@@ -225,6 +225,286 @@ bool AcknowledgeSignal(const string signalId,const string status)
 }
 
 //+------------------------------------------------------------------+
+string PositionMapFileName(const ulong positionId)
+{
+   return "DSA2_" + IntegerToString((long)AccountInfoInteger(ACCOUNT_LOGIN)) +
+          "_" + IntegerToString((long)positionId) + ".map";
+}
+
+//+------------------------------------------------------------------+
+bool SavePositionMap(const ulong positionId,const string signalId,
+                     const string marketId,const string category,
+                     const string direction,const string targetLeg,
+                     const double entryPrice,const double stopLoss,
+                     const double tp1,const double tp2,const double volume,
+                     const string symbol)
+{
+   int handle = FileOpen(PositionMapFileName(positionId),
+                         FILE_WRITE|FILE_TXT|FILE_ANSI|FILE_COMMON);
+   if(handle == INVALID_HANDLE)
+   {
+      Print("Could not persist trade map for position ",positionId,
+            ". Error ",GetLastError());
+      return false;
+   }
+   string row = signalId+"|"+marketId+"|"+category+"|"+direction+"|"+
+                targetLeg+"|"+DoubleToString(entryPrice,8)+"|"+
+                DoubleToString(stopLoss,8)+"|"+DoubleToString(tp1,8)+"|"+
+                DoubleToString(tp2,8)+"|"+DoubleToString(volume,8)+"|"+symbol;
+   FileWriteString(handle,row);
+   FileClose(handle);
+   return true;
+}
+
+//+------------------------------------------------------------------+
+bool LoadPositionMap(const ulong positionId,string &signalId,
+                     string &marketId,string &category,string &direction,
+                     string &targetLeg,double &entryPrice,double &stopLoss,
+                     double &tp1,double &tp2,double &entryVolume,string &symbol)
+{
+   int handle = FileOpen(PositionMapFileName(positionId),
+                         FILE_READ|FILE_TXT|FILE_ANSI|FILE_COMMON);
+   if(handle == INVALID_HANDLE) return false;
+   string row = FileReadString(handle);
+   FileClose(handle);
+   string fields[];
+   ushort delimiter = (ushort)StringGetCharacter("|",0);
+   int count = StringSplit(row,delimiter,fields);
+   if(count < 11) return false;
+   signalId = fields[0]; marketId = fields[1]; category = fields[2];
+   direction = fields[3]; targetLeg = fields[4];
+   entryPrice = StringToDouble(fields[5]); stopLoss = StringToDouble(fields[6]);
+   tp1 = StringToDouble(fields[7]); tp2 = StringToDouble(fields[8]);
+   entryVolume = StringToDouble(fields[9]); symbol = fields[10];
+   return (signalId!="" && marketId!="" && (targetLeg=="TP1" || targetLeg=="TP2"));
+}
+
+//+------------------------------------------------------------------+
+bool PositionIdentifierIsOpen(const ulong positionId)
+{
+   for(int i=PositionsTotal()-1; i>=0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket==0) continue;
+      if((ulong)PositionGetInteger(POSITION_IDENTIFIER)==positionId) return true;
+   }
+   return false;
+}
+
+//+------------------------------------------------------------------+
+string ProcessedDealKey(const ulong dealTicket)
+{
+   return "DSA2_DEAL_"+IntegerToString((long)AccountInfoInteger(ACCOUNT_LOGIN))+
+          "_"+IntegerToString((long)dealTicket);
+}
+
+//+------------------------------------------------------------------+
+bool ReportClosedPosition(const ulong closingDeal,const ulong positionId)
+{
+   string signalId,marketId,category,direction,targetLeg,symbol;
+   double entryPrice,stopLoss,tp1,tp2,entryVolume;
+   if(!LoadPositionMap(positionId,signalId,marketId,category,direction,targetLeg,
+                       entryPrice,stopLoss,tp1,tp2,entryVolume,symbol))
+      return false;
+   if(!HistorySelectByPosition(positionId)) return false;
+
+   int total = HistoryDealsTotal();
+   double realized = 0.0, closeVolume = 0.0, closeValue = 0.0;
+   long latestCloseTimeMsc = -1, closeReason = -1;
+   ulong latestCloseDeal = 0;
+   datetime closeTime = 0;
+   for(int i=0; i<total; i++)
+   {
+      ulong ticket = HistoryDealGetTicket(i);
+      if(ticket==0) continue;
+      realized += HistoryDealGetDouble(ticket,DEAL_PROFIT);
+      realized += HistoryDealGetDouble(ticket,DEAL_COMMISSION);
+      realized += HistoryDealGetDouble(ticket,DEAL_SWAP);
+      realized += HistoryDealGetDouble(ticket,DEAL_FEE);
+      long entryType = HistoryDealGetInteger(ticket,DEAL_ENTRY);
+      if(entryType==DEAL_ENTRY_OUT || entryType==DEAL_ENTRY_OUT_BY ||
+         entryType==DEAL_ENTRY_INOUT)
+      {
+         double vol = HistoryDealGetDouble(ticket,DEAL_VOLUME);
+         closeVolume += vol;
+         closeValue += HistoryDealGetDouble(ticket,DEAL_PRICE)*vol;
+         long timeMsc = HistoryDealGetInteger(ticket,DEAL_TIME_MSC);
+         if(timeMsc >= latestCloseTimeMsc)
+         {
+            latestCloseTimeMsc = timeMsc;
+            latestCloseDeal = ticket;
+            closeReason = HistoryDealGetInteger(ticket,DEAL_REASON);
+            closeTime = (datetime)HistoryDealGetInteger(ticket,DEAL_TIME);
+         }
+      }
+   }
+   // Send one final, aggregated record per position, not one per partial fill.
+   if(closeVolume<=0.0) return false;
+   if(latestCloseDeal!=closingDeal)
+   {
+      GlobalVariableSet(ProcessedDealKey(closingDeal),(double)TimeCurrent());
+      return false;
+   }
+   double closePrice = closeValue/closeVolume;
+   string reason = "OTHER";
+   if(closeReason==DEAL_REASON_TP) reason = "TP";
+   else if(closeReason==DEAL_REASON_SL) reason = "SL";
+   else if(closeReason==DEAL_REASON_CLIENT) reason = "MANUAL";
+
+   string body = "{\"event\":\"position_closed\",\"signalId\":\""+signalId+
+      "\",\"clientId\":\""+InpClientId+"\",\"dealTicket\":\""+
+      IntegerToString((long)closingDeal)+"\",\"positionId\":\""+
+      IntegerToString((long)positionId)+"\",\"marketId\":\""+marketId+
+      "\",\"market\":\""+symbol+"\",\"category\":\""+category+
+      "\",\"direction\":\""+direction+"\",\"targetLeg\":\""+targetLeg+
+      "\",\"closeReason\":\""+reason+"\",\"entryPrice\":"+
+      DoubleToString(entryPrice,8)+",\"stopLoss\":"+DoubleToString(stopLoss,8)+
+      ",\"tp1\":"+DoubleToString(tp1,8)+",\"tp2\":"+DoubleToString(tp2,8)+
+      ",\"closePrice\":"+DoubleToString(closePrice,8)+",\"volume\":"+
+      DoubleToString(closeVolume,8)+",\"realizedProfit\":"+DoubleToString(realized,2)+
+      ",\"closeTime\":"+IntegerToString((long)closeTime)+
+      ",\"accountCurrency\":\""+AccountInfoString(ACCOUNT_CURRENCY)+"\",\"accountMode\":\"DEMO\"}";
+   string response;
+   int http = HttpPost(InpBridgeUrl+"/mt5/trade-event",body,response);
+   if(http!=200 || !JsonTrue(response,"success"))
+   {
+      Print("MT5 closure report failed for position ",positionId,
+            ". HTTP=",http," response=",response);
+      return false;
+   }
+   for(int processedIndex=0; processedIndex<HistoryDealsTotal(); processedIndex++)
+   {
+      ulong processedTicket=HistoryDealGetTicket(processedIndex);
+      if(processedTicket==0) continue;
+      long processedEntry=HistoryDealGetInteger(processedTicket,DEAL_ENTRY);
+      if(processedEntry==DEAL_ENTRY_OUT || processedEntry==DEAL_ENTRY_OUT_BY || processedEntry==DEAL_ENTRY_INOUT)
+         GlobalVariableSet(ProcessedDealKey(processedTicket),(double)TimeCurrent());
+   }
+   FileDelete(PositionMapFileName(positionId),FILE_COMMON);
+   Print("MT5 position closure reported. Signal=",signalId,
+         " leg=",targetLeg," reason=",reason,
+         " net realized P/L=",DoubleToString(realized,2));
+   return true;
+}
+
+//+------------------------------------------------------------------+
+void SyncClosedTradeDeals()
+{
+   datetime now = TimeCurrent();
+   if(!HistorySelect(now-60*86400,now+60)) return;
+   ulong candidates[];
+   int total = HistoryDealsTotal();
+   for(int i=0; i<total; i++)
+   {
+      ulong ticket = HistoryDealGetTicket(i);
+      if(ticket==0 || GlobalVariableCheck(ProcessedDealKey(ticket))) continue;
+      if((ulong)HistoryDealGetInteger(ticket,DEAL_MAGIC)!=InpMagicNumber) continue;
+      long entryType = HistoryDealGetInteger(ticket,DEAL_ENTRY);
+      if(entryType!=DEAL_ENTRY_OUT && entryType!=DEAL_ENTRY_OUT_BY &&
+         entryType!=DEAL_ENTRY_INOUT) continue;
+      ArrayResize(candidates,ArraySize(candidates)+1);
+      candidates[ArraySize(candidates)-1]=ticket;
+   }
+   for(int i=0; i<ArraySize(candidates); i++)
+   {
+      ulong ticket=candidates[i];
+      if(!HistoryDealSelect(ticket)) continue;
+      ulong positionId=(ulong)HistoryDealGetInteger(ticket,DEAL_POSITION_ID);
+      if(positionId==0 || PositionIdentifierIsOpen(positionId)) continue;
+      ReportClosedPosition(ticket,positionId);
+   }
+}
+
+//+------------------------------------------------------------------+
+
+//+------------------------------------------------------------------+
+string OpenReportedKey(const string signalId)
+{
+   uint h=2166136261;
+   for(int i=0; i<StringLen(signalId); i++)
+      h=(h ^ (uint)StringGetCharacter(signalId,i))*16777619;
+   return "DSA2_OPEN_"+IntegerToString((long)AccountInfoInteger(ACCOUNT_LOGIN))+
+          "_"+IntegerToString((long)h);
+}
+
+//+------------------------------------------------------------------+
+void SyncOpenTradeBaskets()
+{
+   for(int i=PositionsTotal()-1; i>=0; i--)
+   {
+      ulong ticket=PositionGetTicket(i);
+      if(ticket==0 || (ulong)PositionGetInteger(POSITION_MAGIC)!=InpMagicNumber) continue;
+      ulong positionId=(ulong)PositionGetInteger(POSITION_IDENTIFIER);
+      string signalId,marketId,category,direction,targetLeg,symbol;
+      double entryPrice,stopLoss,tp1,tp2,entryVolume;
+      if(!LoadPositionMap(positionId,signalId,marketId,category,direction,targetLeg,
+                          entryPrice,stopLoss,tp1,tp2,entryVolume,symbol)) continue;
+      string reportKey=OpenReportedKey(signalId);
+      if(GlobalVariableCheck(reportKey)) continue;
+
+      ulong positionIds[3];
+      double fillPrices[3],volumes[3];
+      string targetLegs[3];
+      int found=0;
+      double weightedEntry=0.0,totalVolume=0.0;
+      for(int j=PositionsTotal()-1; j>=0; j--)
+      {
+         ulong otherTicket=PositionGetTicket(j);
+         if(otherTicket==0 || (ulong)PositionGetInteger(POSITION_MAGIC)!=InpMagicNumber) continue;
+         ulong otherId=(ulong)PositionGetInteger(POSITION_IDENTIFIER);
+         string otherSignal,otherMarket,otherCategory,otherDirection,otherLeg,otherSymbol;
+         double otherEntry,otherStop,otherTp1,otherTp2,otherVolume;
+         if(!LoadPositionMap(otherId,otherSignal,otherMarket,otherCategory,otherDirection,otherLeg,
+                             otherEntry,otherStop,otherTp1,otherTp2,otherVolume,otherSymbol)) continue;
+         if(otherSignal!=signalId || found>=3) continue;
+         double liveEntry=PositionGetDouble(POSITION_PRICE_OPEN);
+         double liveVolume=PositionGetDouble(POSITION_VOLUME);
+         positionIds[found]=otherId;
+         fillPrices[found]=liveEntry;
+         volumes[found]=liveVolume;
+         targetLegs[found]=otherLeg;
+         weightedEntry+=liveEntry*liveVolume;
+         totalVolume+=liveVolume;
+         found++;
+      }
+      if(found!=3 || totalVolume<=0.0) continue;
+
+      string positionsJson="[";
+      for(int n=0; n<found; n++)
+      {
+         if(n>0) positionsJson+=",";
+         positionsJson+="{\"positionId\":\""+IntegerToString((long)positionIds[n])+
+            "\",\"targetLeg\":\""+targetLegs[n]+"\",\"entryPrice\":"+
+            DoubleToString(fillPrices[n],8)+",\"volume\":"+DoubleToString(volumes[n],8)+"}";
+      }
+      positionsJson+="]";
+      string body="{\"event\":\"basket_opened\",\"signalId\":\""+signalId+
+         "\",\"clientId\":\""+InpClientId+"\",\"marketId\":\""+marketId+
+         "\",\"market\":\""+symbol+"\",\"category\":\""+category+
+         "\",\"direction\":\""+direction+"\",\"entryPrice\":"+
+         DoubleToString(weightedEntry/totalVolume,8)+",\"stopLoss\":"+
+         DoubleToString(stopLoss,8)+",\"tp1\":"+DoubleToString(tp1,8)+
+         ",\"tp2\":"+DoubleToString(tp2,8)+",\"positions\":"+positionsJson+
+         ",\"accountCurrency\":\""+AccountInfoString(ACCOUNT_CURRENCY)+
+         "\",\"accountMode\":\"DEMO\"}";
+      string response;
+      int http=HttpPost(InpBridgeUrl+"/mt5/basket-opened",body,response);
+      if(http==200 && JsonTrue(response,"success"))
+      {
+         GlobalVariableSet(reportKey,(double)TimeCurrent());
+         Print("MT5 basket-open event reported for ",signalId," with three positions.");
+      }
+      else
+      {
+         Print("MT5 basket-open report failed for ",signalId,
+               ". HTTP=",http," response=",response);
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
+
+//+------------------------------------------------------------------+
 string CurrentDayKey()
 {
    string d = TimeToString(TimeCurrent(),TIME_DATE);
@@ -312,17 +592,15 @@ void ManageBasket()
 {
    int count = CountOurPositions();
    if(count <= 0) return;
+
+   // TP1 and TP2 are attached to the individual positions at entry:
+   // entries 1 and 2 close at TP1; entry 3 remains open for TP2.
+   // Keep only the basket-wide emergency loss guard here.
    double pnl = BasketFloatingProfit();
-   if(pnl >= InpTargetProfit)
+   if(pnl <= -InpRiskPerBasket)
    {
-      Print("Basket profit target reached: ",DoubleToString(pnl,2),
-            ". Closing all EA positions.");
-      CloseAllOurPositions();
-   }
-   else if(pnl <= -InpRiskPerBasket)
-   {
-      Print("Basket loss limit reached: ",DoubleToString(pnl,2),
-            ". Closing all EA positions.");
+      Print("Emergency basket loss limit reached: ",DoubleToString(pnl,2),
+            ". Closing all remaining EA positions.");
       CloseAllOurPositions();
    }
 }
@@ -347,7 +625,7 @@ double NormalizeVolumeDown(const string symbol,const double requested)
 //+------------------------------------------------------------------+
 bool OpenSignalBasket(const string signalId,const string marketId,
                       const string direction,const double signalEntry,
-                      const double stopLoss,const double tp1,
+                      const double stopLoss,const double tp1,const double tp2,
                       const double signalAge,const string category)
 {
    if(!IsAllowedMarket(marketId)) { Print("Rejected non-whitelisted market: ",marketId); return false; }
@@ -363,6 +641,16 @@ bool OpenSignalBasket(const string signalId,const string marketId,
    double price = isBuy ? tick.ask : tick.bid;
    double riskDistance = MathAbs(signalEntry-stopLoss);
    if(riskDistance <= 0.0) return false;
+   if(isBuy && !(stopLoss < signalEntry && tp1 > signalEntry && tp2 > tp1))
+   {
+      Print("BUY signal has inconsistent SL/TP ordering.");
+      return false;
+   }
+   if(!isBuy && !(stopLoss > signalEntry && tp1 < signalEntry && tp2 < tp1))
+   {
+      Print("SELL signal has inconsistent SL/TP ordering.");
+      return false;
+   }
    if(MathAbs(price-signalEntry) > riskDistance*InpMaxEntryDeviationR)
    {
       Print("Signal rejected: current price moved too far from entry on ",symbol);
@@ -376,10 +664,27 @@ bool OpenSignalBasket(const string signalId,const string marketId,
    long stopsLevel = SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL);
    if(point <= 0.0) return false;
    double minStopDistance = (double)stopsLevel*point;
-   if(isBuy && (price-stopLoss) <= minStopDistance) { Print("Stop loss is too close for broker rules."); return false; }
-   if(!isBuy && (stopLoss-price) <= minStopDistance) { Print("Stop loss is too close for broker rules."); return false; }
-
    double sl = NormalizeDouble(stopLoss,digits);
+   double tp1Price = NormalizeDouble(tp1,digits);
+   double tp2Price = NormalizeDouble(tp2,digits);
+   if(isBuy)
+   {
+      if((price-sl) <= minStopDistance) { Print("Stop loss is too close for broker rules."); return false; }
+      if((tp1Price-price) <= minStopDistance || (tp2Price-price) <= minStopDistance)
+      {
+         Print("TP1 or TP2 is too close to the current price for broker rules.");
+         return false;
+      }
+   }
+   else
+   {
+      if((sl-price) <= minStopDistance) { Print("Stop loss is too close for broker rules."); return false; }
+      if((price-tp1Price) <= minStopDistance || (price-tp2Price) <= minStopDistance)
+      {
+         Print("TP1 or TP2 is too close to the current price for broker rules.");
+         return false;
+      }
+   }
    ENUM_ORDER_TYPE orderType = isBuy ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
    double oneLotPnl = 0.0;
    if(!OrderCalcProfit(orderType,symbol,1.0,price,sl,oneLotPnl))
@@ -421,9 +726,15 @@ bool OpenSignalBasket(const string signalId,const string marketId,
    trade.SetExpertMagicNumber(InpMagicNumber);
    trade.SetDeviationInPoints(InpDeviationPoints);
    trade.SetTypeFillingBySymbol(symbol);
-   string tag = "DSA2-" + StringSubstr(signalId,0,20);
+   string tag = "DSA2-" + StringSubstr(signalId,0,18);
    int opened = 0;
    double actualRiskTotal = 0.0;
+   ulong positionIds[];
+   double filledPrices[];
+   double filledVolumes[];
+   ArrayResize(positionIds,InpEntriesPerSignal);
+   ArrayResize(filledPrices,InpEntriesPerSignal);
+   ArrayResize(filledVolumes,InpEntriesPerSignal);
    for(int n=1; n<=InpEntriesPerSignal; n++)
    {
       // Recheck price before every order; abort and roll back if the signal has moved.
@@ -435,15 +746,18 @@ bool OpenSignalBasket(const string signalId,const string marketId,
       }
       double latestPrice = isBuy ? latestTick.ask : latestTick.bid;
       if(MathAbs(latestPrice-signalEntry) > riskDistance*InpMaxEntryDeviationR ||
-         (isBuy && latestPrice >= tp1) || (!isBuy && latestPrice <= tp1))
+         (isBuy && latestPrice >= tp1Price) || (!isBuy && latestPrice <= tp1Price))
       {
          Print("Price moved outside the valid signal window during basket submission. Rolling back.");
          CloseAllOurPositions();
          return false;
       }
 
-      bool sent = isBuy ? trade.Buy(volume,symbol,0.0,sl,0.0,tag)
-                        : trade.Sell(volume,symbol,0.0,sl,0.0,tag);
+      // Two separate positions carry TP1; the third carries TP2.
+       double positionTp = (n <= 2 ? tp1Price : tp2Price);
+       string positionTag = tag + (n <= 2 ? "-TP1" : "-TP2");
+       bool sent = isBuy ? trade.Buy(volume,symbol,0.0,sl,positionTp,positionTag)
+                         : trade.Sell(volume,symbol,0.0,sl,positionTp,positionTag);
       uint rc = trade.ResultRetcode();
       double filled = trade.ResultVolume();
       double fillPrice = trade.ResultPrice();
@@ -465,6 +779,23 @@ bool OpenSignalBasket(const string signalId,const string marketId,
             CloseAllOurPositions();
             return false;
          }
+         ulong openingDeal = trade.ResultDeal();
+         if(openingDeal==0 || !HistoryDealSelect(openingDeal))
+         {
+            Print("Could not identify opening deal for entry ",n,". Rolling back.");
+            CloseAllOurPositions();
+            return false;
+         }
+         ulong positionId = (ulong)HistoryDealGetInteger(openingDeal,DEAL_POSITION_ID);
+         if(positionId==0)
+         {
+            Print("Broker did not return a position identifier for entry ",n,". Rolling back.");
+            CloseAllOurPositions();
+            return false;
+         }
+         positionIds[opened]=positionId;
+         filledPrices[opened]=fillPrice;
+         filledVolumes[opened]=filled;
          opened++;
          Print("Basket entry ",opened,"/",InpEntriesPerSignal," opened on ",symbol,
                " volume=",DoubleToString(filled,4),
@@ -485,6 +816,19 @@ bool OpenSignalBasket(const string signalId,const string marketId,
       Print("Basket did not reach exactly three positions. Rolling back.");
       CloseAllOurPositions();
       return false;
+   }
+   for(int mapIndex=0; mapIndex<opened; mapIndex++)
+   {
+      string leg = (mapIndex<2 ? "TP1" : "TP2");
+      if(!SavePositionMap(positionIds[mapIndex],signalId,marketId,category,direction,leg,
+                          filledPrices[mapIndex],sl,tp1Price,tp2Price,filledVolumes[mapIndex],symbol))
+      {
+         for(int cleanup=0; cleanup<mapIndex; cleanup++)
+            FileDelete(PositionMapFileName(positionIds[cleanup]),FILE_COMMON);
+         Print("Trade mapping could not be persisted. Rolling back the entire basket.");
+         CloseAllOurPositions();
+         return false;
+      }
    }
    Print("Basket opened for signal ",signalId,". Estimated total SL risk=",
          DoubleToString(actualRiskPerEntry*InpEntriesPerSignal,2),
@@ -516,9 +860,10 @@ void PollSignalQueue()
    double entry = JsonGetNumber(signal,"entry");
    double stopLoss = JsonGetNumber(signal,"stopLoss");
    double tp1 = JsonGetNumber(signal,"tp1");
+   double tp2 = JsonGetNumber(signal,"tp2");
    double signalAge = JsonGetNumber(response,"signalAgeSeconds");
    if(signalId == "" || marketId == "" || direction == "" ||
-      priceValidation != "PASS" || entry <= 0.0 || stopLoss <= 0.0 || tp1 <= 0.0)
+      priceValidation != "PASS" || entry <= 0.0 || stopLoss <= 0.0 || tp1 <= 0.0 || tp2 <= 0.0)
    {
       Print("Signal rejected due to missing or invalid fields.");
       if(signalId != "") AcknowledgeSignal(signalId,"rejected");
@@ -552,7 +897,7 @@ void PollSignalQueue()
    // Do not mark the signal processed until execution outcome is known.
    // This prevents a failed order attempt from being mistaken for an executed basket
    // after a restart or a repeated queue delivery.
-   bool opened = OpenSignalBasket(signalId,marketId,direction,entry,stopLoss,tp1,signalAge,category);
+   bool opened = OpenSignalBasket(signalId,marketId,direction,entry,stopLoss,tp1,tp2,signalAge,category);
    int remainingPositions = CountOurPositions();
    if(opened || remainingPositions > 0)
    {
@@ -628,6 +973,8 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTimer()
 {
+   SyncOpenTradeBaskets();
+   SyncClosedTradeDeals();
    ManageBasket();
    if(CountOurPositions() > 0) return;
    CheckBridgeHealth();

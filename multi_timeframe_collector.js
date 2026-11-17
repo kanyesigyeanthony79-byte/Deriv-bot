@@ -15,11 +15,11 @@ const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const MARKETS = [
   ["R_10", "Volatility 10 Index"], ["R_25", "Volatility 25 Index"],
   ["R_50", "Volatility 50 Index"], ["R_75", "Volatility 75 Index"],
-  ["JD100", "Jump 100 Index"], ["frxXAUUSD", "Gold/USD"],
+  ["JD100", "Jump 100 Index"],
   ["CRASH500", "Crash 500 Index"], ["BOOM500", "Boom 500 Index"]
 ];
 const FRAMES = [
-  ["M1", 60, 1800], ["M5", 300, 240], ["M15", 900, 1000],
+  ["M1", 60, 1800], ["M5", 300, 240], ["M15", 900, 1000], ["M30", 1800, 240],
   ["H1", 3600, 240], ["H4", 14400, 240], ["D1", 86400, 520]
 ];
 const OUTPUT = path.join(__dirname, "multi_timeframe_data.json");
@@ -127,6 +127,42 @@ async function fetchLiveQuotes(client, markets, logFn = log) {
   return quotes;
 }
 
+async function fetchMt5TradeLedger(env, logFn = log, fetchImpl = fetch) {
+  const base = String(env.TELEGRAM_WORKER_URL || "").replace(/\/+$/, "");
+  if (env.MT5_TRADE_REPORTING_ENABLED !== "true" || !base || !env.SIGNAL_API_KEY) {
+    return { enabled: false, connected: false, trades: [], error: null };
+  }
+  try {
+    const response = await fetchImpl(base + "/mt5/trades", {
+      method: "GET",
+      headers: { "X-API-Key": env.SIGNAL_API_KEY },
+      signal: AbortSignal.timeout(12000)
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || body.success !== true || !Array.isArray(body.trades)) {
+      throw new Error(body.error || ("MT5 ledger HTTP " + response.status));
+    }
+    return { enabled: true, connected: true, trades: body.trades, error: null };
+  } catch (error) {
+    logFn("mt5_trade_ledger_fetch_failed", { message: String(error.message || error).slice(0, 240) });
+    return { enabled: true, connected: false, trades: [], error: String(error.message || error).slice(0, 240) };
+  }
+}
+
+function summarizeMt5TradeLedger(ledger) {
+  const trades = Array.isArray(ledger?.trades) ? ledger.trades : [];
+  return {
+    enabled: Boolean(ledger?.enabled),
+    connected: Boolean(ledger?.connected),
+    tradeBaskets: trades.length,
+    openBaskets: trades.filter(t => ["OPEN", "PARTIALLY_CLOSED", "TP1_HIT_RUNNER_OPEN"].includes(t.status)).length,
+    closedBaskets: trades.filter(t => Boolean(t.allClosed)).length,
+    tp1Confirmed: trades.filter(t => Boolean(t.tp1Complete)).length,
+    realizedNetProfit: Number(trades.reduce((sum, t) => sum + Number(t.realizedProfit || 0), 0).toFixed(2)),
+    error: ledger?.error || null
+  };
+}
+
 async function main() {
   const client = await connect(PUBLIC);
   try {
@@ -186,9 +222,18 @@ async function main() {
 
     const liveQuotes = await fetchLiveQuotes(client, output.markets);
     log("live_quotes_collected", { available: Object.keys(liveQuotes).length, expected: Object.keys(output.markets).length });
+    const mt5TradeLedger = await fetchMt5TradeLedger(process.env, log);
+    const mt5TradesBySignal = new Map(mt5TradeLedger.trades.map(t => [t.signalId, t]));
 
     const priorJournal = fs.existsSync(JOURNAL) ? JSON.parse(fs.readFileSync(JOURNAL, "utf8")) : { version: 1, signals: [] };
     const journal = updateJournal(priorJournal, output.markets, now, liveQuotes);
+    if (mt5TradeLedger.connected) {
+      for (const record of journal.signals) {
+        const actualTrade = mt5TradesBySignal.get(record.signalId);
+        if (actualTrade) record.mt5Trade = actualTrade;
+      }
+    }
+    const mt5TradeSummary = summarizeMt5TradeLedger(mt5TradeLedger);
     const strategyJournalPath = path.join(__dirname, "strategy_comparison_journal.json");
     const priorStrategyJournal = fs.existsSync(strategyJournalPath)
       ? JSON.parse(fs.readFileSync(strategyJournalPath, "utf8"))
@@ -245,10 +290,12 @@ async function main() {
     const signalCounts = Object.fromEntries(["signal", "no_signal", "timeframe_conflict", "waiting_pullback", "warming", "market_filtered", "data_gap"].map(state =>
       [state, allSignals.filter(s => s.state === state).length]
     ));
-    output.summary = { markets: Object.keys(output.markets).length, signalCounts, journal: summarizeJournal(journal), telegram: alertSummary, outcomeTelegram: outcomeAlertSummary };
+    output.summary = { markets: Object.keys(output.markets).length, signalCounts, journal: summarizeJournal(journal), telegram: alertSummary, outcomeTelegram: outcomeAlertSummary, mt5TradeReporting: mt5TradeSummary };
+    output.mt5TradeReporting = mt5TradeSummary;
     const dashboard = {
       version: 1, generatedAt: output.generatedAt, generatedEpoch: now,
       mode: alertSummary.enabled ? "signal_alerts_enabled" : "observation_only", summary: output.summary,
+      mt5TradeReporting: mt5TradeSummary, mt5Trades: mt5TradeLedger.trades,
       strategyComparison: output.strategyComparison, strategyResearch: output.strategyResearch,
       markets: Object.values(output.markets).map(m => ({
         marketId: m.marketId, marketName: m.marketName, signals: dashboardSignalsForMarket(m, journal, now, liveQuotes),
@@ -271,4 +318,4 @@ async function main() {
   }
 }
 if (require.main === module) main().catch(error => { log("collector_failed", { message: error.message }); process.exitCode = 1; });
-module.exports = { fetchCandleHistory, normalizeCandles, fetchLiveQuotes };
+module.exports = { fetchCandleHistory, normalizeCandles, fetchLiveQuotes, fetchMt5TradeLedger, summarizeMt5TradeLedger };

@@ -6,7 +6,8 @@ const { latestCandidates, sendCandidateAlerts, sendOutcomeAlerts, ALERT_MAX_AGE_
 function candidate(overrides = {}) {
   return {
     state: "signal", signalId: "R_50-SCALP-1000", marketId: "R_50", market: "Volatility 50 Index",
-    category: "SCALP", categoryLabel: "Scalping", direction: "BUY", entryTimeframe: "M1",
+    category: "SCALP", categoryLabel: "Scalping", direction: "BUY", entryTimeframe: "M5",
+    setupTimeframe: "M15", confirmationTimeframe: "M15", quality: "VALID",
     entryCandleEpoch: 1000, entry: 100, stopLoss: 98, tp1: 102, tp2: 103,
     ...overrides
   };
@@ -27,10 +28,10 @@ test("live quote must remain within 0.2R of entry", () => {
 });
 
 test("freshness is measured from entry candle close, not candle open", () => {
-  const item = candidate({ entryCandleEpoch: 1000, entryTimeframe: "M1" });
-  assert.equal(signalFreshness(item, 1060).ageSeconds, 0);
-  assert.equal(signalFreshness(item, 1060).fresh, true);
-  assert.equal(signalFreshness(item, 1060 + ALERT_MAX_AGE_SECONDS.SCALP + 1).fresh, false);
+  const item = candidate({ entryCandleEpoch: 1000, entryTimeframe: "M5" });
+  assert.equal(signalFreshness(item, 1300).ageSeconds, 0);
+  assert.equal(signalFreshness(item, 1300).fresh, true);
+  assert.equal(signalFreshness(item, 1300 + ALERT_MAX_AGE_SECONDS.SCALP + 1).fresh, false);
 });
 
 test("alert candidates retain every distinct candle entry and deduplicate repeated IDs", () => {
@@ -41,12 +42,20 @@ test("alert candidates retain every distinct candle entry and deduplicate repeat
   assert.deepEqual(found.map(s => s.signalId), ["old", "new"]);
 });
 
+test("WATCH candidates are excluded while STRONG and VALID candidates remain actionable", () => {
+  const valid = candidate({ signalId: "valid" });
+  const strong = candidate({ signalId: "strong", quality: "STRONG" });
+  const watch = candidate({ signalId: "watch", quality: "WATCH" });
+  const found = latestCandidates({ R_50: { signals: [], recentSignals: [valid, strong, watch] } });
+  assert.deepEqual(found.map(s => s.signalId), ["strong", "valid"]);
+});
+
 test("swing candidates remain observation-only and are excluded from Telegram alerts", async () => {
   const swing = candidate({ category: "SWING", signalId: "R_50-SWING-1000" });
   const { markets, journal } = fixture([swing]);
   let calls = 0;
   const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
-  const result = await sendCandidateAlerts(markets, journal, 1061, env, {
+  const result = await sendCandidateAlerts(markets, journal, 1301, env, {
     liveQuotes: { R_50: { price: 100 } }, fetchImpl: async () => { calls++; return { ok: true, json: async () => ({ success: true }) }; }
   });
   assert.equal(result.considered, 0);
@@ -58,7 +67,7 @@ test("swing candidates remain observation-only and are excluded from Telegram al
 test("feature flag off never calls Telegram", async () => {
   const { markets, journal } = fixture([candidate()]);
   let calls = 0;
-  const result = await sendCandidateAlerts(markets, journal, 1010, {}, { liveQuotes: { R_50: { price: 100 } }, fetchImpl: async () => { calls++; } });
+  const result = await sendCandidateAlerts(markets, journal, 1301, {}, { liveQuotes: { R_50: { price: 100 } }, fetchImpl: async () => { calls++; } });
   assert.equal(result.enabled, false);
   assert.equal(calls, 0);
 });
@@ -71,22 +80,26 @@ test("recent candidate is sent once with its horizon in the market label", async
     return { ok: true, json: async () => ({ success: true }) };
   }};
   const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
-  const first = await sendCandidateAlerts(markets, journal, 1061, env, options);
-  const second = await sendCandidateAlerts(markets, journal, 1061, env, options);
+  const first = await sendCandidateAlerts(markets, journal, 1301, env, options);
+  const second = await sendCandidateAlerts(markets, journal, 1301, env, options);
   assert.equal(first.sent, 1);
   assert.equal(second.skipped, 1);
   assert.equal(requests.length, 1);
   assert.match(requests[0].payload.market, /Scalping/);
   assert.equal(requests[0].payload.event, "new_signal");
+  assert.equal(requests[0].payload.quality, "VALID");
+  assert.equal(requests[0].payload.entryTimeframe, "M5");
+  assert.equal(requests[0].payload.setupTimeframe, "M15");
+  assert.equal(requests[0].payload.confirmationTimeframe, "M15");
 });
 
 test("SCALP, SHORT_TERM and POSITION candidates each route with their own horizon label", async () => {
   const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
   for (const [category, label] of [["SCALP", "Scalping"], ["SHORT_TERM", "Short-term"], ["POSITION", "Position"]]) {
-    const item = candidate({ category, categoryLabel: label, entryTimeframe: category === "SCALP" ? "M1" : category === "SHORT_TERM" ? "M5" : "H4", signalId: "R_50-" + category + "-1000" });
+    const item = candidate({ category, categoryLabel: label, entryTimeframe: category === "SCALP" ? "M5" : category === "SHORT_TERM" ? "M5" : "H4", signalId: "R_50-" + category + "-1000" });
     const { markets, journal } = fixture([item]);
     const requests = [];
-    const result = await sendCandidateAlerts(markets, journal, 1000 + (category === "SCALP" ? 60 : category === "SHORT_TERM" ? 300 : 14400) + 10, env, {
+    const result = await sendCandidateAlerts(markets, journal, 1000 + (category === "SCALP" ? 300 : category === "SHORT_TERM" ? 300 : 14400) + 10, env, {
       liveQuotes: { R_50: { price: 100 } }, fetchImpl: async (url, init) => {
         requests.push(JSON.parse(init.body));
         return { ok: true, json: async () => ({ success: true }) };
@@ -115,7 +128,7 @@ test("price already moved too far is marked missed and not sent", async () => {
   const { markets, journal } = fixture([candidate()]);
   let calls=0;
   const env={MTF_TELEGRAM_ALERTS:"true",TELEGRAM_WORKER_URL:"https://worker.example",SIGNAL_API_KEY:"secret"};
-  const result=await sendCandidateAlerts(markets,journal,1061,env,{liveQuotes:{R_50:{price:101}},fetchImpl:async()=>{calls++;}});
+  const result=await sendCandidateAlerts(markets,journal,1301,env,{liveQuotes:{R_50:{price:101}},fetchImpl:async()=>{calls++;}});
   assert.equal(result.missed,1);
   assert.equal(calls,0);
   assert.equal(journal.signals[0].telegramStatus,"missed");
@@ -124,7 +137,7 @@ test("price already moved too far is marked missed and not sent", async () => {
 test("missing live quote blocks delivery without falsely marking signal sent", async () => {
   const { markets, journal }=fixture([candidate()]);
   const env={MTF_TELEGRAM_ALERTS:"true",TELEGRAM_WORKER_URL:"https://worker.example",SIGNAL_API_KEY:"secret"};
-  const result=await sendCandidateAlerts(markets,journal,1061,env,{liveQuotes:{},fetchImpl:async()=>({ok:true,json:async()=>({success:true})})});
+  const result=await sendCandidateAlerts(markets,journal,1301,env,{liveQuotes:{},fetchImpl:async()=>({ok:true,json:async()=>({success:true})})});
   assert.equal(result.quoteUnavailable,1);
   assert.equal(journal.signals[0].telegramStatus,null);
 });
@@ -134,7 +147,7 @@ test("candidate outside the alert age window is not sent", async () => {
   const { markets, journal } = fixture([old]);
   let calls = 0;
   const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
-  const result = await sendCandidateAlerts(markets, journal, 1000 + 60 + ALERT_MAX_AGE_SECONDS.SCALP + 1, env, {
+  const result = await sendCandidateAlerts(markets, journal, 1000 + 300 + ALERT_MAX_AGE_SECONDS.SCALP + 1, env, {
     fetchImpl: async () => { calls++; }
   });
   assert.equal(result.stale, 1);
@@ -147,8 +160,8 @@ test("uncertain delivery failure is recorded and not retried automatically", asy
   let calls = 0;
   const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
   const options = { liveQuotes: { R_50: { price: 100 } }, fetchImpl: async () => { calls++; throw new Error("network timeout"); } };
-  const first = await sendCandidateAlerts(markets, journal, 1061, env, options);
-  const second = await sendCandidateAlerts(markets, journal, 1010, env, options);
+  const first = await sendCandidateAlerts(markets, journal, 1301, env, options);
+  const second = await sendCandidateAlerts(markets, journal, 1301, env, options);
   assert.equal(first.failed, 1);
   assert.equal(second.skipped, 1);
   assert.equal(calls, 1);
@@ -212,7 +225,7 @@ test("enabled MT5 queue receives validated synthetic signal payload without chan
     MTF_TELEGRAM_ALERTS: "true", MT5_EXECUTION_QUEUE_ENABLED: "true",
     TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret"
   };
-  const result = await sendCandidateAlerts(markets, journal, 1061, env, {
+  const result = await sendCandidateAlerts(markets, journal, 1301, env, {
     liveQuotes: { R_50: { price: 100 } },
     fetchImpl: async (url, init) => {
       calls.push({ url, payload: JSON.parse(init.body) });
@@ -247,8 +260,8 @@ test("failed MT5 queue delivery retries independently without duplicating Telegr
       return { ok: true, json: async () => ({ success: true }) };
     }
   };
-  const first = await sendCandidateAlerts(markets, journal, 1061, env, options);
-  const second = await sendCandidateAlerts(markets, journal, 1061, env, options);
+  const first = await sendCandidateAlerts(markets, journal, 1301, env, options);
+  const second = await sendCandidateAlerts(markets, journal, 1301, env, options);
   assert.equal(first.executionFailed, 1);
   assert.equal(first.sent, 1);
   assert.equal(second.executionQueued, 1);
@@ -266,7 +279,7 @@ test("MT5 queue remains disabled unless its explicit feature flag is true", asyn
     MTF_TELEGRAM_ALERTS: "true", MT5_EXECUTION_QUEUE_ENABLED: "false",
     TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret"
   };
-  const result = await sendCandidateAlerts(markets, journal, 1061, env, {
+  const result = await sendCandidateAlerts(markets, journal, 1301, env, {
     liveQuotes: { R_50: { price: 100 } },
     fetchImpl: async (url, init) => { urls.push(url); return { ok: true, json: async () => ({ success: true }) }; }
   });

@@ -6,6 +6,9 @@ on:
       - main
     paths:
       - "multi_timeframe_collector.js"
+      - "workers/deriv-telegram-alerts/worker.js"
+      - "DerivSignalAssistantV2_SignalBridge.mq5"
+      - "index.html"
       - "multi_timeframe_journal.js"
       - "multi_timeframe_engine.js"
       - "multi_timeframe_alerts.js"
@@ -46,6 +49,7 @@ jobs:
           STRATEGY_COMPARISON_TELEGRAM_ALERTS: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
           TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
           SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
+          MT5_TRADE_REPORTING_ENABLED: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
           MT5_EXECUTION_QUEUE_ENABLED: ${{ vars.MT5_EXECUTION_QUEUE_ENABLED || 'false' }} # Enable only after the EA is compiled and demo-validated
       - name: Archive lower-timeframe candles for entry research
         run: node lower_tf_entry_research.js

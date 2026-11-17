@@ -39,7 +39,7 @@ function latestCandidates(markets) {
   const unique = new Map();
   for (const market of Object.values(markets || {})) {
     const candidates = [...(market.signals || []), ...(market.recentSignals || [])]
-      .filter(s => s && s.state === "signal" && s.signalId && s.category && s.category !== "SWING");
+      .filter(s => s && s.state === "signal" && s.signalId && s.category && s.category !== "SWING" && ["STRONG", "VALID"].includes(s.quality));
     for (const candidate of candidates) {
       if (!unique.has(candidate.signalId)) unique.set(candidate.signalId, candidate);
     }
@@ -119,11 +119,13 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
 
     const payload = {
       event: "new_signal", reviewAvailable: true, signalId: candidate.signalId,
-      marketId: candidate.marketId, category: candidate.category,
+      marketId: candidate.marketId, category: candidate.category, quality: candidate.quality,
+      entryTimeframe: candidate.entryTimeframe, setupTimeframe: candidate.setupTimeframe,
+      confirmationTimeframe: candidate.confirmationTimeframe,
       market: String(candidate.market || candidate.marketId) + " | " + String(candidate.categoryLabel || candidate.category),
       direction: candidate.direction, entry: candidate.entry, livePrice: priceCheck.livePrice,
       stopLoss: candidate.stopLoss, tp1: candidate.tp1, tp2: candidate.tp2,
-      signalAgeSeconds: freshness.ageSeconds, entryTimeframe: candidate.entryTimeframe,
+      signalAgeSeconds: freshness.ageSeconds,
       candleCloseEpoch: freshness.candleCloseEpoch, entryDeviationR: Number(priceCheck.deviationR.toFixed(3)),
       priceValidation: "PASS"
     };
