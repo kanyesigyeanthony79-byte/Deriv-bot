@@ -95,7 +95,7 @@ async function deliverPendingTradeNotifications(queue,notifications,env){
  }
  return result;
 }
-\nexport class ExecutionQueue{export class ExecutionQueue{
+export class ExecutionQueue{
  constructor(ctx,env){this.ctx=ctx;}
  async fetch(request){
   const u=new URL(request.url);
@@ -180,7 +180,7 @@ async function deliverPendingTradeNotifications(queue,notifications,env){
    }
    return Response.json({success:true,trades,notifications});
   }
-\n  if(request.method==="GET"&&u.pathname==="/health")  if(request.method==="GET"&&u.pathname==="/health"){const ids=(await this.ctx.storage.get("queue_ids"))||[];let pending=0;for(const id of ids){const x=await this.ctx.storage.get("signal:"+id);if(x&&x.status==="pending")pending++;}return Response.json({success:true,queueDepth:pending});}
+  if(request.method==="GET"&&u.pathname==="/health"){const ids=(await this.ctx.storage.get("queue_ids"))||[];let pending=0;for(const id of ids){const x=await this.ctx.storage.get("signal:"+id);if(x&&x.status==="pending")pending++;}return Response.json({success:true,queueDepth:pending});}
   return Response.json({error:"Not found"},{status:404});
  }
 }
