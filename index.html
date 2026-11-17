@@ -37,7 +37,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <main>
   <div class="top">
     <div><div class="brand">DERIV SIGNAL ASSISTANT</div><div class="sub">V2 · Android-friendly market scanner</div></div>
-    <div class="pill">DEMO / SIGNALS ONLY</div>
+    <div class="pill">DEMO ONLY · NO LIVE TRADING</div>
   </div>
   <div class="hero">
     <h1>15-minute market monitor</h1>
@@ -78,7 +78,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <div class="status" id="mtfStatus">Loading multi-timeframe analysis…</div>
     <div class="grid" id="mtfSummary"></div>
     <div class="mtf-grid" id="mtfSignals"><div class="card">Waiting for multi-timeframe data…</div></div>
-    <h2 style="margin-top:18px">Multi-timeframe outcome journal</h2>
+    <h2 style="margin-top:18px">Signal observations and MT5 trade journal</h2>
     <div class="card mtf-table-wrap">
       <table><thead><tr><th>Time</th><th>Market</th><th>Category</th><th>Direction</th><th>Entry</th><th>SL</th><th>TP1 / TP2</th><th>Signal observation</th><th>MT5 trade status</th><th>Realized net P/L</th><th>Review</th></tr></thead>
       <tbody id="mtfJournal"><tr><td colspan="11" class="muted">No multi-timeframe observations recorded yet.</td></tr></tbody></table>
@@ -125,7 +125,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     </div>
   </section>
 
-  <div class="notice"><b>Important:</b> This dashboard displays signals recorded by the hosted scanner and their reported outcomes. A signal is a research alert, not a guaranteed result or instruction to trade. Historical outcomes do not establish future profitability. Use demo observation only.</div>
+  <div class="notice"><b>Important:</b> Signal observations are based on market prices and do not prove a trade was executed. MT5 trade status and realized P/L appear only after broker-confirmed deal closures. Use demo observation only; historical outcomes do not establish future profitability.</div>
   <div class="foot">Hosted scanner: seven synthetic markets · M5/M15/M30 multi-timeframe analysis · scheduled every five minutes. MT5 execution outcomes appear only after broker deal-history confirmation. No private API key is required in this page.</div>
 </main>
 <script>
@@ -227,7 +227,9 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       const levels='<br>Entry: '+fmt(s.entry)+' · Live: '+fmt(s.currentPrice)+'<br>SL: '+fmt(s.stopLoss)+' · TP1: '+fmt(s.tp1)+' · TP2: '+fmt(s.tp2)+'<br>Score: '+esc(s.score??"—");
       return '<div class="mtf-card"><div class="mtf-head"><span>'+esc(s.marketName)+'</span><span class="mtf-tag">'+esc(categoryNames[s.category]||s.category)+'</span></div><div class="mtf-state '+cls+'">'+esc(signalState)+'</div><div class="detail">MT5 execution: '+esc(tradeState+tradePnl)+'<br>Entry '+esc(s.entryTimeframe||"—")+' · Confirm '+esc(s.confirmationTimeframe||"—")+' · Context '+esc(s.contextTimeframe||"—")+levels+'</div><a class="btn smallbtn" href="./signal-review.html?signalId='+encodeURIComponent(s.signalId)+'">REVIEW</a></div>';
     }).join("")||'<div class="card muted">No active signals for the selected horizon/market. Markets without a signal are hidden; scanning and data collection continue normally.</div>';
-    $("mtfStatus").textContent=collectorFresh?"Showing "+ordered.length+" price-verified active signal(s) · TP1-hit signals remain marked · Updated "+time(mtfSnapshot.generatedAt):"MONITORING STALE · Last collector update "+time(mtfSnapshot.generatedAt)+" · Active signals hidden until fresh data returns.";
+    const ledger=mtfSnapshot.mt5TradeReporting||{};
+    const ledgerText=!ledger.enabled?"MT5 trade ledger disabled":!ledger.connected?"MT5 trade ledger unavailable":("MT5 ledger: "+(ledger.tradeBaskets||0)+" baskets · "+(ledger.openBaskets||0)+" open · "+(ledger.closedBaskets||0)+" closed · net $"+Number(ledger.realizedNetProfit||0).toFixed(2));
+    $("mtfStatus").textContent=(collectorFresh?"Showing "+ordered.length+" price-verified active signal(s) · Updated "+time(mtfSnapshot.generatedAt):"MONITORING STALE · Last collector update "+time(mtfSnapshot.generatedAt)+" · Active signals hidden until fresh data returns.")+" · "+ledgerText;
     const counts={...(mtfSnapshot.summary?.signalCounts||{}),signal:all.filter(s=>s.state==="signal").length};
     $("mtfSummary").innerHTML=['signal','timeframe_conflict','warming','no_signal'].map(k=>'<div class="card"><div class="detail">'+esc(k.replaceAll("_"," ").toUpperCase())+'</div><div class="signal">'+esc(counts[k]??0)+'</div></div>').join("");
     const rows=mtfJournal.filter(s=>Number(s.createdEpoch||s.entryCandleEpoch||0)>=DASHBOARD_RESET_EPOCH).slice().sort((a,b)=>(b.entryCandleEpoch||0)-(a.entryCandleEpoch||0)).slice(0,40);
