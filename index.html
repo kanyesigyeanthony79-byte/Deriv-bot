@@ -117,11 +117,17 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <tbody id="breakoutRetestMarkets"><tr><td colspan="8" class="muted">Waiting for market results…</td></tr></tbody></table>
     </div>
     <h3 style="margin-top:18px">Approved-format candidate · M5 entry / M15 confirmation</h3>
-    <div class="muted">M5 breakout beyond the previous 12 M5 candles; M15 EMA20/EMA50 direction must agree using only completed M15 candles; wait for an M5 retest candle to close, then observe entry at the next M5 open. Stop is structure-based. This forward shadow uses a single 2R target over one hour only for comparison; production TP1/TP2 management is not enabled.</div>
+    <div class="muted">M5 breakout beyond the previous 12 M5 candles; M15 EMA20/EMA50 direction must agree using only completed M15 candles; wait for an M5 retest candle to close, then observe entry at the next M5 open. Stop is structure-based. The comparison track uses a single 2R target over one hour; a separate shadow simulation also measures your approved three-entry TP1/TP2 management. No real orders are placed.</div>
     <div class="card mtf-table-wrap" style="margin-top:10px">
       <table><thead><tr><th>Setups</th><th>M15 confirmed</th><th>M15 rejected</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>Target before SL</th><th>SL before target</th><th>M15 recheck rejected</th><th>Average R</th></tr></thead>
       <tbody id="breakoutRetestM5M15Totals"><tr><td colspan="10" class="muted">Waiting for M5/M15 shadow data…</td></tr></tbody></table>
       <div class="muted" id="breakoutRetestM5M15Status" style="margin-top:8px">M5/M15 forward shadow has not initialized yet.</div>
+    </div>
+    <h4 style="margin-top:12px">Approved three-entry management · simulated outcomes</h4>
+    <div class="card mtf-table-wrap">
+      <table><thead><tr><th>TP1 reached</th><th>TP2 reached</th><th>Stopped before TP1</th><th>Stopped after TP1</th><th>Ambiguous</th><th>Time exits</th><th>Resolved</th><th>Pending</th><th>Average basket R</th></tr></thead>
+      <tbody id="breakoutRetestProductionTotals"><tr><td colspan="9" class="muted">Waiting for production-management simulation…</td></tr></tbody></table>
+      <div class="muted" id="breakoutRetestProductionStatus" style="margin-top:8px">Simulation uses three equal-sized entries: two at TP1 1.5R and one runner at TP2 3R.</div>
     </div>
     <h4 style="margin-top:12px">M5/M15 market results</h4>
     <div class="card mtf-table-wrap">
@@ -319,12 +325,16 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     if(!shadow){
       $("breakoutRetestM5M15Totals").innerHTML='<tr><td colspan="10" class="muted">M5/M15 shadow data is not available yet.</td></tr>';
       $("breakoutRetestM5M15Markets").innerHTML='<tr><td colspan="12" class="muted">No M5/M15 market results yet.</td></tr>';
+      $("breakoutRetestProductionTotals").innerHTML='<tr><td colspan="9" class="muted">No production-management simulation yet.</td></tr>';
       $("breakoutRetestM5M15Status").textContent="Waiting for the collector to publish the M5/M15 shadow journal.";
       return;
     }
     const rows=Object.entries(shadow.markets||{}).map(([id,s])=>'<tr><td>'+esc(id)+'</td><td>'+esc(s.dataQuality||"warming")+'</td><td>'+esc(s.setupsDetected??0)+'</td><td>'+esc(s.m15Confirmed??0)+'</td><td>'+esc(s.m15Rejected??0)+'</td><td>'+esc(s.m15ReconfirmRejected??0)+'</td><td>'+esc(s.signals??0)+'</td><td>'+esc(s.resolved??0)+'</td><td>'+esc(s.pending??0)+'</td><td>'+pct(s.targetRatePct)+'</td><td>'+num(s.averageRealizedR)+'</td><td>'+esc(s.riskRejected??0)+'</td></tr>');
     $("breakoutRetestM5M15Markets").innerHTML=rows.join("")||'<tr><td colspan="12" class="muted">No market results yet.</td></tr>';
     $("breakoutRetestM5M15Totals").innerHTML='<tr><td>'+esc(Object.values(shadow.markets||{}).reduce((n,s)=>n+(s.setupsDetected||0),0))+'</td><td>'+esc(Object.values(shadow.markets||{}).reduce((n,s)=>n+(s.m15Confirmed||0),0))+'</td><td>'+esc(Object.values(shadow.markets||{}).reduce((n,s)=>n+(s.m15Rejected||0),0))+'</td><td>'+esc(shadow.signalsGenerated??0)+'</td><td>'+esc(shadow.resolvedSignals??0)+'</td><td>'+esc(shadow.pendingSignals??0)+'</td><td>'+esc(shadow.targetBeforeStop??0)+'</td><td>'+esc(shadow.stopBeforeTarget??0)+'</td><td>'+esc(shadow.m15ReconfirmRejected??0)+'</td><td>'+num(shadow.averageRealizedR)+'</td></tr>';
+    const pm=shadow.productionManagementSimulation||{};
+    $("breakoutRetestProductionTotals").innerHTML='<tr><td>'+esc(pm.tp1Hits??0)+'</td><td>'+esc(pm.tp2Hits??0)+'</td><td>'+esc(pm.stoppedBeforeTp1??0)+'</td><td>'+esc(pm.stoppedAfterTp1??0)+'</td><td>'+esc(pm.ambiguous??0)+'</td><td>'+esc(pm.timeExit??0)+'</td><td>'+esc(pm.resolvedSignals??0)+'</td><td>'+esc(pm.pendingSignals??0)+'</td><td>'+num(pm.averageRealizedR)+'</td></tr>';
+    $("breakoutRetestProductionStatus").textContent="Three equal-sized entries · two close at +1.5R; third closes at +3R or stop · no real positions opened.";
     $("breakoutRetestM5M15Status").textContent="Forward-only · normalized 2R target / one-hour horizon · "+esc(shadow.note||"No Telegram or MT5 execution.");
   }
 
