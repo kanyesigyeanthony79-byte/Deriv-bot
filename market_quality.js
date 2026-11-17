@@ -70,11 +70,25 @@ function validateCandleContinuity(candles, timeframeSeconds, marketId) {
     if (delta <= timeframeSeconds * 1.5) continue;
     const from = new Date(candles[i - 1].epoch * 1000);
     const to = new Date(candles[i].epoch * 1000);
-    const weekendClosure = marketId === "frxXAUUSD" &&
+    const isGold = marketId === "frxXAUUSD";
+    const weekendClosure = isGold &&
       (from.getUTCDay() === 5 || from.getUTCDay() === 6 || from.getUTCDay() === 0) &&
       (to.getUTCDay() === 0 || to.getUTCDay() === 1) &&
       delta <= 72 * 3600 + timeframeSeconds;
-    if (!weekendClosure) gaps.push({ afterEpoch: candles[i - 1].epoch, beforeEpoch: candles[i].epoch, missingIntervals: Math.max(1, Math.round(delta / timeframeSeconds) - 1) });
+    // Deriv's Gold feed has a short daily maintenance break around 22:00 UTC.
+    // Allow only gaps that straddle that known window on the same UTC day;
+    // arbitrary intraday gaps remain invalid. The wider duration accommodates
+    // H1 bars whose opens naturally sit on either side of the one-hour break.
+    const fromMinute = from.getUTCHours() * 60 + from.getUTCMinutes();
+    const toMinute = to.getUTCHours() * 60 + to.getUTCMinutes();
+    const dailyGoldSessionBreak = isGold &&
+      from.getUTCFullYear() === to.getUTCFullYear() &&
+      from.getUTCMonth() === to.getUTCMonth() &&
+      from.getUTCDate() === to.getUTCDate() &&
+      fromMinute >= 20 * 60 + 30 && fromMinute <= 22 * 60 + 15 &&
+      toMinute >= 22 * 60 + 45 && toMinute <= 23 * 60 + 59 &&
+      delta <= 3 * 3600 + timeframeSeconds;
+    if (!weekendClosure && !dailyGoldSessionBreak) gaps.push({ afterEpoch: candles[i - 1].epoch, beforeEpoch: candles[i].epoch, missingIntervals: Math.max(1, Math.round(delta / timeframeSeconds) - 1) });
   }
   return { valid: gaps.length === 0, gaps, reason: gaps.length ? "Missing candle intervals detected." : "Candle sequence is continuous." };
 }

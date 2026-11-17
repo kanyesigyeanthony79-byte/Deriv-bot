@@ -154,6 +154,30 @@ test("continuity validation allows the scheduled Gold/USD weekend closure", () =
   assert.equal(validateCandleContinuity(gold, 3600, "frxXAUUSD").valid, true);
 });
 
+test("continuity validation accepts Gold's scheduled daily maintenance break", () => {
+  const close = Date.UTC(2026, 10, 17, 21, 55, 0) / 1000;
+  const reopen = Date.UTC(2026, 10, 17, 23, 0, 0) / 1000;
+  const gold = [
+    { epoch: close, open: 4000, high: 4002, low: 3998, close: 4001 },
+    { epoch: reopen, open: 4001, high: 4004, low: 4000, close: 4003 }
+  ];
+  assert.equal(validateCandleContinuity(gold, 300, "frxXAUUSD").valid, true);
+});
+
+test("continuity validation still rejects unrelated or oversized Gold intraday gaps", () => {
+  const start = Date.UTC(2026, 10, 17, 10, 0, 0) / 1000;
+  const unrelated = [
+    { epoch: start, open: 4000, high: 4002, low: 3998, close: 4001 },
+    { epoch: start + 3600, open: 4001, high: 4004, low: 4000, close: 4003 }
+  ];
+  assert.equal(validateCandleContinuity(unrelated, 300, "frxXAUUSD").valid, false);
+  const oversized = [
+    { epoch: Date.UTC(2026, 10, 17, 20, 30, 0) / 1000, open: 4000, high: 4002, low: 3998, close: 4001 },
+    { epoch: Date.UTC(2026, 10, 17, 23, 59, 0) / 1000, open: 4001, high: 4004, low: 4000, close: 4003 }
+  ];
+  assert.equal(validateCandleContinuity(oversized, 300, "frxXAUUSD").valid, false);
+});
+
 test("continuity validation does not apply the Gold/USD weekend exception to synthetic markets", () => {
   const fridayClose = Date.UTC(2026, 10, 13, 21, 0, 0) / 1000;
   const sundayReopen = Date.UTC(2026, 10, 15, 22, 0, 0) / 1000;
