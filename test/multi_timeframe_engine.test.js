@@ -18,6 +18,10 @@ test("defines all four horizons and required chart intervals", () => {
   assert.deepEqual(Object.keys(CATEGORIES), ["SCALP", "SHORT_TERM", "SWING", "POSITION"]);
   assert.equal(TIMEFRAMES.M1, 60);
   assert.equal(CATEGORIES.SCALP.entry, "M1");
+  assert.equal(CATEGORIES.SCALP.tp1R, 1.5);
+  assert.equal(CATEGORIES.SCALP.tp2R, 3.0);
+  assert.equal(CATEGORIES.SHORT_TERM.tp1R, 1.5);
+  assert.equal(CATEGORIES.SHORT_TERM.tp2R, 3.0);
   assert.equal(CATEGORIES.POSITION.context, "W1");
 });
 
