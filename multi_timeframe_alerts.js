@@ -125,7 +125,7 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
       market: String(candidate.market || candidate.marketId) + " | " + String(candidate.categoryLabel || candidate.category),
       direction: candidate.direction, entry: candidate.entry, livePrice: priceCheck.livePrice,
       stopLoss: candidate.stopLoss, tp1: candidate.tp1, tp2: candidate.tp2,
-      signalAgeSeconds: freshness.ageSeconds, entryTimeframe: candidate.entryTimeframe,
+      signalAgeSeconds: freshness.ageSeconds,
       candleCloseEpoch: freshness.candleCloseEpoch, entryDeviationR: Number(priceCheck.deviationR.toFixed(3)),
       priceValidation: "PASS"
     };
