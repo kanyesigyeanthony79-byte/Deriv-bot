@@ -238,7 +238,7 @@ export default {
         const telegram = await deliverPendingTradeNotifications(q, v.notifications, env);
         return reply({ success: true, trades: v.trades || [], telegram });
       }
-      if (url.pathname === "/mt5/health" && request.method === "GET")      if (url.pathname === "/mt5/health" && request.method === "GET") {
+      if (url.pathname === "/mt5/health" && request.method === "GET") {
         const r = await q.fetch("https://queue/health");
         return reply(await r.json(), r.status);
       }
