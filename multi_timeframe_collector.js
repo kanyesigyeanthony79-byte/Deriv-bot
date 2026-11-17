@@ -128,7 +128,7 @@ async function fetchLiveQuotes(client, markets, logFn = log) {
 }
 
 async function fetchMt5TradeLedger(env, logFn = log, fetchImpl = fetch) {
-  const base = String(env.TELEGRAM_WORKER_URL || "").replace(/\\/+$/, "");
+  const base = String(env.TELEGRAM_WORKER_URL || "").replace(/\/+$/, "");
   if (env.MT5_TRADE_REPORTING_ENABLED !== "true" || !base || !env.SIGNAL_API_KEY) {
     return { enabled: false, connected: false, trades: [], error: null };
   }
