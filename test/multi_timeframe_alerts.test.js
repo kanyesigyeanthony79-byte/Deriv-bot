@@ -272,6 +272,32 @@ test("failed MT5 queue delivery retries independently without duplicating Telegr
   assert.equal(journal.signals[0].telegramStatus, "sent");
 });
 
+test("Gold signals are sent to Telegram but never queued for synthetic MT5 execution", async () => {
+  const gold = candidate({
+    signalId: "frxXAUUSD-SCALP-1000",
+    marketId: "frxXAUUSD",
+    market: "Gold (XAUUSD)"
+  });
+  const { markets, journal } = fixture([gold]);
+  const urls = [];
+  const env = {
+    MTF_TELEGRAM_ALERTS: "true", MT5_EXECUTION_QUEUE_ENABLED: "true",
+    TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret"
+  };
+  const result = await sendCandidateAlerts(markets, journal, 1301, env, {
+    liveQuotes: { frxXAUUSD: { price: 100 } },
+    fetchImpl: async (url, init) => {
+      urls.push(url);
+      return { ok: true, json: async () => ({ success: true }) };
+    }
+  });
+  assert.equal(result.sent, 1);
+  assert.equal(result.executionQueued, 0);
+  assert.deepEqual(urls, ["https://worker.example"]);
+  assert.equal(journal.signals[0].telegramStatus, "sent");
+  assert.equal(journal.signals[0].mt5QueueStatus, undefined);
+});
+
 test("MT5 queue remains disabled unless its explicit feature flag is true", async () => {
   const { markets, journal } = fixture([candidate()]);
   const urls = [];

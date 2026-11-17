@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { fetchCandleHistory, fetchLiveQuotes, fetchMt5TradeLedger, summarizeMt5TradeLedger } = require("../multi_timeframe_collector");
+const { MARKETS, resolveSymbol, fetchCandleHistory, fetchLiveQuotes, fetchMt5TradeLedger, summarizeMt5TradeLedger } = require("../multi_timeframe_collector");
 
 function makeCandles(start, count) {
   return Array.from({ length: count }, (_, i) => {
@@ -10,6 +10,13 @@ function makeCandles(start, count) {
     return { epoch: start + i * 60, open, high: close + 0.01, low: open - 0.01, close };
   });
 }
+
+test("includes Deriv Gold/USD (frxXAUUSD) in the observation-only market scanner", () => {
+  assert.ok(MARKETS.some(([id]) => id === "frxXAUUSD"));
+  assert.equal(resolveSymbol([
+    { underlying_symbol: "frxXAUUSD", underlying_symbol_name: "Gold/USD" }
+  ], "frxXAUUSD", "Gold (XAUUSD)"), "frxXAUUSD");
+});
 
 test("paginates M1 history beyond the 1,000-candle page size without gaps or duplicates", async () => {
   const requests = [];
