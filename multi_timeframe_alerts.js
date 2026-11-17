@@ -121,7 +121,7 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
     }
 
     const payload = {
-      event: "new_signal", reviewAvailable: true, signalId: candidate.signalId,
+      event: "new_signal", source: "PROMOTED_MTF", reviewAvailable: true, signalId: candidate.signalId,
       marketId: candidate.marketId, category: candidate.category, quality: candidate.quality,
       entryTimeframe: candidate.entryTimeframe, setupTimeframe: candidate.setupTimeframe,
       confirmationTimeframe: candidate.confirmationTimeframe,
@@ -221,7 +221,7 @@ async function sendOutcomeAlerts(journal, nowEpoch, env, options = {}) {
       result.considered++;
       const quote = liveQuotes[record.marketId];
       const payload = {
-        event: "outcome", outcome, signalId: record.signalId,
+        event: "outcome", source: "PROMOTED_MTF", outcome, signalId: record.signalId,
         market: String(record.market || record.marketId) + " | " + String(record.categoryLabel || record.category || ""),
         direction: record.direction, entry: record.entry, stopLoss: record.stopLoss,
         tp1: record.tp1, tp2: record.tp2,
