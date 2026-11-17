@@ -355,7 +355,7 @@ bool ReportClosedPosition(const ulong closingDeal,const ulong positionId)
       "\",\"clientId\":\""+InpClientId+"\",\"dealTicket\":\""+
       IntegerToString((long)closingDeal)+"\",\"positionId\":\""+
       IntegerToString((long)positionId)+"\",\"marketId\":\""+marketId+
-      "\",\"market\":\""+marketId+"\",\"category\":\""+category+
+      "\",\"market\":\""+symbol+"\",\"category\":\""+category+
       "\",\"direction\":\""+direction+"\",\"targetLeg\":\""+targetLeg+
       "\",\"closeReason\":\""+reason+"\",\"entryPrice\":"+
       DoubleToString(entryPrice,8)+",\"stopLoss\":"+DoubleToString(stopLoss,8)+
