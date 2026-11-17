@@ -99,8 +99,13 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <table><thead><tr><th>Market</th><th>Strategy</th><th>Signals</th><th>Resolved</th><th>Win %</th><th>TP1 %</th><th>TP2 %</th><th>Full SL %</th><th>SL after TP1 %</th><th>Expired %</th></tr></thead>
       <tbody id="strategyMarkets"><tr><td colspan="10" class="muted">Waiting for comparison data…</td></tr></tbody></table>
     </div>
-    <h2 style="margin-top:18px">Breakout–retest candidate · forward shadow</h2>
-    <div class="muted">Separate research track: M5 breakout setup, M1 retest confirmation and next-M1-open observation. Historical final holdout was 13 targets from 26 trades (50.0%) across seven synthetic markets. This is not the approved M5/M15 production signal format and is not eligible for MT5 execution.</div>
+    <h2 style="margin-top:18px">Breakout–retest candidates · forward-shadow comparison</h2>
+    <div class="muted">Both candidates use the same normalized 2R target and one-hour outcome window for a fair entry comparison. The M1-entry candidate is the historical research winner (50.0% in its 26-trade final holdout). The M5-entry candidate adds a fully closed M15 directional confirmation. Neither candidate is connected to production alerts or MT5 execution.</div>
+    <div class="card mtf-table-wrap" style="margin-top:10px">
+      <table><thead><tr><th>Candidate</th><th>Entry</th><th>Confirmation</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>Target before SL</th><th>Average R</th></tr></thead>
+      <tbody id="breakoutRetestComparison"><tr><td colspan="8" class="muted">Waiting for forward-shadow data…</td></tr></tbody></table>
+    </div>
+    <h3 style="margin-top:14px">Historical benchmark · M5 breakout / M1 retest</h3>
     <div class="card mtf-table-wrap" style="margin-top:10px">
       <table><thead><tr><th>Signals</th><th>Resolved</th><th>Pending</th><th>Target before SL</th><th>SL before target</th><th>Time exits</th><th>Ambiguous</th><th>Average R</th></tr></thead>
       <tbody id="breakoutRetestTotals"><tr><td colspan="8" class="muted">Waiting for forward-shadow data…</td></tr></tbody></table>
@@ -110,6 +115,18 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <div class="card mtf-table-wrap">
       <table><thead><tr><th>Market</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>Target %</th><th>Average R</th><th>Risk rejected</th><th>Overlap suppressed</th></tr></thead>
       <tbody id="breakoutRetestMarkets"><tr><td colspan="8" class="muted">Waiting for market results…</td></tr></tbody></table>
+    </div>
+    <h3 style="margin-top:18px">Approved-format candidate · M5 entry / M15 confirmation</h3>
+    <div class="muted">M5 breakout beyond the previous 12 M5 candles; M15 EMA20/EMA50 direction must agree using only completed M15 candles; wait for an M5 retest candle to close, then observe entry at the next M5 open. Stop is structure-based. This forward shadow uses a single 2R target over one hour only for comparison; production TP1/TP2 management is not enabled.</div>
+    <div class="card mtf-table-wrap" style="margin-top:10px">
+      <table><thead><tr><th>Setups</th><th>M15 confirmed</th><th>M15 rejected</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>Target before SL</th><th>SL before target</th><th>Average R</th></tr></thead>
+      <tbody id="breakoutRetestM5M15Totals"><tr><td colspan="9" class="muted">Waiting for M5/M15 shadow data…</td></tr></tbody></table>
+      <div class="muted" id="breakoutRetestM5M15Status" style="margin-top:8px">M5/M15 forward shadow has not initialized yet.</div>
+    </div>
+    <h4 style="margin-top:12px">M5/M15 market results</h4>
+    <div class="card mtf-table-wrap">
+      <table><thead><tr><th>Market</th><th>Data</th><th>Setups</th><th>M15 confirmed</th><th>M15 rejected</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>Target %</th><th>Average R</th><th>Risk rejected</th></tr></thead>
+      <tbody id="breakoutRetestM5M15Markets"><tr><td colspan="11" class="muted">Waiting for market results…</td></tr></tbody></table>
     </div>
     <h2 style="margin-top:18px">Research lab · 162 rule combinations</h2>
     <div class="muted">Offline candle research only. It does not send alerts or place orders. Rules are screened on an earlier sample and then checked on a later, held-out sample.</div>
@@ -295,6 +312,35 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     $("breakoutRetestStatus").textContent="Forward-only · "+esc(shadow.mode||"shadow_observation_only")+" · Historical holdout: "+(h.targetBeforeStop??0)+"/"+(h.trades??0)+" ("+pct(h.targetRatePct)+") · historical expectancy "+num(h.expectancyR)+"R before costs · "+esc(shadow.note||"No production alerts or execution.");
   }
 
+  function renderBreakoutRetestM5M15Shadow(){
+    const shadow=mtfSnapshot?.breakoutRetestM5M15Shadow;
+    const pct=v=>v===null||v===undefined?"—":Number(v).toFixed(1)+"%";
+    const num=v=>v===null||v===undefined?"—":Number(v).toFixed(2);
+    if(!shadow){
+      $("breakoutRetestM5M15Totals").innerHTML='<tr><td colspan="9" class="muted">M5/M15 shadow data is not available yet.</td></tr>';
+      $("breakoutRetestM5M15Markets").innerHTML='<tr><td colspan="11" class="muted">No M5/M15 market results yet.</td></tr>';
+      $("breakoutRetestM5M15Status").textContent="Waiting for the collector to publish the M5/M15 shadow journal.";
+      return;
+    }
+    const rows=Object.entries(shadow.markets||{}).map(([id,s])=>'<tr><td>'+esc(id)+'</td><td>'+esc(s.dataQuality||"warming")+'</td><td>'+esc(s.setupsDetected??0)+'</td><td>'+esc(s.m15Confirmed??0)+'</td><td>'+esc(s.m15Rejected??0)+'</td><td>'+esc(s.signals??0)+'</td><td>'+esc(s.resolved??0)+'</td><td>'+esc(s.pending??0)+'</td><td>'+pct(s.targetRatePct)+'</td><td>'+num(s.averageRealizedR)+'</td><td>'+esc(s.riskRejected??0)+'</td></tr>');
+    $("breakoutRetestM5M15Markets").innerHTML=rows.join("")||'<tr><td colspan="11" class="muted">No market results yet.</td></tr>';
+    $("breakoutRetestM5M15Totals").innerHTML='<tr><td>'+esc(Object.values(shadow.markets||{}).reduce((n,s)=>n+(s.setupsDetected||0),0))+'</td><td>'+esc(Object.values(shadow.markets||{}).reduce((n,s)=>n+(s.m15Confirmed||0),0))+'</td><td>'+esc(Object.values(shadow.markets||{}).reduce((n,s)=>n+(s.m15Rejected||0),0))+'</td><td>'+esc(shadow.signalsGenerated??0)+'</td><td>'+esc(shadow.resolvedSignals??0)+'</td><td>'+esc(shadow.pendingSignals??0)+'</td><td>'+esc(shadow.targetBeforeStop??0)+'</td><td>'+esc(shadow.stopBeforeTarget??0)+'</td><td>'+num(shadow.averageRealizedR)+'</td></tr>';
+    $("breakoutRetestM5M15Status").textContent="Forward-only · normalized 2R target / one-hour horizon · "+esc(shadow.note||"No Telegram or MT5 execution.");
+  }
+
+  function renderBreakoutRetestComparison(){
+    const m1=mtfSnapshot?.breakoutRetestShadow;
+    const m5=mtfSnapshot?.breakoutRetestM5M15Shadow;
+    const pct=v=>v===null||v===undefined?"—":Number(v).toFixed(1)+"%";
+    const num=v=>v===null||v===undefined?"—":Number(v).toFixed(2);
+    const row=(name,entry,confirmation,s)=>'<tr><td>'+name+'</td><td>'+entry+'</td><td>'+confirmation+'</td><td>'+esc(s?.signalsGenerated??0)+'</td><td>'+esc(s?.resolvedSignals??0)+'</td><td>'+esc(s?.pendingSignals??0)+'</td><td>'+pct(s?.targetRatePct)+'</td><td>'+num(s?.averageRealizedR)+'</td></tr>';
+    const rows=[
+      row("M5 breakout / M1 retest","M1","M1",m1),
+      row("M5 breakout / M5 retest","M5","M15",m5)
+    ];
+    $("breakoutRetestComparison").innerHTML=rows.join("");
+  }
+
   function renderStrategyResearch(){
     const research=mtfSnapshot?.strategyResearch;
     if(!research?.markets){
@@ -326,6 +372,8 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       renderMtf();
       renderStrategyComparison();
       renderBreakoutRetestShadow();
+      renderBreakoutRetestM5M15Shadow();
+      renderBreakoutRetestComparison();
       renderStrategyResearch();
       $("mtfStatus").textContent="Observation-only · "+esc(mtfSnapshot.markets?.length||0)+" markets · Updated "+esc(time(mtfSnapshot.generatedAt));
     }catch(e){$("mtfStatus").textContent="Multi-timeframe data not published yet: "+e.message;}
