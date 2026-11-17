@@ -3,7 +3,7 @@
 // Research journal only: no Telegram alerts, production signals, or MT5 execution.
 const { evaluate, DEF } = require("./engine");
 const MARKETS = Object.freeze(["R_10","R_25","R_50","R_75","JD75","JD100","CRASH500","BOOM500"]);
-const M5 = 300, M15 = 900, STOP_LOOKBACK = 5, STOP_BUFFER_ATR = 0.10;
+const M5 = 300, M15 = 900, STOP_LOOKBACK = 5, STOP_BUFFER_ATR = 0.10, SETUP_MAX_AGE = 12 * M5;
 const MIN_RISK_ATR = 0.50, MAX_RISK_ATR = 3.0, TARGET_R = 2, HORIZON_BARS = 12;
 const TERMINAL = new Set(["target","stop","time_exit","ambiguous"]);
 function ema(values, period) {
@@ -81,20 +81,30 @@ function updateM5PullbackJournal(prior, markets, nowEpoch=Math.floor(Date.now()/
     if(st.lastM15Epoch===null||st.lastM5Epoch===null){st.lastM15Epoch=m15.at(-1).epoch;st.lastM5Epoch=m5.at(-1).epoch;st.initializedAt=new Date(nowEpoch*1000).toISOString();j.markets[id]=st;continue;}
     const newM15=m15.filter(c=>c.epoch>st.lastM15Epoch);
     for(const setup of newM15){
-      const history15=m15.filter(c=>c.epoch<=setup.epoch);
-      const bias=m15Bias(history15);if(!bias)continue;
-      const closeEpoch=setup.epoch+M15;
-      const eligibleIndices=m5.map((c,i)=>({c,i})).filter(x=>x.c.epoch>=closeEpoch&&x.c.epoch>st.lastM5Epoch);
-      for(const item of eligibleIndices){
-        const trigger=m5Trigger(m5.slice(0,item.i+1),bias);if(!trigger)continue;
-        const next=m5.find(c=>c.epoch===trigger.entryCandleEpoch);if(!next)continue;
-        if(j.signals.some(s=>s.marketId===id&&s.status==="pending"))break;
-        const signal=makeSignal(id,m.marketName||id,bias,trigger,next);
-        if(signal&&!ids.has(signal.signalId)){j.signals.push(signal);ids.add(signal.signalId);st.signals++;}
-        break;
-      }
+      const bias=m15Bias(m15.filter(c=>c.epoch<=setup.epoch));
+      if(bias)st.pendingSetups.push({setupCloseEpoch:setup.epoch+M15,direction:bias,expiresEpoch:setup.epoch+M15+SETUP_MAX_AGE});
     }
-    st.lastM15Epoch=m15.at(-1).epoch;st.lastM5Epoch=m5.at(-1).epoch;j.markets[id]=st;
+    st.lastM15Epoch=m15.at(-1).epoch;
+    const remaining=[];
+    for(const setup of st.pendingSetups){
+      if(m5.at(-1).epoch>setup.expiresEpoch)continue;
+      let created=false;
+      for(let i=64;i<m5.length-1;i++){
+        const candle=m5[i];
+        if(candle.epoch<setup.setupCloseEpoch)continue;
+        const trigger=m5Trigger(m5.slice(0,i+1),setup.direction);
+        if(!trigger)continue;
+        const next=m5[i+1];
+        if(next.epoch<=st.lastM5Epoch)continue;
+        if(j.signals.some(s=>s.marketId===id&&s.status==="pending")){created=true;break;}
+        const signal=makeSignal(id,m.marketName||id,setup.direction,trigger,next);
+        if(signal&&!ids.has(signal.signalId)){j.signals.push(signal);ids.add(signal.signalId);st.signals++;}
+        created=true;break;
+      }
+      if(!created)remaining.push(setup);
+    }
+    st.pendingSetups=remaining;
+    st.lastM5Epoch=m5.at(-1).epoch;j.markets[id]=st;
   }
   j.updatedAt=new Date(nowEpoch*1000).toISOString();j.signals.sort((a,b)=>b.entryCandleEpoch-a.entryCandleEpoch);j.signals=j.signals.slice(0,2000);j.summary=summarize(j);return j;
 }
