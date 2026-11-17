@@ -3,7 +3,7 @@
 //| Demo-only. Executes existing MTF server signals; no local signals |
 //+------------------------------------------------------------------+
 #property copyright "Deriv Signal Assistant"
-#property version   "2.10"
+#property version   "2.11"
 #property strict
 
 #include <Trade/Trade.mqh>
@@ -312,17 +312,15 @@ void ManageBasket()
 {
    int count = CountOurPositions();
    if(count <= 0) return;
+
+   // TP1 and TP2 are attached to the individual positions at entry:
+   // entries 1 and 2 close at TP1; entry 3 remains open for TP2.
+   // Keep only the basket-wide emergency loss guard here.
    double pnl = BasketFloatingProfit();
-   if(pnl >= InpTargetProfit)
+   if(pnl <= -InpRiskPerBasket)
    {
-      Print("Basket profit target reached: ",DoubleToString(pnl,2),
-            ". Closing all EA positions.");
-      CloseAllOurPositions();
-   }
-   else if(pnl <= -InpRiskPerBasket)
-   {
-      Print("Basket loss limit reached: ",DoubleToString(pnl,2),
-            ". Closing all EA positions.");
+      Print("Emergency basket loss limit reached: ",DoubleToString(pnl,2),
+            ". Closing all remaining EA positions.");
       CloseAllOurPositions();
    }
 }
@@ -347,7 +345,7 @@ double NormalizeVolumeDown(const string symbol,const double requested)
 //+------------------------------------------------------------------+
 bool OpenSignalBasket(const string signalId,const string marketId,
                       const string direction,const double signalEntry,
-                      const double stopLoss,const double tp1,
+                      const double stopLoss,const double tp1,const double tp2,
                       const double signalAge,const string category)
 {
    if(!IsAllowedMarket(marketId)) { Print("Rejected non-whitelisted market: ",marketId); return false; }
@@ -363,6 +361,16 @@ bool OpenSignalBasket(const string signalId,const string marketId,
    double price = isBuy ? tick.ask : tick.bid;
    double riskDistance = MathAbs(signalEntry-stopLoss);
    if(riskDistance <= 0.0) return false;
+   if(isBuy && !(stopLoss < signalEntry && tp1 > signalEntry && tp2 > tp1))
+   {
+      Print("BUY signal has inconsistent SL/TP ordering.");
+      return false;
+   }
+   if(!isBuy && !(stopLoss > signalEntry && tp1 < signalEntry && tp2 < tp1))
+   {
+      Print("SELL signal has inconsistent SL/TP ordering.");
+      return false;
+   }
    if(MathAbs(price-signalEntry) > riskDistance*InpMaxEntryDeviationR)
    {
       Print("Signal rejected: current price moved too far from entry on ",symbol);
@@ -376,10 +384,27 @@ bool OpenSignalBasket(const string signalId,const string marketId,
    long stopsLevel = SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL);
    if(point <= 0.0) return false;
    double minStopDistance = (double)stopsLevel*point;
-   if(isBuy && (price-stopLoss) <= minStopDistance) { Print("Stop loss is too close for broker rules."); return false; }
-   if(!isBuy && (stopLoss-price) <= minStopDistance) { Print("Stop loss is too close for broker rules."); return false; }
-
    double sl = NormalizeDouble(stopLoss,digits);
+   double tp1Price = NormalizeDouble(tp1,digits);
+   double tp2Price = NormalizeDouble(tp2,digits);
+   if(isBuy)
+   {
+      if((price-sl) <= minStopDistance) { Print("Stop loss is too close for broker rules."); return false; }
+      if((tp1Price-price) <= minStopDistance || (tp2Price-price) <= minStopDistance)
+      {
+         Print("TP1 or TP2 is too close to the current price for broker rules.");
+         return false;
+      }
+   }
+   else
+   {
+      if((sl-price) <= minStopDistance) { Print("Stop loss is too close for broker rules."); return false; }
+      if((price-tp1Price) <= minStopDistance || (price-tp2Price) <= minStopDistance)
+      {
+         Print("TP1 or TP2 is too close to the current price for broker rules.");
+         return false;
+      }
+   }
    ENUM_ORDER_TYPE orderType = isBuy ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
    double oneLotPnl = 0.0;
    if(!OrderCalcProfit(orderType,symbol,1.0,price,sl,oneLotPnl))
@@ -421,7 +446,7 @@ bool OpenSignalBasket(const string signalId,const string marketId,
    trade.SetExpertMagicNumber(InpMagicNumber);
    trade.SetDeviationInPoints(InpDeviationPoints);
    trade.SetTypeFillingBySymbol(symbol);
-   string tag = "DSA2-" + StringSubstr(signalId,0,20);
+   string tag = "DSA2-" + StringSubstr(signalId,0,18);
    int opened = 0;
    double actualRiskTotal = 0.0;
    for(int n=1; n<=InpEntriesPerSignal; n++)
@@ -435,15 +460,18 @@ bool OpenSignalBasket(const string signalId,const string marketId,
       }
       double latestPrice = isBuy ? latestTick.ask : latestTick.bid;
       if(MathAbs(latestPrice-signalEntry) > riskDistance*InpMaxEntryDeviationR ||
-         (isBuy && latestPrice >= tp1) || (!isBuy && latestPrice <= tp1))
+         (isBuy && latestPrice >= tp1Price) || (!isBuy && latestPrice <= tp1Price))
       {
          Print("Price moved outside the valid signal window during basket submission. Rolling back.");
          CloseAllOurPositions();
          return false;
       }
 
-      bool sent = isBuy ? trade.Buy(volume,symbol,0.0,sl,0.0,tag)
-                        : trade.Sell(volume,symbol,0.0,sl,0.0,tag);
+      // Two separate positions carry TP1; the third carries TP2.
+       double positionTp = (n <= 2 ? tp1Price : tp2Price);
+       string positionTag = tag + (n <= 2 ? "-TP1" : "-TP2");
+       bool sent = isBuy ? trade.Buy(volume,symbol,0.0,sl,positionTp,positionTag)
+                         : trade.Sell(volume,symbol,0.0,sl,positionTp,positionTag);
       uint rc = trade.ResultRetcode();
       double filled = trade.ResultVolume();
       double fillPrice = trade.ResultPrice();
@@ -516,9 +544,10 @@ void PollSignalQueue()
    double entry = JsonGetNumber(signal,"entry");
    double stopLoss = JsonGetNumber(signal,"stopLoss");
    double tp1 = JsonGetNumber(signal,"tp1");
+   double tp2 = JsonGetNumber(signal,"tp2");
    double signalAge = JsonGetNumber(response,"signalAgeSeconds");
    if(signalId == "" || marketId == "" || direction == "" ||
-      priceValidation != "PASS" || entry <= 0.0 || stopLoss <= 0.0 || tp1 <= 0.0)
+      priceValidation != "PASS" || entry <= 0.0 || stopLoss <= 0.0 || tp1 <= 0.0 || tp2 <= 0.0)
    {
       Print("Signal rejected due to missing or invalid fields.");
       if(signalId != "") AcknowledgeSignal(signalId,"rejected");
@@ -552,7 +581,7 @@ void PollSignalQueue()
    // Do not mark the signal processed until execution outcome is known.
    // This prevents a failed order attempt from being mistaken for an executed basket
    // after a restart or a repeated queue delivery.
-   bool opened = OpenSignalBasket(signalId,marketId,direction,entry,stopLoss,tp1,signalAge,category);
+   bool opened = OpenSignalBasket(signalId,marketId,direction,entry,stopLoss,tp1,tp2,signalAge,category);
    int remainingPositions = CountOurPositions();
    if(opened || remainingPositions > 0)
    {
