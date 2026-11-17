@@ -21,28 +21,45 @@ function validateMt5Signal(d){
 }
 
 function validateMt5TradeEvent(d){
- if(!d||d.event!=="position_closed")return "Only position_closed events are accepted";
+ if(!d||!["basket_opened","position_closed"].includes(String(d.event||"")))return "Invalid MT5 trade event";
  if(!d.signalId||!/^[A-Za-z0-9._:-]{1,120}$/.test(String(d.signalId)))return "Invalid signalId";
  if(!/^[A-Za-z0-9._-]{1,80}$/.test(String(d.clientId||"")))return "Invalid clientId";
  if(!MT5_ALLOWED_MARKETS.has(String(d.marketId||"")))return "Market is not on the synthetic allow-list";
- if(!/^\d{1,24}$/.test(String(d.dealTicket||"")))return "Invalid dealTicket";
- if(!/^\d{1,24}$/.test(String(d.positionId||"")))return "Invalid positionId";
- if(!["TP1","TP2"].includes(String(d.targetLeg||"")))return "Invalid targetLeg";
- if(!["TP","SL","MANUAL","OTHER"].includes(String(d.closeReason||"")))return "Invalid closeReason";
  if(!["BUY","SELL"].includes(String(d.direction||"")))return "Invalid direction";
- for(const field of ["entryPrice","stopLoss","tp1","tp2","closePrice","volume","realizedProfit","closeTime"])
-  if(!Number.isFinite(Number(d[field])))return "Invalid numeric field: "+field;
- if(Number(d.entryPrice)<=0||Number(d.closePrice)<=0||Number(d.volume)<=0||Number(d.closeTime)<=0)return "Prices, volume and close time must be positive";
+ for(const field of ["entryPrice","stopLoss","tp1","tp2"])
+  if(!Number.isFinite(Number(d[field]))||Number(d[field])<=0)return "Invalid price field: "+field;
  if(String(d.accountCurrency||"")!=="USD")return "Only USD demo trade reports are accepted";
  if(String(d.accountMode||"")!=="DEMO")return "Only demo-account trade reports are accepted";
+ if(d.event==="basket_opened"){
+  if(!Array.isArray(d.positions)||d.positions.length!==3)return "A basket must report exactly three positions";
+  const ids=new Set();let tp1Count=0,tp2Count=0;
+  for(const p of d.positions){
+   if(!/^\\d{1,24}$/.test(String(p.positionId||"")))return "Invalid opened positionId";
+   if(ids.has(String(p.positionId)))return "Duplicate opened positionId";
+   ids.add(String(p.positionId));
+   if(p.targetLeg==="TP1")tp1Count++;else if(p.targetLeg==="TP2")tp2Count++;else return "Invalid opened targetLeg";
+   if(!Number.isFinite(Number(p.entryPrice))||Number(p.entryPrice)<=0||
+      !Number.isFinite(Number(p.volume))||Number(p.volume)<=0)return "Invalid opened position price or volume";
+  }
+  if(tp1Count!==2||tp2Count!==1)return "A basket must contain two TP1 positions and one TP2 position";
+  return null;
+ }
+ if(!/^\\d{1,24}$/.test(String(d.dealTicket||"")))return "Invalid dealTicket";
+ if(!/^\\d{1,24}$/.test(String(d.positionId||"")))return "Invalid positionId";
+ if(!["TP1","TP2"].includes(String(d.targetLeg||"")))return "Invalid targetLeg";
+ if(!["TP","SL","MANUAL","OTHER"].includes(String(d.closeReason||"")))return "Invalid closeReason";
+ for(const field of ["closePrice","volume","realizedProfit","closeTime"])
+  if(!Number.isFinite(Number(d[field])))return "Invalid numeric field: "+field;
+ if(Number(d.closePrice)<=0||Number(d.volume)<=0||Number(d.closeTime)<=0)return "Close price, volume and close time must be positive";
  return null;
 }
 function summarizeTradeRecord(rec){
- const positions=Object.values(rec.positions||{});
- const tp1Wins=positions.filter(p=>p.targetLeg==="TP1"&&p.closeReason==="TP").length;
- const tp2Wins=positions.filter(p=>p.targetLeg==="TP2"&&p.closeReason==="TP").length;
- const closed=positions.length, expected=3, tp1Complete=tp1Wins>=2, allClosed=closed>=expected;
- const anyStop=positions.some(p=>p.closeReason==="SL");
+ const closedPositions=Object.values(rec.positions||{});
+ const openedPositions=Object.values(rec.openPositions||{});
+ const tp1Wins=closedPositions.filter(p=>p.targetLeg==="TP1"&&p.closeReason==="TP").length;
+ const tp2Wins=closedPositions.filter(p=>p.targetLeg==="TP2"&&p.closeReason==="TP").length;
+ const closed=closedPositions.length,expected=3,tp1Complete=tp1Wins>=2,allClosed=closed>=expected;
+ const anyStop=closedPositions.some(p=>p.closeReason==="SL");
  let terminalOutcome=null,status="OPEN";
  if(allClosed){
   if(tp1Complete&&tp2Wins>=1){terminalOutcome="TP2_HIT";status="CLOSED_TP2";}
@@ -50,14 +67,23 @@ function summarizeTradeRecord(rec){
   else {terminalOutcome="CLOSED_OTHER";status="CLOSED_OTHER";}
  }else if(tp1Complete)status="TP1_HIT_RUNNER_OPEN";
  else if(closed>0)status="PARTIALLY_CLOSED";
- const realizedProfit=positions.reduce((sum,p)=>sum+Number(p.realizedProfit||0),0);
+ else if(openedPositions.length>0)status="OPEN";
+ const realizedProfit=closedPositions.reduce((sum,p)=>sum+Number(p.realizedProfit||0),0);
+ const byPosition=new Map();
+ for(const p of openedPositions)byPosition.set(String(p.positionId),{...p,status:"OPEN",realizedProfit:0});
+ for(const p of closedPositions){
+  const prior=byPosition.get(String(p.positionId))||{};
+  const legStatus=p.closeReason==="TP"?(p.targetLeg==="TP1"?"TP1_HIT":"TP2_HIT"):
+   p.closeReason==="SL"?"SL_HIT":p.closeReason==="MANUAL"?"CLOSED_MANUALLY":"CLOSED_OTHER";
+  byPosition.set(String(p.positionId),{...prior,...p,status:legStatus});
+ }
+ const positionRows=[...byPosition.values()].sort((a,b)=>
+  (a.targetLeg==="TP1"?0:1)-(b.targetLeg==="TP1"?0:1)||String(a.positionId).localeCompare(String(b.positionId)));
  return {signalId:rec.signalId,clientId:rec.clientId,marketId:rec.marketId,market:rec.market,category:rec.category,
   direction:rec.direction,entryPrice:rec.entryPrice,stopLoss:rec.stopLoss,tp1:rec.tp1,tp2:rec.tp2,
   expectedEntries:expected,closedEntries:closed,openEntries:Math.max(0,expected-closed),
   tp1ClosedEntries:tp1Wins,tp2ClosedEntries:tp2Wins,tp1Complete,allClosed,status,terminalOutcome,
-  realizedProfit:Number(realizedProfit.toFixed(2)),currency:"USD",
-  positions:positions.map(p=>({positionId:p.positionId,targetLeg:p.targetLeg,closeReason:p.closeReason,
-   closePrice:p.closePrice,volume:p.volume,realizedProfit:p.realizedProfit,closeTime:p.closeTime,dealTicket:p.dealTicket})),
+  realizedProfit:Number(realizedProfit.toFixed(2)),currency:"USD",positions:positionRows,
   updatedAt:rec.updatedAt||null};
 }
 function tradeNotificationText(notification){
@@ -131,6 +157,32 @@ export class ExecutionQueue{
    });return Response.json({success:Boolean(r.acknowledged),...r},{status:r.acknowledged?200:409});
   }
 
+  if(request.method==="POST"&&u.pathname==="/basket-opened"){
+   const event=await request.json(),id=String(event.signalId),now=new Date().toISOString();
+   const result=await this.ctx.storage.transaction(async t=>{
+    const key="trade:"+id;
+    let rec=await t.get(key);
+    if(!rec){
+     rec={signalId:id,clientId:String(event.clientId),marketId:String(event.marketId),market:String(event.market||event.marketId),
+      category:String(event.category||""),direction:String(event.direction),entryPrice:Number(event.entryPrice),
+      stopLoss:Number(event.stopLoss),tp1:Number(event.tp1),tp2:Number(event.tp2),positions:{},openPositions:{},
+      dealTickets:[],notifications:{},createdAt:now,updatedAt:now};
+     const ids=(await t.get("trade_ids"))||[];ids.push(id);if(ids.length>1000)ids.splice(0,ids.length-1000);await t.put("trade_ids",ids);
+    }
+    if(rec.clientId!==String(event.clientId))return {success:false,error:"client_id_mismatch"};
+    rec.openPositions||={};
+    let added=0;
+    for(const p of event.positions){
+     const positionId=String(p.positionId);
+     if(rec.positions[positionId]||rec.openPositions[positionId])continue;
+     rec.openPositions[positionId]={...p,positionId,status:"OPEN"};
+     added++;
+    }
+    rec.updatedAt=now;await t.put(key,rec);
+    return {success:true,duplicate:added===0,trade:summarizeTradeRecord(rec)};
+   });
+   return Response.json(result);
+  }
   if(request.method==="POST"&&u.pathname==="/trade-event"){
    const event=await request.json(),id=String(event.signalId),dealTicket=String(event.dealTicket),positionId=String(event.positionId),now=new Date().toISOString();
    const result=await this.ctx.storage.transaction(async t=>{
@@ -221,6 +273,15 @@ export default {
         return reply(await r.json(), r.status);
       }
 
+      if (url.pathname === "/mt5/basket-opened" && request.method === "POST") {
+        const d = await request.json();
+        const reason = validateMt5TradeEvent(d);
+        if (reason) return reply({ error: reason }, 422);
+        const r = await q.fetch("https://queue/basket-opened", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) });
+        const v = await r.json();
+        if (!r.ok || !v.success) return reply({ error: "Could not store MT5 basket-open event" }, 503);
+        return reply({ success: true, accepted: true, duplicate: v.duplicate, trade: v.trade });
+      }
       if (url.pathname === "/mt5/trade-event" && request.method === "POST") {
         const d = await request.json();
         const reason = validateMt5TradeEvent(d);
