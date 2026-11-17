@@ -266,7 +266,7 @@ async function main() {
       ? JSON.parse(fs.readFileSync(m5PullbackJournalPath, "utf8"))
       : { version: 1, updatedAt: null, markets: {}, signals: [] };
     const m5PullbackJournal = updateM5PullbackJournal(priorM5PullbackJournal, output.markets, now);
-    fs.writeFileSync(m5PullbackJournalPath, JSON.stringify(m5PullbackJournal, null, 2) + "\\n");
+    fs.writeFileSync(m5PullbackJournalPath, JSON.stringify(m5PullbackJournal, null, 2) + "\n");
     output.m5EmaPullbackShadow = m5PullbackJournal.summary;
     output.strategyComparisonTelegram = { alerts: strategyShadowTelegram, dailyReport: strategyDailyTelegram };
     const researchArchivePath = path.join(__dirname, "strategy_research_candles.json");
