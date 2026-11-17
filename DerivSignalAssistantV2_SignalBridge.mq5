@@ -549,17 +549,21 @@ void PollSignalQueue()
       return;
    }
 
-   // Persist the signal ID before sending any orders so a restart cannot duplicate it.
-   MarkProcessed(signalId);
+   // Do not mark the signal processed until execution outcome is known.
+   // This prevents a failed order attempt from being mistaken for an executed basket
+   // after a restart or a repeated queue delivery.
    bool opened = OpenSignalBasket(signalId,marketId,direction,entry,stopLoss,tp1,signalAge,category);
-   if(opened)
+   int remainingPositions = CountOurPositions();
+   if(opened || remainingPositions > 0)
+   {
+      // Persist before acknowledgement: if the acknowledgement fails, a redelivery
+      // must not open a duplicate basket. Any residual exposure remains basket-managed.
+      MarkProcessed(signalId);
       AcknowledgeSignal(signalId,"accepted");
+   }
    else
    {
-      // If rollback failed and any position remains, acknowledge to prevent re-entry;
-      // the basket manager will continue protecting the remaining exposure.
-      if(CountOurPositions() > 0) AcknowledgeSignal(signalId,"accepted");
-      else AcknowledgeSignal(signalId,"rejected");
+      AcknowledgeSignal(signalId,"rejected");
    }
 }
 
