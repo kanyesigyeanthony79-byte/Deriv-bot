@@ -37,10 +37,19 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
   const localDate = epoch => new Intl.DateTimeFormat("en-CA", {
     timeZone: "Africa/Kampala", year: "numeric", month: "2-digit", day: "2-digit"
   }).format(new Date(epoch * 1000));
-  const mtfRows = (Array.isArray(mtfSignals) ? mtfSignals : []).filter(signal =>
-    signal && Number.isFinite(Number(signal.entryCandleEpoch)) &&
-    localDate(Number(signal.entryCandleEpoch)) === day
-  );
+  // Daily cohort is based on when the observer first journaled the signal,
+  // not the timestamp of the candle used to form it. Older records without
+  // createdEpoch retain the entry-candle date as a compatibility fallback.
+  const mtfRows = (Array.isArray(mtfSignals) ? mtfSignals : []).filter(signal => {
+    if (!signal) return false;
+    const generatedEpoch = Number.isFinite(Number(signal.createdEpoch))
+      ? Number(signal.createdEpoch) : Number(signal.entryCandleEpoch);
+    return Number.isFinite(generatedEpoch) && localDate(generatedEpoch) === day;
+  });
+  const mtfEntryCandleDateMismatch = mtfRows.filter(signal =>
+    Number.isFinite(Number(signal.entryCandleEpoch)) &&
+    localDate(Number(signal.entryCandleEpoch)) !== day
+  ).length;
 
   const mtfWins = mtfRows.filter(signal => signal.status === "tp2_hit").length;
   const mtfLosses = mtfRows.filter(signal =>
@@ -54,9 +63,13 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
     !["tp2_hit", "stopped", "stopped_after_tp1", "expired", "ambiguous", "state_missing", "unverified"].includes(signal.status)).length;
   const mtfSent = mtfRows.filter(signal => signal.telegramStatus === "sent").length;
   const mtfDeliveryFailed = mtfRows.filter(signal =>
-    ["failed", "delivery_failed", "not_sent"].includes(signal.telegramStatus)).length;
+    ["failed", "delivery_failed"].includes(signal.telegramStatus)).length;
+  const mtfDeliveryMissed = mtfRows.filter(signal => signal.telegramStatus === "missed").length;
+  const mtfDeliveryStale = mtfRows.filter(signal => signal.telegramStatus === "stale").length;
+  const mtfDeliveryNotSent = mtfRows.filter(signal => signal.telegramStatus === "not_sent").length;
+  const knownDeliveryStates = ["sent", "failed", "delivery_failed", "missed", "stale", "not_sent"];
   const mtfDeliveryUntracked = mtfRows.filter(signal =>
-    !signal.telegramStatus || !["sent", "failed", "delivery_failed", "not_sent"].includes(signal.telegramStatus)).length;
+    !signal.telegramStatus || !knownDeliveryStates.includes(signal.telegramStatus)).length;
   const mtfResolved = mtfWins + mtfLosses;
   const mtfWinRate = mtfResolved ? Number((mtfWins / mtfResolved * 100).toFixed(1)) : null;
 
@@ -92,7 +105,9 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
     legacyMfeCount: legacyMfe.length, mtfMfeCount: mtfMfe.length,
     multiTimeframe: {
       generated: mtfRows.length, sent: mtfSent, deliveryFailed: mtfDeliveryFailed,
-      deliveryUntracked: mtfDeliveryUntracked, tp1: mtfTp1, tp2: mtfWins,
+      deliveryUntracked: mtfDeliveryUntracked, deliveryMissed: mtfDeliveryMissed,
+      deliveryStale: mtfDeliveryStale, deliveryNotSent: mtfDeliveryNotSent,
+      entryCandleDateMismatch: mtfEntryCandleDateMismatch, tp1: mtfTp1, tp2: mtfWins,
       wins: mtfWins, losses: mtfLosses, resolved: mtfResolved, winRate: mtfWinRate,
       netSignalOutcomes: mtfWins - mtfLosses, expired: mtfExpired,
       ambiguous: mtfAmbiguous, unverified: mtfUnverified, unresolved: mtfUnresolved,
@@ -123,7 +138,11 @@ function buildDailySummaryMessage(summary, accountSnapshot = null) {
     "\n\nMULTI-TIMEFRAME OBSERVATION SIGNALS" +
     "\nGenerated: " + mtf.generated + "\nTelegram sent: " + mtf.sent +
     "\nDelivery failed: " + mtf.deliveryFailed +
-    "\nDelivery status untracked: " + mtf.deliveryUntracked +
+    "\nDelivery missed (price moved): " + (mtf.deliveryMissed ?? 0) +
+    "\nDelivery stale: " + (mtf.deliveryStale ?? 0) +
+    "\nDelivery explicitly not sent: " + (mtf.deliveryNotSent ?? 0) +
+    "\nDelivery status unknown/untracked: " + mtf.deliveryUntracked +
+    (mtf.entryCandleDateMismatch ? "\nSignals generated today using an earlier entry candle: " + mtf.entryCandleDateMismatch : "")
     "\nWins (TP2): " + mtf.wins + "\nLosses (SL): " + mtf.losses +
     "\nWin rate (resolved wins/losses): " + (mtf.winRate === null ? "N/A" : mtf.winRate + "%") +
     "\nNet signal outcomes (wins - losses): " + (mtf.netSignalOutcomes > 0 ? "+" : "") + mtf.netSignalOutcomes +
