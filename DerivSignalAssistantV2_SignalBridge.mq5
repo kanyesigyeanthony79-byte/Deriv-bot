@@ -339,7 +339,12 @@ bool ReportClosedPosition(const ulong closingDeal,const ulong positionId)
       }
    }
    // Send one final, aggregated record per position, not one per partial fill.
-   if(latestCloseDeal!=closingDeal || closeVolume<=0.0) return false;
+   if(closeVolume<=0.0) return false;
+   if(latestCloseDeal!=closingDeal)
+   {
+      GlobalVariableSet(ProcessedDealKey(closingDeal),(double)TimeCurrent());
+      return false;
+   }
    double closePrice = closeValue/closeVolume;
    string reason = "OTHER";
    if(closeReason==DEAL_REASON_TP) reason = "TP";
@@ -358,7 +363,7 @@ bool ReportClosedPosition(const ulong closingDeal,const ulong positionId)
       ",\"closePrice\":"+DoubleToString(closePrice,8)+",\"volume\":"+
       DoubleToString(closeVolume,8)+",\"realizedProfit\":"+DoubleToString(realized,2)+
       ",\"closeTime\":"+IntegerToString((long)closeTime)+
-      ",\"accountCurrency\":\""+AccountInfoString(ACCOUNT_CURRENCY)+"\"}";
+      ",\"accountCurrency\":\""+AccountInfoString(ACCOUNT_CURRENCY)+"\",\"accountMode\":\"DEMO\"}";
    string response;
    int http = HttpPost(InpBridgeUrl+"/mt5/trade-event",body,response);
    if(http!=200 || !JsonTrue(response,"success"))
@@ -367,7 +372,14 @@ bool ReportClosedPosition(const ulong closingDeal,const ulong positionId)
             ". HTTP=",http," response=",response);
       return false;
    }
-   GlobalVariableSet(ProcessedDealKey(closingDeal),(double)TimeCurrent());
+   for(int processedIndex=0; processedIndex<HistoryDealsTotal(); processedIndex++)
+   {
+      ulong processedTicket=HistoryDealGetTicket(processedIndex);
+      if(processedTicket==0) continue;
+      long processedEntry=HistoryDealGetInteger(processedTicket,DEAL_ENTRY);
+      if(processedEntry==DEAL_ENTRY_OUT || processedEntry==DEAL_ENTRY_OUT_BY || processedEntry==DEAL_ENTRY_INOUT)
+         GlobalVariableSet(ProcessedDealKey(processedTicket),(double)TimeCurrent());
+   }
    FileDelete(PositionMapFileName(positionId),FILE_COMMON);
    Print("MT5 position closure reported. Signal=",signalId,
          " leg=",targetLeg," reason=",reason,
