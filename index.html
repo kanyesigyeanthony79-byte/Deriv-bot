@@ -126,11 +126,11 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   </section>
 
   <div class="notice"><b>Important:</b> This dashboard displays signals recorded by the hosted scanner and their reported outcomes. A signal is a research alert, not a guaranteed result or instruction to trade. Historical outcomes do not establish future profitability. Use demo observation only.</div>
-  <div class="foot">Hosted scanner: eight markets · completed 15-minute candles · scheduled every five minutes. Dashboard refreshes the public signal journal automatically. Telegram delivery and outcome monitoring remain on the server; no private API key is required in this page.</div>
+  <div class="foot">Hosted scanner: seven synthetic markets · M5/M15/M30 multi-timeframe analysis · scheduled every five minutes. MT5 execution outcomes appear only after broker deal-history confirmation. No private API key is required in this page.</div>
 </main>
 <script>
 (() => {
-  const MARKETS = [["R_10","Volatility 10 Index"],["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],["R_75","Volatility 75 Index"],["JD100","Jump 100 Index"],["frxXAUUSD","Gold/USD"],["CRASH500","Crash 500 Index"],["BOOM500","Boom 500 Index"]];
+  const MARKETS = [["R_10","Volatility 10 Index"],["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],["R_75","Volatility 75 Index"],["JD100","Jump 100 Index"],["CRASH500","Crash 500 Index"],["BOOM500","Boom 500 Index"]];
   // Dashboard-only reset: hide all signals created before this UTC epoch without deleting audit history or Telegram messages.
   const DASHBOARD_RESET_EPOCH = 1794822510; // 2026-11-16T09:48:30Z
   const JOURNAL_URL = "./trade_journal.json";
