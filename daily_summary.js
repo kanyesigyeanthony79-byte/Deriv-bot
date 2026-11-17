@@ -142,7 +142,7 @@ function buildDailySummaryMessage(summary, accountSnapshot = null) {
     "\nDelivery stale: " + (mtf.deliveryStale ?? 0) +
     "\nDelivery explicitly not sent: " + (mtf.deliveryNotSent ?? 0) +
     "\nDelivery status unknown/untracked: " + mtf.deliveryUntracked +
-    (mtf.entryCandleDateMismatch ? "\nSignals generated today using an earlier entry candle: " + mtf.entryCandleDateMismatch : "")
+    (mtf.entryCandleDateMismatch ? "\nSignals generated today using an earlier entry candle: " + mtf.entryCandleDateMismatch : "") +
     "\nWins (TP2): " + mtf.wins + "\nLosses (SL): " + mtf.losses +
     "\nWin rate (resolved wins/losses): " + (mtf.winRate === null ? "N/A" : mtf.winRate + "%") +
     "\nNet signal outcomes (wins - losses): " + (mtf.netSignalOutcomes > 0 ? "+" : "") + mtf.netSignalOutcomes +
