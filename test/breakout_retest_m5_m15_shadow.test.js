@@ -3,7 +3,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   detectBreakout, m15ContextAt, findM5RetestConfirmation,
-  updateSignalOutcome, updateJournal, TERMINAL
+  updateSignalOutcome, updateJournal, summarizeJournal, TERMINAL
 } = require("../breakout_retest_m5_m15_shadow");
 
 const START = Math.floor(1_700_000_000 / 900) * 900;
@@ -108,6 +108,15 @@ test("stop before TP1 loses one R and same-candle TP1/stop is ambiguous", () => 
   updateSignalOutcome(ambiguous, [{ epoch: START, open: 100, high: 101.6, low: 98.9, close: 100 }]);
   assert.equal(ambiguous.productionStatus, "ambiguous");
   assert.equal(ambiguous.productionRealizedR, null);
+});
+
+test("summary reports the approved three-entry management as simulation only", () => {
+  const summary = summarizeJournal({ version: 1, markets: {}, signals: [] });
+  assert.equal(summary.productionManagementSimulation.entriesPerSignal, 3);
+  assert.equal(summary.productionManagementSimulation.tp1R, 1.5);
+  assert.equal(summary.productionManagementSimulation.tp2R, 3);
+  assert.equal(summary.productionCompatibility.productionStatus, "not_enabled; management outcomes simulated only");
+  assert.equal(summary.productionManagementSimulation.averageRealizedR, null);
 });
 
 test("forward journal waits for fresh bars, then creates only M15-aligned M5-entry signal", () => {
