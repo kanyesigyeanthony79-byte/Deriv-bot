@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const source = readFileSync(new URL("../workers/deriv-telegram-alerts/worker.js", import.meta.url), "utf8")
-  .replace(/\\bexport class /g, "class ")
-  .replace(/\\bexport default /g, "const Worker = ");
-const api = new Function("Response", "URL", "fetch", source + "\\nreturn { ExecutionQueue, Worker, validateMt5TradeEvent };")(
+  .replace(/\bexport class /g, "class ")
+  .replace(/\bexport default /g, "const Worker = ");
+const api = new Function("Response", "URL", "fetch", source + "\nreturn { ExecutionQueue, Worker, validateMt5TradeEvent };")(
   Response, URL, globalThis.fetch
 );
 
