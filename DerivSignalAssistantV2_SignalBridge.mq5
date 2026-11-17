@@ -17,7 +17,7 @@ input string InpSymbolMap = "R_10=Volatility 10 Index;R_25=Volatility 25 Index;R
 
 input int    InpEntriesPerSignal = 3;
 input double InpRiskPerBasket = 15.0;  // Account currency must be USD
-input double InpTargetProfit = 30.0;   // Combined floating basket profit
+input double InpTargetProfit = 30.0;   // Expected full-basket profit if all three targets fill; informational only
 input double InpDailyLossLimitPct = 3.0;
 input double InpMaxEntryDeviationR = 0.20;
 input int    InpPollSeconds = 3;
