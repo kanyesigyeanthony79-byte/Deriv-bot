@@ -84,10 +84,9 @@ function updateM5PullbackJournal(prior, markets, nowEpoch=Math.floor(Date.now()/
       const history15=m15.filter(c=>c.epoch<=setup.epoch);
       const bias=m15Bias(history15);if(!bias)continue;
       const closeEpoch=setup.epoch+M15;
-      const eligible=m5.filter(c=>c.epoch>=closeEpoch&&c.epoch>st.lastM5Epoch);
-      for(let i=64;i<eligible.length;i++){
-        const through=eligible.slice(0,i+1);
-        const trigger=m5Trigger(through,bias);if(!trigger)continue;
+      const eligibleIndices=m5.map((c,i)=>({c,i})).filter(x=>x.c.epoch>=closeEpoch&&x.c.epoch>st.lastM5Epoch);
+      for(const item of eligibleIndices){
+        const trigger=m5Trigger(m5.slice(0,item.i+1),bias);if(!trigger)continue;
         const next=m5.find(c=>c.epoch===trigger.entryCandleEpoch);if(!next)continue;
         if(j.signals.some(s=>s.marketId===id&&s.status==="pending"))break;
         const signal=makeSignal(id,m.marketName||id,bias,trigger,next);
