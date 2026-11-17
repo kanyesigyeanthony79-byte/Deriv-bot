@@ -93,7 +93,8 @@ test("forward journal waits for fresh bars, then creates only M15-aligned M5-ent
   assert.equal(journal.signals[0].strategyId, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM");
   assert.equal(journal.signals[0].entryTimeframe, "M5");
   assert.equal(journal.signals[0].confirmationTimeframe, "M15");
-  assert.equal(journal.signals[0].m15Context, "up");
+  assert.equal(journal.signals[0].m15ContextAtBreakout, "up");
+  assert.equal(journal.signals[0].m15ContextAtEntry, "up");
   assert.equal(journal.signals[0].entryCandleEpoch, START + 82 * 300);
   assert.equal(journal.signals[0].status, "pending");
   assert.equal(journal.summary.comparisonModel.targetR, 2);
