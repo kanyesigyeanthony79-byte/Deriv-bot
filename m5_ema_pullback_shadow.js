@@ -75,6 +75,7 @@ function updateM5PullbackJournal(prior, markets, nowEpoch=Math.floor(Date.now()/
   for(const [id,m] of Object.entries(markets||{})){
     if(!MARKETS.includes(id))continue;
     const f=m.timeframes||{},m5=f.M5||[],m15=f.M15||[],st=j.markets[id]||{lastM15Epoch:null,lastM5Epoch:null,initializedAt:null,signals:0};
+    st.pendingSetups ||= [];
     if(!continuous(m5,M5,65)||!continuous(m15,M15,65)){st.dataQuality="insufficient_or_discontinuous";j.markets[id]=st;continue;}
     st.dataQuality="ok";
     for(const s of j.signals.filter(x=>x.marketId===id&&x.status==="pending"))updateOutcome(s,m5);
