@@ -333,6 +333,7 @@ function summarizeJournal(journal) {
   for (const id of SYNTHETIC_MARKETS) {
     const rows = signals.filter(s => s.marketId === id);
     const done = rows.filter(s => TERMINAL.has(s.status));
+    const productionDone = rows.filter(s => PRODUCTION_TERMINAL.has(s.productionStatus));
     const wins = done.filter(s => s.status === "tp2_hit").length;
     const losses = done.filter(s => s.status === "stopped").length;
     const rs = done.map(s => s.realizedR).filter(Number.isFinite);
@@ -354,10 +355,12 @@ function summarizeJournal(journal) {
       riskRejected: journal?.markets?.[id]?.stats?.riskRejected || 0,
       overlapSuppressed: journal?.markets?.[id]?.stats?.overlapSuppressed || 0,
       productionTp1Hits: rows.filter(s => s.productionTp1Hit).length,
-      productionTp2Hits: done.filter(s => s.productionStatus === "tp2_hit").length,
-      productionStoppedBeforeTp1: done.filter(s => s.productionStatus === "stopped_before_tp1").length,
-      productionStoppedAfterTp1: done.filter(s => s.productionStatus === "stopped_after_tp1").length,
-      productionAverageRealizedR: (() => { const v = done.map(s => s.productionRealizedR).filter(Number.isFinite); return v.length ? Number((v.reduce((x, y) => x + y, 0) / v.length).toFixed(3)) : null; })()
+      productionResolved: productionDone.length,
+      productionPending: rows.filter(s => s.productionStatus === "pending").length,
+      productionTp2Hits: productionDone.filter(s => s.productionStatus === "tp2_hit").length,
+      productionStoppedBeforeTp1: productionDone.filter(s => s.productionStatus === "stopped_before_tp1").length,
+      productionStoppedAfterTp1: productionDone.filter(s => s.productionStatus === "stopped_after_tp1").length,
+      productionAverageRealizedR: (() => { const v = productionDone.map(s => s.productionRealizedR).filter(Number.isFinite); return v.length ? Number((v.reduce((x, y) => x + y, 0) / v.length).toFixed(3)) : null; })()
     };
   }
   return {
