@@ -73,7 +73,7 @@ function tradeNotificationText(notification){
   "Signal: "+String(s.signalId||"").slice(0,60)];
  if(id==="TP1_HIT")lines.push("The two TP1 positions are confirmed closed. The TP2 runner remains open.");
  else lines.push("All three positions are confirmed closed. This result is based on MT5 deal history.");
- return lines.join("\\n");
+ return lines.join("\n");
 }
 async function deliverPendingTradeNotifications(queue,notifications,env){
  const result={sent:0,pending:0,failed:0};
