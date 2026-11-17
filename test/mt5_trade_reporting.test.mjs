@@ -16,23 +16,14 @@ class MemoryStorage {
   async transaction(fn) { return fn(this); }
 }
 function makeOpenedBasket(overrides = {}) {
-  const base = makeEvent({ event: "basket_opened", ...overrides });
-  base.positions = [
+  const { positions, ...eventOverrides } = overrides;
+  const base = makeEvent({ event: "basket_opened", ...eventOverrides });
+  base.positions = positions || [
     { positionId: "2001", targetLeg: "TP1", entryPrice: 100.01, volume: 0.1 },
     { positionId: "2002", targetLeg: "TP1", entryPrice: 100.02, volume: 0.1 },
     { positionId: "2003", targetLeg: "TP2", entryPrice: 100.03, volume: 0.1 }
   ];
   return base;
-}
-function makeEvent(overrides = {}) {
-  return {
-    event: "position_closed", signalId: "R_50-SCALP-1763000000", clientId: "MT5-DEMO-01",
-    dealTicket: "1001", positionId: "2001", marketId: "R_50", market: "Volatility 50 Index",
-    category: "SCALP", direction: "BUY", targetLeg: "TP1", closeReason: "TP",
-    entryPrice: 100, stopLoss: 98, tp1: 103, tp2: 106, closePrice: 103,
-    volume: 0.1, realizedProfit: 3.25, closeTime: 1763000100,
-    accountCurrency: "USD", accountMode: "DEMO", ...overrides
-  };
 }
 async function post(queue, path, body) {
   const response = await queue.fetch(new Request("https://queue" + path, {
@@ -43,6 +34,8 @@ async function post(queue, path, body) {
 
 test("accepts only synthetic-market USD demo closure events", () => {
   assert.equal(api.validateMt5TradeEvent(makeEvent()), null);
+  assert.equal(api.validateMt5TradeEvent(makeOpenedBasket()), null);
+  assert.match(api.validateMt5TradeEvent(makeOpenedBasket({ positions: [{ positionId: "1", targetLeg: "TP1", entryPrice: 100, volume: 0.1 }] })), /exactly three/);
   assert.equal(api.validateMt5TradeEvent(makeOpenedBasket()), null);
   assert.match(api.validateMt5TradeEvent(makeOpenedBasket({ positions: [{ positionId: "1", targetLeg: "TP1", entryPrice: 100, volume: 0.1 }] })), /exactly three/);
   assert.match(api.validateMt5TradeEvent(makeEvent({ marketId: "frxXAUUSD" })), /allow-list/);
@@ -58,9 +51,18 @@ test("TP1 is confirmed only after both TP1 positions close and duplicate deals d
   assert.equal(opened.body.trade.closedEntries, 0);
   assert.equal(opened.body.trade.openEntries, 3);
   assert.deepEqual(opened.body.trade.positions.map(p => p.status), ["OPEN", "OPEN", "OPEN"]);
+  const opened = await post(queue, "/basket-opened", makeOpenedBasket());
+  assert.equal(opened.body.trade.status, "OPEN");
+  assert.equal(opened.body.trade.closedEntries, 0);
+  assert.equal(opened.body.trade.openEntries, 3);
+  assert.deepEqual(opened.body.trade.positions.map(p => p.status), ["OPEN", "OPEN", "OPEN"]);
+  const duplicateOpen = await post(queue, "/basket-opened", makeOpenedBasket());
+  assert.equal(duplicateOpen.body.duplicate, true);
   const first = await post(queue, "/trade-event", makeEvent());
   assert.equal(first.body.trade.closedEntries, 1);
   assert.equal(first.body.trade.status, "PARTIALLY_CLOSED");
+  assert.equal(first.body.trade.openEntries, 2);
+  assert.deepEqual(first.body.trade.positions.map(p => p.status), ["TP1_HIT", "OPEN", "OPEN"]);
   assert.equal(first.body.trade.openEntries, 2);
   assert.deepEqual(first.body.trade.positions.map(p => p.status), ["TP1_HIT", "OPEN", "OPEN"]);
   assert.equal(first.body.notifications.some(n => n.id === "TP1_HIT"), false);
@@ -124,6 +126,11 @@ test("authenticated Worker endpoint stores trade events and exposes the ledger",
     body: JSON.stringify(makeOpenedBasket())
   }), env);
   assert.equal(opened.status, 200);
+  const opened = await api.Worker.fetch(new Request("https://worker/mt5/basket-opened", {
+    method: "POST", headers: { "Content-Type": "application/json", "X-API-Key": "secret" },
+    body: JSON.stringify(makeOpenedBasket())
+  }), env);
+  assert.equal(opened.status, 200);
   const accepted = await api.Worker.fetch(new Request("https://worker/mt5/trade-event", {
     method: "POST", headers: { "Content-Type": "application/json", "X-API-Key": "secret" },
     body: JSON.stringify(makeEvent())
@@ -138,6 +145,8 @@ test("authenticated Worker endpoint stores trade events and exposes the ledger",
   assert.equal(ledger.status, 200);
   assert.equal(result.trades.length, 1);
   assert.equal(result.trades[0].closedEntries, 1);
+  assert.equal(result.trades[0].openEntries, 2);
+  assert.deepEqual(result.trades[0].positions.map(p => p.status), ["TP1_HIT", "OPEN", "OPEN"]);
   assert.equal(result.trades[0].openEntries, 2);
   assert.deepEqual(result.trades[0].positions.map(p => p.status), ["TP1_HIT", "OPEN", "OPEN"]);
 });
