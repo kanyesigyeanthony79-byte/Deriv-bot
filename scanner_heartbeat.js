@@ -3,12 +3,14 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
+let runSequence = 0;
+
 function createHeartbeat({ filePath, markets, now = () => new Date() }) {
   if (!filePath) throw new Error("heartbeat filePath is required");
   const startedAt = now().toISOString();
   const record = {
     schemaVersion: 1,
-    runId: startedAt,
+    runId: startedAt + "#" + (++runSequence),
     status: "running",
     startedAt,
     completedAt: null,
