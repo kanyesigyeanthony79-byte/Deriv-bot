@@ -1,6 +1,11 @@
 name: Scanner Watchdog
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/scanner-watchdog.yml"
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
