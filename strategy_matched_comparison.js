@@ -32,7 +32,7 @@ function candidateRows(journal) {
   return (Array.isArray(journal?.signals) ? journal.signals : [])
     .filter(row => row && row.evaluationSource === "forward_shadow" &&
       validEpoch(row.entryCandleEpoch) &&
-      ["BUY", "SELL"].includes(row.direction) && row.marketId && row.strategyId);
+      ["BUY", "SELL"].includes(row.direction) && row.marketId && row.strategyId && row.signalId);
 }
 
 function baselineRows(journal) {
@@ -40,7 +40,7 @@ function baselineRows(journal) {
     .filter(row => row && row.strategyVersion === BASELINE_VERSION &&
       String(row.category || "").toUpperCase() === BASELINE_CATEGORY &&
       String(row.entryTimeframe || "").toUpperCase() === "M5" &&
-      Number.isFinite(Number(row.entryCandleEpoch)) &&
+      validEpoch(row.entryCandleEpoch) &&
       ["BUY", "SELL"].includes(row.direction) && row.marketId);
 }
 
