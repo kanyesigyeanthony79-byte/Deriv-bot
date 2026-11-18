@@ -1,4 +1,5 @@
 name: Multi-Timeframe Data Collector
+run-name: "[${{ inputs.trigger_source || 'manual' }}] Multi-Timeframe Data Collector"
 
 on:
   push:
@@ -23,8 +24,12 @@ on:
       - "signal_review.js"
       - ".github/workflows/multi-timeframe-collector.yml"
   workflow_dispatch:
-  schedule:
-    - cron: "1-59/5 * * * *"
+    inputs:
+      trigger_source:
+        description: "Dispatch source label"
+        required: false
+        default: "manual"
+        type: string
 
 permissions:
   contents: write
