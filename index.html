@@ -268,7 +268,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     $("originalSummaryStatus").textContent="Latest recorded setup: "+(newest?time(newest.createdAt)+" · "+newest.market+" · "+(newest.status==="stale"?"STALE · NOT DELIVERED":newest.status.toUpperCase()):"No qualifying setup in the visible journal")+" · Browser refreshed "+new Date().toLocaleTimeString();
     const nowSeconds=Math.floor(Date.now()/1000);
     const unresolved=s=>{
-      const terminal=Boolean(s.finalOutcome)||(s.events||[]).some(e=>["TP1_HIT","TP2_HIT","SL_HIT","EXPIRED","AMBIGUOUS"].includes(e.outcome));
+      const terminal=Boolean(s.finalOutcome)||(s.events||[]).some(e=>["TP2_HIT","SL_HIT","EXPIRED","AMBIGUOUS"].includes(e.outcome));
       return s.status==="sent"&&!terminal;
     };
     const ageOf=s=>nowSeconds-Number(s.candleEpoch||0);
