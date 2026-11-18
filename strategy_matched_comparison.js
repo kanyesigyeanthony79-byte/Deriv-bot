@@ -41,7 +41,7 @@ function baselineRows(journal) {
       String(row.category || "").toUpperCase() === BASELINE_CATEGORY &&
       String(row.entryTimeframe || "").toUpperCase() === "M5" &&
       validEpoch(row.entryCandleEpoch) &&
-      ["BUY", "SELL"].includes(row.direction) && row.marketId);
+      ["BUY", "SELL"].includes(row.direction) && row.marketId && row.signalId);
 }
 
 function buildStrategyComparison(strategyId, label, candidateJournal, baseline) {
