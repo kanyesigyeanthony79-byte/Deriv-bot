@@ -1,0 +1,32 @@
+name: Scanner Heartbeat Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scanner_heartbeat.js"
+      - "tests/**"
+      - "hosted_scanner.js"
+      - ".github/workflows/scanner-heartbeat-tests.yml"
+  push:
+    branches:
+      - "feature/scanner-heartbeat-observability"
+    paths:
+      - "scanner_heartbeat.js"
+      - "tests/**"
+      - "hosted_scanner.js"
+      - ".github/workflows/scanner-heartbeat-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  heartbeat-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm test
