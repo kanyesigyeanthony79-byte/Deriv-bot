@@ -308,7 +308,7 @@ async function main() {
     const reviewCandidates = new Map();
     for (const signal of journal.signals.filter(s => s.category !== "SWING").slice(0, 120)) reviewCandidates.set(signal.signalId, signal);
     // Every Telegram-delivered signal remains reviewable until a terminal outcome is recorded.
-    for (const signal of journal.signals.filter(s => s.telegramStatus === "sent" && !["tp2_hit", "stopped", "stopped_after_tp1", "ambiguous", "expired"].includes(s.status) && s.category !== "SWING")) reviewCandidates.set(signal.signalId, signal);
+    for (const signal of journal.signals.filter(s => s.telegramStatus === "sent" && s.category !== "SWING")) reviewCandidates.set(signal.signalId, signal);
     const reviewRecords = [...reviewCandidates.values()].map(signal => {
       const market = output.markets[signal.marketId];
       return { signalId: signal.signalId, marketId: signal.marketId, market: signal.market, category: signal.category,
