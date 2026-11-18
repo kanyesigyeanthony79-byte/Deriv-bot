@@ -95,3 +95,26 @@ test("expiry analysis reports timestamp coverage and favourable excursion bands"
   assert.equal(report.expiryAnalysis.medianExpiryDelaySeconds, 60);
   assert.deepEqual(report.expiryAnalysis.favourableExcursionBands.map(x => x.signals), [1, 0, 0, 1, 0, 0]);
 });
+
+
+test("review comparison keeps original journal outcomes separate from advisory statuses", () => {
+  const journal = { signals: [
+    { signalId: "A", telegramStatus: "sent", status: "expired" },
+    { signalId: "B", telegramStatus: "sent", status: "tp2_hit" },
+    { signalId: "C", telegramStatus: "sent", status: "stopped" }
+  ] };
+  const reviews = [
+    { signalId: "A", review: { status: "TP2_LEVEL_TOUCHED" } },
+    { signalId: "B", review: { status: "THESIS_INTACT" } }
+  ];
+  const report = buildPerformanceReport(journal, "2026-11-18T00:00:00.000Z", reviews);
+  assert.equal(report.overall.outcomes.expired, 1);
+  assert.equal(report.overall.outcomes.tp2_hit, 1);
+  assert.equal(report.reviewComparison.matchedSignals, 2);
+  assert.equal(report.reviewComparison.unmatchedSignals, 1);
+  assert.equal(report.reviewComparison.terminalReviewLevels, 1);
+  assert.deepEqual(report.reviewComparison.byOriginalOutcomeAndAdvisoryStatus, [
+    { key: "expired / TP2_LEVEL_TOUCHED", signals: 1 },
+    { key: "tp2_hit / THESIS_INTACT", signals: 1 }
+  ]);
+});
