@@ -78,8 +78,8 @@ function expiryAnalysis(records) {
   return {
     expiredSignals: expired.length,
     tp1Reached: expired.filter(r => Boolean(r.tp1Hit)).length,
-    withIntendedExpiryTimestamp: expired.filter(r => Number.isFinite(Number(r.intendedExpiryEpoch))).length,
-    withActualExpiryTimestamp: expired.filter(r => Number.isFinite(Number(r.expiredEpoch))).length,
+    withIntendedExpiryTimestamp: expired.filter(r => r.intendedExpiryEpoch !== null && r.intendedExpiryEpoch !== undefined && Number.isFinite(Number(r.intendedExpiryEpoch))).length,
+    withActualExpiryTimestamp: expired.filter(r => r.expiredEpoch !== null && r.expiredEpoch !== undefined && Number.isFinite(Number(r.expiredEpoch))).length,
     withMeasuredExpiryDelay: delayRows.length,
     medianExpiryDelaySeconds: median(delayRows.map(r => Number(r.expiryDelaySeconds))),
     expiryDelayOver15Minutes: delayRows.filter(r => Number(r.expiryDelaySeconds) > 900).length,
@@ -90,7 +90,28 @@ function expiryAnalysis(records) {
   };
 }
 
-function buildPerformanceReport(journal, generatedAt = new Date().toISOString()) {
+function buildReviewComparison(delivered, reviewRecords = []) {
+  const byId = new Map((Array.isArray(reviewRecords) ? reviewRecords : []).map(row => [row.signalId, row]));
+  const groups = new Map();
+  let matchedSignals = 0, unmatchedSignals = 0, terminalReviewLevels = 0;
+  for (const signal of delivered) {
+    const row = byId.get(signal.signalId);
+    if (!row || !row.review || !row.review.status) { unmatchedSignals++; continue; }
+    matchedSignals++;
+    const originalOutcome = outcomeOf(signal), advisoryStatus = row.review.status;
+    const key = originalOutcome + " / " + advisoryStatus;
+    groups.set(key, (groups.get(key) || 0) + 1);
+    if (["STOP_LEVEL_TOUCHED", "STOP_AFTER_TP1", "TP2_LEVEL_TOUCHED", "AMBIGUOUS_CANDLE"].includes(advisoryStatus)) terminalReviewLevels++;
+  }
+  return {
+    matchedSignals, unmatchedSignals, terminalReviewLevels,
+    byOriginalOutcomeAndAdvisoryStatus: [...groups.entries()].map(([key, signals]) => ({ key, signals }))
+      .sort((a, b) => b.signals - a.signals || a.key.localeCompare(b.key)),
+    note: "Original journal outcome and current candle-based advisory review are separate observations. Advisory statuses never overwrite journal outcomes and do not prove broker execution."
+  };
+}
+
+function buildPerformanceReport(journal, generatedAt = new Date().toISOString(), reviewRecords = []) {
   const all = Array.isArray(journal?.signals) ? journal.signals : [];
   // Historical performance is based on Telegram-delivered signals, matching the production audit.
   const delivered = all.filter(record => record.telegramStatus === "sent");
@@ -130,4 +151,4 @@ function buildPerformanceReport(journal, generatedAt = new Date().toISOString())
   };
 }
 
-module.exports = { LEGACY_VERSION, outcomeOf, summarize, groupBy, expiryAnalysis, buildPerformanceReport };
+module.exports = { LEGACY_VERSION, outcomeOf, summarize, groupBy, expiryAnalysis, buildReviewComparison, buildPerformanceReport };
