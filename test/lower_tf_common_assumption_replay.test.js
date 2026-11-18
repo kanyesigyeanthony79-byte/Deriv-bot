@@ -102,3 +102,16 @@ test("report waits for qualified history and does not publish premature strategy
   assert.equal(report.summary.marketsReplayed,0);
   assert.equal(report.markets.R_25.status,"not_ready");
 });
+
+test("replay respects the configured focus market instead of pooling other ready markets", () => {
+  const stats = readyStats();
+  const report = buildCommonAssumptionReplayReport(
+    { markets: {} },
+    { focusMarket: "R_10", markets: { R_10: stats, R_25: stats } },
+    "2026-11-19T00:00:00.000Z"
+  );
+  assert.equal(report.summary.focusMarket, "R_10");
+  assert.equal(report.markets.R_25.status, "outside_focus");
+  assert.equal(report.summary.marketsOutsideFocus, 1);
+  assert.equal(report.summary.marketsReplayed, 0);
+});

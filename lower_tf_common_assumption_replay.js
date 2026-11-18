@@ -222,7 +222,12 @@ function replayMarket(marketId, market, bounds) {
 }
 function buildCommonAssumptionReplayReport(archive, readinessReport, generatedAt = new Date().toISOString()) {
   const markets = {};
+  const focusMarket = readinessReport?.focusMarket || null;
   for (const [marketId, stats] of Object.entries(readinessReport?.markets || {})) {
+    if (focusMarket && marketId !== focusMarket) {
+      markets[marketId] = { status: "outside_focus", reason: "The current lower-timeframe research configuration is focused on " + focusMarket + "." };
+      continue;
+    }
     if (!marketReady(stats)) {
       markets[marketId] = { status: "not_ready", reason: "Requires continuous M1>=1440, M5>=500, M15>=400 candles, at least 24h common overlap, and zero invalid/duplicate/unaligned candles." };
       continue;
@@ -259,10 +264,13 @@ function buildCommonAssumptionReplayReport(archive, readinessReport, generatedAt
     },
     summary: {
       marketsConsidered: Object.keys(readinessReport?.markets || {}).length,
+      focusMarket,
       marketsReplayed: ready,
-      marketsWaiting: Object.values(markets).filter(m => m.status === "not_ready").length
+      marketsWaiting: Object.values(markets).filter(m => m.status === "not_ready").length,
+      marketsOutsideFocus: Object.values(markets).filter(m => m.status === "outside_focus").length
     },
-    markets
+    markets,
+    interpretation: "Exploratory candle-based replay only. Small samples, especially in the holdout split, are not sufficient for strategy ranking or production promotion."
   };
 }
 
