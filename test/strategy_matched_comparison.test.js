@@ -25,7 +25,7 @@ test("only forward candidates and MTF_BASELINE_V1 M5 scalp records enter matchin
     candidate("bad-time", null)
   ] });
   const baselines = baselineRows({ signals: [
-    base("valid", 900), base("wrong-version", 1800, "BUY", { strategyVersion: "LEGACY" }),
+    base("valid", 900), base("missing-time", null), base("wrong-version", 1800, "BUY", { strategyVersion: "LEGACY" }),
     base("wrong-category", 2700, "BUY", { category: "SHORT_TERM" }),
     base("wrong-entry", 3600, "BUY", { entryTimeframe: "M15" })
   ] });
