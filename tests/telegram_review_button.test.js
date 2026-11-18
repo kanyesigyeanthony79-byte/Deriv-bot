@@ -5,6 +5,7 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 const source = fs.readFileSync("cloudflare/deriv-telegram-alerts.js", "utf8")
+  .replace("export class ExecutionQueue", "class ExecutionQueue")
   .replace("export default {", "module.exports = {");
 const captured = [];
 const sandbox = {
