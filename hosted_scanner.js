@@ -2,6 +2,8 @@
 // Hosted signal scanner and outcome monitor. Signal-only: no order execution.
 const fs = require("node:fs");
 const path = require("node:path");
+const { getDataDir } = require("./scanner_data_dir");
+const DATA_DIR = getDataDir();
 const { evaluate, DEF } = require("./engine");
 const { journalOutcome: recordJournalOutcome, reconcileJournalState, markExpired, updateFavourableMovement } = require("./signal_journal");
 const { dailySummary, deliverDailyReport, previousUgandaDay } = require("./daily_summary");
@@ -21,8 +23,8 @@ const MARKETS = [
   ["CRASH500", "Crash 500 Index"],
   ["BOOM500", "Boom 500 Index"]
 ];
-const STATE_FILE = path.join(__dirname, "signal_state.json");
-const HEARTBEAT_FILE = path.join(__dirname, "scanner_heartbeat.json");
+const STATE_FILE = path.join(DATA_DIR, "signal_state.json");
+const HEARTBEAT_FILE = path.join(DATA_DIR, "scanner_heartbeat.json");
 let heartbeat;
 const WORKER_URL = process.env.TELEGRAM_WORKER_URL;
 const API_KEY = process.env.SIGNAL_API_KEY;
@@ -50,7 +52,7 @@ try {
 const log = (event, details = {}) => console.log(JSON.stringify({ time: new Date().toISOString(), event, ...details }));
 const saveState = () => fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2) + "\n");
 
-const JOURNAL_FILE = path.join(__dirname, "trade_journal.json");
+const JOURNAL_FILE = path.join(DATA_DIR, "trade_journal.json");
 let journal = { version: 1, signals: [], dailyReports: {} };
 try {
   const savedJournal = JSON.parse(fs.readFileSync(JOURNAL_FILE, "utf8"));
@@ -98,7 +100,7 @@ async function maybeSendDailySummary(now) {
   if (journal.dailyReports[reportDay]?.delivered) return;
   let mtfSignals = [];
   try {
-    const mtfJournal = JSON.parse(fs.readFileSync(path.join(__dirname, "multi_timeframe_journal.json"), "utf8"));
+    const mtfJournal = JSON.parse(fs.readFileSync(path.join(DATA_DIR, "multi_timeframe_journal.json"), "utf8"));
     if (mtfJournal && Array.isArray(mtfJournal.signals)) mtfSignals = mtfJournal.signals;
   } catch {}
   const summary = dailySummary(journal.signals, reportDay, MARKETS, mtfSignals);
