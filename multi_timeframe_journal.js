@@ -65,7 +65,7 @@ function updateJournal(journal, markets, nowEpoch, liveQuotes = {}) {
           strategySnapshot: { entryTimeframe: candidate.entryTimeframe, setupTimeframe: candidate.setupTimeframe,
             confirmationTimeframe: candidate.confirmationTimeframe, contextTimeframe: candidate.contextTimeframe,
             riskTimeframe: candidate.riskTimeframe, targetHorizon: candidate.targetHorizon,
-            riskReward: candidate.riskReward || null, maxAgeSeconds: candidate.maxAgeSeconds || null },
+            riskReward: candidate.riskReward ? { ...candidate.riskReward } : null, maxAgeSeconds: candidate.maxAgeSeconds || null },
           status: "pending", createdEpoch: nowEpoch,
           tp1Hit: false, tp1Epoch: null, tp2Epoch: null, stopEpoch: null,
           lastProcessedEpoch: candidate.entryCandleEpoch, outcomeCandles: 0
