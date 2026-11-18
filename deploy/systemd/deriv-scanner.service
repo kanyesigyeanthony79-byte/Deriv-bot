@@ -1,0 +1,23 @@
+[Unit]
+Description=Deriv Signal Assistant - always-on signal-only scanner
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=derivscanner
+Group=derivscanner
+WorkingDirectory=/opt/deriv-bot
+EnvironmentFile=/etc/deriv-scanner.env
+ExecStart=/usr/bin/node /opt/deriv-bot/scanner_supervisor.js
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/opt/deriv-bot
+
+[Install]
+WantedBy=multi-user.target
