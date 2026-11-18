@@ -7,6 +7,7 @@ const { journalOutcome: recordJournalOutcome, reconcileJournalState, markExpired
 const { dailySummary, deliverDailyReport, previousUgandaDay } = require("./daily_summary");
 const { createDerivDemoReadOnlySnapshot } = require("./scripts/demo_readonly_account_snapshot");
 const { priorityForMarket } = require("./priority_pairs");
+const { createHeartbeat } = require("./scanner_heartbeat");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const GRANULARITY = 900;
@@ -21,6 +22,8 @@ const MARKETS = [
   ["BOOM500", "Boom 500 Index"]
 ];
 const STATE_FILE = path.join(__dirname, "signal_state.json");
+const HEARTBEAT_FILE = path.join(__dirname, "scanner_heartbeat.json");
+let heartbeat;
 const WORKER_URL = process.env.TELEGRAM_WORKER_URL;
 const API_KEY = process.env.SIGNAL_API_KEY;
 const MAX_SIGNAL_AGE = 360;
@@ -223,15 +226,21 @@ function makeLevels(candles, direction) {
 }
 
 async function postTelegram(payload) {
-  const response = await fetch(WORKER_URL, {
+  try {
+    const response = await fetch(WORKER_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-API-Key": API_KEY },
     body: JSON.stringify(payload),
     signal: AbortSignal.timeout(15000)
   });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok || result.success !== true) {
-    throw new Error(result.error || ("Telegram Worker returned HTTP " + response.status));
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || result.success !== true) {
+      throw new Error(result.error || ("Telegram Worker returned HTTP " + response.status));
+    }
+    if (heartbeat && (payload.event === "new_signal" || payload.event === "outcome")) heartbeat.telegram(payload.event, true);
+  } catch (error) {
+    if (heartbeat && (payload.event === "new_signal" || payload.event === "outcome")) heartbeat.telegram(payload.event, false);
+    throw error;
   }
 }
 
@@ -333,6 +342,7 @@ async function monitorSignals(marketId, candles, now) {
 }
 
 async function main() {
+  heartbeat = createHeartbeat({ filePath: HEARTBEAT_FILE, markets: MARKETS.map(([, name]) => name) });
   log("scanner_started", { markets: MARKETS.length, granularity_seconds: GRANULARITY });
   const client = await connect(PUBLIC);
   try {
@@ -343,7 +353,10 @@ async function main() {
 
     for (const [id, name] of MARKETS) {
       const symbol = symbols[id];
-      if (!symbol) continue;
+      if (!symbol) {
+        heartbeat.market(name, "unavailable", { reason: "symbol_not_confirmed" });
+        continue;
+      }
       try {
         const reply = await client.ask({
           ticks_history: symbol, adjust_start_time: 1, count: 200,
@@ -360,9 +373,12 @@ async function main() {
 
         const result = evaluate(candles);
         if (result.state !== "ok" || result.signal === "NO TRADE") {
+          heartbeat.market(name, "success", { candles: candles.length, signalFound: false, evaluationState: result.state || "unknown" });
           log("no_signal", { market: name, state: result.state || "unknown" });
           continue;
         }
+        heartbeat.market(name, "success", { candles: candles.length, signalFound: true, direction: result.signal });
+        heartbeat.signalDetected();
 
         const candleEpoch = result.c.epoch;
         const signalId = id + "-" + candleEpoch;
@@ -421,6 +437,7 @@ async function main() {
         saveState();
         log("telegram_delivered", { signalId, market: name, direction: result.signal, candle_epoch: candleEpoch, ...levels });
       } catch (error) {
+        heartbeat.market(name, "error", { error: String(error.message || error).slice(0, 200) });
         const pending = [...journal.signals].reverse().find(entry => entry.marketId === id && entry.status === "detected");
         if (pending) journalStatus(pending.signalId, "delivery_failed", error.message);
         log("market_scan_error", { market: name, message: error.message });
@@ -429,6 +446,7 @@ async function main() {
     await maybeSendDailySummary(now);
     saveState();
     saveJournal();
+    heartbeat.finish(heartbeat.record.marketsFailed > 0 || heartbeat.record.marketsUnavailable > 0 ? "partial" : "success");
     log("scanner_completed", {
       scannedAt: new Date(now * 1000).toISOString(),
       activeSignals: state.activeSignals.filter(signal => !signal.closed).length,
@@ -440,6 +458,7 @@ async function main() {
 }
 
 main().catch(error => {
+  if (heartbeat) heartbeat.finish("failed", error);
   log("scanner_failed", { message: error.message });
   process.exitCode = 1;
 });
