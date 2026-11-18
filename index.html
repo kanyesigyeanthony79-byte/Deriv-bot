@@ -91,6 +91,9 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <div class="card"><div class="detail">STALE / NOT SENT</div><div class="signal">—</div></div>
     </div>
     <div class="muted" id="originalSummaryStatus">Waiting for original-system journal…</div>
+    <h3 style="margin:16px 0 8px">LIVE SIGNALS · ORIGINAL M15</h3>
+    <p class="muted">Only recently delivered, unresolved signals are shown here. This is a fresh-alert view, not a streaming price feed. Older or completed alerts remain in the journal below.</p>
+    <div class="signal-list" id="originalLiveSignals" aria-live="polite"><div class="signal-empty">Loading current original-system alerts…</div></div>
     <h3 style="margin:16px 0 8px">Latest market observations</h3>
     <div class="grid" id="markets"><div class="card" data-market="R_10"><div class="name">Volatility 10 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="R_25"><div class="name">Volatility 25 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
@@ -261,6 +264,17 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     ].map(([label,value])=>'<div class="card"><div class="detail">'+esc(label)+'</div><div class="signal">'+esc(value)+'</div></div>').join("");
     const newest=signals.slice().sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0))[0];
     $("originalSummaryStatus").textContent="Latest recorded setup: "+(newest?time(newest.createdAt)+" · "+newest.market+" · "+(newest.status==="stale"?"STALE · NOT DELIVERED":newest.status.toUpperCase()):"No qualifying setup in the visible journal")+" · Browser refreshed "+new Date().toLocaleTimeString();
+    const nowSeconds=Math.floor(Date.now()/1000);
+    const live=signals.filter(s=>{
+      const age=nowSeconds-Number(s.candleEpoch||0);
+      const terminal=Boolean(s.finalOutcome)||(s.events||[]).some(e=>["TP2_HIT","SL_HIT","EXPIRED","AMBIGUOUS"].includes(e.outcome));
+      return s.status==="sent"&&!terminal&&Number.isFinite(age)&&age>=-60&&age<=360;
+    }).sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0));
+    $("originalLiveSignals").innerHTML=live.length?live.map(s=>{
+      const age=Math.max(0,nowSeconds-Number(s.candleEpoch||0));
+      const cls=s.direction==="BUY"?"buy":"sell";
+      return '<article class="signal-item"><div class="signal-item-head"><span>'+esc(s.market)+'</span><span class="mtf-tag">DELIVERED · '+esc(s.score??"—")+'/100</span></div><div class="signal '+cls+'">'+esc(s.direction)+'</div><div class="detail">Entry: '+fmt(s.entry)+'<br>Age: '+Math.floor(age/60)+'m '+(age%60)+'s<br>Status: SENT · UNRESOLVED<br>Signal time: '+esc(time(s.createdAt))+'</div></article>';
+    }).join(""):'<div class="signal-empty">No fresh unresolved original M15 alerts right now. The scanner may be running without a qualifying setup; older signals are intentionally not presented as live.</div>';
     for (const [id,name] of MARKETS) {
       const card=document.querySelector('[data-market="'+id+'"]');
       const latest=signals.filter(s=>s.marketId===id).sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0));
