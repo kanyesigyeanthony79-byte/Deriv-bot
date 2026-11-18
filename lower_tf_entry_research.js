@@ -3,10 +3,12 @@
 // research track. This module is observation-only: no alerts and no order execution.
 const fs = require("node:fs");
 const path = require("node:path");
+const { getDataDir } = require("./scanner_data_dir");
+const DATA_DIR = getDataDir();
 
-const INPUT = path.join(__dirname, "multi_timeframe_data.json");
-const ARCHIVE = path.join(__dirname, "lower_tf_research_candles.json");
-const REPORT = path.join(__dirname, "lower_tf_entry_research_report.json");
+const INPUT = path.join(DATA_DIR, "multi_timeframe_data.json");
+const ARCHIVE = path.join(DATA_DIR, "lower_tf_research_candles.json");
+const REPORT = path.join(DATA_DIR, "lower_tf_entry_research_report.json");
 const LIMITS = Object.freeze({ M1: 5000, M5: 2000, M15: 1200 });
 const SECONDS = Object.freeze({ M1: 60, M5: 300, M15: 900 });
 const MARKETS = ["R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500"];
