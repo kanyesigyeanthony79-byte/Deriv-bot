@@ -305,7 +305,11 @@ async function main() {
     });
     fs.writeFileSync(JOURNAL, JSON.stringify(journal, null, 2) + "\n");
     fs.writeFileSync(OUTPUT, JSON.stringify(output, null, 2) + "\n");
-    const reviewRecords = journal.signals.slice(-120).filter(s => s.category !== "SWING").map(signal => {
+    const reviewCandidates = new Map();
+    for (const signal of journal.signals.filter(s => s.category !== "SWING").slice(0, 120)) reviewCandidates.set(signal.signalId, signal);
+    // Every Telegram-delivered signal remains reviewable until a terminal outcome is recorded.
+    for (const signal of journal.signals.filter(s => s.telegramStatus === "sent" && !["tp2_hit", "stopped", "stopped_after_tp1", "ambiguous", "expired"].includes(s.status) && s.category !== "SWING")) reviewCandidates.set(signal.signalId, signal);
+    const reviewRecords = [...reviewCandidates.values()].map(signal => {
       const market = output.markets[signal.marketId];
       return { signalId: signal.signalId, marketId: signal.marketId, market: signal.market, category: signal.category,
         direction: signal.direction, entry: signal.entry, stopLoss: signal.stopLoss, tp1: signal.tp1, tp2: signal.tp2,
