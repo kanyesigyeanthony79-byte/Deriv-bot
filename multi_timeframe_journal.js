@@ -44,6 +44,25 @@ function applyLiveQuote(record, quote, nowEpoch) {
   return record;
 }
 
+function markExpired(record, nowEpoch) {
+  if (!record || TERMINAL.has(record.status)) return false;
+  const entryEpoch = Number(record.entryCandleEpoch);
+  const maxAgeSeconds = Number(record.maxAgeSeconds || DEFAULT_MAX_AGE_SECONDS[record.category] || 1800);
+  if (!Number.isFinite(entryEpoch) || !Number.isFinite(maxAgeSeconds) || maxAgeSeconds <= 0) return false;
+  // Store the intended deadline for new and still-active legacy observations.
+  // Already-expired historical records are never backfilled or rewritten.
+  if (!Number.isFinite(Number(record.intendedExpiryEpoch))) {
+    record.intendedExpiryEpoch = entryEpoch + maxAgeSeconds;
+  }
+  if (nowEpoch > Number(record.intendedExpiryEpoch)) {
+    record.status = "expired";
+    record.expiredEpoch = nowEpoch;
+    record.expiryDelaySeconds = Math.max(0, nowEpoch - Number(record.intendedExpiryEpoch));
+    return true;
+  }
+  return false;
+}
+
 function updateJournal(journal, markets, nowEpoch, liveQuotes = {}) {
   const state = journal && journal.version === 1 && Array.isArray(journal.signals)
     ? journal : { version: 1, updatedAt: null, signals: [] };
@@ -60,12 +79,16 @@ function updateJournal(journal, markets, nowEpoch, liveQuotes = {}) {
     const candidates = [...(market.signals || []), ...(market.recentSignals || [])].filter(s => s.state === "signal" && s.signalId);
     for (const candidate of candidates) {
       if (!byId.has(candidate.signalId)) {
+        const maxAgeSeconds = Number(candidate.maxAgeSeconds) || DEFAULT_MAX_AGE_SECONDS[candidate.category] || 1800;
+        const entryEpoch = Number(candidate.entryCandleEpoch);
         const record = {
-          ...candidate, strategyVersion: STRATEGY_VERSION,
+          ...candidate, maxAgeSeconds,
+          intendedExpiryEpoch: Number.isFinite(entryEpoch) ? entryEpoch + maxAgeSeconds : null,
+          strategyVersion: STRATEGY_VERSION,
           strategySnapshot: { entryTimeframe: candidate.entryTimeframe, setupTimeframe: candidate.setupTimeframe,
             confirmationTimeframe: candidate.confirmationTimeframe, contextTimeframe: candidate.contextTimeframe,
             riskTimeframe: candidate.riskTimeframe, targetHorizon: candidate.targetHorizon,
-            riskReward: candidate.riskReward ? { ...candidate.riskReward } : null, maxAgeSeconds: candidate.maxAgeSeconds || null },
+            riskReward: candidate.riskReward ? { ...candidate.riskReward } : null, maxAgeSeconds },
           status: "pending", createdEpoch: nowEpoch,
           tp1Hit: false, tp1Epoch: null, tp2Epoch: null, stopEpoch: null,
           lastProcessedEpoch: candidate.entryCandleEpoch, outcomeCandles: 0
@@ -103,19 +126,13 @@ function updateJournal(journal, markets, nowEpoch, liveQuotes = {}) {
         }
       }
       if (!TERMINAL.has(record.status)) applyLiveQuote(record, liveQuotes[record.marketId], nowEpoch);
-      if (!TERMINAL.has(record.status) && nowEpoch - Number(record.entryCandleEpoch) > Number(record.maxAgeSeconds || DEFAULT_MAX_AGE_SECONDS[record.category] || 1800)) {
-        record.status = "expired";
-        record.expiredEpoch = nowEpoch;
-      }
+      markExpired(record, nowEpoch);
     }
   }
   for (const record of state.signals) {
     if (!TERMINAL.has(record.status)) {
       applyLiveQuote(record, liveQuotes[record.marketId], nowEpoch);
-      if (!TERMINAL.has(record.status) && nowEpoch - Number(record.entryCandleEpoch) > Number(record.maxAgeSeconds || DEFAULT_MAX_AGE_SECONDS[record.category] || 1800)) {
-        record.status = "expired";
-        record.expiredEpoch = nowEpoch;
-      }
+      markExpired(record, nowEpoch);
     }
   }
   state.updatedAt = new Date(nowEpoch * 1000).toISOString();
@@ -156,4 +173,4 @@ function summarizeJournal(journal) {
   for (const s of journal.signals || []) counts[s.status] = (counts[s.status] || 0) + 1;
   return counts;
 }
-module.exports = { STRATEGY_VERSION, TERMINAL, touchStatus, applyLiveQuote, updateJournal, summarizeJournal, dashboardSignalsForMarket };
+module.exports = { STRATEGY_VERSION, TERMINAL, touchStatus, applyLiveQuote, markExpired, updateJournal, summarizeJournal, dashboardSignalsForMarket };
