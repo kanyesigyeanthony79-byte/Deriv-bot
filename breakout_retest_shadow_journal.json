@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-18T16:58:11.000Z",
+  "updatedAt": "2026-11-18T17:17:38.000Z",
   "markets": {
     "R_10": {
       "lastProcessedM5Epoch": 1794942600,
@@ -17,13 +17,21 @@
       }
     },
     "R_25": {
-      "lastProcessedM5Epoch": 1795020600,
-      "pendingSetups": [],
+      "lastProcessedM5Epoch": 1795021800,
+      "pendingSetups": [
+        {
+          "setupCloseEpoch": 1795022100,
+          "direction": -1,
+          "boundary": 2870.468,
+          "atr5": 2.9463880759249528,
+          "contextM15": "up"
+        }
+      ],
       "cooldownUntilEpoch": 1795013700,
       "initializedAt": "2026-11-17T14:04:48.000Z",
       "dataQuality": "ok",
       "stats": {
-        "setupsDetected": 44,
+        "setupsDetected": 45,
         "signalsGenerated": 8,
         "riskRejected": 0,
         "overlapSuppressed": 10,
@@ -31,9 +39,9 @@
       }
     },
     "R_50": {
-      "lastProcessedM5Epoch": 1795020600,
+      "lastProcessedM5Epoch": 1795021800,
       "pendingSetups": [],
-      "cooldownUntilEpoch": 1795005840,
+      "cooldownUntilEpoch": 1795021320,
       "initializedAt": "2026-11-17T14:04:48.000Z",
       "dataQuality": "ok",
       "stats": {
@@ -45,14 +53,14 @@
       }
     },
     "R_75": {
-      "lastProcessedM5Epoch": 1795020600,
+      "lastProcessedM5Epoch": 1795021800,
       "pendingSetups": [],
       "cooldownUntilEpoch": 1795015080,
       "initializedAt": "2026-11-17T14:04:48.000Z",
       "dataQuality": "ok",
       "stats": {
-        "setupsDetected": 48,
-        "signalsGenerated": 8,
+        "setupsDetected": 49,
+        "signalsGenerated": 9,
         "riskRejected": 2,
         "overlapSuppressed": 17,
         "confirmationExpired": 21
@@ -87,23 +95,23 @@
       }
     },
     "CRASH500": {
-      "lastProcessedM5Epoch": 1795020600,
+      "lastProcessedM5Epoch": 1795021800,
       "pendingSetups": [],
       "cooldownUntilEpoch": 1795012080,
       "initializedAt": "2026-11-17T14:04:48.000Z",
       "dataQuality": "ok",
       "stats": {
-        "setupsDetected": 64,
+        "setupsDetected": 65,
         "signalsGenerated": 5,
         "riskRejected": 8,
         "overlapSuppressed": 11,
-        "confirmationExpired": 40
+        "confirmationExpired": 41
       }
     },
     "BOOM500": {
-      "lastProcessedM5Epoch": 1795020600,
+      "lastProcessedM5Epoch": 1795021800,
       "pendingSetups": [],
-      "cooldownUntilEpoch": 1795010100,
+      "cooldownUntilEpoch": 1795020420,
       "initializedAt": "2026-11-17T14:04:48.000Z",
       "dataQuality": "ok",
       "stats": {
@@ -116,6 +124,36 @@
     }
   },
   "signals": [
+    {
+      "signalId": "R_75-BREAKOUT_RETEST-1795021800",
+      "strategyId": "M5_BREAKOUT_M1_RETEST",
+      "strategyLabel": "M5 breakout / M1 retest",
+      "marketId": "R_75",
+      "market": "Volatility 75 Index",
+      "direction": "BUY",
+      "setupTimeframe": "M5",
+      "entryTimeframe": "M1",
+      "confirmationTimeframe": "M1",
+      "setupCloseEpoch": 1795021800,
+      "triggerEpoch": 1795021980,
+      "entryCandleEpoch": 1795022040,
+      "entry": 39784.6314,
+      "stopLoss": 39716.4526560251,
+      "tp2": 39920.98888794979,
+      "riskDistance": 68.17874397489504,
+      "riskReward": {
+        "target": 2
+      },
+      "contextM15": "up",
+      "status": "pending",
+      "evaluationSource": "forward_shadow",
+      "lastProcessedEpoch": 1795021980,
+      "outcomeCandles": 0,
+      "maxFavourableR": 0,
+      "maxAdverseR": 0,
+      "realizedR": null,
+      "createdAt": "2026-11-18T17:10:00.000Z"
+    },
     {
       "signalId": "BOOM500-BREAKOUT_RETEST-1795019700",
       "strategyId": "M5_BREAKOUT_M1_RETEST",
@@ -137,14 +175,15 @@
         "target": 2
       },
       "contextM15": "up",
-      "status": "pending",
+      "status": "tp2_hit",
       "evaluationSource": "forward_shadow",
-      "lastProcessedEpoch": 1795020060,
-      "outcomeCandles": 0,
-      "maxFavourableR": 0,
-      "maxAdverseR": 0,
-      "realizedR": null,
-      "createdAt": "2026-11-18T16:35:00.000Z"
+      "lastProcessedEpoch": 1795020180,
+      "outcomeCandles": 2,
+      "maxFavourableR": 2.1109369714349615,
+      "maxAdverseR": 0.2679589908356038,
+      "realizedR": 2,
+      "createdAt": "2026-11-18T16:35:00.000Z",
+      "exitEpoch": 1795020180
     },
     {
       "signalId": "R_50-BREAKOUT_RETEST-1795019700",
@@ -167,14 +206,15 @@
         "target": 2
       },
       "contextM15": "down",
-      "status": "pending",
+      "status": "tp2_hit",
       "evaluationSource": "forward_shadow",
-      "lastProcessedEpoch": 1795019760,
-      "outcomeCandles": 0,
-      "maxFavourableR": 0,
-      "maxAdverseR": 0,
-      "realizedR": null,
-      "createdAt": "2026-11-18T16:35:00.000Z"
+      "lastProcessedEpoch": 1795021080,
+      "outcomeCandles": 22,
+      "maxFavourableR": 2.0971704573365058,
+      "maxAdverseR": 0.294106357300889,
+      "realizedR": 2,
+      "createdAt": "2026-11-18T16:35:00.000Z",
+      "exitEpoch": 1795021080
     },
     {
       "signalId": "R_75-BREAKOUT_RETEST-1795014600",
@@ -1544,15 +1584,15 @@
     "mode": "forward_shadow_observation_only",
     "strategy": "M5 breakout beyond prior 12-bar range; M1 retest confirmation; next-M1-open entry",
     "marketsMonitored": 8,
-    "signalsGenerated": 46,
-    "resolvedSignals": 43,
-    "pendingSignals": 3,
-    "targetBeforeStop": 13,
+    "signalsGenerated": 47,
+    "resolvedSignals": 45,
+    "pendingSignals": 2,
+    "targetBeforeStop": 15,
     "stopBeforeTarget": 28,
     "timeExit": 1,
     "ambiguous": 1,
-    "targetRatePct": 31.7,
-    "averageRealizedR": -0.04,
+    "targetRatePct": 34.9,
+    "averageRealizedR": 0.053,
     "markets": {
       "R_10": {
         "dataQuality": "insufficient_or_discontinuous_candles",
@@ -1582,7 +1622,7 @@
         "timeExit": 0,
         "targetRatePct": 37.5,
         "averageRealizedR": 0.125,
-        "setupsDetected": 44,
+        "setupsDetected": 45,
         "signalsGenerated": 8,
         "riskRejected": 0,
         "overlapSuppressed": 10,
@@ -1591,14 +1631,14 @@
       "R_50": {
         "dataQuality": "ok",
         "signals": 9,
-        "resolved": 8,
-        "pending": 1,
-        "targetBeforeStop": 6,
+        "resolved": 9,
+        "pending": 0,
+        "targetBeforeStop": 7,
         "stopBeforeTarget": 2,
         "ambiguous": 0,
         "timeExit": 0,
-        "targetRatePct": 75,
-        "averageRealizedR": 1.25,
+        "targetRatePct": 77.8,
+        "averageRealizedR": 1.333,
         "setupsDetected": 51,
         "signalsGenerated": 9,
         "riskRejected": 0,
@@ -1607,17 +1647,17 @@
       },
       "R_75": {
         "dataQuality": "ok",
-        "signals": 8,
+        "signals": 9,
         "resolved": 8,
-        "pending": 0,
+        "pending": 1,
         "targetBeforeStop": 0,
         "stopBeforeTarget": 8,
         "ambiguous": 0,
         "timeExit": 0,
         "targetRatePct": 0,
         "averageRealizedR": -1,
-        "setupsDetected": 48,
-        "signalsGenerated": 8,
+        "setupsDetected": 49,
+        "signalsGenerated": 9,
         "riskRejected": 2,
         "overlapSuppressed": 17,
         "confirmationExpired": 21
@@ -1667,23 +1707,23 @@
         "timeExit": 0,
         "targetRatePct": 25,
         "averageRealizedR": -0.25,
-        "setupsDetected": 64,
+        "setupsDetected": 65,
         "signalsGenerated": 5,
         "riskRejected": 8,
         "overlapSuppressed": 11,
-        "confirmationExpired": 40
+        "confirmationExpired": 41
       },
       "BOOM500": {
         "dataQuality": "ok",
         "signals": 9,
-        "resolved": 8,
-        "pending": 1,
-        "targetBeforeStop": 3,
+        "resolved": 9,
+        "pending": 0,
+        "targetBeforeStop": 4,
         "stopBeforeTarget": 5,
         "ambiguous": 0,
         "timeExit": 0,
-        "targetRatePct": 37.5,
-        "averageRealizedR": 0.125,
+        "targetRatePct": 44.4,
+        "averageRealizedR": 0.333,
         "setupsDetected": 81,
         "signalsGenerated": 9,
         "riskRejected": 5,
