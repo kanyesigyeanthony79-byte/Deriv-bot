@@ -19,10 +19,10 @@ function countStatuses(rows) {
   return counts;
 }
 
-function candidateRows(journal) {
+function validEpoch(value) {\n  return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));\n}\n\nfunction candidateRows(journal) {
   return (Array.isArray(journal?.signals) ? journal.signals : [])
     .filter(row => row && row.evaluationSource === "forward_shadow" &&
-      Number.isFinite(Number(row.entryCandleEpoch)) &&
+      validEpoch(row.entryCandleEpoch) &&
       ["BUY", "SELL"].includes(row.direction) && row.marketId && row.strategyId);
 }
 
