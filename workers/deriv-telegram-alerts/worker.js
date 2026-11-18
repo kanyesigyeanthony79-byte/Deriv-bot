@@ -253,6 +253,9 @@ export default {
 
     const url = new URL(request.url);
     if (url.pathname.startsWith("/mt5/")) {
+      if (["/mt5/ingest", "/mt5/next", "/mt5/ack"].includes(url.pathname) && env.MT5_EXECUTION_ENABLED !== "true") {
+        return reply({ error: "MT5 execution is disabled; signal-only mode is active." }, 403);
+      }
       if (!env.EXECUTION_QUEUE) return reply({ error: "Execution queue binding is missing" }, 503);
       const q = env.EXECUTION_QUEUE.get(env.EXECUTION_QUEUE.idFromName("global-synthetic-signal-queue"));
       if (url.pathname === "/mt5/ingest" && request.method === "POST") {
@@ -346,7 +349,19 @@ export default {
             },
             SL_HIT: {
               title: "❌ STOP LOSS HIT",
-              description: "Price reached the stop-loss level."
+              description: "Price reached the stop-loss level before TP1."
+            },
+            SL_AFTER_TP1: {
+              title: "⚠️ STOP LOSS AFTER TP1",
+              description: "TP1 was reached, then price returned to the stop-loss level. The final result depends on the configured partial-exit rules."
+            },
+            EXPIRED: {
+              title: "⌛ SIGNAL EXPIRED",
+              description: "The signal reached its expiry condition without a confirmed terminal take-profit or stop-loss outcome."
+            },
+            AMBIGUOUS: {
+              title: "⚠️ OUTCOME AMBIGUOUS",
+              description: "Available candle data could not establish a reliable final outcome. This signal is not counted as a win or loss."
             }
           };
           const outcome = outcomes[data.outcome];

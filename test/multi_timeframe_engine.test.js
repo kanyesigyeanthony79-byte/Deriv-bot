@@ -24,9 +24,9 @@ test("defines all four horizons and required chart intervals", () => {
   assert.equal(CATEGORIES.SHORT_TERM.context, "M15");
   assert.equal(CATEGORIES.SHORT_TERM.confirmation, "M30");
   assert.equal(CATEGORIES.SHORT_TERM.risk, "H1");
-  assert.equal(CATEGORIES.SCALP.tp1R, 1.5);
+  assert.equal(CATEGORIES.SCALP.tp1R, 2.0);
   assert.equal(CATEGORIES.SCALP.tp2R, 3.0);
-  assert.equal(CATEGORIES.SHORT_TERM.tp1R, 1.5);
+  assert.equal(CATEGORIES.SHORT_TERM.tp1R, 2.0);
   assert.equal(CATEGORIES.SHORT_TERM.tp2R, 3.0);
   assert.equal(CATEGORIES.POSITION.context, "W1");
   assert.equal(classifySignalQuality(80), "STRONG");
@@ -35,16 +35,26 @@ test("defines all four horizons and required chart intervals", () => {
   assert.equal(classifySignalQuality(64), "WATCH");
 });
 
-test("calculates the agreed 1.5R and 3R targets for executable strategies", () => {
+test("calculates at least 2R at TP1 and 3R at TP2 for executable strategies", () => {
   const riskCandles = candles(30, 900);
   const scalp = makeLevels(110, riskCandles, "BUY", CATEGORIES.SCALP);
   const shortTerm = makeLevels(110, riskCandles, "SELL", CATEGORIES.SHORT_TERM);
-  assert.equal(scalp.riskReward.tp1, 1.5);
+  assert.equal(scalp.riskReward.tp1, 2.0);
   assert.equal(scalp.riskReward.tp2, 3.0);
   assert.ok(scalp.tp2 > scalp.tp1);
-  assert.equal(shortTerm.riskReward.tp1, 1.5);
+  assert.equal(shortTerm.riskReward.tp1, 2.0);
   assert.equal(shortTerm.riskReward.tp2, 3.0);
   assert.ok(shortTerm.tp2 < shortTerm.tp1);
+});
+
+test("every category requires at least 2R at TP1 and TP2 no closer than TP1", () => {
+  for (const config of Object.values(CATEGORIES)) {
+    assert.ok(config.tp1R >= 2, config.label + " TP1 must be at least 2R");
+    assert.ok(config.tp2R >= config.tp1R, config.label + " TP2 must not be closer than TP1");
+  }
+  const riskCandles = candles(30, 900);
+  assert.equal(makeLevels(110, riskCandles, "BUY", { ...CATEGORIES.SCALP, tp1R: 1.5 }), null);
+  assert.equal(makeLevels(110, riskCandles, "BUY", { ...CATEGORIES.SCALP, tp2R: 1.5 }), null);
 });
 
 test("validates candle order and OHLC structure", () => {
