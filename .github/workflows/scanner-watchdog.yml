@@ -35,8 +35,7 @@ jobs:
               per_page: 20
             });
 
-            const runs = response.data.workflow_runs;
-            const latest = runs[0];
+            const latest = response.data.workflow_runs[0];
 
             if (!latest) {
               core.warning("No collector runs found. Dispatching a recovery run.");
@@ -78,15 +77,14 @@ jobs:
                 ref: branch
               });
               core.summary.addHeading("Scanner recovery dispatched")
-                .addList()
-                .addItem(`${reason}`)
-                .addItem("A new Multi-Timeframe Data Collector run was requested.")
+                .addBulletList([reason, "A new Multi-Timeframe Data Collector run was requested."])
                 .write();
             } else {
               core.notice(`Collector healthy: latest run #${latest.run_number} succeeded ${Math.round(ageMs / 60000)} minutes ago.`);
               core.summary.addHeading("Scanner healthy")
-                .addList()
-                .addItem(`Latest collector run #${latest.run_number} succeeded.`)
-                .addItem(`Last activity: ${Math.round(ageMs / 60000)} minutes ago.`)
+                .addBulletList([
+                  `Latest collector run #${latest.run_number} succeeded.`,
+                  `Last activity: ${Math.round(ageMs / 60000)} minutes ago.`
+                ])
                 .write();
             }
