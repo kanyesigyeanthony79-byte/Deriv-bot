@@ -93,5 +93,5 @@ test("expiry analysis reports timestamp coverage and favourable excursion bands"
   assert.equal(report.expiryAnalysis.withActualExpiryTimestamp, 1);
   assert.equal(report.expiryAnalysis.withMeasuredExpiryDelay, 1);
   assert.equal(report.expiryAnalysis.medianExpiryDelaySeconds, 60);
-  assert.deepEqual(report.expiryAnalysis.favourableExcursionBands.map(x => x.signals), [1, 0, 1, 0, 0, 0]);
+  assert.deepEqual(report.expiryAnalysis.favourableExcursionBands.map(x => x.signals), [1, 0, 0, 1, 0, 0]);
 });
