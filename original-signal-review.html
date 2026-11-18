@@ -25,7 +25,7 @@
    const data=await response.json(),signals=Array.isArray(data.signals)?data.signals:[],s=signals.find(x=>x.signalId===id);
    if(!s)throw new Error("Signal not found in the currently published journal. It may have been archived or the ID may be incorrect.");
    const now=Math.floor(Date.now()/1000),age=Math.max(0,now-Number(s.candleEpoch||0));
-   const terminal=Boolean(s.finalOutcome)||(s.events||[]).some(e=>["TP1_HIT","TP2_HIT","SL_HIT","EXPIRED","AMBIGUOUS"].includes(e.outcome));
+   const terminal=Boolean(s.finalOutcome)||(s.events||[]).some(e=>["TP2_HIT","SL_HIT","EXPIRED","AMBIGUOUS"].includes(e.outcome));
    const label=terminal?(s.finalOutcome||"RECORDED TERMINAL EVENT").replaceAll("_"," "):age>=3600?"UNRESOLVED · NEEDS REVIEW":"ACTIVE · UNRESOLVED";
    const tone=terminal?"warn":age>=3600?"warn":"ok";
    const events=Array.isArray(s.events)?s.events:[];
