@@ -7,7 +7,10 @@ on:
     paths:
       - ".github/workflows/scanner-watchdog.yml"
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "3-59/5 * * * *"
+  workflow_run:
+    workflows: ["Multi-Timeframe Data Collector"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
