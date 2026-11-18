@@ -227,17 +227,17 @@ function makeLevels(candles, direction) {
 
 async function postTelegram(payload) {
   try {
-  const response = await fetch(WORKER_URL, {
+    const response = await fetch(WORKER_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-API-Key": API_KEY },
     body: JSON.stringify(payload),
     signal: AbortSignal.timeout(15000)
   });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok || result.success !== true) {
-    throw new Error(result.error || ("Telegram Worker returned HTTP " + response.status));
-  }
-  if (heartbeat && (payload.event === "new_signal" || payload.event === "outcome")) heartbeat.telegram(payload.event, true);
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || result.success !== true) {
+      throw new Error(result.error || ("Telegram Worker returned HTTP " + response.status));
+    }
+    if (heartbeat && (payload.event === "new_signal" || payload.event === "outcome")) heartbeat.telegram(payload.event, true);
   } catch (error) {
     if (heartbeat && (payload.event === "new_signal" || payload.event === "outcome")) heartbeat.telegram(payload.event, false);
     throw error;
