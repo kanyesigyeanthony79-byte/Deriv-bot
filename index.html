@@ -83,6 +83,15 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 
   <section class="system-view" data-system-view="original">
     <h2>Original system · live analysis</h2>
+    <p class="muted">Legacy M15 scanner · signal-only. This panel distinguishes delivered alerts from setups rejected as stale; an empty active list does not mean the scanner is offline.</p>
+    <div class="grid" id="originalMetrics">
+      <div class="card"><div class="detail">JOURNAL RECORDS</div><div class="signal">—</div></div>
+      <div class="card"><div class="detail">DELIVERED</div><div class="signal">—</div></div>
+      <div class="card"><div class="detail">COMPLETED</div><div class="signal">—</div></div>
+      <div class="card"><div class="detail">STALE / NOT SENT</div><div class="signal">—</div></div>
+    </div>
+    <div class="muted" id="originalSummaryStatus">Waiting for original-system journal…</div>
+    <h3 style="margin:16px 0 8px">Latest market observations</h3>
     <div class="grid" id="markets"><div class="card" data-market="R_10"><div class="name">Volatility 10 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="R_25"><div class="name">Volatility 25 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="R_50"><div class="name">Volatility 50 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
@@ -243,18 +252,28 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   function render(data) {
     const signals=(Array.isArray(data.signals)?data.signals:[]).filter(s=>Number(s.candleEpoch||0)>=DASHBOARD_RESET_EPOCH);
     latestSignals=signals.slice();
+    const delivered=signals.filter(s=>s.status==="sent");
+    const completed=signals.filter(s=>Boolean(s.finalOutcome)||((s.events||[]).some(e=>["TP2_HIT","SL_HIT","EXPIRED","AMBIGUOUS"].includes(e.outcome))));
+    const stale=signals.filter(s=>s.status==="stale"||s.statusReason==="too_old_for_alert");
+    $("originalMetrics").innerHTML=[
+      ["JOURNAL RECORDS",signals.length],["DELIVERED",delivered.length],
+      ["COMPLETED",completed.length],["STALE / NOT SENT",stale.length]
+    ].map(([label,value])=>'<div class="card"><div class="detail">'+esc(label)+'</div><div class="signal">'+esc(value)+'</div></div>').join("");
+    const newest=signals.slice().sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0))[0];
+    $("originalSummaryStatus").textContent="Latest recorded setup: "+(newest?time(newest.createdAt)+" · "+newest.market+" · "+(newest.status==="stale"?"STALE · NOT DELIVERED":newest.status.toUpperCase()):"No qualifying setup in the visible journal")+" · Browser refreshed "+new Date().toLocaleTimeString();
     for (const [id,name] of MARKETS) {
       const card=document.querySelector('[data-market="'+id+'"]');
-      const sent=signals.filter(s=>s.marketId===id && s.status==="sent" && !s.finalOutcome && !(Array.isArray(s.events)&&s.events.some(e=>["TP2_HIT","SL_HIT","EXPIRED","AMBIGUOUS"].includes(e.outcome)))).sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0));
-      const s=sent[0];
+      const latest=signals.filter(s=>s.marketId===id).sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0));
+      const s=latest[0];
       if (!s) {
-        card.innerHTML='<div class="name">'+esc(name)+'</div><div class="signal none">NO SENT SIGNAL</div><div class="detail">No delivered signal recorded yet.</div>';
+        card.innerHTML='<div class="name">'+esc(name)+'</div><div class="signal none">NO RECENT SETUP</div><div class="detail">No qualifying setup in the visible journal.</div>';
         continue;
       }
-      const cls=s.direction==="BUY"?"buy":"sell";
+      const cls=s.direction==="BUY"?"buy":s.direction==="SELL"?"sell":"none";
       const outcome=outcomeLabel(s);
       const lastEvent=Array.isArray(s.events)&&s.events.length?s.events[s.events.length-1]:null;
-      card.innerHTML='<div class="name">'+esc(name)+'</div><div class="signal '+cls+'">'+esc(s.direction)+'</div><div class="detail">Entry: '+fmt(s.entry)+'<br>Score: '+esc(s.score??"—")+'<br>Status: '+esc(outcome)+'<br>Signal time: '+esc(time(s.createdAt))+(lastEvent?'<br>Last update: '+esc(lastEvent.outcome.replaceAll("_"," ")): "")+'</div>';
+      const delivery=s.status==="stale"?"NOT DELIVERED · STALE":s.status==="sent"?"DELIVERED":"NOT SENT · "+String(s.status||"UNKNOWN").toUpperCase();
+      card.innerHTML='<div class="name">'+esc(name)+'</div><div class="signal '+cls+'">'+esc(s.direction||"—")+'</div><div class="detail">Entry: '+fmt(s.entry)+'<br>Score: '+esc(s.score??"—")+'/100<br>Alert: '+esc(delivery)+'<br>Outcome: '+esc(outcome)+'<br>Signal time: '+esc(time(s.createdAt))+(lastEvent?'<br>Last update: '+esc(lastEvent.outcome.replaceAll("_"," ")): "")+'</div>';
     }
     const rows=signals.slice().sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0)).slice(0,50);
     $("journal").innerHTML=rows.length?rows.map(s=>'<tr><td>'+esc(time(s.createdAt))+'</td><td>'+esc(s.market)+'</td><td class="'+(s.direction==="BUY"?"buy":s.direction==="SELL"?"sell":"")+'">'+esc(s.direction)+'</td><td>'+fmt(s.entry)+'</td><td>'+esc(s.score??"—")+'</td><td>'+esc(outcomeLabel(s))+'</td></tr>').join(""):'<tr><td colspan="6" class="muted">No signals recorded yet.</td></tr>';
