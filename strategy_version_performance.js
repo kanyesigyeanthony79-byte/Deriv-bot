@@ -63,7 +63,7 @@ function expiryAnalysis(records) {
     if (r < 2) return "1.5-<2R";
     return "2R+";
   };
-  const delayRows = expired.filter(r => Number.isFinite(Number(r.expiryDelaySeconds)));
+  const delayRows = expired.filter(r => r.expiryDelaySeconds !== null && r.expiryDelaySeconds !== undefined && Number.isFinite(Number(r.expiryDelaySeconds)));
   const bands = ["<0.5R", "0.5-<1R", "1-<1.5R", "1.5-<2R", "2R+", "unavailable"];
   const byCategory = groupBy(expired, r => r.category || "unknown").map(row => ({
     key: row.key, signals: row.signals,
