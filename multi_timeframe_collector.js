@@ -253,8 +253,7 @@ async function main() {
       : { version: 1, updatedAt: null, markets: {}, signals: [] };
     const strategyJournal = updateStrategyJournal(priorStrategyJournal, output.markets, now);
     const persistStrategyJournal = current =>
-      fs.writeFileSync(strategyJournalPath, JSON.stringify(current, null, 2) + "
-");
+      fs.writeFileSync(strategyJournalPath, JSON.stringify(current, null, 2) + "\n");
     const strategyShadowTelegram = await sendStrategyComparisonAlerts(
       strategyJournal, now, process.env, { log, persist: persistStrategyJournal, liveQuotes }
     );
@@ -267,16 +266,14 @@ async function main() {
       ? JSON.parse(fs.readFileSync(BREAKOUT_RETEST_JOURNAL, "utf8"))
       : { version: 1, updatedAt: null, markets: {}, signals: [] };
     const breakoutRetestJournal = updateBreakoutRetestJournal(priorBreakoutRetestJournal, output.markets, now);
-    fs.writeFileSync(BREAKOUT_RETEST_JOURNAL, JSON.stringify(breakoutRetestJournal, null, 2) + "
-");
+    fs.writeFileSync(BREAKOUT_RETEST_JOURNAL, JSON.stringify(breakoutRetestJournal, null, 2) + "\n");
     output.breakoutRetestShadow = breakoutRetestJournal.summary;
     const m5PullbackJournalPath = path.join(DATA_DIR, "m5_ema_pullback_shadow_journal.json");
     const priorM5PullbackJournal = fs.existsSync(m5PullbackJournalPath)
       ? JSON.parse(fs.readFileSync(m5PullbackJournalPath, "utf8"))
       : { version: 1, updatedAt: null, markets: {}, signals: [] };
     const m5PullbackJournal = updateM5PullbackJournal(priorM5PullbackJournal, output.markets, now);
-    fs.writeFileSync(m5PullbackJournalPath, JSON.stringify(m5PullbackJournal, null, 2) + "
-");
+    fs.writeFileSync(m5PullbackJournalPath, JSON.stringify(m5PullbackJournal, null, 2) + "\n");
     output.m5EmaPullbackShadow = m5PullbackJournal.summary;
     const priorBreakoutRetestM5M15Journal = fs.existsSync(BREAKOUT_RETEST_M5_M15_JOURNAL)
       ? JSON.parse(fs.readFileSync(BREAKOUT_RETEST_M5_M15_JOURNAL, "utf8"))
@@ -284,16 +281,14 @@ async function main() {
     const breakoutRetestM5M15Journal = updateBreakoutRetestM5M15Journal(
       priorBreakoutRetestM5M15Journal, output.markets, now
     );
-    fs.writeFileSync(BREAKOUT_RETEST_M5_M15_JOURNAL, JSON.stringify(breakoutRetestM5M15Journal, null, 2) + "
-");
+    fs.writeFileSync(BREAKOUT_RETEST_M5_M15_JOURNAL, JSON.stringify(breakoutRetestM5M15Journal, null, 2) + "\n");
     output.breakoutRetestM5M15Shadow = breakoutRetestM5M15Journal.summary;
     const matchedComparisonReport = buildMatchedComparisonReport({
       baselineJournal: journal, strategyJournal, breakoutRetestJournal,
       m5PullbackJournal, breakoutRetestM5M15Journal, generatedAt: output.generatedAt
     });
     const matchedComparisonPath = path.join(DATA_DIR, "strategy_matched_comparison_report.json");
-    fs.writeFileSync(matchedComparisonPath, JSON.stringify(matchedComparisonReport, null, 2) + "\
-");
+    fs.writeFileSync(matchedComparisonPath, JSON.stringify(matchedComparisonReport, null, 2) + "\n");
     output.strategyMatchedComparison = matchedComparisonReport.summary;
     output.strategyComparisonTelegram = { alerts: strategyShadowTelegram, dailyReport: strategyDailyTelegram };
     const researchArchivePath = path.join(DATA_DIR, "strategy_research_candles.json");
@@ -310,23 +305,18 @@ async function main() {
     }
     const candleArchive = mergeCandleArchive(priorResearchArchive, output.markets);
     const researchReport = researchArchive(candleArchive);
-    fs.writeFileSync(researchArchivePath, JSON.stringify(candleArchive, null, 2) + "
-");
-    fs.writeFileSync(researchReportPath, JSON.stringify(researchReport, null, 2) + "
-");
+    fs.writeFileSync(researchArchivePath, JSON.stringify(candleArchive, null, 2) + "\n");
+    fs.writeFileSync(researchReportPath, JSON.stringify(researchReport, null, 2) + "\n");
     output.strategyResearch = researchReport;
-    const persistJournal = current => fs.writeFileSync(JOURNAL, JSON.stringify(current, null, 2) + "
-");
+    const persistJournal = current => fs.writeFileSync(JOURNAL, JSON.stringify(current, null, 2) + "\n");
     const alertSummary = await sendCandidateAlerts(output.markets, journal, now, process.env, {
       log, liveQuotes, persist: persistJournal
     });
     const outcomeAlertSummary = await sendOutcomeAlerts(journal, now, process.env, {
       log, liveQuotes, persist: persistJournal
     });
-    fs.writeFileSync(JOURNAL, JSON.stringify(journal, null, 2) + "
-");
-    fs.writeFileSync(OUTPUT, JSON.stringify(output, null, 2) + "
-");
+    fs.writeFileSync(JOURNAL, JSON.stringify(journal, null, 2) + "\n");
+    fs.writeFileSync(OUTPUT, JSON.stringify(output, null, 2) + "\n");
     const reviewCandidates = new Map();
     for (const signal of journal.signals.filter(s => s.category !== "SWING").slice(0, 120)) reviewCandidates.set(signal.signalId, signal);
     // Every Telegram-delivered signal remains reviewable until a terminal outcome is recorded.
@@ -344,11 +334,9 @@ async function main() {
         entryTimeframe: signal.entryTimeframe, entryCandleEpoch: signal.entryCandleEpoch,
         review: market ? reviewSignal(signal, market.timeframes, now) : { signalId: signal.signalId, status: "INSUFFICIENT_DATA", headline: "REVIEW UNAVAILABLE", reason: "Market data unavailable." } };
     });
-    fs.writeFileSync(REVIEW_DATA, JSON.stringify({ version: 1, generatedAt: output.generatedAt, generatedEpoch: now, advisoryOnly: true, reviews: reviewRecords }, null, 2) + "
-");
+    fs.writeFileSync(REVIEW_DATA, JSON.stringify({ version: 1, generatedAt: output.generatedAt, generatedEpoch: now, advisoryOnly: true, reviews: reviewRecords }, null, 2) + "\n");
     const performanceReport = buildPerformanceReport(journal, output.generatedAt, reviewRecords);
-    fs.writeFileSync(PERFORMANCE_REPORT, JSON.stringify(performanceReport, null, 2) + "
-");
+    fs.writeFileSync(PERFORMANCE_REPORT, JSON.stringify(performanceReport, null, 2) + "\n");
     const total = Object.values(output.markets).reduce((sum, m) =>
       sum + Object.values(m.timeframes).reduce((n, candles) => n + candles.length, 0), 0);
     const allSignals = Object.values(output.markets).flatMap(m => m.signals || []);
@@ -373,8 +361,7 @@ async function main() {
         errors: m.errors
       }))
     };
-    fs.writeFileSync(DASHBOARD, JSON.stringify(dashboard, null, 2) + "
-");
+    fs.writeFileSync(DASHBOARD, JSON.stringify(dashboard, null, 2) + "\n");
     log("collection_complete", {
       markets: Object.keys(output.markets).length,
       candles: total,
