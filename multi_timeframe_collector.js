@@ -308,8 +308,6 @@ async function main() {
       log, liveQuotes, persist: persistJournal
     });
     fs.writeFileSync(JOURNAL, JSON.stringify(journal, null, 2) + "\n");
-    const performanceReport = buildPerformanceReport(journal, output.generatedAt);
-    fs.writeFileSync(PERFORMANCE_REPORT, JSON.stringify(performanceReport, null, 2) + "\n");
     fs.writeFileSync(OUTPUT, JSON.stringify(output, null, 2) + "\n");
     const reviewCandidates = new Map();
     for (const signal of journal.signals.filter(s => s.category !== "SWING").slice(0, 120)) reviewCandidates.set(signal.signalId, signal);
@@ -329,6 +327,8 @@ async function main() {
         review: market ? reviewSignal(signal, market.timeframes, now) : { signalId: signal.signalId, status: "INSUFFICIENT_DATA", headline: "REVIEW UNAVAILABLE", reason: "Market data unavailable." } };
     });
     fs.writeFileSync(REVIEW_DATA, JSON.stringify({ version: 1, generatedAt: output.generatedAt, generatedEpoch: now, advisoryOnly: true, reviews: reviewRecords }, null, 2) + "\n");
+    const performanceReport = buildPerformanceReport(journal, output.generatedAt, reviewRecords);
+    fs.writeFileSync(PERFORMANCE_REPORT, JSON.stringify(performanceReport, null, 2) + "\n");
     const total = Object.values(output.markets).reduce((sum, m) =>
       sum + Object.values(m.timeframes).reduce((n, candles) => n + candles.length, 0), 0);
     const allSignals = Object.values(output.markets).flatMap(m => m.signals || []);
@@ -342,7 +342,7 @@ async function main() {
       mode: alertSummary.enabled ? "signal_alerts_enabled" : "observation_only", summary: output.summary,
       mt5TradeReporting: mt5TradeSummary, mt5Trades: mt5TradeLedger.trades,
       strategyComparison: output.strategyComparison, strategyResearch: output.strategyResearch,
-      performanceReport: { generatedAt: performanceReport.generatedAt, totals: performanceReport.totals, overall: performanceReport.overall, expiryAnalysis: performanceReport.expiryAnalysis, byVersion: performanceReport.byVersion },
+      performanceReport: { generatedAt: performanceReport.generatedAt, totals: performanceReport.totals, overall: performanceReport.overall, expiryAnalysis: performanceReport.expiryAnalysis, reviewComparison: performanceReport.reviewComparison, byVersion: performanceReport.byVersion },
       breakoutRetestShadow: output.breakoutRetestShadow,
       m5EmaPullbackShadow: output.m5EmaPullbackShadow,
       breakoutRetestM5M15Shadow: output.breakoutRetestM5M15Shadow,
