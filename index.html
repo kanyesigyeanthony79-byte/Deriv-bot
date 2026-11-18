@@ -29,7 +29,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 .mtf-tag{font-size:10px;color:var(--gold);border:1px solid var(--line);padding:3px 6px;border-radius:20px}
 .mtf-state{font-size:17px;font-weight:850;margin:9px 0 4px}
 .mtf-table-wrap{overflow-x:auto}
-.system-tabs{display:flex;gap:9px;margin:14px 0 4px;position:sticky;top:0;z-index:5;padding:8px 0;background:rgba(11,23,18,.96)}.system-tab{flex:1;min-width:0}.system-tab[aria-pressed="true"]{background:var(--gold);color:#17170f;border-color:var(--gold)}.system-view[hidden]{display:none!important}.foot{margin-top:22px;color:var(--muted);font-size:11px;line-height:1.6}.metric-click{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}.metric-click:focus-visible,.signal-filter:focus-visible{outline:2px solid var(--gold);outline-offset:3px}.signal-filter-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.signal-filter{flex:1;min-width:100px}.signal-filter[aria-pressed="true"]{background:var(--gold);color:#17170f;border-color:var(--gold)}.signal-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-top:10px}.signal-card-link{display:block;color:inherit;text-decoration:none;border-radius:13px}.signal-card-link:focus-visible{outline:2px solid var(--gold);outline-offset:3px}.signal-item{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px;min-width:0;transition:border-color .15s,transform .15s}.signal-card-link:hover .signal-item{border-color:var(--gold);transform:translateY(-1px)}.signal-item-head{display:flex;justify-content:space-between;gap:8px;align-items:center;font-weight:750;font-size:13px}.signal-item .detail{margin-top:7px}.signal-empty{padding:14px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:13px}
+.system-tabs{display:flex;gap:9px;margin:14px 0 4px;position:sticky;top:0;z-index:5;padding:8px 0;background:rgba(11,23,18,.96)}.system-tab{flex:1;min-width:0}.system-tab[aria-pressed="true"]{background:var(--gold);color:#17170f;border-color:var(--gold)}.system-view[hidden]{display:none!important}.foot{margin-top:22px;color:var(--muted);font-size:11px;line-height:1.6}.metric-click{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}.metric-click:focus-visible,.signal-filter:focus-visible{outline:2px solid var(--gold);outline-offset:3px}.signal-filter-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.signal-filter{flex:1;min-width:100px}.signal-filter[aria-pressed="true"]{background:var(--gold);color:#17170f;border-color:var(--gold)}.signal-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-top:10px}.signal-card-link{display:block;color:inherit;text-decoration:none;border-radius:13px}.signal-card-link:focus-visible{outline:2px solid var(--gold);outline-offset:3px}.signal-item{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px;min-width:0;transition:border-color .15s,transform .15s}.signal-card-link:hover .signal-item{border-color:var(--gold);transform:translateY(-1px)}.signal-item-head{display:flex;justify-content:space-between;gap:8px;align-items:center;font-weight:750;font-size:13px}.signal-item .detail{margin-top:7px}.signal-empty{padding:14px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:13px}.review-queue{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-top:10px}.review-item{background:#241f16;border:1px solid #66512a;border-radius:13px;padding:12px;min-width:0}.review-item .detail{margin-top:7px}
 @media(max-width:420px){.brand{font-size:16px}.hero{padding:14px}h1{font-size:22px}}
 </style>
 </head>
@@ -95,7 +95,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <h3 style="margin:16px 0 8px">LIVE SIGNALS · ORIGINAL M15</h3>
     <p class="muted">Only recently delivered, unresolved signals are shown here. This is a fresh-alert view, not a streaming price feed. Older or completed alerts remain in the journal below.</p>
     <div class="signal-list" id="originalLiveSignals" aria-live="polite"><div class="signal-empty">Loading current original-system alerts…</div></div>
-    <h3 style="margin:16px 0 8px">Latest market observations</h3>
+    <h3 style="margin:16px 0 8px">NEEDS REVIEW · UNRESOLVED FOR 1 HOUR OR LONGER</h3><p class="muted">Unresolved delivered signals move here after one hour. They remain in the journal for review and are not automatically closed.</p><div class="review-queue" id="originalReviewSignals" aria-live="polite"><div class="signal-empty">Loading review queue…</div></div><h3 style="margin:16px 0 8px">Latest market observations</h3>
     <div class="grid" id="markets"><div class="card" data-market="R_10"><div class="name">Volatility 10 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="R_25"><div class="name">Volatility 25 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
       <div class="card" data-market="R_50"><div class="name">Volatility 50 Index</div><div class="signal none">NO RECENT SIGNAL</div><div class="detail">Waiting for hosted scanner history…</div></div>
@@ -267,16 +267,27 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     const newest=signals.slice().sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0))[0];
     $("originalSummaryStatus").textContent="Latest recorded setup: "+(newest?time(newest.createdAt)+" · "+newest.market+" · "+(newest.status==="stale"?"STALE · NOT DELIVERED":newest.status.toUpperCase()):"No qualifying setup in the visible journal")+" · Browser refreshed "+new Date().toLocaleTimeString();
     const nowSeconds=Math.floor(Date.now()/1000);
-    const live=signals.filter(s=>{
-      const age=nowSeconds-Number(s.candleEpoch||0);
+    const signalEpoch=s=>{
+      const parsed=Date.parse(s.createdAt||"");
+      return Number.isFinite(parsed)?Math.floor(parsed/1000):Number(s.candleEpoch||0);
+    };
+    const unresolved=s=>{
       const terminal=Boolean(s.finalOutcome)||(s.events||[]).some(e=>["TP2_HIT","SL_HIT","EXPIRED","AMBIGUOUS"].includes(e.outcome));
-      return s.status==="sent"&&!terminal&&Number.isFinite(age)&&age>=-60&&age<=360;
-    }).sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0));
+      return s.status==="sent"&&!terminal;
+    };
+    const ageOf=s=>nowSeconds-signalEpoch(s);
+    const live=signals.filter(s=>unresolved(s)&&Number.isFinite(ageOf(s))&&ageOf(s)>=-60&&ageOf(s)<3600)
+      .sort((a,b)=>signalEpoch(b)-signalEpoch(a));
+    const reviewQueue=signals.filter(s=>unresolved(s)&&Number.isFinite(ageOf(s))&&ageOf(s)>=3600)
+      .sort((a,b)=>signalEpoch(b)-signalEpoch(a));
     $("originalLiveSignals").innerHTML=live.length?live.map(s=>{
-      const age=Math.max(0,nowSeconds-Number(s.candleEpoch||0));
-      const cls=s.direction==="BUY"?"buy":"sell";
-      return '<article class="signal-item"><div class="signal-item-head"><span>'+esc(s.market)+'</span><span class="mtf-tag">DELIVERED · '+esc(s.score??"—")+'/100</span></div><div class="signal '+cls+'">'+esc(s.direction)+'</div><div class="detail">Entry: '+fmt(s.entry)+'<br>Age: '+Math.floor(age/60)+'m '+(age%60)+'s<br>Status: SENT · UNRESOLVED<br>Signal time: '+esc(time(s.createdAt))+'</div></article>';
-    }).join(""):'<div class="signal-empty">No fresh unresolved original M15 alerts right now. The scanner may be running without a qualifying setup; older signals are intentionally not presented as live.</div>';
+      const age=Math.max(0,ageOf(s)),cls=s.direction==="BUY"?"buy":"sell";
+      return '<article class="signal-item"><div class="signal-item-head"><span>'+esc(s.market)+'</span><span class="mtf-tag">ACTIVE · '+esc(s.score??"—")+'/100</span></div><div class="signal '+cls+'">'+esc(s.direction)+'</div><div class="detail">Entry: '+fmt(s.entry)+'<br>Age: '+Math.floor(age/60)+'m '+(age%60)+'s<br>Status: DELIVERED · UNRESOLVED<br>Signal time: '+esc(time(s.createdAt))+'</div><a class="btn smallbtn" href="./original-signal-review.html?signalId='+encodeURIComponent(s.signalId)+'">OPEN STATUS</a></article>';
+    }).join(""):'<div class="signal-empty">NO ACTIVE SIGNALS RIGHT NOW. The journal is connected; no delivered unresolved signal is currently within its first hour.</div>';
+    $("originalReviewSignals").innerHTML=reviewQueue.length?reviewQueue.map(s=>{
+      const age=Math.max(0,ageOf(s)),cls=s.direction==="BUY"?"buy":"sell";
+      return '<article class="review-item"><div class="signal-item-head"><span>'+esc(s.market)+'</span><span class="mtf-tag">REVIEW · 1H+</span></div><div class="signal '+cls+'">'+esc(s.direction)+'</div><div class="detail">Entry: '+fmt(s.entry)+'<br>Age: '+Math.floor(age/3600)+'h '+Math.floor((age%3600)/60)+'m<br>Still unresolved · retained in journal</div><a class="btn smallbtn" href="./original-signal-review.html?signalId='+encodeURIComponent(s.signalId)+'">REVIEW SIGNAL</a></article>';
+    }).join(""):'<div class="signal-empty">Nothing waiting for review. Unresolved signals older than one hour will appear here automatically.</div>';
     for (const [id,name] of MARKETS) {
       const card=document.querySelector('[data-market="'+id+'"]');
       const latest=signals.filter(s=>s.marketId===id).sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0));
