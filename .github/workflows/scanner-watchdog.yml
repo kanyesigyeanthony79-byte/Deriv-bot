@@ -9,7 +9,7 @@ on:
   schedule:
     - cron: "3-59/5 * * * *"
   workflow_run:
-    workflows: ["Multi-Timeframe Data Collector"]
+    workflows: ["Multi-Timeframe Data Collector", "Deriv Market Monitor"]
     types: [completed]
   workflow_dispatch:
 
@@ -26,16 +26,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Check collector health and recover if stale
+      - name: Check collector and signal-scanner health; recover stale workflows
         uses: actions/github-script@v7
         with:
-          script: | 
+          script: |
             const workflows = [
               { id: 417618869, name: "Multi-Timeframe Data Collector" },
               { id: 417087054, name: "Deriv Market Monitor" }
             ];
             const branch = "main";
-            const staleAfterMs = 12 * 60 * 1000;
+            const staleAfterMs = 10 * 60 * 1000;
+            const recoveryCooldownMs = 10 * 60 * 1000;
             const now = Date.now();
 
             for (const workflow of workflows) {
@@ -44,10 +45,11 @@ jobs:
                 repo: context.repo.repo,
                 workflow_id: workflow.id,
                 branch,
-                per_page: 20
+                per_page: 30
               });
+              const runs = response.data.workflow_runs || [];
+              const latest = runs[0];
 
-              const latest = response.data.workflow_runs[0];
               if (!latest) {
                 core.warning(`${workflow.name}: no runs found; dispatching recovery.`);
                 await github.rest.actions.createWorkflowDispatch({
@@ -62,7 +64,7 @@ jobs:
               const runAgeMs = now - Date.parse(latest.created_at);
               if (latest.status === "queued" || latest.status === "in_progress") {
                 if (Number.isFinite(runAgeMs) && runAgeMs > staleAfterMs) {
-                  core.warning(`${workflow.name}: run #${latest.run_number} has been ${latest.status} for ${Math.round(runAgeMs / 60000)} minutes; cancelling stuck run and dispatching recovery.`);
+                  core.warning(`${workflow.name}: run #${latest.run_number} has been ${latest.status} for ${Math.round(runAgeMs / 60000)} minutes; cancelling the stuck run and dispatching one recovery.`);
                   await github.rest.actions.cancelWorkflowRun({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
@@ -80,6 +82,16 @@ jobs:
                 continue;
               }
 
+              const recentRecovery = runs.find(run =>
+                run.event === "workflow_dispatch" &&
+                Number.isFinite(Date.parse(run.created_at)) &&
+                now - Date.parse(run.created_at) < recoveryCooldownMs
+              );
+              if (recentRecovery) {
+                core.warning(`${workflow.name}: a recovery dispatch (#${recentRecovery.run_number}) occurred within the last 10 minutes; suppressing another dispatch to avoid a retry loop.`);
+                continue;
+              }
+
               const lastActivity = Date.parse(latest.updated_at || latest.created_at);
               const ageMs = now - lastActivity;
               const stale = !Number.isFinite(lastActivity) || ageMs > staleAfterMs;
@@ -88,7 +100,7 @@ jobs:
               if (stale || failed) {
                 const reason = failed
                   ? `latest run concluded ${latest.conclusion || "without a conclusion"}`
-                  : `latest run is stale (${Math.round(ageMs / 60000)} minutes old)`;
+                  : `latest run has not completed recently (${Math.round(ageMs / 60000)} minutes since last activity)`;
                 core.warning(`${workflow.name}: ${reason}; dispatching recovery.`);
                 await github.rest.actions.createWorkflowDispatch({
                   owner: context.repo.owner,
