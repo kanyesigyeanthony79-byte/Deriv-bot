@@ -3,6 +3,8 @@
 // The MTF_TELEGRAM_ALERTS feature flag controls alert delivery; no order execution.
 const fs = require("node:fs");
 const path = require("node:path");
+const { getDataDir } = require("./scanner_data_dir");
+const DATA_DIR = getDataDir();
 const { aggregateWeeklyCandles, validCandles, evaluateAllCategories, evaluateRecentSignals } = require("./multi_timeframe_engine");
 const { updateJournal, summarizeJournal, dashboardSignalsForMarket } = require("./multi_timeframe_journal");
 const { buildPerformanceReport } = require("./strategy_version_performance");
@@ -29,13 +31,13 @@ const FRAMES = [
   ["M1", 60, 1800], ["M5", 300, 240], ["M15", 900, 1000], ["M30", 1800, 240],
   ["H1", 3600, 240], ["H4", 14400, 240], ["D1", 86400, 520]
 ];
-const OUTPUT = path.join(__dirname, "multi_timeframe_data.json");
-const JOURNAL = path.join(__dirname, "multi_timeframe_journal.json");
-const DASHBOARD = path.join(__dirname, "multi_timeframe_dashboard.json");
-const REVIEW_DATA = path.join(__dirname, "signal_review_data.json");
-const PERFORMANCE_REPORT = path.join(__dirname, "strategy_version_performance_report.json");
-const BREAKOUT_RETEST_JOURNAL = path.join(__dirname, "breakout_retest_shadow_journal.json");
-const BREAKOUT_RETEST_M5_M15_JOURNAL = path.join(__dirname, "breakout_retest_m5_m15_shadow_journal.json");
+const OUTPUT = path.join(DATA_DIR, "multi_timeframe_data.json");
+const JOURNAL = path.join(DATA_DIR, "multi_timeframe_journal.json");
+const DASHBOARD = path.join(DATA_DIR, "multi_timeframe_dashboard.json");
+const REVIEW_DATA = path.join(DATA_DIR, "signal_review_data.json");
+const PERFORMANCE_REPORT = path.join(DATA_DIR, "strategy_version_performance_report.json");
+const BREAKOUT_RETEST_JOURNAL = path.join(DATA_DIR, "breakout_retest_shadow_journal.json");
+const BREAKOUT_RETEST_M5_M15_JOURNAL = path.join(DATA_DIR, "breakout_retest_m5_m15_shadow_journal.json");
 const log = (event, details = {}) => console.log(JSON.stringify({ time: new Date().toISOString(), event, ...details }));
 
 function connect(url) {
@@ -244,7 +246,7 @@ async function main() {
       }
     }
     const mt5TradeSummary = summarizeMt5TradeLedger(mt5TradeLedger);
-    const strategyJournalPath = path.join(__dirname, "strategy_comparison_journal.json");
+    const strategyJournalPath = path.join(DATA_DIR, "strategy_comparison_journal.json");
     const priorStrategyJournal = fs.existsSync(strategyJournalPath)
       ? JSON.parse(fs.readFileSync(strategyJournalPath, "utf8"))
       : { version: 1, updatedAt: null, markets: {}, signals: [] };
@@ -265,7 +267,7 @@ async function main() {
     const breakoutRetestJournal = updateBreakoutRetestJournal(priorBreakoutRetestJournal, output.markets, now);
     fs.writeFileSync(BREAKOUT_RETEST_JOURNAL, JSON.stringify(breakoutRetestJournal, null, 2) + "\n");
     output.breakoutRetestShadow = breakoutRetestJournal.summary;
-    const m5PullbackJournalPath = path.join(__dirname, "m5_ema_pullback_shadow_journal.json");
+    const m5PullbackJournalPath = path.join(DATA_DIR, "m5_ema_pullback_shadow_journal.json");
     const priorM5PullbackJournal = fs.existsSync(m5PullbackJournalPath)
       ? JSON.parse(fs.readFileSync(m5PullbackJournalPath, "utf8"))
       : { version: 1, updatedAt: null, markets: {}, signals: [] };
@@ -281,8 +283,8 @@ async function main() {
     fs.writeFileSync(BREAKOUT_RETEST_M5_M15_JOURNAL, JSON.stringify(breakoutRetestM5M15Journal, null, 2) + "\n");
     output.breakoutRetestM5M15Shadow = breakoutRetestM5M15Journal.summary;
     output.strategyComparisonTelegram = { alerts: strategyShadowTelegram, dailyReport: strategyDailyTelegram };
-    const researchArchivePath = path.join(__dirname, "strategy_research_candles.json");
-    const researchReportPath = path.join(__dirname, "strategy_research_report.json");
+    const researchArchivePath = path.join(DATA_DIR, "strategy_research_candles.json");
+    const researchReportPath = path.join(DATA_DIR, "strategy_research_report.json");
     let priorResearchArchive = { version: 1, markets: {} };
     if (fs.existsSync(researchArchivePath)) {
       const savedArchive = fs.readFileSync(researchArchivePath, "utf8");
