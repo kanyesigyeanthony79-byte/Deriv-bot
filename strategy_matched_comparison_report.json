@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-18T22:07:42.000Z",
+  "generatedAt": "2026-11-18T22:12:07.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -18,11 +18,11 @@
   "summary": {
     "baselineVersion": "MTF_BASELINE_V1",
     "baselineCategory": "SCALP",
-    "baselineSignalsAvailable": 18,
+    "baselineSignalsAvailable": 20,
     "candidateStrategies": 7,
     "candidateSignals": 736,
-    "matchedPairs": 13,
-    "unmatchedCandidates": 723,
+    "matchedPairs": 14,
+    "unmatchedCandidates": 722,
     "matchWindowSeconds": 900
   },
   "strategies": [
@@ -360,14 +360,18 @@
         "time_exit": 1,
         "ambiguous": 1
       },
-      "matchedPairs": 2,
-      "unmatchedCandidates": 61,
+      "matchedPairs": 3,
+      "unmatchedCandidates": 60,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 2,
+      "baselineSignalsUsed": 3,
       "pairedOutcomeCounts": [
         {
           "key": "stopped / expired",
           "count": 2
+        },
+        {
+          "key": "stopped / pending",
+          "count": 1
         }
       ],
       "byMarket": {
@@ -383,8 +387,8 @@
         },
         "JD100": {
           "candidates": 4,
-          "matched": 0,
-          "unmatched": 4
+          "matched": 1,
+          "unmatched": 3
         },
         "JD75": {
           "candidates": 5,
@@ -436,6 +440,19 @@
           "entryTimeDifferenceSeconds": 420,
           "candidateStatus": "stopped",
           "baselineStatus": "expired",
+          "candidateRealizedR": -1,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "JD100",
+          "direction": "SELL",
+          "candidateSignalId": "JD100-BREAKOUT_RETEST-1795038300",
+          "baselineSignalId": "JD100-SCALP-1795039500",
+          "candidateEntryEpoch": 1795038780,
+          "baselineEntryEpoch": 1795039500,
+          "entryTimeDifferenceSeconds": 720,
+          "candidateStatus": "stopped",
+          "baselineStatus": "pending",
           "candidateRealizedR": -1,
           "baselineRealizedR": null
         }
