@@ -127,16 +127,16 @@ jobs:
             for (const target of targets) {
               const response = await github.rest.actions.listWorkflowRuns({
                 owner: context.repo.owner, repo: context.repo.repo,
-                workflow_id: target.id, branch: "main", event: "schedule", per_page: 100
+                workflow_id: target.id, branch: "main", event: "workflow_dispatch", per_page: 100
               });
               const runs = (response.data.workflow_runs || [])
-                .filter(run => run.event === "schedule")
+                .filter(run => run.event === "workflow_dispatch" && String(run.display_title || "").includes("[cloudflare_scheduler]"))
                 .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
                 .slice(0, 20);
               const times = runs.map(run => Date.parse(run.run_started_at || run.created_at)).filter(Number.isFinite);
               const gaps = times.slice(1).map((time, i) => Math.round((times[i] - time) / 60000));
               const report = {
-                workflow: target.name, scheduledRunsInspected: runs.length,
+                workflow: target.name, externalDispatchRunsInspected: runs.length,
                 successful: runs.filter(run => run.conclusion === "success").length,
                 failedOrCancelled: runs.filter(run => run.conclusion && run.conclusion !== "success").length,
                 medianIntervalMinutes: gaps.length ? gaps.slice().sort((a,b)=>a-b)[Math.floor(gaps.length/2)] : null,
@@ -145,14 +145,14 @@ jobs:
                 runs: runs.map(run => ({ id: run.id, createdAt: run.created_at, startedAt: run.run_started_at, conclusion: run.conclusion }))
               };
               reports.push(report);
-              core.summary.addHeading(target.name);
+              core.summary.addHeading(target.name + ' — Cloudflare external dispatches');
               core.summary.addTable([
-                [{data:"Scheduled runs inspected",header:true},{data:"Successful",header:true},{data:"Failed/cancelled",header:true},{data:"Median interval (min)",header:true},{data:"Gaps >7 min",header:true}],
-                [String(report.scheduledRunsInspected),String(report.successful),String(report.failedOrCancelled),String(report.medianIntervalMinutes ?? "—"),String(report.gapsOver7Minutes)]
+                [{data:"External dispatch runs inspected",header:true},{data:"Successful",header:true},{data:"Failed/cancelled",header:true},{data:"Median interval (min)",header:true},{data:"Gaps >7 min",header:true}],
+                [String(report.externalDispatchRunsInspected),String(report.successful),String(report.failedOrCancelled),String(report.medianIntervalMinutes ?? "—"),String(report.gapsOver7Minutes)]
               ]);
-              if (report.insufficientEvidence) core.summary.addQuote("Insufficient scheduled-run history to assess cadence reliably.");
+              if (report.insufficientEvidence) core.summary.addQuote("Insufficient Cloudflare-tagged dispatch history to assess cadence reliably.");
             }
-            core.summary.addQuote("Only GitHub Actions runs whose event is exactly 'schedule' are counted. Push, manual dispatch and workflow_run executions are excluded.");
+            core.summary.addQuote("Only workflow_dispatch runs labelled [cloudflare_scheduler] are counted. Push, manual dispatch, recovery dispatch and workflow_run executions are excluded.");
             await core.summary.write();
             fs.writeFileSync(path.join(process.env.RUNNER_TEMP, "scanner-schedule-audit.json"), JSON.stringify({ generatedAt:new Date().toISOString(), reports }, null, 2));
       - name: Preserve scheduled cadence audit
