@@ -29,7 +29,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 .mtf-tag{font-size:10px;color:var(--gold);border:1px solid var(--line);padding:3px 6px;border-radius:20px}
 .mtf-state{font-size:17px;font-weight:850;margin:9px 0 4px}
 .mtf-table-wrap{overflow-x:auto}
-.system-tabs{display:flex;gap:9px;margin:14px 0 4px;position:sticky;top:0;z-index:5;padding:8px 0;background:rgba(11,23,18,.96)}.system-tab{flex:1;min-width:0}.system-tab[aria-pressed="true"]{background:var(--gold);color:#17170f;border-color:var(--gold)}.system-view[hidden]{display:none!important}.foot{margin-top:22px;color:var(--muted);font-size:11px;line-height:1.6}.metric-click{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}.metric-click:focus-visible,.signal-filter:focus-visible{outline:2px solid var(--gold);outline-offset:3px}.signal-filter-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.signal-filter{flex:1;min-width:100px}.signal-filter[aria-pressed="true"]{background:var(--gold);color:#17170f;border-color:var(--gold)}.signal-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-top:10px}.signal-item{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px;min-width:0}.signal-item-head{display:flex;justify-content:space-between;gap:8px;align-items:center;font-weight:750;font-size:13px}.signal-item .detail{margin-top:7px}.signal-empty{padding:14px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:13px}
+.system-tabs{display:flex;gap:9px;margin:14px 0 4px;position:sticky;top:0;z-index:5;padding:8px 0;background:rgba(11,23,18,.96)}.system-tab{flex:1;min-width:0}.system-tab[aria-pressed="true"]{background:var(--gold);color:#17170f;border-color:var(--gold)}.system-view[hidden]{display:none!important}.foot{margin-top:22px;color:var(--muted);font-size:11px;line-height:1.6}.metric-click{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}.metric-click:focus-visible,.signal-filter:focus-visible{outline:2px solid var(--gold);outline-offset:3px}.signal-filter-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.signal-filter{flex:1;min-width:100px}.signal-filter[aria-pressed="true"]{background:var(--gold);color:#17170f;border-color:var(--gold)}.signal-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-top:10px}.signal-card-link{display:block;color:inherit;text-decoration:none;border-radius:13px}.signal-card-link:focus-visible{outline:2px solid var(--gold);outline-offset:3px}.signal-item{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px;min-width:0;transition:border-color .15s,transform .15s}.signal-card-link:hover .signal-item{border-color:var(--gold);transform:translateY(-1px)}.signal-item-head{display:flex;justify-content:space-between;gap:8px;align-items:center;font-weight:750;font-size:13px}.signal-item .detail{margin-top:7px}.signal-empty{padding:14px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:13px}
 @media(max-width:420px){.brand{font-size:16px}.hero{padding:14px}h1{font-size:22px}}
 </style>
 </head>
@@ -70,6 +70,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       </tbody></table>
       <div class="muted" id="promotedStatus" style="margin-top:9px">Waiting for the latest production snapshot…</div>
     </div>
+    <div class="row" style="margin-top:12px"><button class="btn primary smallbtn" id="promotedRefresh" type="button">Refresh active signals &amp; reviews</button><span class="muted" id="promotedRefreshTime" aria-live="polite">Not refreshed yet</span></div>
     <h3 style="margin-top:14px">Production signal views</h3>
     <p class="muted">Choose a view to see only the matching signals. Active is a live status; Valid and Strong are separate quality grades.</p>
     <nav class="signal-filter-tabs" aria-label="Filter promoted signals">
@@ -117,7 +118,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <select id="mtfMarket" aria-label="Filter market">
         <option value="ALL">All markets</option>
         <option value="R_10">Volatility 10</option><option value="R_25">Volatility 25</option>
-        <option value="R_50">Volatility 50</option><option value="R_75">Volatility 75</option>
+        <option value="R_50">Volatility 50</option><option value="R_75">Volatility 75</option><option value="frxXAUUSD">Gold (XAUUSD)</option>
         <option value="JD75">Jump 75</option><option value="JD100">Jump 100</option>
         <option value="CRASH500">Crash 500</option><option value="BOOM500">Boom 500</option>
       </select>
@@ -349,7 +350,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     $("promotedSignals").innerHTML=selected.length?selected.slice().sort((a,b)=>(b.createdEpoch||b.candleEpoch||0)-(a.createdEpoch||a.candleEpoch||0)).map(s=>{
       const directionClass=s.direction==="BUY"?"buy":"sell";
       const status=s.status==="tp1_hit"?"TP1 level touched · runner remains":"Pending · monitoring";
-      return '<article class="signal-item"><div class="signal-item-head"><span>'+esc(s.marketName||s.marketId)+'</span><span class="mtf-tag">'+esc(s.quality)+' · '+esc(s.score??"—")+'</span></div><div class="signal '+directionClass+'">'+esc(s.direction||"—")+'</div><div class="detail">'+esc(categoryNames[s.category]||s.category||"—")+' · '+esc(status)+'<br>Entry: '+fmt(s.entry)+' · SL: '+fmt(s.stopLoss)+'<br>TP1: '+fmt(s.tp1)+' · TP2: '+fmt(s.tp2)+'<br>Updated quote: '+esc(fmtTime(s.quoteEpoch))+'</div><a class="btn smallbtn" href="./signal-review.html?signalId='+encodeURIComponent(s.signalId)+'">REVIEW</a></article>';
+      return '<a class="signal-card-link" aria-label="Open full signal review" href="./signal-review.html?signalId='+encodeURIComponent(s.signalId)+'"><article class="signal-item"><div class="signal-item-head"><span>'+esc(s.marketName||s.marketId)+'</span><span class="mtf-tag">'+esc(s.quality)+' · '+esc(s.score??"—")+'</span></div><div class="signal '+directionClass+'">'+esc(s.direction||"—")+'</div><div class="detail">'+esc(categoryNames[s.category]||s.category||"—")+' · '+esc(status)+'<br>Entry: '+fmt(s.entry)+' · SL: '+fmt(s.stopLoss)+'<br>TP1: '+fmt(s.tp1)+' · TP2: '+fmt(s.tp2)+'<br>Updated quote: '+esc(fmtTime(s.quoteEpoch))+'<br><strong>Tap to open full signal status &amp; review →</strong></div></article></a>';
     }).join(""):'<div class="signal-empty">'+(fresh?"No "+label+" signals currently match this view. The scanner continues monitoring.":"Signals are hidden because the collector snapshot or quotes are stale.")+'</div>';
     document.querySelectorAll("[data-signal-filter]").forEach(btn=>btn.setAttribute("aria-pressed",String(btn.dataset.signalFilter===promotedSignalFilter)));
   }
@@ -545,6 +546,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   $("mtfCategory").addEventListener("change",renderMtf);
   $("mtfMarket").addEventListener("change",renderMtf);
   $("mtfRefresh").addEventListener("click",refreshMtf);
+  $("promotedRefresh").addEventListener("click",async()=>{const button=$("promotedRefresh");button.disabled=true;button.textContent="Refreshing…";await refreshMtf();$("promotedRefreshTime").textContent="Last refreshed "+new Date().toLocaleTimeString();button.disabled=false;button.textContent="Refresh active signals & reviews";});
   refreshMtf(); setInterval(refreshMtf,60000);
 
   $("export").addEventListener("click",exportCsv);
