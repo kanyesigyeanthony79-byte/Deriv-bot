@@ -156,18 +156,28 @@ function summarizeTrades(trades, setupCount) {
   return result;
 }
 function replayMarket(marketId, market, bounds) {
-  const m1 = market.timeframes.M1, m5 = market.timeframes.M5, m15 = market.timeframes.M15;
-  if (!continuous(m1Rows, TF.M1) || !continuous(m5Rows, TF.M5) || !continuous(m15Rows, TF.M15)) {
-    return { marketId, status: "not_replayed_noncontinuous_input", methods: {} };
+  const segments = {
+    M1: latestContinuousSegment(market.timeframes.M1, TF.M1),
+    M5: latestContinuousSegment(market.timeframes.M5, TF.M5),
+    M15: latestContinuousSegment(market.timeframes.M15, TF.M15)
+  };
+  const overlapStart = Math.max(...["M1", "M5", "M15"].map(tf => segments[tf][0]?.epoch ?? Infinity));
+  const overlapEnd = Math.min(...["M1", "M5", "M15"].map(tf => (segments[tf].at(-1)?.epoch ?? -Infinity) + TF[tf]));
+  const rows = Object.fromEntries(["M1", "M5", "M15"].map(tf => [
+    tf, segments[tf].filter(c => c.epoch >= overlapStart && c.epoch + TF[tf] <= overlapEnd)
+  ]));
+  const m1 = rows.M1, m5 = rows.M5, m15 = rows.M15;
+  if (!continuous(m1, TF.M1) || !continuous(m5, TF.M5) || !continuous(m15, TF.M15)) {
+    return { marketId, status: "not_replayed_noncontinuous_common_overlap", methods: {} };
   }
   const setups = [];
   for (let i = 64; i < m15.length - 1; i++) {
     const history = m15.slice(0, i + 1), direction = directionAtM15(history);
     if (!direction) continue;
-    const setup = m15Rows[i], setupCloseEpoch = setup.epoch + TF.M15;
-    const riskAtr = atr(history, 14);
-    if (!(riskAtr > 0)) continue;
-    setups.push({ setupEpoch: setupCloseEpoch, direction, setupAtr: riskAtr, m15EntryEpoch: setupCloseEpoch });
+    const setup = m15[i], setupCloseEpoch = setup.epoch + TF.M15;
+    const setupAtr = atr(history, 14);
+    if (!(setupAtr > 0)) continue;
+    setups.push({ setupEpoch: setupCloseEpoch, direction, setupAtr, m15EntryEpoch: setupCloseEpoch });
   }
   const results = {};
   for (const method of METHODS) {
@@ -177,25 +187,21 @@ function replayMarket(marketId, market, bounds) {
       const split = Object.entries(bounds).find(([, b]) => setup.setupEpoch >= b.start && setup.setupEpoch < b.end);
       if (!split) continue;
       const [splitName, splitRange] = split;
-      // One-hour embargo: a setup is not scored if its full outcome window crosses the split boundary.
       if (setup.setupEpoch + HORIZON_SECONDS > splitRange.end) continue;
       counts[splitName]++;
       let entry = null;
       if (method === "M15_NEXT_OPEN") {
-        const candle = m15Rows.find(c => c.epoch === setup.m15EntryEpoch);
+        const candle = m15.find(c => c.epoch === setup.m15EntryEpoch);
         if (candle) entry = { triggerEpoch: setup.setupEpoch, entryEpoch: candle.epoch, entry: candle.open };
       } else if (method === "M5_EMA_PULLBACK") {
-        entry = m5PullbackTrigger(m5Rows, setup.direction, setup.setupEpoch, setup.setupEpoch + HORIZON_SECONDS);
+        entry = m5PullbackTrigger(m5, setup.direction, setup.setupEpoch, setup.setupEpoch + HORIZON_SECONDS);
       } else {
-        entry = m1MicroBreakTrigger(m1Rows, m5Rows, setup.direction, setup.setupEpoch, setup.setupEpoch + HORIZON_SECONDS);
+        entry = m1MicroBreakTrigger(m1, m5, setup.direction, setup.setupEpoch, setup.setupEpoch + HORIZON_SECONDS);
       }
-      if (!entry || entry.entryEpoch + HORIZON_SECONDS > splitRange.end) {
-        // No entry or insufficient time remaining is counted as no-entry, never as a loss.
-        continue;
-      }
+      if (!entry || entry.entryEpoch + HORIZON_SECONDS > splitRange.end) continue;
       const riskDistance = setup.setupAtr * STOP_ATR_M15;
       const outcome = resolveCommonOutcome({
-        m1: m1Rows, entryEpoch: entry.entryEpoch, entry: entry.entry, direction: setup.direction,
+        m1, entryEpoch: entry.entryEpoch, entry: entry.entry, direction: setup.direction,
         riskDistance, horizonEndEpoch: entry.entryEpoch + HORIZON_SECONDS
       });
       trades.push({ setupEpoch: setup.setupEpoch, triggerEpoch: entry.triggerEpoch, entryEpoch: entry.entryEpoch, entry: entry.entry, direction: setup.direction, riskDistance, outcome });
@@ -222,8 +228,13 @@ function buildCommonAssumptionReplayReport(archive, readinessReport, generatedAt
       continue;
     }
     const all = ["M1", "M5", "M15"].flatMap(tf => market.timeframes[tf] || []);
-    const start = Math.max(...["M1", "M5", "M15"].map(tf => market.timeframes[tf][0].epoch));
-    const end = Math.min(...["M1", "M5", "M15"].map(tf => market.timeframes[tf].at(-1).epoch + TF[tf]));
+    const segments = {
+      M1: latestContinuousSegment(market.timeframes.M1, TF.M1),
+      M5: latestContinuousSegment(market.timeframes.M5, TF.M5),
+      M15: latestContinuousSegment(market.timeframes.M15, TF.M15)
+    };
+    const start = Math.max(...["M1", "M5", "M15"].map(tf => segments[tf][0]?.epoch ?? Infinity));
+    const end = Math.min(...["M1", "M5", "M15"].map(tf => (segments[tf].at(-1)?.epoch ?? -Infinity) + TF[tf]));
     const bounds = splitBounds(start, end);
     markets[marketId] = replayMarket(marketId, market, bounds);
   }
