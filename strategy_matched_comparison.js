@@ -6,7 +6,12 @@ const BASELINE_VERSION = "MTF_BASELINE_V1";
 const BASELINE_CATEGORY = "SCALP";
 const MATCH_WINDOW_SECONDS = 15 * 60;
 
-function finiteOrNull(value) {\n  return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value))\n    ? Number(value) : null;\n}\n\nfunction statusOf(signal) {
+function finiteOrNull(value) {
+  return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value))
+    ? Number(value) : null;
+}
+
+function statusOf(signal) {
   return String(signal?.status || "unknown").toLowerCase();
 }
 
@@ -19,7 +24,11 @@ function countStatuses(rows) {
   return counts;
 }
 
-function validEpoch(value) {\n  return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));\n}\n\nfunction candidateRows(journal) {
+function validEpoch(value) {
+  return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
+}
+
+function candidateRows(journal) {
   return (Array.isArray(journal?.signals) ? journal.signals : [])
     .filter(row => row && row.evaluationSource === "forward_shadow" &&
       validEpoch(row.entryCandleEpoch) &&
