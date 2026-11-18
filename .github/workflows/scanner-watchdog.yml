@@ -26,55 +26,58 @@ jobs:
       - name: Check collector health and recover if stale
         uses: actions/github-script@v7
         with:
-          script: |
-            const workflowId = 417087054; // Deriv Market Monitor
+          script: | 
+            const workflows = [
+              { id: 417618869, name: "Multi-Timeframe Data Collector" },
+              { id: 417087054, name: "Deriv Market Monitor" }
+            ];
             const branch = "main";
             const staleAfterMs = 12 * 60 * 1000;
             const now = Date.now();
 
-            const response = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: workflowId,
-              branch,
-              per_page: 20
-            });
-
-            const latest = response.data.workflow_runs[0];
-
-            if (!latest) {
-              core.warning("No collector runs found. Dispatching a recovery run.");
-              await github.rest.actions.createWorkflowDispatch({
+            for (const workflow of workflows) {
+              const response = await github.rest.actions.listWorkflowRuns({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                workflow_id: workflowId,
-                ref: branch
+                workflow_id: workflow.id,
+                branch,
+                per_page: 20
               });
-              return;
-            }
 
-            if (latest.status === "queued" || latest.status === "in_progress") {
-              core.notice(`Collector run #${latest.run_number} is ${latest.status}; no duplicate dispatched.`);
-              return;
-            }
+              const latest = response.data.workflow_runs[0];
+              if (!latest) {
+                core.warning(`${workflow.name}: no runs found; dispatching recovery.`);
+                await github.rest.actions.createWorkflowDispatch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: workflow.id,
+                  ref: branch
+                });
+                continue;
+              }
 
-            const lastActivity = Date.parse(latest.updated_at || latest.created_at);
-            const ageMs = now - lastActivity;
-            const stale = !Number.isFinite(lastActivity) || ageMs > staleAfterMs;
-            const failed = latest.conclusion !== "success";
+              if (latest.status === "queued" || latest.status === "in_progress") {
+                core.notice(`${workflow.name}: run #${latest.run_number} is ${latest.status}; no duplicate dispatched.`);
+                continue;
+              }
 
-            if (stale || failed) {
-              const reason = failed
-                ? `Latest collector run concluded ${latest.conclusion || "without a conclusion"}`
-                : `Latest collector run is stale (${Math.round(ageMs / 60000)} minutes since its last update)`;
+              const lastActivity = Date.parse(latest.updated_at || latest.created_at);
+              const ageMs = now - lastActivity;
+              const stale = !Number.isFinite(lastActivity) || ageMs > staleAfterMs;
+              const failed = latest.conclusion !== "success";
 
-              core.warning(`${reason}. Dispatching a recovery run.`);
-              await github.rest.actions.createWorkflowDispatch({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                workflow_id: workflowId,
-                ref: branch
-              });
-            } else {
-              core.notice(`Collector healthy: latest run #${latest.run_number} succeeded ${Math.round(ageMs / 60000)} minutes ago.`);
+              if (stale || failed) {
+                const reason = failed
+                  ? `latest run concluded ${latest.conclusion || "without a conclusion"}`
+                  : `latest run is stale (${Math.round(ageMs / 60000)} minutes old)`;
+                core.warning(`${workflow.name}: ${reason}; dispatching recovery.`);
+                await github.rest.actions.createWorkflowDispatch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: workflow.id,
+                  ref: branch
+                });
+              } else {
+                core.notice(`${workflow.name}: healthy; latest run #${latest.run_number} succeeded ${Math.round(ageMs / 60000)} minutes ago.`);
+              }
             }
