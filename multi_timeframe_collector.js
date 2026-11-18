@@ -5,6 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { aggregateWeeklyCandles, validCandles, evaluateAllCategories, evaluateRecentSignals } = require("./multi_timeframe_engine");
 const { updateJournal, summarizeJournal, dashboardSignalsForMarket } = require("./multi_timeframe_journal");
+const { buildPerformanceReport } = require("./strategy_version_performance");
 const { sendCandidateAlerts, sendOutcomeAlerts } = require("./multi_timeframe_alerts");
 const { reviewSignal } = require("./signal_review");
 const { updateStrategyJournal, summarizeStrategyJournal } = require("./strategy_comparison");
@@ -32,6 +33,7 @@ const OUTPUT = path.join(__dirname, "multi_timeframe_data.json");
 const JOURNAL = path.join(__dirname, "multi_timeframe_journal.json");
 const DASHBOARD = path.join(__dirname, "multi_timeframe_dashboard.json");
 const REVIEW_DATA = path.join(__dirname, "signal_review_data.json");
+const PERFORMANCE_REPORT = path.join(__dirname, "strategy_version_performance_report.json");
 const BREAKOUT_RETEST_JOURNAL = path.join(__dirname, "breakout_retest_shadow_journal.json");
 const BREAKOUT_RETEST_M5_M15_JOURNAL = path.join(__dirname, "breakout_retest_m5_m15_shadow_journal.json");
 const log = (event, details = {}) => console.log(JSON.stringify({ time: new Date().toISOString(), event, ...details }));
@@ -304,6 +306,8 @@ async function main() {
       log, liveQuotes, persist: persistJournal
     });
     fs.writeFileSync(JOURNAL, JSON.stringify(journal, null, 2) + "\n");
+    const performanceReport = buildPerformanceReport(journal, output.generatedAt);
+    fs.writeFileSync(PERFORMANCE_REPORT, JSON.stringify(performanceReport, null, 2) + "\n");
     fs.writeFileSync(OUTPUT, JSON.stringify(output, null, 2) + "\n");
     const reviewCandidates = new Map();
     for (const signal of journal.signals.filter(s => s.category !== "SWING").slice(0, 120)) reviewCandidates.set(signal.signalId, signal);
@@ -336,6 +340,7 @@ async function main() {
       mode: alertSummary.enabled ? "signal_alerts_enabled" : "observation_only", summary: output.summary,
       mt5TradeReporting: mt5TradeSummary, mt5Trades: mt5TradeLedger.trades,
       strategyComparison: output.strategyComparison, strategyResearch: output.strategyResearch,
+      performanceReport: { generatedAt: performanceReport.generatedAt, totals: performanceReport.totals, overall: performanceReport.overall, byVersion: performanceReport.byVersion },
       breakoutRetestShadow: output.breakoutRetestShadow,
       m5EmaPullbackShadow: output.m5EmaPullbackShadow,
       breakoutRetestM5M15Shadow: output.breakoutRetestM5M15Shadow,

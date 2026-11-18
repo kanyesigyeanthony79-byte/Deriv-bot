@@ -1,0 +1,34 @@
+name: Strategy Version and Performance Tests
+
+on:
+  pull_request:
+    paths:
+      - "multi_timeframe_journal.js"
+      - "strategy_version_performance.js"
+      - "strategy_version_performance.test.js"
+      - "multi_timeframe_collector.js"
+      - "package.json"
+      - ".github/workflows/strategy-version-tests.yml"
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - "multi_timeframe_journal.js"
+      - "strategy_version_performance.js"
+      - "strategy_version_performance.test.js"
+      - "multi_timeframe_collector.js"
+      - "package.json"
+      - ".github/workflows/strategy-version-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm test

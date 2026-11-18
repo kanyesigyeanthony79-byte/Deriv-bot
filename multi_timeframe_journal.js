@@ -3,6 +3,8 @@
 const TERMINAL = new Set(["tp2_hit", "stopped", "stopped_after_tp1", "ambiguous", "expired"]);
 const ENTRY_TIMEFRAME_SECONDS = Object.freeze({ M1: 60, M5: 300, H1: 3600, H4: 14400 });
 const DEFAULT_MAX_AGE_SECONDS = Object.freeze({ SCALP: 1800, SHORT_TERM: 21600, SWING: 604800, POSITION: 2592000 });
+// Bump only when approved production signal logic/configuration changes.
+const STRATEGY_VERSION = "MTF_BASELINE_V1";
 
 function touchStatus(signal, candle) {
   const buy = signal.direction === "BUY";
@@ -59,7 +61,12 @@ function updateJournal(journal, markets, nowEpoch, liveQuotes = {}) {
     for (const candidate of candidates) {
       if (!byId.has(candidate.signalId)) {
         const record = {
-          ...candidate, status: "pending", createdEpoch: nowEpoch,
+          ...candidate, strategyVersion: STRATEGY_VERSION,
+          strategySnapshot: { entryTimeframe: candidate.entryTimeframe, setupTimeframe: candidate.setupTimeframe,
+            confirmationTimeframe: candidate.confirmationTimeframe, contextTimeframe: candidate.contextTimeframe,
+            riskTimeframe: candidate.riskTimeframe, targetHorizon: candidate.targetHorizon,
+            riskReward: candidate.riskReward ? { ...candidate.riskReward } : null, maxAgeSeconds: candidate.maxAgeSeconds || null },
+          status: "pending", createdEpoch: nowEpoch,
           tp1Hit: false, tp1Epoch: null, tp2Epoch: null, stopEpoch: null,
           lastProcessedEpoch: candidate.entryCandleEpoch, outcomeCandles: 0
         };
@@ -149,4 +156,4 @@ function summarizeJournal(journal) {
   for (const s of journal.signals || []) counts[s.status] = (counts[s.status] || 0) + 1;
   return counts;
 }
-module.exports = { TERMINAL, touchStatus, applyLiveQuote, updateJournal, summarizeJournal, dashboardSignalsForMarket };
+module.exports = { STRATEGY_VERSION, TERMINAL, touchStatus, applyLiveQuote, updateJournal, summarizeJournal, dashboardSignalsForMarket };
