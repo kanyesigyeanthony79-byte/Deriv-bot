@@ -40,6 +40,12 @@ function atr(candles, period = 14) {
   for (let i = period; i < tr.length; i++) value = (value * (period - 1) + tr[i]) / period;
   return value;
 }
+function latestContinuousSegment(rows, seconds) {
+  if (!Array.isArray(rows) || !rows.length) return [];
+  let start = rows.length - 1;
+  while (start > 0 && rows[start].epoch - rows[start - 1].epoch === seconds) start--;
+  return rows.slice(start);
+}
 function marketReady(stats) {
   if (!stats || !stats.frames) return false;
   return ["M1", "M5", "M15"].every(tf => {
@@ -151,14 +157,14 @@ function summarizeTrades(trades, setupCount) {
 }
 function replayMarket(marketId, market, bounds) {
   const m1 = market.timeframes.M1, m5 = market.timeframes.M5, m15 = market.timeframes.M15;
-  if (!continuous(m1, TF.M1) || !continuous(m5, TF.M5) || !continuous(m15, TF.M15)) {
+  if (!continuous(m1Rows, TF.M1) || !continuous(m5Rows, TF.M5) || !continuous(m15Rows, TF.M15)) {
     return { marketId, status: "not_replayed_noncontinuous_input", methods: {} };
   }
   const setups = [];
   for (let i = 64; i < m15.length - 1; i++) {
     const history = m15.slice(0, i + 1), direction = directionAtM15(history);
     if (!direction) continue;
-    const setup = m15[i], setupCloseEpoch = setup.epoch + TF.M15;
+    const setup = m15Rows[i], setupCloseEpoch = setup.epoch + TF.M15;
     const riskAtr = atr(history, 14);
     if (!(riskAtr > 0)) continue;
     setups.push({ setupEpoch: setupCloseEpoch, direction, setupAtr: riskAtr, m15EntryEpoch: setupCloseEpoch });
@@ -176,12 +182,12 @@ function replayMarket(marketId, market, bounds) {
       counts[splitName]++;
       let entry = null;
       if (method === "M15_NEXT_OPEN") {
-        const candle = m15.find(c => c.epoch === setup.m15EntryEpoch);
+        const candle = m15Rows.find(c => c.epoch === setup.m15EntryEpoch);
         if (candle) entry = { triggerEpoch: setup.setupEpoch, entryEpoch: candle.epoch, entry: candle.open };
       } else if (method === "M5_EMA_PULLBACK") {
-        entry = m5PullbackTrigger(m5, setup.direction, setup.setupEpoch, setup.setupEpoch + HORIZON_SECONDS);
+        entry = m5PullbackTrigger(m5Rows, setup.direction, setup.setupEpoch, setup.setupEpoch + HORIZON_SECONDS);
       } else {
-        entry = m1MicroBreakTrigger(m1, m5, setup.direction, setup.setupEpoch, setup.setupEpoch + HORIZON_SECONDS);
+        entry = m1MicroBreakTrigger(m1Rows, m5Rows, setup.direction, setup.setupEpoch, setup.setupEpoch + HORIZON_SECONDS);
       }
       if (!entry || entry.entryEpoch + HORIZON_SECONDS > splitRange.end) {
         // No entry or insufficient time remaining is counted as no-entry, never as a loss.
@@ -189,7 +195,7 @@ function replayMarket(marketId, market, bounds) {
       }
       const riskDistance = setup.setupAtr * STOP_ATR_M15;
       const outcome = resolveCommonOutcome({
-        m1, entryEpoch: entry.entryEpoch, entry: entry.entry, direction: setup.direction,
+        m1: m1Rows, entryEpoch: entry.entryEpoch, entry: entry.entry, direction: setup.direction,
         riskDistance, horizonEndEpoch: entry.entryEpoch + HORIZON_SECONDS
       });
       trades.push({ setupEpoch: setup.setupEpoch, triggerEpoch: entry.triggerEpoch, entryEpoch: entry.entryEpoch, entry: entry.entry, direction: setup.direction, riskDistance, outcome });
@@ -201,7 +207,7 @@ function replayMarket(marketId, market, bounds) {
       trades
     };
   }
-  return { marketId, status: "replayed", setupCandidates: setups.length, splitBounds: bounds, methods: results };
+  return { marketId, status: "replayed", setupCandidates: setups.length, commonOverlapStartEpoch: overlapStart, commonOverlapEndEpoch: overlapEnd, splitBounds: bounds, methods: results };
 }
 function buildCommonAssumptionReplayReport(archive, readinessReport, generatedAt = new Date().toISOString()) {
   const markets = {};
@@ -246,7 +252,7 @@ function buildCommonAssumptionReplayReport(archive, readinessReport, generatedAt
 
 module.exports = {
   TF, STOP_ATR_M15, TARGET_R, HORIZON_SECONDS, MINIMUM, METHODS,
-  validCandle, continuous, ema, atr, marketReady, directionAtM15,
+  validCandle, continuous, latestContinuousSegment, ema, atr, marketReady, directionAtM15,
   m5PullbackTrigger, m1MicroBreakTrigger, resolveCommonOutcome,
   splitBounds, summarizeTrades, replayMarket, buildCommonAssumptionReplayReport
 };
