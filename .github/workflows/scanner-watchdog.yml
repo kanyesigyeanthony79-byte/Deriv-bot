@@ -56,8 +56,24 @@ jobs:
                 continue;
               }
 
+              const runAgeMs = now - Date.parse(latest.created_at);
               if (latest.status === "queued" || latest.status === "in_progress") {
-                core.notice(`${workflow.name}: run #${latest.run_number} is ${latest.status}; no duplicate dispatched.`);
+                if (Number.isFinite(runAgeMs) && runAgeMs > staleAfterMs) {
+                  core.warning(`${workflow.name}: run #${latest.run_number} has been ${latest.status} for ${Math.round(runAgeMs / 60000)} minutes; cancelling stuck run and dispatching recovery.`);
+                  await github.rest.actions.cancelWorkflowRun({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    run_id: latest.id
+                  });
+                  await github.rest.actions.createWorkflowDispatch({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    workflow_id: workflow.id,
+                    ref: branch
+                  });
+                } else {
+                  core.notice(`${workflow.name}: run #${latest.run_number} is ${latest.status}; no duplicate dispatched.`);
+                }
                 continue;
               }
 
