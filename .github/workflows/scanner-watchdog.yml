@@ -50,17 +50,11 @@ jobs:
                 workflow_id: workflowId,
                 ref: branch
               });
-              core.summary.addHeading("Scanner watchdog")
-                .addBulletList(["No collector history found", "Recovery run dispatched"])
-                .write();
               return;
             }
 
             if (latest.status === "queued" || latest.status === "in_progress") {
               core.notice(`Collector run #${latest.run_number} is ${latest.status}; no duplicate dispatched.`);
-              core.summary.addHeading("Scanner watchdog")
-                .addBulletList([`Latest collector run #${latest.run_number} is ${latest.status}`, "No duplicate run dispatched"])
-                .write();
               return;
             }
 
@@ -81,15 +75,6 @@ jobs:
                 workflow_id: workflowId,
                 ref: branch
               });
-              core.summary.addHeading("Scanner recovery dispatched")
-                .addBulletList([reason, "A new Multi-Timeframe Data Collector run was requested."])
-                .write();
             } else {
               core.notice(`Collector healthy: latest run #${latest.run_number} succeeded ${Math.round(ageMs / 60000)} minutes ago.`);
-              core.summary.addHeading("Scanner healthy")
-                .addBulletList([
-                  `Latest collector run #${latest.run_number} succeeded.`,
-                  `Last activity: ${Math.round(ageMs / 60000)} minutes ago.`
-                ])
-                .write();
             }
