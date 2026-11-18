@@ -305,10 +305,16 @@ async function main() {
     });
     fs.writeFileSync(JOURNAL, JSON.stringify(journal, null, 2) + "\n");
     fs.writeFileSync(OUTPUT, JSON.stringify(output, null, 2) + "\n");
-    const reviewRecords = journal.signals.filter(s => s.category !== "SWING" && (s.status === "pending" || s.status === "tp1_hit")).map(signal => {
+    const reviewRecords = journal.signals.slice(-120).filter(s => s.category !== "SWING").map(signal => {
       const market = output.markets[signal.marketId];
       return { signalId: signal.signalId, marketId: signal.marketId, market: signal.market, category: signal.category,
-        direction: signal.direction, entry: signal.entry, stopLoss: signal.stopLoss, tp1: signal.tp1, tp2: signal.tp2, tp1Hit: Boolean(signal.tp1Hit), tp1Epoch: signal.tp1Epoch || null,
+        direction: signal.direction, entry: signal.entry, stopLoss: signal.stopLoss, tp1: signal.tp1, tp2: signal.tp2,
+        tp1Hit: Boolean(signal.tp1Hit), tp1Epoch: signal.tp1Epoch || null, tp2Epoch: signal.tp2Epoch || null,
+        stopEpoch: signal.stopEpoch || null, signalStatus: signal.status || "unknown",
+        outcome: signal.finalOutcome || signal.outcome || null, telegramStatus: signal.telegramStatus || "not_reported",
+        score: signal.score ?? null, quality: signal.quality || null, riskReward: signal.riskReward || null,
+        lastLivePrice: signal.lastLivePrice ?? null, lastLiveQuoteEpoch: signal.lastLiveQuoteEpoch || null,
+        createdEpoch: signal.createdEpoch || signal.candleEpoch || null,
         entryTimeframe: signal.entryTimeframe, entryCandleEpoch: signal.entryCandleEpoch,
         review: market ? reviewSignal(signal, market.timeframes, now) : { signalId: signal.signalId, status: "INSUFFICIENT_DATA", headline: "REVIEW UNAVAILABLE", reason: "Market data unavailable." } };
     });
