@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#10251d"><title>Original Signal Review · Deriv Signal Assistant</title>
+<style>
+:root{color-scheme:dark;--panel:#14251d;--line:#2c4939;--txt:#eef5ef;--muted:#a8b9ad;--gold:#d5a83d;--green:#55c58b;--red:#f07878}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#10251d,#09120e 70%);color:var(--txt);font:15px system-ui,sans-serif}main{max-width:720px;margin:auto;padding:22px 15px 45px}.brand{font-weight:800;font-size:14px;color:var(--muted)}h1{font-size:25px;margin:20px 0 5px}.muted{color:var(--muted);font-size:13px;line-height:1.5}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:14px}.status{font-size:20px;font-weight:850;margin-bottom:8px}.ok{color:var(--green)}.warn{color:var(--gold)}.bad{color:var(--red)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}.item{background:#1b3026;border-radius:10px;padding:10px;min-width:0}.label{font-size:11px;color:var(--muted)}.value{font-weight:750;margin-top:4px;overflow-wrap:anywhere}.btn{display:inline-block;border:1px solid var(--line);background:#1b3026;color:var(--txt);border-radius:10px;padding:11px 14px;text-decoration:none;margin:14px 8px 0 0;font-weight:700;cursor:pointer}.btn.primary{background:var(--gold);color:#17170f;border-color:var(--gold)}.notice{border-left:3px solid var(--gold);padding:11px;background:#1a281e;border-radius:8px;margin-top:16px;font-size:12px;line-height:1.6}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}td,th{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line)}th{color:var(--muted)}@media(max-width:400px){.grid{grid-template-columns:1fr 1fr}}
+</style></head><body><main>
+<div class="brand">DERIV SIGNAL ASSISTANT · ORIGINAL M15 SYSTEM</div><h1>Signal review</h1>
+<p class="muted">Inspect this original-system alert, its recorded price levels, delivery state and recorded outcome events. This page reads the published journal; it does not place, close or modify trades.</p>
+<a class="btn primary" href="./index.html">← Back to dashboard</a><button class="btn" id="refresh" type="button">Refresh status</button>
+<div id="status" class="muted" aria-live="polite">Loading signal journal…</div><div id="result" class="card"><div class="status">Loading…</div></div>
+<div class="notice"><b>Important:</b> The one-hour review queue is an attention reminder only. It does not automatically expire, cancel or close a signal. Verify any actual trade independently in your broker account.</div>
+</main><script>
+(()=>{
+ const id=new URLSearchParams(location.search).get("signalId"),status=document.getElementById("status"),result=document.getElementById("result"),button=document.getElementById("refresh");
+ const esc=s=>String(s??"—").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ const fmt=v=>v===null||v===undefined||v===""?"—":Number.isFinite(Number(v))?Number(v).toFixed(4):String(v);
+ const stamp=v=>{if(!v)return"—";const d=new Date(v);return Number.isNaN(d.getTime())?String(v):d.toLocaleString();};
+ const item=(k,v)=>'<div class="item"><div class="label">'+esc(k)+'</div><div class="value">'+esc(v)+'</div></div>';
+ async function load(){
+  button.disabled=true;status.textContent="Refreshing hosted journal…";
+  try{
+   if(!id)throw new Error("Missing signal ID. Open this page from a signal card on the dashboard.");
+   const response=await fetch("./trade_journal.json?v="+Date.now(),{cache:"no-store"});
+   if(!response.ok)throw new Error("Hosted signal journal unavailable (HTTP "+response.status+").");
+   const data=await response.json(),signals=Array.isArray(data.signals)?data.signals:Array.isArray(data)?data:[],s=signals.find(x=>x.signalId===id);
+   if(!s)throw new Error("Signal not found in the currently published journal. It may have been archived or the journal has not refreshed.");
+   const parsed=Date.parse(s.createdAt||""),created=Number.isFinite(parsed)?Math.floor(parsed/1000):Number(s.candleEpoch||0);
+   const age=created?Math.max(0,Math.floor(Date.now()/1000-created)):null;
+   const terminal=Boolean(s.finalOutcome)||(s.events||[]).some(e=>["TP2_HIT","SL_HIT","EXPIRED","AMBIGUOUS"].includes(e.outcome));
+   const label=terminal?(s.finalOutcome||"RECORDED TERMINAL EVENT").replaceAll("_"," "):age!==null&&age>=3600?"UNRESOLVED · NEEDS REVIEW":"ACTIVE · UNRESOLVED";
+   const tone=terminal?"warn":age!==null&&age>=3600?"warn":"ok",events=Array.isArray(s.events)?s.events:[];
+   result.innerHTML='<div class="status '+tone+'">'+esc(label)+'</div><div class="muted">'+(age===null?"Signal age unavailable.":"This record is "+Math.floor(age/60)+" minutes old.")+'</div><div class="grid">'+
+    item("Market",s.market||s.marketId)+item("Direction",s.direction)+item("Alert status",s.status)+item("Signal score",s.score==null?"—":s.score+"/100")+
+    item("Created",s.createdAt||s.candleEpoch)+item("Entry",fmt(s.entry))+item("Stop loss",fmt(s.stopLoss))+item("Take profit 1",fmt(s.tp1))+item("Take profit 2",fmt(s.tp2))+
+    item("Recorded outcome",s.finalOutcome||"No final outcome recorded")+item("Signal ID",s.signalId)+'</div>'+
+    '<h2 style="font-size:16px;margin:18px 0 6px">Recorded events</h2>'+
+    (events.length?'<table><thead><tr><th>Time</th><th>Event</th><th>Price</th></tr></thead><tbody>'+events.map(e=>'<tr><td>'+esc(e.time||e.timestamp||"—")+'</td><td>'+esc(e.outcome||e.event||"—")+'</td><td>'+esc(fmt(e.price))+'</td></tr>').join("")+'</tbody></table>':'<p class="muted">No outcome events have been recorded for this signal.</p>');
+   status.textContent="Journal connected · refreshed "+new Date().toLocaleTimeString();
+  }catch(e){result.innerHTML='<div class="status bad">Review unavailable</div><p class="muted">'+esc(e.message)+'</p>';status.textContent="Could not load selected signal.";}
+  finally{button.disabled=false;}
+ }
+ button.addEventListener("click",load);load();setInterval(load,60000);
+})();
+</script></body></html>
