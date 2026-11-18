@@ -1,5 +1,10 @@
 "use strict";
 
+const fs = require("node:fs");
+const path = require("node:path");
+const { getDataDir } = require("./scanner_data_dir");
+const DATA_DIR = getDataDir();
+
 // Historical replay for M15 setup candidates with M15, M5 or M1 entry timing.
 // Every method uses the same M15 ATR risk distance, 2R target, M1 outcome
 // resolution and 60-minute horizon. Offline research only: no alerts/orders.
@@ -260,6 +265,28 @@ function buildCommonAssumptionReplayReport(archive, readinessReport, generatedAt
     markets
   };
 }
+
+function main() {
+  const archivePath = path.join(DATA_DIR, "lower_tf_research_candles.json");
+  const readinessPath = path.join(DATA_DIR, "lower_tf_entry_research_report.json");
+  const outputPath = path.join(DATA_DIR, "lower_tf_common_assumption_replay_report.json");
+  if (!fs.existsSync(archivePath) || !fs.existsSync(readinessPath)) {
+    throw new Error("Lower-timeframe archive/readiness report is missing; replay was not run.");
+  }
+  const archive = JSON.parse(fs.readFileSync(archivePath, "utf8"));
+  const readiness = JSON.parse(fs.readFileSync(readinessPath, "utf8"));
+  const report = buildCommonAssumptionReplayReport(archive, readiness);
+  fs.writeFileSync(outputPath, JSON.stringify(report, null, 2) + "\n");
+  console.log(JSON.stringify({
+    event: "lower_tf_common_assumption_replay_completed",
+    mode: report.mode,
+    marketsConsidered: report.summary.marketsConsidered,
+    marketsReplayed: report.summary.marketsReplayed,
+    marketsWaiting: report.summary.marketsWaiting,
+    output: outputPath
+  }));
+}
+if (require.main === module) main();
 
 module.exports = {
   TF, STOP_ATR_M15, TARGET_R, HORIZON_SECONDS, MINIMUM, METHODS,
