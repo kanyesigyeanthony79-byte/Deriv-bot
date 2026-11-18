@@ -6,7 +6,7 @@ const BASELINE_VERSION = "MTF_BASELINE_V1";
 const BASELINE_CATEGORY = "SCALP";
 const MATCH_WINDOW_SECONDS = 15 * 60;
 
-function statusOf(signal) {
+function finiteOrNull(value) {\n  return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value))\n    ? Number(value) : null;\n}\n\nfunction statusOf(signal) {
   return String(signal?.status || "unknown").toLowerCase();
 }
 
