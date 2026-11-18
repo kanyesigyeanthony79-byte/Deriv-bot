@@ -53,7 +53,7 @@ jobs:
           TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
           SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
           MT5_TRADE_REPORTING_ENABLED: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
-          MT5_EXECUTION_QUEUE_ENABLED: ${{ github.ref == 'refs/heads/main' && vars.MT5_EXECUTION_QUEUE_ENABLED || 'false' }} # Research branches are always disabled; main uses only the approved demo-CFD flag
+          MT5_EXECUTION_QUEUE_ENABLED: 'false' # Signal-only mode: never enqueue MT5 orders from this workflow
       - name: Archive lower-timeframe candles for entry research
         run: node lower_tf_entry_research.js
         env:
