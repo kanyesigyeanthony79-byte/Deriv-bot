@@ -8,6 +8,7 @@ const DATA_DIR = getDataDir();
 const { aggregateWeeklyCandles, validCandles, evaluateAllCategories, evaluateRecentSignals } = require("./multi_timeframe_engine");
 const { updateJournal, summarizeJournal, dashboardSignalsForMarket } = require("./multi_timeframe_journal");
 const { buildPerformanceReport } = require("./strategy_version_performance");
+const { buildMatchedComparisonReport } = require("./strategy_matched_comparison");
 const { sendCandidateAlerts, sendOutcomeAlerts } = require("./multi_timeframe_alerts");
 const { reviewSignal } = require("./signal_review");
 const { updateStrategyJournal, summarizeStrategyJournal } = require("./strategy_comparison");
@@ -282,6 +283,13 @@ async function main() {
     );
     fs.writeFileSync(BREAKOUT_RETEST_M5_M15_JOURNAL, JSON.stringify(breakoutRetestM5M15Journal, null, 2) + "\n");
     output.breakoutRetestM5M15Shadow = breakoutRetestM5M15Journal.summary;
+    const matchedComparisonReport = buildMatchedComparisonReport({
+      baselineJournal: journal, strategyJournal, breakoutRetestJournal,
+      m5PullbackJournal, breakoutRetestM5M15Journal, generatedAt: output.generatedAt
+    });
+    const matchedComparisonPath = path.join(DATA_DIR, "strategy_matched_comparison_report.json");
+    fs.writeFileSync(matchedComparisonPath, JSON.stringify(matchedComparisonReport, null, 2) + "\n");
+    output.strategyMatchedComparison = matchedComparisonReport.summary;
     output.strategyComparisonTelegram = { alerts: strategyShadowTelegram, dailyReport: strategyDailyTelegram };
     const researchArchivePath = path.join(DATA_DIR, "strategy_research_candles.json");
     const researchReportPath = path.join(DATA_DIR, "strategy_research_report.json");
@@ -342,6 +350,7 @@ async function main() {
       mode: alertSummary.enabled ? "signal_alerts_enabled" : "observation_only", summary: output.summary,
       mt5TradeReporting: mt5TradeSummary, mt5Trades: mt5TradeLedger.trades,
       strategyComparison: output.strategyComparison, strategyResearch: output.strategyResearch,
+      strategyMatchedComparison: output.strategyMatchedComparison,
       performanceReport: { generatedAt: performanceReport.generatedAt, totals: performanceReport.totals, overall: performanceReport.overall, expiryAnalysis: performanceReport.expiryAnalysis, reviewComparison: performanceReport.reviewComparison, byVersion: performanceReport.byVersion },
       breakoutRetestShadow: output.breakoutRetestShadow,
       m5EmaPullbackShadow: output.m5EmaPullbackShadow,
