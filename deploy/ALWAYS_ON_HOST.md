@@ -20,11 +20,14 @@ Do not disable the GitHub Actions scanner until the host has passed the acceptan
 
 ## Files and secrets
 
-The service expects the repository at `/opt/deriv-bot`. Keep the runtime state files on persistent storage alongside the scanner:
-- `signal_state.json`
-- `trade_journal.json`
-- `scanner_heartbeat.json`
-- `multi_timeframe_journal.json` (read-only input for the daily summary)
+The service expects the repository at `/opt/deriv-bot`. Keep runtime state on a dedicated persistent data volume, separate from the Git checkout. The service sets `SCANNER_DATA_DIR=/var/lib/deriv-scanner`; both the main scanner and multi-timeframe collector resolve all mutable journals/reports through this directory. The default remains the application directory when `SCANNER_DATA_DIR` is unset, preserving existing GitHub Actions behavior.
+
+The data directory includes (among other runtime artifacts):
+- `signal_state.json`, `trade_journal.json`, `scanner_heartbeat.json`
+- `multi_timeframe_journal.json`, `multi_timeframe_data.json`, `multi_timeframe_dashboard.json`
+- signal review, strategy-version, strategy-comparison, strategy-research, and shadow journals/reports.
+
+Do not commit these mutable runtime files to the deployment checkout. Back up and migrate the full data directory, preserving file names and permissions.
 
 Create `/etc/deriv-scanner.env` with restrictive permissions (0600), owned by root. Populate it using the existing GitHub Actions secret values; never commit credentials:
 
@@ -40,12 +43,12 @@ Do not paste credentials into chat, source code, issue comments, or logs. The sc
 
 ## Install
 
-1. Create the service account and directories; install Node.js 22.
+1. Install Node.js 22 and `flock` (provided by the `util-linux` package). Create the `derivscanner` service account and persistent directory `/var/lib/deriv-scanner`; ensure it is owned by `derivscanner:derivscanner` with restrictive permissions.
 2. Deploy the repository to `/opt/deriv-bot` from the reviewed release/commit.
 3. Install dependencies only if the project later adds production dependencies; the current scanner uses Node built-ins and repository modules.
 4. Copy this service file to `/etc/systemd/system/deriv-scanner.service`.
 5. Create and secure `/etc/deriv-scanner.env`.
-6. Ensure `derivscanner` can write the four runtime data files and directory, and that the files are initialized from the latest production state before cutover.
+6. Ensure `/var/lib/deriv-scanner` is mounted on persistent storage and owned by `derivscanner:derivscanner`; migrate the complete latest runtime data set into it before cutover.
 7. Run `sudo systemctl daemon-reload`, then `sudo systemctl enable --now deriv-scanner`.
 
 Useful checks:
@@ -53,7 +56,7 @@ Useful checks:
 ```sh
 sudo systemctl status deriv-scanner
 sudo journalctl -u deriv-scanner -f
-cat /opt/deriv-bot/scanner_heartbeat.json
+cat /var/lib/deriv-scanner/scanner_heartbeat.json
 ```
 
 ## Acceptance checks before cutover
@@ -63,7 +66,7 @@ cat /opt/deriv-bot/scanner_heartbeat.json
 - Every cycle reports market attempts/results; investigate partial or failed scans.
 - Telegram delivery counters and logs agree with the worker's delivery records.
 - Active-signal state and journal survive a service restart.
-- Confirm only one scanner instance is active before enabling Telegram delivery on the host.
+- Confirm only one scanner instance is active before enabling Telegram delivery on the host. The systemd unit uses `flock` on `/run/deriv-scanner/scanner.lock` to prevent a second service process from starting a competing supervisor.
 - Confirm no order execution path is enabled.
 
 ## Cutover and rollback
