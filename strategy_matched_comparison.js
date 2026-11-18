@@ -82,8 +82,8 @@ function buildStrategyComparison(strategyId, label, candidateJournal, baseline) 
       entryTimeDifferenceSeconds: Number(Math.abs(Number(base.entryCandleEpoch) - epoch)),
       candidateStatus: statusOf(candidate),
       baselineStatus: statusOf(base),
-      candidateRealizedR: Number.isFinite(Number(candidate.realizedR)) ? Number(candidate.realizedR) : null,
-      baselineRealizedR: Number.isFinite(Number(base.realizedR)) ? Number(base.realizedR) : null
+      candidateRealizedR: finiteOrNull(candidate.realizedR),
+      baselineRealizedR: finiteOrNull(base.realizedR)
     });
   }
 
