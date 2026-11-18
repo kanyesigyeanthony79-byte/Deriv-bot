@@ -342,7 +342,7 @@ async function main() {
       mode: alertSummary.enabled ? "signal_alerts_enabled" : "observation_only", summary: output.summary,
       mt5TradeReporting: mt5TradeSummary, mt5Trades: mt5TradeLedger.trades,
       strategyComparison: output.strategyComparison, strategyResearch: output.strategyResearch,
-      performanceReport: { generatedAt: performanceReport.generatedAt, totals: performanceReport.totals, overall: performanceReport.overall, byVersion: performanceReport.byVersion },
+      performanceReport: { generatedAt: performanceReport.generatedAt, totals: performanceReport.totals, overall: performanceReport.overall, expiryAnalysis: performanceReport.expiryAnalysis, byVersion: performanceReport.byVersion },
       breakoutRetestShadow: output.breakoutRetestShadow,
       m5EmaPullbackShadow: output.m5EmaPullbackShadow,
       breakoutRetestM5M15Shadow: output.breakoutRetestM5M15Shadow,
