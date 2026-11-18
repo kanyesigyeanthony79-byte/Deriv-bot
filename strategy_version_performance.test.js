@@ -50,3 +50,48 @@ test("performance report keeps partial, expired and unresolved outcomes out of d
   assert.equal(report.byVersion[0].key, "V1");
   assert.equal(report.byCategory.length, 2);
 });
+
+
+test("new observation records preserve intended expiry and record actual expiry delay", () => {
+  const candidate = {
+    state: "signal", signalId: "TEST-SCALP-EXPIRY", marketId: "R_50", category: "SCALP",
+    direction: "BUY", entry: 100, stopLoss: 99, tp1: 102, tp2: 103,
+    entryTimeframe: "M5", entryCandleEpoch: 1000, maxAgeSeconds: 1800
+  };
+  const first = updateJournal({ version: 1, signals: [] }, {
+    R_50: { marketId: "R_50", signals: [candidate], timeframes: { M5: [] } }
+  }, 1100);
+  assert.equal(first.signals[0].intendedExpiryEpoch, 2800);
+  assert.equal(first.signals[0].status, "pending");
+  const expired = updateJournal(first, {}, 2860);
+  assert.equal(expired.signals[0].status, "expired");
+  assert.equal(expired.signals[0].expiredEpoch, 2860);
+  assert.equal(expired.signals[0].expiryDelaySeconds, 60);
+});
+
+test("historical expired records keep missing expiry timestamps missing", () => {
+  const historical = { signalId: "OLD-EXPIRED", marketId: "R_50", category: "SCALP",
+    entryCandleEpoch: 1000, maxAgeSeconds: 1800, status: "expired" };
+  const result = updateJournal({ version: 1, signals: [historical] }, {}, 9000);
+  assert.equal(result.signals[0].intendedExpiryEpoch, undefined);
+  assert.equal(result.signals[0].expiredEpoch, undefined);
+  assert.equal(result.signals[0].expiryDelaySeconds, undefined);
+});
+
+test("expiry analysis reports timestamp coverage and favourable excursion bands", () => {
+  const report = buildPerformanceReport({ signals: [
+    { telegramStatus: "sent", status: "expired", category: "SCALP", marketId: "R_50",
+      tp1Hit: true, maxFavourablePoints: 15, riskDistance: 10,
+      intendedExpiryEpoch: 100, expiredEpoch: 160, expiryDelaySeconds: 60 },
+    { telegramStatus: "sent", status: "expired", category: "SHORT_TERM", marketId: "R_25",
+      tp1Hit: false, maxFavourablePoints: 4, riskDistance: 10 },
+    { telegramStatus: "sent", status: "tp2_hit" }
+  ]});
+  assert.equal(report.expiryAnalysis.expiredSignals, 2);
+  assert.equal(report.expiryAnalysis.tp1Reached, 1);
+  assert.equal(report.expiryAnalysis.withIntendedExpiryTimestamp, 1);
+  assert.equal(report.expiryAnalysis.withActualExpiryTimestamp, 1);
+  assert.equal(report.expiryAnalysis.withMeasuredExpiryDelay, 1);
+  assert.equal(report.expiryAnalysis.medianExpiryDelaySeconds, 60);
+  assert.deepEqual(report.expiryAnalysis.favourableExcursionBands.map(x => x.signals), [1, 0, 0, 1, 0, 0]);
+});

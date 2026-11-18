@@ -29,6 +29,22 @@ const o=d.overall.outcomes;const tr=el("tr");[o.tp2_hit,o.stopped,o.stopped_afte
 const root=document.getElementById("sections");[
 ["By strategy version",d.byVersion],["By category",d.byCategory],["By market",d.byMarket],["By direction",d.byDirection],["By score band",d.byScoreBand],["Version × category",d.byVersionCategory],["Version × market",d.byVersionMarket]
 ].forEach(([name,rows])=>root.append(table(name,rows)));
+const expiry=d.expiryAnalysis||{};
+const expirySection=el("section");expirySection.append(el("h2","","Expiry and near-target analysis"));
+const expiryGrid=el("div","grid");
+[
+["EXPIRED SIGNALS",expiry.expiredSignals??0],["TP1 REACHED",expiry.tp1Reached??0],
+["INTENDED TIMESTAMPS",expiry.withIntendedExpiryTimestamp??0],["ACTUAL TIMESTAMPS",expiry.withActualExpiryTimestamp??0],
+["MEASURED DELAYS",expiry.withMeasuredExpiryDelay??0],
+["MEDIAN DETECTION DELAY",expiry.medianExpiryDelaySeconds==null?"—":Math.round(expiry.medianExpiryDelaySeconds/60)+" min"],
+["DELAY >15 MIN",expiry.expiryDelayOver15Minutes??0],["DELAY >60 MIN",expiry.expiryDelayOver60Minutes??0]
+].forEach(([k,v])=>{const c=el("div","card");c.append(el("div","label",k),el("div","value",String(v)));expiryGrid.append(c)});
+expirySection.append(expiryGrid);
+function simpleRows(title,rows){expirySection.append(el("h2","",title));const wrap=el("div","wrap"),t=el("table"),head=el("thead"),tr=el("tr");["Group","Expired","TP1 reached","At least 1R favourable"].forEach(x=>tr.append(el("th","",x)));head.append(tr);t.append(head);const body=el("tbody");(rows||[]).forEach(r=>{const row=el("tr");[r.key,r.signals,r.tp1Reached,r.favourableAtLeast1R].forEach(v=>row.append(el("td","",String(v??0))));body.append(row)});t.append(body);wrap.append(t);expirySection.append(wrap)}
+simpleRows("Expiry by category",expiry.byCategory);simpleRows("Expiry by market",expiry.byMarket);
+const bands=el("div","muted");bands.textContent="Favourable excursion bands: "+(expiry.favourableExcursionBands||[]).map(x=>x.key+": "+x.signals).join(" · ");expirySection.append(bands);
+const note=el("div","note");note.textContent=expiry.note||"Near-target excursion is based on recorded candle movement, not executed trades.";expirySection.append(note);
+root.append(expirySection);
 document.getElementById("method").textContent=d.methodology.decisiveTp2Rate+". "+d.methodology.note+" Expired, pending, TP1-only, partial-after-TP1 and ambiguous signals are shown separately and are not counted as decisive wins or losses.";
 }).catch(e=>{document.getElementById("generated").textContent=e.message+" · The report appears after the next successful collector run.";});
 </script></body></html>
