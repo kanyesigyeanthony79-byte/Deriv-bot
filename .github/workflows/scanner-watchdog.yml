@@ -127,7 +127,7 @@ jobs:
             for (const target of targets) {
               const response = await github.rest.actions.listWorkflowRuns({
                 owner: context.repo.owner, repo: context.repo.repo,
-                workflow_id: target.id, branch: "main", per_page: 100
+                workflow_id: target.id, branch: "main", event: "schedule", per_page: 100
               });
               const runs = (response.data.workflow_runs || [])
                 .filter(run => run.event === "schedule")
