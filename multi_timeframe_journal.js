@@ -113,7 +113,12 @@ function updateJournal(journal, markets, nowEpoch, liveQuotes = {}) {
   }
   state.updatedAt = new Date(nowEpoch * 1000).toISOString();
   state.signals.sort((a, b) => b.createdEpoch - a.createdEpoch);
-  state.signals = state.signals.slice(0, 500);
+  // Never prune a Telegram-delivered signal while its outcome is unresolved.
+  // Keep the newest 500 ordinary records plus every delivered, non-terminal record.
+  const retainedDelivered = state.signals.filter(s => s.telegramStatus === "sent" && !TERMINAL.has(s.status));
+  const retainedIds = new Set(retainedDelivered.map(s => s.signalId));
+  const recent = state.signals.filter(s => !retainedIds.has(s.signalId)).slice(0, 500);
+  state.signals = [...retainedDelivered, ...recent].sort((a, b) => b.createdEpoch - a.createdEpoch);
   return state;
 }
 
