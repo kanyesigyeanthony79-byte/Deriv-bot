@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-19T19:07:25.344Z",
+  "generatedAt": "2026-11-19T19:11:13.196Z",
   "mode": "common_assumption_historical_replay",
   "assumptions": {
     "setup": "M15 direction is generated from completed M15 candles using the existing engine default configuration.",
@@ -10,7 +10,7 @@
     "commonExit": "All outcomes are resolved on M1 candles, with a 60-minute horizon and same-candle stop/target touches marked ambiguous.",
     "positionConcurrency": "Each entry method is simulated independently with at most one open position at a time. Later setups are skipped while a prior position remains open; unresolved outcomes reserve the full 60-minute horizon. Reports distinguish overlap-skipped setups from eligible setups with no entry.",
     "costs": "No spread, commission or slippage assumptions are applied because broker-specific historical cost data is not part of this archive. Results are gross candle-based R, not executable or realised account returns.",
-    "splits": "Chronological 60% discovery, 20% validation and 20% holdout; one-hour embargo at each split boundary. Holdout is not used for tuning."
+    "splits": "Chronological 60% discovery, 20% validation and 20% holdout; a one-hour post-boundary embargo is excluded before validation and holdout, and setups whose 60-minute outcome horizon would cross a split end are purged. Holdout is not used for tuning."
   },
   "summary": {
     "marketsConsidered": 8,
@@ -32,11 +32,11 @@
           "end": 1795054584
         },
         "validation": {
-          "start": 1795054584,
+          "start": 1795058184,
           "end": 1795084692
         },
         "holdout": {
-          "start": 1795084692,
+          "start": 1795088292,
           "end": 1795114800
         }
       },
@@ -61,22 +61,22 @@
             "totalGrossR": -0.4311
           },
           "validation": {
-            "setups": 1,
-            "eligibleSetups": 1,
+            "setups": 0,
+            "eligibleSetups": 0,
             "overlapSkipped": 0,
-            "entries": 1,
+            "entries": 0,
             "noEntry": 0,
             "outcomes": {
               "target": 0,
               "stopped": 0,
               "ambiguous": 0,
-              "time_exit": 1,
+              "time_exit": 0,
               "incomplete_data": 0,
               "data_gap": 0
             },
-            "resolved": 1,
-            "averageGrossR": 0.7891,
-            "totalGrossR": 0.7891
+            "resolved": 0,
+            "averageGrossR": null,
+            "totalGrossR": 0
           },
           "holdout": {
             "setups": 2,
@@ -137,19 +137,6 @@
               }
             },
             {
-              "setupEpoch": 1795056300,
-              "triggerEpoch": 1795056300,
-              "entryEpoch": 1795056300,
-              "entry": 4852.666,
-              "direction": "BUY",
-              "riskDistance": 5.983084538988244,
-              "outcome": {
-                "status": "time_exit",
-                "realizedR": 0.7891,
-                "exitEpoch": 1795059900
-              }
-            },
-            {
               "setupEpoch": 1795104900,
               "triggerEpoch": 1795104900,
               "entryEpoch": 1795104900,
@@ -184,22 +171,22 @@
             "totalGrossR": 0.5256
           },
           "validation": {
-            "setups": 1,
-            "eligibleSetups": 1,
+            "setups": 0,
+            "eligibleSetups": 0,
             "overlapSkipped": 0,
-            "entries": 1,
+            "entries": 0,
             "noEntry": 0,
             "outcomes": {
               "target": 0,
               "stopped": 0,
               "ambiguous": 0,
-              "time_exit": 1,
+              "time_exit": 0,
               "incomplete_data": 0,
               "data_gap": 0
             },
-            "resolved": 1,
-            "averageGrossR": 0.5646,
-            "totalGrossR": 0.5646
+            "resolved": 0,
+            "averageGrossR": null,
+            "totalGrossR": 0
           },
           "holdout": {
             "setups": 2,
@@ -260,19 +247,6 @@
               }
             },
             {
-              "setupEpoch": 1795056300,
-              "triggerEpoch": 1795056300,
-              "entryEpoch": 1795056600,
-              "entry": 4852.766,
-              "direction": "BUY",
-              "riskDistance": 5.983084538988244,
-              "outcome": {
-                "status": "time_exit",
-                "realizedR": 0.5646,
-                "exitEpoch": 1795060200
-              }
-            },
-            {
               "setupEpoch": 1795104900,
               "triggerEpoch": 1795107600,
               "entryEpoch": 1795107900,
@@ -307,22 +281,22 @@
             "totalGrossR": -0.3102
           },
           "validation": {
-            "setups": 1,
-            "eligibleSetups": 1,
+            "setups": 0,
+            "eligibleSetups": 0,
             "overlapSkipped": 0,
-            "entries": 1,
+            "entries": 0,
             "noEntry": 0,
             "outcomes": {
               "target": 0,
               "stopped": 0,
               "ambiguous": 0,
-              "time_exit": 1,
+              "time_exit": 0,
               "incomplete_data": 0,
               "data_gap": 0
             },
-            "resolved": 1,
-            "averageGrossR": 0.3904,
-            "totalGrossR": 0.3904
+            "resolved": 0,
+            "averageGrossR": null,
+            "totalGrossR": 0
           },
           "holdout": {
             "setups": 2,
@@ -367,19 +341,6 @@
                 "status": "time_exit",
                 "realizedR": -0.433,
                 "exitEpoch": 1795046640
-              }
-            },
-            {
-              "setupEpoch": 1795056300,
-              "triggerEpoch": 1795057200,
-              "entryEpoch": 1795057260,
-              "entry": 4853.534,
-              "direction": "BUY",
-              "riskDistance": 5.983084538988244,
-              "outcome": {
-                "status": "time_exit",
-                "realizedR": 0.3904,
-                "exitEpoch": 1795060860
               }
             },
             {
