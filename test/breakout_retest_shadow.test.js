@@ -3,7 +3,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   detectBreakout, findRetestConfirmation, updateSignalOutcome,
-  updateBreakoutRetestJournal, TERMINAL
+  updateBreakoutRetestJournal, summarizeBreakoutRetestJournal, TERMINAL
 } = require("../breakout_retest_shadow");
 
 function candles(count, step, start = 1_700_000_000, price = 100) {
@@ -123,4 +123,9 @@ test("forward journal initializes at the latest M5 candle without historical bac
   const second = updateBreakoutRetestJournal(first, { R_10: market }, start + 100_300);
   assert.equal(second.signals.length, 0);
   assert.equal(second.markets.R_10.lastProcessedM5Epoch, market.timeframes.M5.at(-1).epoch);
+});
+
+test("breakout-retest summary does not publish unverified historical holdout metrics", () => {
+  const summary = summarizeBreakoutRetestJournal({ version: 1, signals: [], markets: {} });
+  assert.equal(Object.hasOwn(summary, "historicalHoldout"), false);
 });
