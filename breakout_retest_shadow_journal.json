@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-19T10:32:06.000Z",
+  "updatedAt": "2026-11-19T10:34:54.000Z",
   "markets": {
     "R_10": {
       "lastProcessedM5Epoch": 1795083900,
@@ -126,21 +126,13 @@
     },
     "BOOM500": {
       "lastProcessedM5Epoch": 1795083900,
-      "pendingSetups": [
-        {
-          "setupCloseEpoch": 1795083900,
-          "direction": -1,
-          "boundary": 5683.718,
-          "atr5": 4.5652316758800895,
-          "contextM15": "up"
-        }
-      ],
+      "pendingSetups": [],
       "cooldownUntilEpoch": 1795076460,
       "initializedAt": "2026-11-17T14:04:48.000Z",
       "dataQuality": "ok",
       "stats": {
         "setupsDetected": 130,
-        "signalsGenerated": 14,
+        "signalsGenerated": 15,
         "riskRejected": 8,
         "overlapSuppressed": 9,
         "confirmationExpired": 98
@@ -148,6 +140,36 @@
     }
   },
   "signals": [
+    {
+      "signalId": "BOOM500-BREAKOUT_RETEST-1795083900",
+      "strategyId": "M5_BREAKOUT_M1_RETEST",
+      "strategyLabel": "M5 breakout / M1 retest",
+      "marketId": "BOOM500",
+      "market": "Boom 500 Index",
+      "direction": "SELL",
+      "setupTimeframe": "M5",
+      "entryTimeframe": "M1",
+      "confirmationTimeframe": "M1",
+      "setupCloseEpoch": 1795083900,
+      "triggerEpoch": 1795084320,
+      "entryCandleEpoch": 1795084380,
+      "entry": 5683.38,
+      "stopLoss": 5684.530180343898,
+      "tp2": 5681.079639312205,
+      "riskDistance": 1.1501803438977731,
+      "riskReward": {
+        "target": 2
+      },
+      "contextM15": "up",
+      "status": "pending",
+      "evaluationSource": "forward_shadow",
+      "lastProcessedEpoch": 1795084320,
+      "outcomeCandles": 0,
+      "maxFavourableR": 0,
+      "maxAdverseR": 0,
+      "realizedR": null,
+      "createdAt": "2026-11-19T10:25:00.000Z"
+    },
     {
       "signalId": "JD75-BREAKOUT_RETEST-1795082100",
       "strategyId": "M5_BREAKOUT_M1_RETEST",
@@ -3408,9 +3430,9 @@
     "mode": "forward_shadow_observation_only",
     "strategy": "M5 breakout beyond prior 12-bar range; M1 retest confirmation; next-M1-open entry",
     "marketsMonitored": 8,
-    "signalsGenerated": 105,
+    "signalsGenerated": 106,
     "resolvedSignals": 105,
-    "pendingSignals": 0,
+    "pendingSignals": 1,
     "targetBeforeStop": 37,
     "stopBeforeTarget": 66,
     "timeExit": 1,
@@ -3539,9 +3561,9 @@
       },
       "BOOM500": {
         "dataQuality": "ok",
-        "signals": 14,
+        "signals": 15,
         "resolved": 14,
-        "pending": 0,
+        "pending": 1,
         "targetBeforeStop": 8,
         "stopBeforeTarget": 6,
         "ambiguous": 0,
@@ -3549,7 +3571,7 @@
         "targetRatePct": 57.1,
         "averageRealizedR": 0.714,
         "setupsDetected": 130,
-        "signalsGenerated": 14,
+        "signalsGenerated": 15,
         "riskRejected": 8,
         "overlapSuppressed": 9,
         "confirmationExpired": 98
