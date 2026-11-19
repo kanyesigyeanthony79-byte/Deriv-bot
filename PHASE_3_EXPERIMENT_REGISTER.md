@@ -133,3 +133,20 @@ EXP-02 and EXP-03 remain below the 50-observation forward-evidence threshold. Th
 EXP-06 remains blocked on R_10 M5 continuity. At the same snapshot, latest continuous M1/M5/M15 counts were 2,096 / 419 / 1,200, with 34.82 hours common overlap and zero invalid, duplicate or unaligned candles. The replay did not run. It must not be counted as completed evidence.
 
 **Checkpoint decision:** Continue Phase 3. EXP-01 is the first candidate to prioritize for a rigorous candidate-specific matched-baseline audit; no candidate has been certified through Gates A–D, and no production promotion is proposed.
+
+
+## 9. Candidate-specific baseline match audit — 2026-11-19 12:12 UTC
+
+The latest `strategy_matched_comparison_report.json` snapshot was generated at `2026-11-19T12:12:06Z`. For EXP-01 (`M5_BREAKOUT_M1_RETEST`):
+
+- Forward-shadow candidate observations: 112.
+- Available production baseline population: 85 `MTF_BASELINE_V1` SCALP / M5 records.
+- Same-market, same-direction, nearest-entry matches within 15 minutes: 9 of 112 candidates (8.0%); 103 candidates unmatched.
+- The 9 pair labels were 7 candidate stops vs baseline expired, and 2 candidate TP2 vs baseline expired.
+- The baseline outcomes in these pairs were all expired, so the report has no paired decisive baseline outcomes from which to estimate a meaningful paired expectancy difference.
+
+This report is explicitly a contemporaneous co-occurrence match, not a counterfactual replay. Candidate and baseline entry/exit management and outcome horizons may differ. Therefore the 9 pairs do not satisfy Gate C, and the 8.0% match coverage is inadequate to support a comparative performance conclusion. The broader report's 87 matches across seven strategy families must not be attributed to EXP-01.
+
+**Required next Gate C work:** build a candidate-specific common-assumption replay for EXP-01 and the production baseline on identical market/time windows, using the same entry timing, stop/target, horizon, outcome resolution and conservative cost sensitivity. If data is insufficient for that replay, record Gate C as not ready rather than extrapolating from the current co-occurrence matches.
+
+**Checkpoint decision remains:** Phase 3 active; EXP-01 is the priority research candidate, but it has not passed the matched-baseline gate or been certified for Phase 4. No production changes or promotion.
