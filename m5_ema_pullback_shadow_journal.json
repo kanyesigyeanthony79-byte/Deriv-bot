@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-19T05:02:09.000Z",
+  "updatedAt": "2026-11-19T05:07:04.000Z",
   "markets": {
     "R_10": {
       "lastM15Epoch": 1795063500,
-      "lastM5Epoch": 1795064100,
+      "lastM5Epoch": 1795064400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 7,
       "pendingSetups": [],
@@ -12,21 +12,15 @@
     },
     "R_25": {
       "lastM15Epoch": 1795063500,
-      "lastM5Epoch": 1795064100,
+      "lastM5Epoch": 1795064400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
-      "signals": 4,
-      "pendingSetups": [
-        {
-          "setupCloseEpoch": 1795063500,
-          "direction": "BUY",
-          "expiresEpoch": 1795067100
-        }
-      ],
+      "signals": 5,
+      "pendingSetups": [],
       "dataQuality": "ok"
     },
     "R_50": {
       "lastM15Epoch": 1795063500,
-      "lastM5Epoch": 1795064100,
+      "lastM5Epoch": 1795064400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 2,
       "pendingSetups": [],
@@ -34,7 +28,7 @@
     },
     "R_75": {
       "lastM15Epoch": 1795063500,
-      "lastM5Epoch": 1795064100,
+      "lastM5Epoch": 1795064400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 6,
       "pendingSetups": [],
@@ -42,7 +36,7 @@
     },
     "JD75": {
       "lastM15Epoch": 1795063500,
-      "lastM5Epoch": 1795064100,
+      "lastM5Epoch": 1795064400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 1,
       "pendingSetups": [],
@@ -50,7 +44,7 @@
     },
     "JD100": {
       "lastM15Epoch": 1795063500,
-      "lastM5Epoch": 1795064100,
+      "lastM5Epoch": 1795064400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 2,
       "pendingSetups": [],
@@ -58,7 +52,7 @@
     },
     "CRASH500": {
       "lastM15Epoch": 1795063500,
-      "lastM5Epoch": 1795064100,
+      "lastM5Epoch": 1795064400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 0,
       "pendingSetups": [],
@@ -66,7 +60,7 @@
     },
     "BOOM500": {
       "lastM15Epoch": 1795063500,
-      "lastM5Epoch": 1795064100,
+      "lastM5Epoch": 1795064400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 2,
       "pendingSetups": [],
@@ -74,6 +68,29 @@
     }
   },
   "signals": [
+    {
+      "signalId": "R_25-M15_M5_PULLBACK-1795064100",
+      "strategyId": "M15_M5_EMA_PULLBACK",
+      "strategyLabel": "M15 trend + M5 EMA9/21 pullback",
+      "marketId": "R_25",
+      "market": "Volatility 25 Index",
+      "direction": "BUY",
+      "setupTimeframe": "M15",
+      "entryTimeframe": "M5",
+      "entryCandleEpoch": 1795064400,
+      "triggerEpoch": 1795064100,
+      "entry": 2929.369,
+      "stopLoss": 2925.600650625407,
+      "tp2": 2936.9056987491863,
+      "riskDistance": 3.768349374593072,
+      "riskAtr": 1.2381656376423464,
+      "targetR": 2,
+      "status": "pending",
+      "evaluationSource": "forward_shadow",
+      "outcomeBars": 0,
+      "lastProcessedEpoch": 1795064100,
+      "realizedR": null
+    },
     {
       "signalId": "R_75-M15_M5_PULLBACK-1795063500",
       "strategyId": "M15_M5_EMA_PULLBACK",
@@ -93,8 +110,8 @@
       "targetR": 2,
       "status": "pending",
       "evaluationSource": "forward_shadow",
-      "outcomeBars": 2,
-      "lastProcessedEpoch": 1795064100,
+      "outcomeBars": 3,
+      "lastProcessedEpoch": 1795064400,
       "realizedR": null
     },
     {
@@ -630,9 +647,9 @@
   "summary": {
     "mode": "forward_shadow_observation_only",
     "strategy": "M15 EMA20/50 signal; M5 EMA9/21 alignment and EMA9 pullback/reclaim; next-M5-open entry; 2R target; 1-hour horizon",
-    "signalsGenerated": 24,
+    "signalsGenerated": 25,
     "resolvedSignals": 23,
-    "pendingSignals": 1,
+    "pendingSignals": 2,
     "targetBeforeStop": 0,
     "stopBeforeTarget": 12,
     "targetRatePct": 0,
@@ -648,9 +665,9 @@
         "averageRealizedR": -0.228
       },
       "R_25": {
-        "signals": 4,
+        "signals": 5,
         "resolved": 4,
-        "pending": 0,
+        "pending": 1,
         "targetBeforeStop": 0,
         "stopBeforeTarget": 2,
         "targetRatePct": 0,
