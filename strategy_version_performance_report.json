@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-19T04:07:18.000Z",
+  "generatedAt": "2026-11-19T04:12:05.000Z",
   "methodology": {
     "population": "Telegram-delivered journal signals only",
     "decisiveTp2Rate": "TP2 hits / (TP2 hits + stopped before TP1); excludes partial, expired, pending, TP1-only and ambiguous outcomes",
@@ -8,27 +8,27 @@
     "note": "Descriptive historical results, not a probability forecast or proof of broker execution."
   },
   "totals": {
-    "journalRecords": 286,
-    "telegramDelivered": 147,
-    "versionTagged": 104,
+    "journalRecords": 288,
+    "telegramDelivered": 149,
+    "versionTagged": 106,
     "legacyUnversioned": 182
   },
   "overall": {
-    "signals": 147,
-    "telegramSent": 147,
+    "signals": 149,
+    "telegramSent": 149,
     "outcomes": {
       "tp2_hit": 14,
       "stopped": 35,
       "stopped_after_tp1": 1,
       "expired": 66,
-      "pending": 31,
+      "pending": 33,
       "tp1_hit": 0,
       "ambiguous": 0,
       "other": 0
     },
     "decisiveTp2Rate": 28.6,
     "decisiveOutcomes": 49,
-    "excludedFromDecisiveRate": 98
+    "excludedFromDecisiveRate": 100
   },
   "expiryAnalysis": {
     "expiredSignals": 66,
@@ -138,13 +138,17 @@
     "note": "Favourable excursion is maximum recorded candle movement divided by risk distance; it is not proof of execution or realised profit. Missing historical timestamps remain missing and are not reconstructed."
   },
   "reviewComparison": {
-    "matchedSignals": 147,
+    "matchedSignals": 149,
     "unmatchedSignals": 0,
-    "terminalReviewLevels": 87,
+    "terminalReviewLevels": 88,
     "byOriginalOutcomeAndAdvisoryStatus": [
       {
         "key": "stopped / STOP_LEVEL_TOUCHED",
-        "signals": 25
+        "signals": 26
+      },
+      {
+        "key": "pending / THESIS_INTACT",
+        "signals": 21
       },
       {
         "key": "expired / TP2_LEVEL_TOUCHED",
@@ -153,10 +157,6 @@
       {
         "key": "expired / STOP_LEVEL_TOUCHED",
         "signals": 18
-      },
-      {
-        "key": "pending / THESIS_INTACT",
-        "signals": 17
       },
       {
         "key": "expired / THESIS_WEAKENING",
@@ -187,10 +187,6 @@
         "signals": 4
       },
       {
-        "key": "pending / INSUFFICIENT_HISTORY",
-        "signals": 4
-      },
-      {
         "key": "expired / STOP_AFTER_TP1",
         "signals": 3
       },
@@ -203,8 +199,8 @@
         "signals": 3
       },
       {
-        "key": "stopped / THESIS_WEAKENING",
-        "signals": 1
+        "key": "pending / INSUFFICIENT_HISTORY",
+        "signals": 2
       },
       {
         "key": "stopped_after_tp1 / TP2_LEVEL_TOUCHED",
@@ -234,59 +230,59 @@
     },
     {
       "key": "MTF_BASELINE_V1",
-      "signals": 60,
-      "telegramSent": 60,
+      "signals": 62,
+      "telegramSent": 62,
       "outcomes": {
         "tp2_hit": 2,
         "stopped": 4,
         "stopped_after_tp1": 0,
         "expired": 25,
-        "pending": 29,
+        "pending": 31,
         "tp1_hit": 0,
         "ambiguous": 0,
         "other": 0
       },
       "decisiveTp2Rate": 33.3,
       "decisiveOutcomes": 6,
-      "excludedFromDecisiveRate": 54
+      "excludedFromDecisiveRate": 56
     }
   ],
   "byCategory": [
     {
       "key": "SHORT_TERM",
-      "signals": 87,
-      "telegramSent": 87,
+      "signals": 88,
+      "telegramSent": 88,
       "outcomes": {
         "tp2_hit": 6,
         "stopped": 20,
         "stopped_after_tp1": 0,
         "expired": 35,
-        "pending": 26,
+        "pending": 27,
         "tp1_hit": 0,
         "ambiguous": 0,
         "other": 0
       },
       "decisiveTp2Rate": 23.1,
       "decisiveOutcomes": 26,
-      "excludedFromDecisiveRate": 61
+      "excludedFromDecisiveRate": 62
     },
     {
       "key": "SCALP",
-      "signals": 57,
-      "telegramSent": 57,
+      "signals": 58,
+      "telegramSent": 58,
       "outcomes": {
         "tp2_hit": 8,
         "stopped": 14,
         "stopped_after_tp1": 1,
         "expired": 31,
-        "pending": 3,
+        "pending": 4,
         "tp1_hit": 0,
         "ambiguous": 0,
         "other": 0
       },
       "decisiveTp2Rate": 36.4,
       "decisiveOutcomes": 22,
-      "excludedFromDecisiveRate": 35
+      "excludedFromDecisiveRate": 36
     },
     {
       "key": "POSITION",
@@ -435,6 +431,24 @@
       "excludedFromDecisiveRate": 7
     },
     {
+      "key": "JD75",
+      "signals": 13,
+      "telegramSent": 13,
+      "outcomes": {
+        "tp2_hit": 0,
+        "stopped": 0,
+        "stopped_after_tp1": 0,
+        "expired": 4,
+        "pending": 9,
+        "tp1_hit": 0,
+        "ambiguous": 0,
+        "other": 0
+      },
+      "decisiveTp2Rate": null,
+      "decisiveOutcomes": 0,
+      "excludedFromDecisiveRate": 13
+    },
+    {
       "key": "frxXAUUSD",
       "signals": 12,
       "telegramSent": 12,
@@ -451,24 +465,6 @@
       "decisiveTp2Rate": 0,
       "decisiveOutcomes": 4,
       "excludedFromDecisiveRate": 8
-    },
-    {
-      "key": "JD75",
-      "signals": 11,
-      "telegramSent": 11,
-      "outcomes": {
-        "tp2_hit": 0,
-        "stopped": 0,
-        "stopped_after_tp1": 0,
-        "expired": 4,
-        "pending": 7,
-        "tp1_hit": 0,
-        "ambiguous": 0,
-        "other": 0
-      },
-      "decisiveTp2Rate": null,
-      "decisiveOutcomes": 0,
-      "excludedFromDecisiveRate": 11
     },
     {
       "key": "CRASH500",
@@ -492,21 +488,21 @@
   "byDirection": [
     {
       "key": "SELL",
-      "signals": 101,
-      "telegramSent": 101,
+      "signals": 103,
+      "telegramSent": 103,
       "outcomes": {
         "tp2_hit": 7,
         "stopped": 23,
         "stopped_after_tp1": 1,
         "expired": 47,
-        "pending": 23,
+        "pending": 25,
         "tp1_hit": 0,
         "ambiguous": 0,
         "other": 0
       },
       "decisiveTp2Rate": 23.3,
       "decisiveOutcomes": 30,
-      "excludedFromDecisiveRate": 71
+      "excludedFromDecisiveRate": 73
     },
     {
       "key": "BUY",
@@ -530,21 +526,21 @@
   "byScoreBand": [
     {
       "key": "90-100",
-      "signals": 65,
-      "telegramSent": 65,
+      "signals": 67,
+      "telegramSent": 67,
       "outcomes": {
         "tp2_hit": 7,
         "stopped": 15,
         "stopped_after_tp1": 1,
         "expired": 29,
-        "pending": 13,
+        "pending": 15,
         "tp1_hit": 0,
         "ambiguous": 0,
         "other": 0
       },
       "decisiveTp2Rate": 31.8,
       "decisiveOutcomes": 22,
-      "excludedFromDecisiveRate": 43
+      "excludedFromDecisiveRate": 45
     },
     {
       "key": "65-79",
@@ -622,21 +618,21 @@
     },
     {
       "key": "MTF_BASELINE_V1 / SHORT_TERM",
-      "signals": 36,
-      "telegramSent": 36,
+      "signals": 37,
+      "telegramSent": 37,
       "outcomes": {
         "tp2_hit": 2,
         "stopped": 2,
         "stopped_after_tp1": 0,
         "expired": 6,
-        "pending": 26,
+        "pending": 27,
         "tp1_hit": 0,
         "ambiguous": 0,
         "other": 0
       },
       "decisiveTp2Rate": 50,
       "decisiveOutcomes": 4,
-      "excludedFromDecisiveRate": 32
+      "excludedFromDecisiveRate": 33
     },
     {
       "key": "LEGACY_UNVERSIONED / SCALP",
@@ -658,21 +654,21 @@
     },
     {
       "key": "MTF_BASELINE_V1 / SCALP",
-      "signals": 24,
-      "telegramSent": 24,
+      "signals": 25,
+      "telegramSent": 25,
       "outcomes": {
         "tp2_hit": 0,
         "stopped": 2,
         "stopped_after_tp1": 0,
         "expired": 19,
-        "pending": 3,
+        "pending": 4,
         "tp1_hit": 0,
         "ambiguous": 0,
         "other": 0
       },
       "decisiveTp2Rate": 0,
       "decisiveOutcomes": 2,
-      "excludedFromDecisiveRate": 22
+      "excludedFromDecisiveRate": 23
     },
     {
       "key": "LEGACY_UNVERSIONED / POSITION",
@@ -785,6 +781,24 @@
       "excludedFromDecisiveRate": 8
     },
     {
+      "key": "MTF_BASELINE_V1 / JD75",
+      "signals": 12,
+      "telegramSent": 12,
+      "outcomes": {
+        "tp2_hit": 0,
+        "stopped": 0,
+        "stopped_after_tp1": 0,
+        "expired": 4,
+        "pending": 8,
+        "tp1_hit": 0,
+        "ambiguous": 0,
+        "other": 0
+      },
+      "decisiveTp2Rate": null,
+      "decisiveOutcomes": 0,
+      "excludedFromDecisiveRate": 12
+    },
+    {
       "key": "LEGACY_UNVERSIONED / R_10",
       "signals": 10,
       "telegramSent": 10,
@@ -819,24 +833,6 @@
       "decisiveTp2Rate": 33.3,
       "decisiveOutcomes": 6,
       "excludedFromDecisiveRate": 4
-    },
-    {
-      "key": "MTF_BASELINE_V1 / JD75",
-      "signals": 10,
-      "telegramSent": 10,
-      "outcomes": {
-        "tp2_hit": 0,
-        "stopped": 0,
-        "stopped_after_tp1": 0,
-        "expired": 4,
-        "pending": 6,
-        "tp1_hit": 0,
-        "ambiguous": 0,
-        "other": 0
-      },
-      "decisiveTp2Rate": null,
-      "decisiveOutcomes": 0,
-      "excludedFromDecisiveRate": 10
     },
     {
       "key": "MTF_BASELINE_V1 / R_10",
