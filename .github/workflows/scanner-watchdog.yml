@@ -32,14 +32,19 @@ jobs:
           script: |
             const workflows = [
               { id: 417618869, name: "Multi-Timeframe Data Collector" },
-              { id: 417087054, name: "Deriv Market Monitor" }
+              { id: 417087054, name: "Deriv Market Monitor" },
+              // GitHub accepts the workflow filename as workflow_id. Keep a
+              // longer stale threshold than its 15-minute schedule to avoid
+              // dispatching a duplicate just before the next scheduled run.
+              { id: "research-candle-collector.yml", name: "Research Candle Collector (No Alerts)", staleAfterMs: 25 * 60 * 1000 }
             ];
             const branch = "main";
-            const staleAfterMs = 10 * 60 * 1000;
+            const defaultStaleAfterMs = 10 * 60 * 1000;
             const recoveryCooldownMs = 10 * 60 * 1000;
             const now = Date.now();
 
             for (const workflow of workflows) {
+              const staleAfterMs = workflow.staleAfterMs || defaultStaleAfterMs;
               const response = await github.rest.actions.listWorkflowRuns({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
