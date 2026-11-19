@@ -88,12 +88,25 @@ async function fetchR10M5Backfill(now, existingRows = [], WebSocketImpl = WebSoc
           else resolve(data);
         };
         ws.addEventListener("message", onMessage);
+        // Request the last N candles ending at the next known candle boundary.
+        // Deriv's count/end form is more reliable for small historical windows
+        // than start/end-only requests on this public candle endpoint.
         ws.send(JSON.stringify({
-          ticks_history: "R_10", start: gap.start, end: String(gap.end),
+          ticks_history: "R_10", count: gap.missingCandles + 1,
+          end: String(gap.end + SECONDS.M5),
           granularity: SECONDS.M5, style: "candles", req_id: reqId
         }));
       });
-      candles.push(...normalizeBackfillCandles(gapReply.candles, now));
+      const recovered = normalizeBackfillCandles(gapReply.candles, now)
+        .filter(c => c.epoch >= gap.start && c.epoch <= gap.end);
+      candles.push(...recovered);
+      console.log(JSON.stringify({
+        event: "r10_m5_research_gap_repair",
+        start: gap.start, end: gap.end,
+        expectedCandles: gap.missingCandles,
+        recoveredCandles: recovered.length,
+        status: recovered.length === gap.missingCandles ? "success" : "incomplete"
+      }));
     }
     const byEpoch = new Map(candles.map(c => [c.epoch, c]));
     return [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch);
