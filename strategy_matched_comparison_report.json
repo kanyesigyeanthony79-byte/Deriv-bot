@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-19T11:17:09.000Z",
+  "generatedAt": "2026-11-19T11:22:07.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -20,8 +20,8 @@
     "baselineCategory": "SCALP",
     "baselineSignalsAvailable": 80,
     "candidateStrategies": 7,
-    "candidateSignals": 951,
-    "matchedPairs": 79,
+    "candidateSignals": 952,
+    "matchedPairs": 80,
     "unmatchedCandidates": 872,
     "matchWindowSeconds": 900
   },
@@ -1130,15 +1130,16 @@
     {
       "strategyId": "M15_M5_EMA_PULLBACK",
       "label": "M15 trend / M5 EMA pullback",
-      "candidateSignals": 28,
+      "candidateSignals": 29,
       "candidateOutcomeCounts": {
         "time_exit": 12,
-        "stop": 16
+        "stop": 16,
+        "pending": 1
       },
-      "matchedPairs": 9,
+      "matchedPairs": 10,
       "unmatchedCandidates": 19,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 9,
+      "baselineSignalsUsed": 10,
       "pairedOutcomeCounts": [
         {
           "key": "stop / expired",
@@ -1151,6 +1152,10 @@
         {
           "key": "time_exit / expired",
           "count": 3
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         }
       ],
       "byMarket": {
@@ -1180,8 +1185,8 @@
           "unmatched": 2
         },
         "JD100": {
-          "candidates": 2,
-          "matched": 1,
+          "candidates": 3,
+          "matched": 2,
           "unmatched": 1
         },
         "JD75": {
@@ -1306,6 +1311,19 @@
           "candidateStatus": "stop",
           "baselineStatus": "stopped",
           "candidateRealizedR": -1,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "JD100",
+          "direction": "BUY",
+          "candidateSignalId": "JD100-M15_M5_PULLBACK-1795086600",
+          "baselineSignalId": "JD100-SCALP-1795086600",
+          "candidateEntryEpoch": 1795086900,
+          "baselineEntryEpoch": 1795086600,
+          "entryTimeDifferenceSeconds": 300,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
           "baselineRealizedR": null
         }
       ]
