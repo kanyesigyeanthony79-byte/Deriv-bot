@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-19T07:52:07.000Z",
+  "generatedAt": "2026-11-19T07:57:11.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -20,8 +20,8 @@
     "baselineCategory": "SCALP",
     "baselineSignalsAvailable": 68,
     "candidateStrategies": 7,
-    "candidateSignals": 912,
-    "matchedPairs": 69,
+    "candidateSignals": 913,
+    "matchedPairs": 70,
     "unmatchedCandidates": 843,
     "matchWindowSeconds": 900
   },
@@ -921,22 +921,26 @@
     {
       "strategyId": "M5_BREAKOUT_M1_RETEST",
       "label": "M5 breakout / M1 retest",
-      "candidateSignals": 99,
+      "candidateSignals": 100,
       "candidateOutcomeCounts": {
         "tp2_hit": 34,
         "stopped": 62,
         "time_exit": 1,
         "ambiguous": 1,
-        "pending": 1
+        "pending": 2
       },
-      "matchedPairs": 6,
+      "matchedPairs": 7,
       "unmatchedCandidates": 93,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 6,
+      "baselineSignalsUsed": 7,
       "pairedOutcomeCounts": [
         {
           "key": "stopped / expired",
           "count": 5
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         },
         {
           "key": "tp2_hit / expired",
@@ -980,8 +984,8 @@
           "unmatched": 10
         },
         "R_10": {
-          "candidates": 10,
-          "matched": 1,
+          "candidates": 11,
+          "matched": 2,
           "unmatched": 9
         }
       },
@@ -1062,6 +1066,19 @@
           "candidateStatus": "stopped",
           "baselineStatus": "expired",
           "candidateRealizedR": -1,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "R_10",
+          "direction": "BUY",
+          "candidateSignalId": "R_10-BREAKOUT_RETEST-1795074600",
+          "baselineSignalId": "R_10-SCALP-1795074300",
+          "candidateEntryEpoch": 1795074900,
+          "baselineEntryEpoch": 1795074300,
+          "entryTimeDifferenceSeconds": 600,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
           "baselineRealizedR": null
         }
       ]
