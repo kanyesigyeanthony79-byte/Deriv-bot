@@ -26,7 +26,7 @@ function showDay(day){
  if(!day)return;
  $("report").hidden=false;$("reportTitle").textContent="Performance · "+day.date;
  $("reportMeta").textContent=(day.recordStatus==="verified_daily_report"?"VERIFIED DAILY REPORT":"RECONSTRUCTED FROM JOURNALS")+" · "+day.reportDelivery.replaceAll("_"," ");
- $("metrics").replaceChildren(...[["Generated",day.totals.signals],["Telegram delivered",day.totals.delivered],["Missed / not sent",day.totals.missed],["TP1 reached",day.totals.tp1],["TP2 wins",day.totals.tp2],["Stop-loss outcomes",day.totals.losses],["Expired",day.totals.expired],["Unresolved",day.totals.unresolved]].map(([k,v])=>metric(k,v)));
+ $("metrics").replaceChildren(...[["Legacy generated",day.totals.legacyGenerated],["Legacy sent",day.totals.legacyDelivered],["Legacy missed",day.totals.legacyMissed],["Legacy TP2",day.totals.legacyTp2],["Legacy SL",day.totals.legacyLosses],["MTF observations",day.totals.mtfObservations],["MTF sent",day.totals.mtfDelivered],["MTF missed",day.totals.mtfMissed],["MTF TP2",day.totals.mtfTp2],["MTF SL",day.totals.mtfLosses],["MTF expired",day.totals.mtfExpired]].map(([k,v])=>metric(k,v)));
  $("legacyMeta").textContent=day.legacy.generated+" records · "+day.legacy.delivered+" delivered · "+day.legacy.wins+" TP2 · "+day.legacy.losses+" losses · "+(day.legacy.winRate==null?"N/A":day.legacy.winRate+"% resolved win rate");
  $("mtfMeta").textContent=day.multiTimeframe.generated+" records · "+day.multiTimeframe.delivered+" delivered · "+day.multiTimeframe.wins+" TP2 · "+day.multiTimeframe.losses+" losses · "+(day.multiTimeframe.winRate==null?"N/A":day.multiTimeframe.winRate+"% resolved win rate");
  function rows(target,items,legacy){
@@ -44,7 +44,7 @@ function init(data){
  for(const d of data.days){
   const option=document.createElement("option");option.value=d.date;option.textContent=d.date;select.append(option);
   const b=document.createElement("button");b.type="button";b.className="day";b.dataset.date=d.date;b.setAttribute("aria-pressed","false");
-  const left=document.createElement("span"),right=document.createElement("span");left.textContent=d.date+" · "+d.totals.signals+" signals";right.className="tag";right.textContent=d.recordStatus==="verified_daily_report"?"VERIFIED":"RECONSTRUCTED";b.append(left,right);b.addEventListener("click",()=>showDay(d));days.append(b);
+  const left=document.createElement("span"),right=document.createElement("span");left.textContent=d.date+" · "+(d.totals.legacyGenerated+d.totals.mtfObservations)+" records";right.className="tag";right.textContent=d.recordStatus==="verified_daily_report"?"VERIFIED":"RECONSTRUCTED";b.append(left,right);b.addEventListener("click",()=>showDay(d));days.append(b);
  }
  select.addEventListener("change",()=>showDay(data.days.find(d=>d.date===select.value)));
  $("latest").addEventListener("click",()=>showDay(data.days[0]));if(data.days.length)showDay(data.days[0]);
