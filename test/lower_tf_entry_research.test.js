@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
-  normalizeBackfillCandles, mergeLowerTimeframeArchive, findM5Gaps, BACKFILL_M5_COUNT
+  normalizeBackfillCandles, candlesFromTickHistory, mergeLowerTimeframeArchive, findM5Gaps, BACKFILL_M5_COUNT
 } = require("../lower_tf_entry_research");
 
 test("R_10 M5 backfill keeps only completed aligned valid unique candles", () => {
@@ -47,4 +47,26 @@ test("R_10 M5 gap finder returns exact missing candle boundaries", () => {
   assert.deepEqual(findM5Gaps(rows), [{
     start: 1794963000, end: 1794963900, missingCandles: 4
   }]);
+});
+
+test("tick-history fallback reconstructs only M5 buckets containing real ticks", () => {
+  const gap = { start: 1794963000, end: 1794963900, missingCandles: 4 };
+  const history = {
+    times: [1794963001, 1794963010, 1794963300, 1794963601, 1794964200],
+    prices: [10, 12, 11, 9, 99]
+  };
+  const candles = candlesFromTickHistory(history, gap, 1794965000);
+  assert.deepEqual(candles.map(c => c.epoch), [1794963000, 1794963300, 1794963600]);
+  assert.deepEqual(candles[0], {
+    epoch: 1794963000, open: 10, high: 12, low: 10, close: 12
+  });
+  assert.deepEqual(candles[2], {
+    epoch: 1794963600, open: 9, high: 9, low: 9, close: 9
+  });
+});
+
+test("tick-history fallback excludes incomplete candles and invalid tick rows", () => {
+  const gap = { start: 3000, end: 3900, missingCandles: 4 };
+  const history = { times: [3001, 3301, 3601, 3901], prices: ["bad", 2, 3, 4] };
+  assert.deepEqual(candlesFromTickHistory(history, gap, 3899).map(c => c.epoch), [3300]);
 });
