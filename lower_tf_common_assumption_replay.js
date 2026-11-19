@@ -16,6 +16,7 @@ const TARGET_R = 2;
 const HORIZON_SECONDS = 3600;
 const MINIMUM = Object.freeze({ M1: 1440, M5: 500, M15: 400 });
 const MIN_OVERLAP_HOURS = 24;
+const SPLIT_EMBARGO_SECONDS = 3600;
 const METHODS = ["M15_NEXT_OPEN", "M5_EMA_PULLBACK", "M1_MICRO_BREAK"];
 
 function validCandle(c) {
@@ -139,10 +140,15 @@ function resolveCommonOutcome({ m1, entryEpoch, entry, direction, riskDistance, 
 }
 function splitBounds(startEpoch, endEpoch) {
   const span = endEpoch - startEpoch;
+  const discoveryEnd = startEpoch + span * 0.6;
+  const validationEnd = startEpoch + span * 0.8;
+  // Leave a full hour of untouched observations after each split boundary.
+  // The replay loop separately purges setups whose one-hour outcome horizon
+  // would cross the end of their own split.
   return {
-    discovery: { start: startEpoch, end: startEpoch + span * 0.6 },
-    validation: { start: startEpoch + span * 0.6, end: startEpoch + span * 0.8 },
-    holdout: { start: startEpoch + span * 0.8, end: endEpoch }
+    discovery: { start: startEpoch, end: discoveryEnd },
+    validation: { start: Math.min(discoveryEnd + SPLIT_EMBARGO_SECONDS, validationEnd), end: validationEnd },
+    holdout: { start: Math.min(validationEnd + SPLIT_EMBARGO_SECONDS, endEpoch), end: endEpoch }
   };
 }
 function blankStats() {
@@ -281,7 +287,7 @@ function buildCommonAssumptionReplayReport(archive, readinessReport, generatedAt
       commonExit: "All outcomes are resolved on M1 candles, with a 60-minute horizon and same-candle stop/target touches marked ambiguous.",
       positionConcurrency: "Each entry method is simulated independently with at most one open position at a time. Later setups are skipped while a prior position remains open; unresolved outcomes reserve the full 60-minute horizon. Reports distinguish overlap-skipped setups from eligible setups with no entry.",
       costs: "No spread, commission or slippage assumptions are applied because broker-specific historical cost data is not part of this archive. Results are gross candle-based R, not executable or realised account returns.",
-      splits: "Chronological 60% discovery, 20% validation and 20% holdout; one-hour embargo at each split boundary. Holdout is not used for tuning."
+      splits: "Chronological 60% discovery, 20% validation and 20% holdout; a one-hour post-boundary embargo is excluded before validation and holdout, and setups whose 60-minute outcome horizon would cross a split end are purged. Holdout is not used for tuning."
     },
     summary: {
       marketsConsidered: Object.keys(readinessReport?.markets || {}).length,
@@ -318,7 +324,7 @@ function main() {
 if (require.main === module) main();
 
 module.exports = {
-  TF, STOP_ATR_M15, TARGET_R, HORIZON_SECONDS, MINIMUM, METHODS,
+  TF, STOP_ATR_M15, TARGET_R, HORIZON_SECONDS, MINIMUM, SPLIT_EMBARGO_SECONDS, METHODS,
   validCandle, continuous, latestContinuousSegment, ema, atr, marketReady, directionAtM15,
   m5PullbackTrigger, m1MicroBreakTrigger, resolveCommonOutcome,
   splitBounds, isSetupBlocked, summarizeTrades, replayMarket, buildCommonAssumptionReplayReport
