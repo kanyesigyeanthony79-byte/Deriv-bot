@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
-  normalizeBackfillCandles, candlesFromTickHistory, mergeLowerTimeframeArchive, findM5Gaps, findRepairableM5Gaps, BACKFILL_M5_COUNT, GAP_REPAIR_WINDOW_SECONDS
+  normalizeBackfillCandles, candlesFromTickHistory, mergeLowerTimeframeArchive, findM5Gaps, findRepairableM5Gaps, BACKFILL_M5_COUNT, GAP_REPAIR_WINDOW_SECONDS, MAX_REPAIR_GAP_CANDLES
 } = require("../lower_tf_entry_research");
 
 test("R_10 M5 backfill keeps only completed aligned valid unique candles", () => {
@@ -80,6 +80,7 @@ test("M5 gap repair skips old gaps and keeps recent gaps eligible", () => {
     { epoch: now - 300, open: 4, high: 5, low: 4, close: 5 }
   ];
   assert.equal(GAP_REPAIR_WINDOW_SECONDS, 86400);
+  assert.equal(MAX_REPAIR_GAP_CANDLES, 12);
   assert.deepEqual(findRepairableM5Gaps(rows, now), [{
     start: now - 600, end: now - 600, missingCandles: 1
   }]);
