@@ -150,3 +150,23 @@ This report is explicitly a contemporaneous co-occurrence match, not a counterfa
 **Required next Gate C work:** build a candidate-specific common-assumption replay for EXP-01 and the production baseline on identical market/time windows, using the same entry timing, stop/target, horizon, outcome resolution and conservative cost sensitivity. If data is insufficient for that replay, record Gate C as not ready rather than extrapolating from the current co-occurrence matches.
 
 **Checkpoint decision remains:** Phase 3 active; EXP-01 is the priority research candidate, but it has not passed the matched-baseline gate or been certified for Phase 4. No production changes or promotion.
+
+
+## 10. R10 lower-timeframe replay checkpoint — 2026-11-19 19:02 UTC
+
+Source snapshots: `lower_tf_entry_research_report.json` and `lower_tf_common_assumption_replay_report.json`, both generated at approximately 19:02 UTC by successful collector run #410.
+
+**Data readiness:** R_10 reached 2,511 latest-continuous M1 candles, 502 M5 candles, and 1,200 M15 candles, with 41.82 hours of common overlap. Invalid, duplicate, and unaligned candle counts were zero. The report changed to `ready_for_lower_timeframe_replay`, and the collector successfully ran the replay step.
+
+**Preliminary replay output:** one market (R_10) was replayed, with only 9 M15 setup candidates in the common 41.82-hour window. The three methods produced:
+- M15 next-open baseline: 5 entries (3 discovery, 1 validation, 1 holdout); all were time exits.
+- M5 EMA pullback: 5 entries (3 discovery, 1 validation, 1 holdout); 4 time exits and 1 holdout stop.
+- M1 micro-break: 4 entries (2 discovery, 1 validation, 1 holdout); all were time exits.
+
+The validation and holdout samples are therefore only one trade per method each. These results are exploratory gross candle-based R, with no spread, commission, or slippage assumptions. They are far too small for ranking, Gate C certification, or a promotion decision. The report itself states that it is not sufficient for strategy ranking or production promotion.
+
+**Integrity correction:** code review found that the replay report declared a one-hour embargo at each split boundary, but the split-boundary function did not actually exclude the post-boundary hour before validation and holdout. The existing replay logic already purged setups whose 60-minute outcome horizon crossed a split end. The preliminary 19:02 split results must be treated as diagnostic only and not as independent holdout evidence until the embargo correction is tested and a fresh replay is generated.
+
+**Repair under review:** draft PR [#125](https://github.com/kanyesigyeanthony79-byte/Deriv-bot/pull/125) adds the explicit post-boundary embargo, adds a unit test for the split windows, and fixes the lower-timeframe test workflow path filters so changes to the common-assumption replay and its test file actually trigger CI. The Lower-Timeframe Research Tests workflow passed on the updated PR head at 19:06 UTC. The PR remains unmerged pending the remaining CI checks and review.
+
+**Checkpoint decision:** R10 data readiness is achieved and an initial replay has been generated, but EXP-06 remains exploratory. No candidate has passed Gates A–D; Phase 3 remains active, and Phase 4 remains on hold. Production signal rules, Telegram routing, and MT5 execution settings remain unchanged.
