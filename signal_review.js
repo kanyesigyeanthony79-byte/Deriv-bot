@@ -9,11 +9,13 @@ function reviewSignalCore(signal, timeframes, nowEpoch = Math.floor(Date.now()/1
   const journalStatus = String(signal.status || "").toLowerCase();
   const terminalStatuses = new Set(["tp2_hit", "stopped", "stopped_after_tp1", "ambiguous", "expired"]);
   if (terminalStatuses.has(journalStatus)) {
-    const terminalEpoch = journalStatus === "expired"
-      ? Number(signal.expiredEpoch)
-      : journalStatus === "tp2_hit" ? Number(signal.tp2Epoch)
-      : journalStatus === "ambiguous" || journalStatus.startsWith("stopped") ? Number(signal.stopEpoch)
-      : NaN;
+    const rawTerminalEpoch = journalStatus === "expired" ? signal.expiredEpoch
+      : journalStatus === "tp2_hit" ? signal.tp2Epoch
+      : journalStatus === "ambiguous" || journalStatus.startsWith("stopped") ? signal.stopEpoch
+      : null;
+    const terminalEpoch = rawTerminalEpoch === null || rawTerminalEpoch === "" ? NaN : Number(rawTerminalEpoch);
+    const rawExpiryEpoch = signal.intendedExpiryEpoch;
+    const expiryEpoch = rawExpiryEpoch === null || rawExpiryEpoch === "" ? NaN : Number(rawExpiryEpoch);
     const labels = {
       tp2_hit: ["JOURNAL_TP2_RECORDED", "JOURNAL RECORD: TP2"],
       stopped: ["JOURNAL_STOP_RECORDED", "JOURNAL RECORD: STOP"],
@@ -25,14 +27,14 @@ function reviewSignalCore(signal, timeframes, nowEpoch = Math.floor(Date.now()/1
     return {
       signalId: signal.signalId, status, headline, journalStatus,
       terminalEpoch: Number.isFinite(terminalEpoch) ? terminalEpoch : null,
-      intendedExpiryEpoch: Number.isFinite(Number(signal.intendedExpiryEpoch)) ? Number(signal.intendedExpiryEpoch) : null,
+      intendedExpiryEpoch: Number.isFinite(expiryEpoch) ? expiryEpoch : null,
       tp1Reached: Boolean(signal.tp1Hit), tp1Epoch: signal.tp1Epoch || null,
       reason: journalStatus === "expired"
-        ? (Number.isFinite(Number(signal.intendedExpiryEpoch))
+        ? (Number.isFinite(expiryEpoch)
           ? "The journal recorded this observation as expired. Its advisory review is closed at the recorded expiry; later price movements are excluded."
           : "The journal recorded this observation as expired, but the intended expiry boundary is missing. Historical candle reconciliation is unavailable; no boundary is inferred.")
         : "The journal has already recorded a terminal outcome. This review preserves that outcome and does not replay later candles as a correction.",
-      reconciliation: journalStatus === "expired" && !Number.isFinite(Number(signal.intendedExpiryEpoch))
+      reconciliation: journalStatus === "expired" && !Number.isFinite(expiryEpoch)
         ? "NON_COMPARABLE_MISSING_EXPIRY_BOUNDARY" : "JOURNAL_TERMINAL_OUTCOME_PRESERVED",
       advisoryOnly: true
     };
@@ -43,7 +45,8 @@ function reviewSignalCore(signal, timeframes, nowEpoch = Math.floor(Date.now()/1
   const last = completed[completed.length-1];
   if (!last || nowEpoch-(last.epoch+seconds)>seconds*3) return {signalId:signal.signalId,status:"STALE_DATA",headline:"DATA TOO OLD",reason:"The latest completed entry-timeframe candle is stale. No hold/exit conclusion is issued."};
   const buy=signal.direction==="BUY";
-  const expiryEpoch = Number(signal.intendedExpiryEpoch);
+  const rawExpiryEpoch = signal.intendedExpiryEpoch;
+  const expiryEpoch = rawExpiryEpoch === null || rawExpiryEpoch === "" ? NaN : Number(rawExpiryEpoch);
   const withinObservationWindow = Number.isFinite(expiryEpoch)
     ? completed.filter(c => c.epoch + seconds <= expiryEpoch)
     : completed;
