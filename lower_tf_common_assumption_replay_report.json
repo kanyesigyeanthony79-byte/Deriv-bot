@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-19T18:47:27.735Z",
-  "mode": "waiting_for_research_data_quality",
+  "generatedAt": "2026-11-19T18:52:42.341Z",
+  "mode": "common_assumption_historical_replay",
   "assumptions": {
     "setup": "M15 direction is generated from completed M15 candles using the existing engine default configuration.",
     "entries": "Baseline enters at the next M15 open; M5 experiment enters at the next M5 open after EMA9/21 alignment and EMA9 pullback/reclaim; M1 experiment requires M5 EMA9/21 alignment plus an M1 EMA9 pullback and close beyond the prior three-candle micro swing, entering at the next M1 open.",
@@ -15,14 +15,389 @@
   "summary": {
     "marketsConsidered": 8,
     "focusMarket": "R_10",
-    "marketsReplayed": 0,
-    "marketsWaiting": 1,
+    "marketsReplayed": 1,
+    "marketsWaiting": 0,
     "marketsOutsideFocus": 7
   },
   "markets": {
     "R_10": {
-      "status": "not_ready",
-      "reason": "Requires continuous M1>=1440, M5>=500, M15>=400 candles, at least 24h common overlap, and zero invalid/duplicate/unaligned candles."
+      "marketId": "R_10",
+      "status": "replayed",
+      "setupCandidates": 9,
+      "commonOverlapStartEpoch": 1794964260,
+      "commonOverlapEndEpoch": 1795113900,
+      "splitBounds": {
+        "discovery": {
+          "start": 1794964260,
+          "end": 1795054044
+        },
+        "validation": {
+          "start": 1795054044,
+          "end": 1795083972
+        },
+        "holdout": {
+          "start": 1795083972,
+          "end": 1795113900
+        }
+      },
+      "methods": {
+        "M15_NEXT_OPEN": {
+          "discovery": {
+            "setups": 5,
+            "eligibleSetups": 3,
+            "overlapSkipped": 2,
+            "entries": 3,
+            "noEntry": 0,
+            "outcomes": {
+              "target": 0,
+              "stopped": 0,
+              "ambiguous": 0,
+              "time_exit": 3,
+              "incomplete_data": 0,
+              "data_gap": 0
+            },
+            "resolved": 3,
+            "averageGrossR": -0.1437,
+            "totalGrossR": -0.4311
+          },
+          "validation": {
+            "setups": 1,
+            "eligibleSetups": 1,
+            "overlapSkipped": 0,
+            "entries": 1,
+            "noEntry": 0,
+            "outcomes": {
+              "target": 0,
+              "stopped": 0,
+              "ambiguous": 0,
+              "time_exit": 1,
+              "incomplete_data": 0,
+              "data_gap": 0
+            },
+            "resolved": 1,
+            "averageGrossR": 0.7891,
+            "totalGrossR": 0.7891
+          },
+          "holdout": {
+            "setups": 2,
+            "eligibleSetups": 1,
+            "overlapSkipped": 1,
+            "entries": 1,
+            "noEntry": 0,
+            "outcomes": {
+              "target": 0,
+              "stopped": 0,
+              "ambiguous": 0,
+              "time_exit": 1,
+              "incomplete_data": 0,
+              "data_gap": 0
+            },
+            "resolved": 1,
+            "averageGrossR": -0.1224,
+            "totalGrossR": -0.1224
+          },
+          "trades": [
+            {
+              "setupEpoch": 1795032900,
+              "triggerEpoch": 1795032900,
+              "entryEpoch": 1795032900,
+              "entry": 4837.911,
+              "direction": "BUY",
+              "riskDistance": 5.755125498103901,
+              "outcome": {
+                "status": "time_exit",
+                "realizedR": 0.0071,
+                "exitEpoch": 1795036500
+              }
+            },
+            {
+              "setupEpoch": 1795038300,
+              "triggerEpoch": 1795038300,
+              "entryEpoch": 1795038300,
+              "entry": 4842.125,
+              "direction": "BUY",
+              "riskDistance": 5.645872251407939,
+              "outcome": {
+                "status": "time_exit",
+                "realizedR": -0.3178,
+                "exitEpoch": 1795041900
+              }
+            },
+            {
+              "setupEpoch": 1795042800,
+              "triggerEpoch": 1795042800,
+              "entryEpoch": 1795042800,
+              "entry": 4842.871,
+              "direction": "BUY",
+              "riskDistance": 6.155679780638179,
+              "outcome": {
+                "status": "time_exit",
+                "realizedR": -0.1204,
+                "exitEpoch": 1795046400
+              }
+            },
+            {
+              "setupEpoch": 1795056300,
+              "triggerEpoch": 1795056300,
+              "entryEpoch": 1795056300,
+              "entry": 4852.666,
+              "direction": "BUY",
+              "riskDistance": 5.983084538988244,
+              "outcome": {
+                "status": "time_exit",
+                "realizedR": 0.7891,
+                "exitEpoch": 1795059900
+              }
+            },
+            {
+              "setupEpoch": 1795104900,
+              "triggerEpoch": 1795104900,
+              "entryEpoch": 1795104900,
+              "entry": 4864.535,
+              "direction": "BUY",
+              "riskDistance": 5.598425568117347,
+              "outcome": {
+                "status": "time_exit",
+                "realizedR": -0.1224,
+                "exitEpoch": 1795108500
+              }
+            }
+          ]
+        },
+        "M5_EMA_PULLBACK": {
+          "discovery": {
+            "setups": 5,
+            "eligibleSetups": 3,
+            "overlapSkipped": 2,
+            "entries": 3,
+            "noEntry": 0,
+            "outcomes": {
+              "target": 0,
+              "stopped": 0,
+              "ambiguous": 0,
+              "time_exit": 3,
+              "incomplete_data": 0,
+              "data_gap": 0
+            },
+            "resolved": 3,
+            "averageGrossR": 0.1752,
+            "totalGrossR": 0.5256
+          },
+          "validation": {
+            "setups": 1,
+            "eligibleSetups": 1,
+            "overlapSkipped": 0,
+            "entries": 1,
+            "noEntry": 0,
+            "outcomes": {
+              "target": 0,
+              "stopped": 0,
+              "ambiguous": 0,
+              "time_exit": 1,
+              "incomplete_data": 0,
+              "data_gap": 0
+            },
+            "resolved": 1,
+            "averageGrossR": 0.5646,
+            "totalGrossR": 0.5646
+          },
+          "holdout": {
+            "setups": 2,
+            "eligibleSetups": 1,
+            "overlapSkipped": 1,
+            "entries": 1,
+            "noEntry": 0,
+            "outcomes": {
+              "target": 0,
+              "stopped": 1,
+              "ambiguous": 0,
+              "time_exit": 0,
+              "incomplete_data": 0,
+              "data_gap": 0
+            },
+            "resolved": 1,
+            "averageGrossR": -1,
+            "totalGrossR": -1
+          },
+          "trades": [
+            {
+              "setupEpoch": 1795032900,
+              "triggerEpoch": 1795033500,
+              "entryEpoch": 1795033800,
+              "entry": 4839.137,
+              "direction": "BUY",
+              "riskDistance": 5.755125498103901,
+              "outcome": {
+                "status": "time_exit",
+                "realizedR": 0.1228,
+                "exitEpoch": 1795037400
+              }
+            },
+            {
+              "setupEpoch": 1795038300,
+              "triggerEpoch": 1795039800,
+              "entryEpoch": 1795040100,
+              "entry": 4841.266,
+              "direction": "BUY",
+              "riskDistance": 5.645872251407939,
+              "outcome": {
+                "status": "time_exit",
+                "realizedR": -0.0473,
+                "exitEpoch": 1795043700
+              }
+            },
+            {
+              "setupEpoch": 1795044600,
+              "triggerEpoch": 1795044900,
+              "entryEpoch": 1795045200,
+              "entry": 4844.642,
+              "direction": "BUY",
+              "riskDistance": 6.204711137386994,
+              "outcome": {
+                "status": "time_exit",
+                "realizedR": 0.4501,
+                "exitEpoch": 1795048800
+              }
+            },
+            {
+              "setupEpoch": 1795056300,
+              "triggerEpoch": 1795056300,
+              "entryEpoch": 1795056600,
+              "entry": 4852.766,
+              "direction": "BUY",
+              "riskDistance": 5.983084538988244,
+              "outcome": {
+                "status": "time_exit",
+                "realizedR": 0.5646,
+                "exitEpoch": 1795060200
+              }
+            },
+            {
+              "setupEpoch": 1795104900,
+              "triggerEpoch": 1795107600,
+              "entryEpoch": 1795107900,
+              "entry": 4863.655,
+              "direction": "BUY",
+              "riskDistance": 5.598425568117347,
+              "outcome": {
+                "status": "stopped",
+                "realizedR": -1,
+                "exitEpoch": 1795110540
+              }
+            }
+          ]
+        },
+        "M1_MICRO_BREAK": {
+          "discovery": {
+            "setups": 5,
+            "eligibleSetups": 3,
+            "overlapSkipped": 2,
+            "entries": 2,
+            "noEntry": 1,
+            "outcomes": {
+              "target": 0,
+              "stopped": 0,
+              "ambiguous": 0,
+              "time_exit": 2,
+              "incomplete_data": 0,
+              "data_gap": 0
+            },
+            "resolved": 2,
+            "averageGrossR": -0.1551,
+            "totalGrossR": -0.3102
+          },
+          "validation": {
+            "setups": 1,
+            "eligibleSetups": 1,
+            "overlapSkipped": 0,
+            "entries": 1,
+            "noEntry": 0,
+            "outcomes": {
+              "target": 0,
+              "stopped": 0,
+              "ambiguous": 0,
+              "time_exit": 1,
+              "incomplete_data": 0,
+              "data_gap": 0
+            },
+            "resolved": 1,
+            "averageGrossR": 0.3904,
+            "totalGrossR": 0.3904
+          },
+          "holdout": {
+            "setups": 2,
+            "eligibleSetups": 1,
+            "overlapSkipped": 1,
+            "entries": 1,
+            "noEntry": 0,
+            "outcomes": {
+              "target": 0,
+              "stopped": 0,
+              "ambiguous": 0,
+              "time_exit": 1,
+              "incomplete_data": 0,
+              "data_gap": 0
+            },
+            "resolved": 1,
+            "averageGrossR": -0.416,
+            "totalGrossR": -0.416
+          },
+          "trades": [
+            {
+              "setupEpoch": 1795032900,
+              "triggerEpoch": 1795033740,
+              "entryEpoch": 1795033800,
+              "entry": 4839.137,
+              "direction": "BUY",
+              "riskDistance": 5.755125498103901,
+              "outcome": {
+                "status": "time_exit",
+                "realizedR": 0.1228,
+                "exitEpoch": 1795037400
+              }
+            },
+            {
+              "setupEpoch": 1795040100,
+              "triggerEpoch": 1795042980,
+              "entryEpoch": 1795043040,
+              "entry": 4843.646,
+              "direction": "BUY",
+              "riskDistance": 5.783178114734354,
+              "outcome": {
+                "status": "time_exit",
+                "realizedR": -0.433,
+                "exitEpoch": 1795046640
+              }
+            },
+            {
+              "setupEpoch": 1795056300,
+              "triggerEpoch": 1795057200,
+              "entryEpoch": 1795057260,
+              "entry": 4853.534,
+              "direction": "BUY",
+              "riskDistance": 5.983084538988244,
+              "outcome": {
+                "status": "time_exit",
+                "realizedR": 0.3904,
+                "exitEpoch": 1795060860
+              }
+            },
+            {
+              "setupEpoch": 1795104900,
+              "triggerEpoch": 1795104960,
+              "entryEpoch": 1795105020,
+              "entry": 4864.881,
+              "direction": "BUY",
+              "riskDistance": 5.598425568117347,
+              "outcome": {
+                "status": "time_exit",
+                "realizedR": -0.416,
+                "exitEpoch": 1795108620
+              }
+            }
+          ]
+        }
+      }
     },
     "R_25": {
       "status": "outside_focus",
