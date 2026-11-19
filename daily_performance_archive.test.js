@@ -64,3 +64,11 @@ test("legacy delivered marker is accepted because the daily runner writes it onl
   assert.equal(a.days[0].recordStatus,"verified_daily_report");
   assert.equal(a.days[0].reportDelivery,"telegram_confirmed");
 });
+
+test("archive dashboard script is syntactically valid", () => {
+  const fs = require("node:fs");
+  const html = fs.readFileSync(require("node:path").join(__dirname, "daily-performance-archive.html"), "utf8");
+  const match = html.match(/<script>([\\s\\S]*?)<\\/script>/);
+  assert.ok(match, "dashboard script exists");
+  assert.doesNotThrow(() => new Function(match[1]));
+});
