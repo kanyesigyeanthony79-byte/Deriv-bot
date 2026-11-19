@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-19T13:08:19.926Z",
+  "generatedAt": "2026-11-19T13:12:18.579Z",
   "timezone": "Africa/Kampala",
   "methodology": {
     "historicalCoverage": "All recoverable dates represented in the legacy and multi-timeframe journals or saved daily report records.",
-    "verified": "A saved daily report is verified only when delivered=true and telegramConfirmed=true are present.",
+    "verified": "The existing daily runner writes delivered=true only after its Telegram delivery helper succeeds; an explicit telegramConfirmed=false overrides that legacy marker.",
     "reconstructed": "Daily totals rebuilt from individual journal records; this does not prove a Telegram daily report was sent.",
     "missingData": "Dates with no surviving journal or saved report records cannot be recreated and are not fabricated.",
     "populations": "Legacy 15-minute and multi-timeframe observations remain separate; combined totals are not executed trades or account profit/loss."
@@ -15,8 +15,8 @@
     "lastDate": "2026-11-19",
     "legacySignals": 65,
     "multiTimeframeSignals": 355,
-    "verifiedDailyReports": 0,
-    "reconstructedDays": 7
+    "verifiedDailyReports": 6,
+    "reconstructedDays": 1
   },
   "days": [
     {
@@ -3899,21 +3899,29 @@
         ]
       },
       "totals": {
-        "signals": 192,
-        "delivered": 138,
-        "missed": 10,
-        "tp1": 15,
-        "tp2": 8,
-        "losses": 45,
-        "expired": 99,
-        "unresolved": 30
+        "legacyGenerated": 41,
+        "legacyDelivered": 31,
+        "legacyMissed": 10,
+        "legacyTp1": 10,
+        "legacyTp2": 6,
+        "legacyLosses": 19,
+        "legacyExpired": 0,
+        "legacyUnresolved": 6,
+        "mtfObservations": 151,
+        "mtfDelivered": 107,
+        "mtfMissed": 0,
+        "mtfTp1": 5,
+        "mtfTp2": 2,
+        "mtfLosses": 26,
+        "mtfExpired": 99,
+        "mtfUnresolved": 24
       },
       "savedDailyReport": null
     },
     {
       "date": "2026-11-18",
-      "recordStatus": "reconstructed_from_journals",
-      "reportDelivery": "delivery_not_confirmed",
+      "recordStatus": "verified_daily_report",
+      "reportDelivery": "telegram_confirmed",
       "generatedAt": "2026-11-18T21:19:03.000Z",
       "legacy": {
         "source": "legacy_15m",
@@ -5250,17 +5258,25 @@
         ]
       },
       "totals": {
-        "signals": 65,
-        "delivered": 21,
-        "missed": 11,
-        "tp1": 6,
-        "tp2": 3,
-        "losses": 15,
-        "expired": 38,
-        "unresolved": 1
+        "legacyGenerated": 9,
+        "legacyDelivered": 1,
+        "legacyMissed": 8,
+        "legacyTp1": 1,
+        "legacyTp2": 1,
+        "legacyLosses": 0,
+        "legacyExpired": 0,
+        "legacyUnresolved": 0,
+        "mtfObservations": 56,
+        "mtfDelivered": 20,
+        "mtfMissed": 3,
+        "mtfTp1": 5,
+        "mtfTp2": 2,
+        "mtfLosses": 15,
+        "mtfExpired": 38,
+        "mtfUnresolved": 1
       },
       "savedDailyReport": {
-        "delivered": false,
+        "delivered": true,
         "attemptedAt": "2026-11-18T21:19:03.000Z",
         "stats": {
           "day": "2026-11-18",
@@ -5433,8 +5449,8 @@
     },
     {
       "date": "2026-11-17",
-      "recordStatus": "reconstructed_from_journals",
-      "reportDelivery": "delivery_not_confirmed",
+      "recordStatus": "verified_daily_report",
+      "reportDelivery": "telegram_confirmed",
       "generatedAt": "2026-11-18T01:45:56.000Z",
       "legacy": {
         "source": "legacy_15m",
@@ -6611,17 +6627,25 @@
         ]
       },
       "totals": {
-        "signals": 57,
-        "delivered": 22,
-        "missed": 1,
-        "tp1": 12,
-        "tp2": 5,
-        "losses": 19,
-        "expired": 30,
-        "unresolved": 2
+        "legacyGenerated": 3,
+        "legacyDelivered": 2,
+        "legacyMissed": 1,
+        "legacyTp1": 1,
+        "legacyTp2": 0,
+        "legacyLosses": 2,
+        "legacyExpired": 0,
+        "legacyUnresolved": 0,
+        "mtfObservations": 54,
+        "mtfDelivered": 20,
+        "mtfMissed": 0,
+        "mtfTp1": 11,
+        "mtfTp2": 5,
+        "mtfLosses": 17,
+        "mtfExpired": 30,
+        "mtfUnresolved": 2
       },
       "savedDailyReport": {
-        "delivered": false,
+        "delivered": true,
         "attemptedAt": "2026-11-18T01:45:56.000Z",
         "stats": {
           "day": "2026-11-17",
@@ -6794,8 +6818,8 @@
     },
     {
       "date": "2026-11-16",
-      "recordStatus": "reconstructed_from_journals",
-      "reportDelivery": "delivery_not_confirmed",
+      "recordStatus": "verified_daily_report",
+      "reportDelivery": "telegram_confirmed",
       "generatedAt": "2026-11-17T01:56:51.000Z",
       "legacy": {
         "source": "legacy_15m",
@@ -7612,17 +7636,25 @@
         ]
       },
       "totals": {
-        "signals": 39,
-        "delivered": 20,
-        "missed": 1,
-        "tp1": 22,
-        "tp2": 13,
-        "losses": 11,
-        "expired": 14,
-        "unresolved": 0
+        "legacyGenerated": 2,
+        "legacyDelivered": 1,
+        "legacyMissed": 1,
+        "legacyTp1": 1,
+        "legacyTp2": 1,
+        "legacyLosses": 0,
+        "legacyExpired": 0,
+        "legacyUnresolved": 0,
+        "mtfObservations": 37,
+        "mtfDelivered": 19,
+        "mtfMissed": 0,
+        "mtfTp1": 21,
+        "mtfTp2": 12,
+        "mtfLosses": 11,
+        "mtfExpired": 14,
+        "mtfUnresolved": 0
       },
       "savedDailyReport": {
-        "delivered": false,
+        "delivered": true,
         "attemptedAt": "2026-11-17T01:56:51.000Z",
         "stats": {
           "day": "2026-11-16",
@@ -7792,8 +7824,8 @@
     },
     {
       "date": "2026-11-15",
-      "recordStatus": "reconstructed_from_journals",
-      "reportDelivery": "delivery_not_confirmed",
+      "recordStatus": "verified_daily_report",
+      "reportDelivery": "telegram_confirmed",
       "generatedAt": "2026-11-15T21:15:28.000Z",
       "legacy": {
         "source": "legacy_15m",
@@ -8330,17 +8362,25 @@
         ]
       },
       "totals": {
-        "signals": 25,
-        "delivered": 20,
-        "missed": 0,
-        "tp1": 6,
-        "tp2": 4,
-        "losses": 15,
-        "expired": 5,
-        "unresolved": 1
+        "legacyGenerated": 1,
+        "legacyDelivered": 1,
+        "legacyMissed": 0,
+        "legacyTp1": 0,
+        "legacyTp2": 0,
+        "legacyLosses": 1,
+        "legacyExpired": 0,
+        "legacyUnresolved": 0,
+        "mtfObservations": 24,
+        "mtfDelivered": 19,
+        "mtfMissed": 0,
+        "mtfTp1": 6,
+        "mtfTp2": 4,
+        "mtfLosses": 14,
+        "mtfExpired": 5,
+        "mtfUnresolved": 1
       },
       "savedDailyReport": {
-        "delivered": false,
+        "delivered": true,
         "attemptedAt": "2026-11-15T21:15:28.000Z",
         "stats": {
           "day": "2026-11-15",
@@ -8498,8 +8538,8 @@
     },
     {
       "date": "2026-11-14",
-      "recordStatus": "reconstructed_from_journals",
-      "reportDelivery": "delivery_not_confirmed",
+      "recordStatus": "verified_daily_report",
+      "reportDelivery": "telegram_confirmed",
       "generatedAt": "2026-11-14T22:41:51.000Z",
       "legacy": {
         "source": "legacy_15m",
@@ -9256,17 +9296,25 @@
         ]
       },
       "totals": {
-        "signals": 36,
-        "delivered": 18,
-        "missed": 3,
-        "tp1": 7,
-        "tp2": 3,
-        "losses": 17,
-        "expired": 13,
-        "unresolved": 0
+        "legacyGenerated": 6,
+        "legacyDelivered": 3,
+        "legacyMissed": 3,
+        "legacyTp1": 1,
+        "legacyTp2": 0,
+        "legacyLosses": 3,
+        "legacyExpired": 0,
+        "legacyUnresolved": 0,
+        "mtfObservations": 30,
+        "mtfDelivered": 15,
+        "mtfMissed": 0,
+        "mtfTp1": 6,
+        "mtfTp2": 3,
+        "mtfLosses": 14,
+        "mtfExpired": 13,
+        "mtfUnresolved": 0
       },
       "savedDailyReport": {
-        "delivered": false,
+        "delivered": true,
         "attemptedAt": "2026-11-14T22:41:51.000Z",
         "stats": {
           "day": "2026-11-14",
@@ -9386,8 +9434,8 @@
     },
     {
       "date": "2026-11-13",
-      "recordStatus": "reconstructed_from_journals",
-      "reportDelivery": "delivery_not_confirmed",
+      "recordStatus": "verified_daily_report",
+      "reportDelivery": "telegram_confirmed",
       "generatedAt": "2026-11-14T12:17:46.000Z",
       "legacy": {
         "source": "legacy_15m",
@@ -9544,17 +9592,25 @@
         ]
       },
       "totals": {
-        "signals": 6,
-        "delivered": 1,
-        "missed": 1,
-        "tp1": 2,
-        "tp2": 2,
-        "losses": 0,
-        "expired": 2,
-        "unresolved": 0
+        "legacyGenerated": 3,
+        "legacyDelivered": 1,
+        "legacyMissed": 1,
+        "legacyTp1": 0,
+        "legacyTp2": 0,
+        "legacyLosses": 0,
+        "legacyExpired": 1,
+        "legacyUnresolved": 0,
+        "mtfObservations": 3,
+        "mtfDelivered": 0,
+        "mtfMissed": 0,
+        "mtfTp1": 2,
+        "mtfTp2": 2,
+        "mtfLosses": 0,
+        "mtfExpired": 1,
+        "mtfUnresolved": 0
       },
       "savedDailyReport": {
-        "delivered": false,
+        "delivered": true,
         "attemptedAt": "2026-11-14T12:17:46.000Z",
         "stats": {
           "day": "2026-11-13",
