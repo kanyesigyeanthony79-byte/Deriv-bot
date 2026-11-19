@@ -15,6 +15,7 @@ const MARKETS = ["R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "B
 
 const BACKFILL_M5_COUNT = 1000;
 const GAP_REPAIR_WINDOW_SECONDS = 86400;
+const MAX_REPAIR_GAP_CANDLES = 12;
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 
 function normalizeBackfillCandles(raw, now) {
@@ -71,7 +72,8 @@ function findRepairableM5Gaps(rows, now) {
   return findM5Gaps(rows).filter(gap =>
     Number.isFinite(Number(now)) &&
     gap.end >= Number(now) - GAP_REPAIR_WINDOW_SECONDS &&
-    gap.end + SECONDS.M5 <= Number(now)
+    gap.end + SECONDS.M5 <= Number(now) &&
+    gap.missingCandles <= MAX_REPAIR_GAP_CANDLES
   );
 }
 
@@ -353,4 +355,4 @@ async function main() {
   }));
 }
 if (require.main === module) main();
-module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, normalizeBackfillCandles, candlesFromTickHistory, findM5Gaps, findRepairableM5Gaps, LIMITS, SECONDS, MARKETS, BACKFILL_M5_COUNT, GAP_REPAIR_WINDOW_SECONDS };
+module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, normalizeBackfillCandles, candlesFromTickHistory, findM5Gaps, findRepairableM5Gaps, LIMITS, SECONDS, MARKETS, BACKFILL_M5_COUNT, GAP_REPAIR_WINDOW_SECONDS, MAX_REPAIR_GAP_CANDLES };
