@@ -21,13 +21,17 @@ test("R_10 M5 backfill keeps only completed aligned valid unique candles", () =>
 test("historical R_10 M5 backfill merges with prior research candles by epoch", () => {
   const prior = { version: 1, markets: { R_10: {
     marketName: "Volatility 10 Index",
-    timeframes: { M5: [{ epoch: 3000, open: 1, high: 2, low: 1, close: 2 }] }
+    timeframes: { M5: [
+      { epoch: 3000, open: 1, high: 2, low: 1, close: 2 },
+      { epoch: 3301, open: 2, high: 3, low: 2, close: 3 }
+    ] }
   } } };
   const incoming = { R_10: {
     marketName: "Volatility 10 Index",
     timeframes: { M5: [
       { epoch: 3000, open: 1, high: 2, low: 1, close: 2 },
-      { epoch: 3300, open: 2, high: 3, low: 2, close: 3 }
+      { epoch: 3300, open: 2, high: 3, low: 2, close: 3 },
+      { epoch: 3601, open: 3, high: 4, low: 3, close: 4 }
     ] }
   } };
   const merged = mergeLowerTimeframeArchive(prior, incoming);
