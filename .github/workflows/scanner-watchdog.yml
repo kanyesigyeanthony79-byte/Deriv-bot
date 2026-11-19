@@ -36,7 +36,9 @@ jobs:
               // GitHub accepts the workflow filename as workflow_id. Keep a
               // longer stale threshold than its 15-minute schedule to avoid
               // dispatching a duplicate just before the next scheduled run.
-              { id: "research-candle-collector.yml", name: "Research Candle Collector (No Alerts)", staleAfterMs: 25 * 60 * 1000 }
+              // Research collection must be judged by native schedule events only.
+              // Do not auto-dispatch it: a manual recovery can hide a broken schedule.
+              { id: "research-candle-collector.yml", name: "Research Candle Collector (No Alerts)", staleAfterMs: 25 * 60 * 1000, autoRecover: false }
             ];
             const branch = "main";
             const defaultStaleAfterMs = 10 * 60 * 1000;
@@ -56,6 +58,10 @@ jobs:
               const latest = runs[0];
 
               if (!latest) {
+                if (workflow.autoRecover === false) {
+                  core.warning(`${workflow.name}: no runs found; automatic recovery is disabled so native schedule health remains visible.`);
+                  continue;
+                }
                 core.warning(`${workflow.name}: no runs found; dispatching recovery.`);
                 await github.rest.actions.createWorkflowDispatch({
                   owner: context.repo.owner,
@@ -69,6 +75,10 @@ jobs:
               const runAgeMs = now - Date.parse(latest.created_at);
               if (latest.status === "queued" || latest.status === "in_progress") {
                 if (Number.isFinite(runAgeMs) && runAgeMs > staleAfterMs) {
+                  if (workflow.autoRecover === false) {
+                    core.warning(`${workflow.name}: run #${latest.run_number} has been ${latest.status} for ${Math.round(runAgeMs / 60000)} minutes; no automatic dispatch because native schedule evidence must remain unmasked.`);
+                    continue;
+                  }
                   core.warning(`${workflow.name}: run #${latest.run_number} has been ${latest.status} for ${Math.round(runAgeMs / 60000)} minutes; cancelling the stuck run and dispatching one recovery.`);
                   await github.rest.actions.cancelWorkflowRun({
                     owner: context.repo.owner,
@@ -106,6 +116,10 @@ jobs:
                 const reason = failed
                   ? `latest run concluded ${latest.conclusion || "without a conclusion"}`
                   : `latest run has not completed recently (${Math.round(ageMs / 60000)} minutes since last activity)`;
+                if (workflow.autoRecover === false) {
+                  core.warning(`${workflow.name}: ${reason}; automatic recovery is disabled to preserve native schedule evidence.`);
+                  continue;
+                }
                 core.warning(`${workflow.name}: ${reason}; dispatching recovery.`);
                 await github.rest.actions.createWorkflowDispatch({
                   owner: context.repo.owner,
