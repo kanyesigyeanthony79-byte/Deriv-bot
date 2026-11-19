@@ -1,0 +1,73 @@
+name: Research Candle Collector (No Alerts)
+run-name: "[research-only] Candle collection - ${{ github.event_name }}"
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Serialize with the production scanner/collector so journal commits cannot race.
+concurrency:
+  group: deriv-signal-scanners
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Collect candles with all delivery and execution paths disabled
+        run: node multi_timeframe_collector.js
+        env:
+          MTF_TELEGRAM_ALERTS: "false"
+          STRATEGY_COMPARISON_TELEGRAM_ALERTS: "false"
+          MT5_TRADE_REPORTING_ENABLED: "false"
+          MT5_EXECUTION_QUEUE_ENABLED: "false"
+
+      - name: Archive lower-timeframe research candles
+        run: node lower_tf_entry_research.js
+        env:
+          LOWER_TF_FOCUS_MARKET: R_10
+
+      - name: Run common-assumption replay when data is ready
+        run: node lower_tf_common_assumption_replay.js
+
+      - name: Rebuild historical daily performance archive
+        run: node daily_performance_archive.js
+
+      - name: Persist research observations and journals
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add daily_performance_archive.json multi_timeframe_journal.json multi_timeframe_dashboard.json signal_review_data.json strategy_version_performance_report.json strategy_matched_comparison_report.json strategy_comparison_journal.json strategy_research_candles.json strategy_research_report.json lower_tf_research_candles.json lower_tf_entry_research_report.json lower_tf_common_assumption_replay_report.json breakout_retest_shadow_journal.json m5_ema_pullback_shadow_journal.json breakout_retest_m5_m15_shadow_journal.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update scheduled research candle observations"
+            for attempt in 1 2 3; do
+              git fetch origin main
+              git rebase origin/main
+              if git push origin HEAD:main; then exit 0; fi
+              sleep 2
+            done
+            exit 1
+          fi
+
+      - name: Upload collection snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: scheduled-research-observation-data
+          path: multi_timeframe_data.json
+          if-no-files-found: error
+          retention-days: 7
