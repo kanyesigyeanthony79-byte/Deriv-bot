@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-19T12:37:17.000Z",
+  "updatedAt": "2026-11-19T12:42:16.000Z",
   "markets": {
     "R_10": {
       "lastM15Epoch": 1795090500,
-      "lastM5Epoch": 1795091400,
+      "lastM5Epoch": 1795091700,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 7,
       "pendingSetups": [],
@@ -12,21 +12,15 @@
     },
     "R_25": {
       "lastM15Epoch": 1795090500,
-      "lastM5Epoch": 1795091400,
+      "lastM5Epoch": 1795091700,
       "initializedAt": "2026-11-17T14:27:52.000Z",
-      "signals": 5,
-      "pendingSetups": [
-        {
-          "setupCloseEpoch": 1795090500,
-          "direction": "BUY",
-          "expiresEpoch": 1795094100
-        }
-      ],
+      "signals": 6,
+      "pendingSetups": [],
       "dataQuality": "ok"
     },
     "R_50": {
       "lastM15Epoch": 1795090500,
-      "lastM5Epoch": 1795091400,
+      "lastM5Epoch": 1795091700,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 5,
       "pendingSetups": [],
@@ -34,7 +28,7 @@
     },
     "R_75": {
       "lastM15Epoch": 1795090500,
-      "lastM5Epoch": 1795091400,
+      "lastM5Epoch": 1795091700,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 7,
       "pendingSetups": [],
@@ -42,7 +36,7 @@
     },
     "JD75": {
       "lastM15Epoch": 1795090500,
-      "lastM5Epoch": 1795091400,
+      "lastM5Epoch": 1795091700,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 1,
       "pendingSetups": [
@@ -56,7 +50,7 @@
     },
     "JD100": {
       "lastM15Epoch": 1795090500,
-      "lastM5Epoch": 1795091400,
+      "lastM5Epoch": 1795091700,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 3,
       "pendingSetups": [],
@@ -64,7 +58,7 @@
     },
     "CRASH500": {
       "lastM15Epoch": 1795090500,
-      "lastM5Epoch": 1795091400,
+      "lastM5Epoch": 1795091700,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 0,
       "pendingSetups": [],
@@ -72,7 +66,7 @@
     },
     "BOOM500": {
       "lastM15Epoch": 1795090500,
-      "lastM5Epoch": 1795091400,
+      "lastM5Epoch": 1795091700,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 2,
       "pendingSetups": [],
@@ -80,6 +74,29 @@
     }
   },
   "signals": [
+    {
+      "signalId": "R_25-M15_M5_PULLBACK-1795091400",
+      "strategyId": "M15_M5_EMA_PULLBACK",
+      "strategyLabel": "M15 trend + M5 EMA9/21 pullback",
+      "marketId": "R_25",
+      "market": "Volatility 25 Index",
+      "direction": "BUY",
+      "setupTimeframe": "M15",
+      "entryTimeframe": "M5",
+      "entryCandleEpoch": 1795091700,
+      "triggerEpoch": 1795091400,
+      "entry": 2920.548,
+      "stopLoss": 2917.743285076334,
+      "tp2": 2926.1574298473315,
+      "riskDistance": 2.8047149236658697,
+      "riskAtr": 0.8329642455788235,
+      "targetR": 2,
+      "status": "pending",
+      "evaluationSource": "forward_shadow",
+      "outcomeBars": 0,
+      "lastProcessedEpoch": 1795091400,
+      "realizedR": null
+    },
     {
       "signalId": "R_50-M15_M5_PULLBACK-1795091100",
       "strategyId": "M15_M5_EMA_PULLBACK",
@@ -99,8 +116,8 @@
       "targetR": 2,
       "status": "pending",
       "evaluationSource": "forward_shadow",
-      "outcomeBars": 0,
-      "lastProcessedEpoch": 1795091100,
+      "outcomeBars": 2,
+      "lastProcessedEpoch": 1795091700,
       "realizedR": null
     },
     {
@@ -774,9 +791,9 @@
   "summary": {
     "mode": "forward_shadow_observation_only",
     "strategy": "M15 EMA20/50 signal; M5 EMA9/21 alignment and EMA9 pullback/reclaim; next-M5-open entry; 2R target; 1-hour horizon",
-    "signalsGenerated": 30,
+    "signalsGenerated": 31,
     "resolvedSignals": 29,
-    "pendingSignals": 1,
+    "pendingSignals": 2,
     "targetBeforeStop": 0,
     "stopBeforeTarget": 17,
     "targetRatePct": 0,
@@ -792,9 +809,9 @@
         "averageRealizedR": -0.228
       },
       "R_25": {
-        "signals": 5,
+        "signals": 6,
         "resolved": 5,
-        "pending": 0,
+        "pending": 1,
         "targetBeforeStop": 0,
         "stopBeforeTarget": 3,
         "targetRatePct": 0,
