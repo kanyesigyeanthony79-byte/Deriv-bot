@@ -68,7 +68,8 @@ test("legacy delivered marker is accepted because the daily runner writes it onl
 test("archive dashboard script is syntactically valid", () => {
   const fs = require("node:fs");
   const html = fs.readFileSync(require("node:path").join(__dirname, "daily-performance-archive.html"), "utf8");
-  const match = html.match(/<script>([\\s\\S]*?)<\\/script>/);
-  assert.ok(match, "dashboard script exists");
-  assert.doesNotThrow(() => new Function(match[1]));
+  const start = html.indexOf("<script>");
+  const end = html.indexOf("</script>", start);
+  assert.ok(start >= 0 && end > start, "dashboard script exists");
+  assert.doesNotThrow(() => new Function(html.slice(start + 8, end)));
 });
