@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
-  normalizeBackfillCandles, candlesFromTickHistory, mergeLowerTimeframeArchive, findM5Gaps, BACKFILL_M5_COUNT
+  normalizeBackfillCandles, candlesFromTickHistory, mergeLowerTimeframeArchive, findM5Gaps, findRepairableM5Gaps, BACKFILL_M5_COUNT, GAP_REPAIR_WINDOW_SECONDS, MAX_REPAIR_GAP_CANDLES
 } = require("../lower_tf_entry_research");
 
 test("R_10 M5 backfill keeps only completed aligned valid unique candles", () => {
@@ -69,4 +69,19 @@ test("tick-history fallback excludes incomplete candles and invalid tick rows", 
   const gap = { start: 3000, end: 3900, missingCandles: 4 };
   const history = { times: [3001, 3301, 3601, 3901], prices: ["bad", 2, 3, 4] };
   assert.deepEqual(candlesFromTickHistory(history, gap, 3899).map(c => c.epoch), [3300]);
+});
+
+test("M5 gap repair skips old gaps and keeps recent gaps eligible", () => {
+  const now = 1795089600;
+  const rows = [
+    { epoch: 1794962700, open: 1, high: 2, low: 1, close: 2 },
+    { epoch: 1794964200, open: 2, high: 3, low: 2, close: 3 },
+    { epoch: now - 900, open: 3, high: 4, low: 3, close: 4 },
+    { epoch: now - 300, open: 4, high: 5, low: 4, close: 5 }
+  ];
+  assert.equal(GAP_REPAIR_WINDOW_SECONDS, 86400);
+  assert.equal(MAX_REPAIR_GAP_CANDLES, 12);
+  assert.deepEqual(findRepairableM5Gaps(rows, now), [{
+    start: now - 600, end: now - 600, missingCandles: 1
+  }]);
 });
