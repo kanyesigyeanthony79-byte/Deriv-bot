@@ -278,6 +278,7 @@ function buildCommonAssumptionReplayReport(archive, readinessReport, generatedAt
       commonRisk: "All methods use the same 1.5 x M15 ATR risk distance measured at the M15 setup close.",
       commonTarget: "Fixed 2R target for all methods.",
       commonExit: "All outcomes are resolved on M1 candles, with a 60-minute horizon and same-candle stop/target touches marked ambiguous.",
+      positionConcurrency: "Each entry method is simulated independently with at most one open position at a time. Later setups are skipped while a prior position remains open; unresolved outcomes reserve the full 60-minute horizon. Reports distinguish overlap-skipped setups from eligible setups with no entry.",
       costs: "No spread, commission or slippage assumptions are applied because broker-specific historical cost data is not part of this archive. Results are gross candle-based R, not executable or realised account returns.",
       splits: "Chronological 60% discovery, 20% validation and 20% holdout; one-hour embargo at each split boundary. Holdout is not used for tuning."
     },

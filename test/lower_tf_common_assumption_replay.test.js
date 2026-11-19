@@ -112,6 +112,8 @@ test("report waits for qualified history and does not publish premature strategy
   const report = buildCommonAssumptionReplayReport({markets:{}},{markets:{R_10:readyStats(),R_25:{frames:{}}}},"2026-11-19T00:00:00.000Z");
   assert.equal(report.mode,"waiting_for_research_data_quality");
   assert.equal(report.summary.marketsReplayed,0);
+  assert.match(report.assumptions.positionConcurrency, /one open position at a time/);
+  assert.match(report.assumptions.positionConcurrency, /overlap-skipped setups/);
   assert.equal(report.markets.R_25.status,"not_ready");
 });
 
