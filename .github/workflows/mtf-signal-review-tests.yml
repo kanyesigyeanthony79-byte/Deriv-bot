@@ -1,0 +1,33 @@
+name: MTF Signal Review Window Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "signal_review.js"
+      - "test/signal_review.test.js"
+      - ".github/workflows/mtf-signal-review-tests.yml"
+  push:
+    branches:
+      - research/mtf-performance-audit-2026-11-18
+    paths:
+      - "signal_review.js"
+      - "test/signal_review.test.js"
+      - ".github/workflows/mtf-signal-review-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check review module syntax
+        run: node --check signal_review.js
+      - name: Run signal review regression tests
+        run: node --test test/signal_review.test.js
