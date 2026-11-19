@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-19T11:02:09.000Z",
+  "generatedAt": "2026-11-19T11:07:17.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -18,11 +18,11 @@
   "summary": {
     "baselineVersion": "MTF_BASELINE_V1",
     "baselineCategory": "SCALP",
-    "baselineSignalsAvailable": 78,
+    "baselineSignalsAvailable": 79,
     "candidateStrategies": 7,
-    "candidateSignals": 945,
-    "matchedPairs": 77,
-    "unmatchedCandidates": 868,
+    "candidateSignals": 947,
+    "matchedPairs": 78,
+    "unmatchedCandidates": 869,
     "matchWindowSeconds": 900
   },
   "strategies": [
@@ -956,17 +956,18 @@
     {
       "strategyId": "M5_BREAKOUT_M1_RETEST",
       "label": "M5 breakout / M1 retest",
-      "candidateSignals": 107,
+      "candidateSignals": 109,
       "candidateOutcomeCounts": {
         "tp2_hit": 39,
         "stopped": 66,
         "time_exit": 1,
-        "ambiguous": 1
+        "ambiguous": 1,
+        "pending": 2
       },
-      "matchedPairs": 7,
-      "unmatchedCandidates": 100,
+      "matchedPairs": 8,
+      "unmatchedCandidates": 101,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 7,
+      "baselineSignalsUsed": 8,
       "pairedOutcomeCounts": [
         {
           "key": "stopped / expired",
@@ -975,6 +976,10 @@
         {
           "key": "tp2_hit / expired",
           "count": 2
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         }
       ],
       "byMarket": {
@@ -989,8 +994,8 @@
           "unmatched": 17
         },
         "JD100": {
-          "candidates": 6,
-          "matched": 1,
+          "candidates": 7,
+          "matched": 2,
           "unmatched": 5
         },
         "JD75": {
@@ -1014,9 +1019,9 @@
           "unmatched": 10
         },
         "R_10": {
-          "candidates": 12,
+          "candidates": 13,
           "matched": 2,
-          "unmatched": 10
+          "unmatched": 11
         }
       },
       "pairs": [
@@ -1109,6 +1114,19 @@
           "candidateStatus": "tp2_hit",
           "baselineStatus": "expired",
           "candidateRealizedR": 2,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "JD100",
+          "direction": "BUY",
+          "candidateSignalId": "JD100-BREAKOUT_RETEST-1795086000",
+          "baselineSignalId": "JD100-SCALP-1795086000",
+          "candidateEntryEpoch": 1795086180,
+          "baselineEntryEpoch": 1795086000,
+          "entryTimeDifferenceSeconds": 180,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
           "baselineRealizedR": null
         }
       ]
