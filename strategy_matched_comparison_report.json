@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-19T18:12:07.000Z",
+  "generatedAt": "2026-11-19T18:17:16.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -18,10 +18,10 @@
   "summary": {
     "baselineVersion": "MTF_BASELINE_V1",
     "baselineCategory": "SCALP",
-    "baselineSignalsAvailable": 112,
+    "baselineSignalsAvailable": 113,
     "candidateStrategies": 7,
-    "candidateSignals": 1054,
-    "matchedPairs": 108,
+    "candidateSignals": 1055,
+    "matchedPairs": 109,
     "unmatchedCandidates": 946,
     "matchWindowSeconds": 900
   },
@@ -354,18 +354,18 @@
     {
       "strategyId": "EMA9_21",
       "label": "EMA9_21",
-      "candidateSignals": 399,
+      "candidateSignals": 400,
       "candidateOutcomeCounts": {
         "stopped": 261,
         "tp2_hit": 106,
         "stopped_after_tp1": 20,
         "tp1_hit": 2,
-        "pending": 10
+        "pending": 11
       },
-      "matchedPairs": 29,
+      "matchedPairs": 30,
       "unmatchedCandidates": 370,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 29,
+      "baselineSignalsUsed": 30,
       "pairedOutcomeCounts": [
         {
           "key": "stopped / expired",
@@ -374,6 +374,10 @@
         {
           "key": "tp2_hit / expired",
           "count": 10
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         },
         {
           "key": "stopped / stopped",
@@ -426,8 +430,8 @@
           "unmatched": 23
         },
         "frxXAUUSD": {
-          "candidates": 24,
-          "matched": 3,
+          "candidates": 25,
+          "matched": 4,
           "unmatched": 21
         }
       },
@@ -807,6 +811,19 @@
           "candidateStatus": "stopped",
           "baselineStatus": "stopped",
           "candidateRealizedR": -1,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "frxXAUUSD",
+          "direction": "SELL",
+          "candidateSignalId": "frxXAUUSD-EMA9_21-1795111200",
+          "baselineSignalId": "frxXAUUSD-SCALP-1795111500",
+          "candidateEntryEpoch": 1795111200,
+          "baselineEntryEpoch": 1795111500,
+          "entryTimeDifferenceSeconds": 300,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
           "baselineRealizedR": null
         }
       ]
