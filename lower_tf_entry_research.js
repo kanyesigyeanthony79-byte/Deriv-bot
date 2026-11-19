@@ -75,7 +75,10 @@ function mergeLowerTimeframeArchive(prior, incoming) {
       const newRows = market.timeframes?.[tf] || [];
       const byEpoch = new Map();
       for (const c of oldRows.concat(newRows)) {
-        if (!validCandle(c)) continue;
+        // Keep only candles aligned to the requested timeframe. Older collector
+        // snapshots may contain off-boundary timestamps that split an otherwise
+        // continuous historical sequence and make replay readiness misleading.
+        if (!validCandle(c) || Number(c.epoch) % SECONDS[tf] !== 0) continue;
         byEpoch.set(Number(c.epoch), {
           epoch: Number(c.epoch), open: Number(c.open), high: Number(c.high),
           low: Number(c.low), close: Number(c.close)
@@ -125,7 +128,8 @@ function buildReport(archive, incoming = {}, options = {}) {
     const m = archive.markets?.[id] || { timeframes: {} };
     const frames = {};
     for (const tf of Object.keys(LIMITS)) {
-      frames[tf] = frameStats(m.timeframes?.[tf], tf, incoming[id]?.timeframes?.[tf] || m.timeframes?.[tf]);
+      // Validate the persisted archive itself, not just this run's incoming rows.
+      frames[tf] = frameStats(m.timeframes?.[tf], tf, m.timeframes?.[tf]);
     }
     const starts = Object.values(frames).map(x => x.latestSegmentStartEpoch).filter(Number.isFinite);
     const ends = Object.values(frames).map(x => x.latestSegmentEndEpoch).filter(Number.isFinite);
