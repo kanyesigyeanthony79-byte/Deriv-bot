@@ -47,3 +47,12 @@ test("a daily record without explicit Telegram confirmation is not verified", ()
   assert.equal(a.days[0].recordStatus,"reconstructed_from_journals");
   assert.equal(a.days[0].reportDelivery,"delivery_not_confirmed");
 });
+
+test("missing timestamps do not create a false 1970 archive date", () => {
+  const a = buildDailyPerformanceArchive({signals:[
+    {signalId:"NO-DATE",localDate:null,createdAt:null,candleEpoch:null,status:"sent"}
+  ]},{signals:[
+    {signalId:"NO-MTF-DATE",entryCandleEpoch:null,createdEpoch:null,status:"pending"}
+  ]});
+  assert.equal(a.coverage.days,0);
+});
