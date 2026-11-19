@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-19T02:47:10.000Z",
+  "generatedAt": "2026-11-19T02:52:06.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -18,10 +18,10 @@
   "summary": {
     "baselineVersion": "MTF_BASELINE_V1",
     "baselineCategory": "SCALP",
-    "baselineSignalsAvailable": 42,
+    "baselineSignalsAvailable": 43,
     "candidateStrategies": 7,
-    "candidateSignals": 839,
-    "matchedPairs": 46,
+    "candidateSignals": 840,
+    "matchedPairs": 47,
     "unmatchedCandidates": 793,
     "matchWindowSeconds": 900
   },
@@ -859,20 +859,24 @@
     {
       "strategyId": "M15_M5_EMA_PULLBACK",
       "label": "M15 trend / M5 EMA pullback",
-      "candidateSignals": 19,
+      "candidateSignals": 20,
       "candidateOutcomeCounts": {
         "time_exit": 7,
         "stop": 11,
-        "pending": 1
+        "pending": 2
       },
-      "matchedPairs": 4,
+      "matchedPairs": 5,
       "unmatchedCandidates": 15,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 4,
+      "baselineSignalsUsed": 5,
       "pairedOutcomeCounts": [
         {
           "key": "stop / expired",
           "count": 2
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         },
         {
           "key": "stop / stopped",
@@ -890,8 +894,8 @@
           "unmatched": 5
         },
         "R_75": {
-          "candidates": 3,
-          "matched": 1,
+          "candidates": 4,
+          "matched": 2,
           "unmatched": 2
         },
         "R_25": {
@@ -971,6 +975,19 @@
           "candidateStatus": "stop",
           "baselineStatus": "expired",
           "candidateRealizedR": -1,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "R_75",
+          "direction": "SELL",
+          "candidateSignalId": "R_75-M15_M5_PULLBACK-1795056000",
+          "baselineSignalId": "R_75-SCALP-1795056000",
+          "candidateEntryEpoch": 1795056300,
+          "baselineEntryEpoch": 1795056000,
+          "entryTimeDifferenceSeconds": 300,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
           "baselineRealizedR": null
         }
       ]
