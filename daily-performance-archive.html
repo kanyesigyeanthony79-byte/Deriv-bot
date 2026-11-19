@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#10251d"><title>Daily Performance Archive · Deriv Signal Assistant</title>
+<style>
+:root{color-scheme:dark;--panel:#14251d;--line:#2c4939;--txt:#eef5ef;--muted:#a8b9ad;--gold:#d5a83d}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#10251d,#09120e 70%);color:var(--txt);font:14px system-ui,sans-serif}
+main{max-width:1050px;margin:auto;padding:20px 14px 48px}a{color:var(--gold)}h1{font-size:24px;margin:0 0 6px}h2{font-size:16px;margin:20px 0 9px}.muted{color:var(--muted);font-size:12px;line-height:1.55}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin:14px 0}.label{font-size:10px;color:var(--muted)}.value{font-size:22px;font-weight:800;margin-top:5px}
+button,select{background:#1b3026;color:var(--txt);border:1px solid var(--line);border-radius:9px;padding:10px;font:inherit}button{cursor:pointer}.days{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;margin-top:10px}.day{display:flex;justify-content:space-between;align-items:center;text-align:left;gap:10px;width:100%;padding:12px}.day[aria-pressed=true]{border-color:var(--gold);background:#243728}.tag{font-size:10px;color:var(--gold)}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:13px}table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}th,td{text-align:left;padding:9px;border-bottom:1px solid var(--line)}th{color:var(--muted)}.notice{padding:12px;border-left:3px solid var(--gold);background:#1a281e;border-radius:8px;font-size:12px;line-height:1.55;margin-top:14px}.status{margin:12px 0;color:var(--muted);font-size:12px}
+</style></head><body><main>
+<p><a href="./">← Back to dashboard</a></p><h1>Daily Performance Archive</h1>
+<div class="muted">Historical daily signal records from the beginning of the project, using recoverable journals. Dates are shown in Uganda time.</div>
+<div class="status" id="status">Loading archive…</div><div class="grid" id="coverage"></div>
+<h2>Choose a day</h2><div class="toolbar"><select id="dateSelect" aria-label="Select report date"><option value="">Choose a date</option></select><button id="latest" type="button">Latest available day</button></div>
+<div class="days" id="days"></div>
+<section id="report" hidden><h2 id="reportTitle">Daily report</h2><div class="muted" id="reportMeta"></div><div class="grid" id="metrics"></div>
+<h2>Legacy 15-minute signals</h2><div class="muted" id="legacyMeta"></div><div class="wrap"><table><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Entry</th><th>Outcome</th><th>Telegram</th><th>Reason</th></tr></thead><tbody id="legacyRows"></tbody></table></div>
+<h2>Multi-timeframe observations</h2><div class="muted" id="mtfMeta"></div><div class="wrap"><table><thead><tr><th>Time</th><th>Market</th><th>Category</th><th>Direction</th><th>Entry</th><th>Outcome</th><th>Telegram</th><th>Version</th></tr></thead><tbody id="mtfRows"></tbody></table></div>
+</section>
+<div class="notice">Verified means the saved daily journal record confirms Telegram delivery. Reconstructed means daily totals were rebuilt from surviving signal journals; it does not mean a daily Telegram report was sent. Missing dates are not fabricated. Signal outcomes are not actual account profit/loss or proof of executed trades.</div>
+</main><script>
+const $=id=>document.getElementById(id);let archive=null;
+const fmt=v=>v==null||v===""?"—":String(v);
+const metric=(label,value)=>{const c=document.createElement("div");c.className="card";const l=document.createElement("div");l.className="label";l.textContent=label;const v=document.createElement("div");v.className="value";v.textContent=fmt(value);c.append(l,v);return c};
+function showDay(day){
+ if(!day)return;
+ $("report").hidden=false;$("reportTitle").textContent="Performance · "+day.date;
+ $("reportMeta").textContent=(day.recordStatus==="verified_daily_report"?"VERIFIED DAILY REPORT":"RECONSTRUCTED FROM JOURNALS")+" · "+day.reportDelivery.replaceAll("_"," ");
+ $("metrics").replaceChildren(...[["Generated",day.totals.signals],["Telegram delivered",day.totals.delivered],["Missed / not sent",day.totals.missed],["TP1 reached",day.totals.tp1],["TP2 wins",day.totals.tp2],["Stop-loss outcomes",day.totals.losses],["Expired",day.totals.expired],["Unresolved",day.totals.unresolved]].map(([k,v])=>metric(k,v)));
+ $("legacyMeta").textContent=day.legacy.generated+" records · "+day.legacy.delivered+" delivered · "+day.legacy.wins+" TP2 · "+day.legacy.losses+" losses · "+(day.legacy.winRate==null?"N/A":day.legacy.winRate+"% resolved win rate");
+ $("mtfMeta").textContent=day.multiTimeframe.generated+" records · "+day.multiTimeframe.delivered+" delivered · "+day.multiTimeframe.wins+" TP2 · "+day.multiTimeframe.losses+" losses · "+(day.multiTimeframe.winRate==null?"N/A":day.multiTimeframe.winRate+"% resolved win rate");
+ function rows(target,items,legacy){
+  const body=$(target);body.replaceChildren();
+  if(!items.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=legacy?7:8;td.textContent="No records for this system on this date.";tr.append(td);body.append(tr);return}
+  for(const r of items){const tr=document.createElement("tr");const vals=legacy?[r.createdAt,r.market,r.direction,r.entry,r.outcome,r.telegramStatus,r.reason]:[r.createdAt,r.market,r.category,r.direction,r.entry,r.outcome,r.telegramStatus,r.strategyVersion];for(const val of vals){const td=document.createElement("td");td.textContent=fmt(val);tr.append(td)}body.append(tr)}
+ }
+ rows("legacyRows",day.legacy.signals,true);rows("mtfRows",day.multiTimeframe.signals,false);
+ document.querySelectorAll(".day").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.date===day.date)));$("dateSelect").value=day.date;
+}
+function init(data){
+ archive=data;$("status").textContent="Archive generated "+data.generatedAt+" · "+data.coverage.days+" available dates · "+data.coverage.firstDate+" to "+data.coverage.lastDate;
+ $("coverage").replaceChildren(...[["Available dates",data.coverage.days],["Legacy signals",data.coverage.legacySignals],["MTF observations",data.coverage.multiTimeframeSignals],["Verified daily reports",data.coverage.verifiedDailyReports],["Reconstructed days",data.coverage.reconstructedDays]].map(([k,v])=>metric(k,v)));
+ const select=$("dateSelect"),days=$("days");
+ for(const d of data.days){
+  const option=document.createElement("option");option.value=d.date;option.textContent=d.date;select.append(option);
+  const b=document.createElement("button");b.type="button";b.className="day";b.dataset.date=d.date;b.setAttribute("aria-pressed","false");
+  const left=document.createElement("span"),right=document.createElement("span");left.textContent=d.date+" · "+d.totals.signals+" signals";right.className="tag";right.textContent=d.recordStatus==="verified_daily_report"?"VERIFIED":"RECONSTRUCTED";b.append(left,right);b.addEventListener("click",()=>showDay(d));days.append(b);
+ }
+ select.addEventListener("change",()=>showDay(data.days.find(d=>d.date===select.value)));
+ $("latest").addEventListener("click",()=>showDay(data.days[0]));if(data.days.length)showDay(data.days[0]);
+}
+fetch("./daily_performance_archive.json?v="+Date.now(),{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("Archive not published yet");return r.json()}).then(init).catch(e=>$("status").textContent=e.message+" · Run the archive collector and refresh.");
+</script></body></html>
