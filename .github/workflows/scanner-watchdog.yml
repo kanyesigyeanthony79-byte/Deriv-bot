@@ -125,39 +125,43 @@ jobs:
             const fs = require("fs");
             const path = require("path");
             const targets = [
-              { id: 417618869, name: "Multi-Timeframe Data Collector" },
-              { id: 417087054, name: "Deriv Market Monitor" }
+              { id: 417618869, name: "Multi-Timeframe Data Collector", event: "workflow_dispatch", label: "[cloudflare_scheduler]", gapThresholdMinutes: 7 },
+              { id: 417087054, name: "Deriv Market Monitor", event: "workflow_dispatch", label: "[cloudflare_scheduler]", gapThresholdMinutes: 7 },
+              // This workflow uses GitHub's native 15-minute schedule, not the
+              // Cloudflare external-dispatch mechanism used by the two scanners.
+              { id: "research-candle-collector.yml", name: "Research Candle Collector (No Alerts)", event: "schedule", gapThresholdMinutes: 22 }
             ];
             const reports = [];
             for (const target of targets) {
               const response = await github.rest.actions.listWorkflowRuns({
                 owner: context.repo.owner, repo: context.repo.repo,
-                workflow_id: target.id, branch: "main", event: "workflow_dispatch", per_page: 100
+                workflow_id: target.id, branch: "main", event: target.event, per_page: 100
               });
               const runs = (response.data.workflow_runs || [])
-                .filter(run => run.event === "workflow_dispatch" && String(run.display_title || "").includes("[cloudflare_scheduler]"))
+                .filter(run => run.event === target.event && (!target.label || String(run.display_title || "").includes(target.label)))
                 .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
                 .slice(0, 20);
               const times = runs.map(run => Date.parse(run.run_started_at || run.created_at)).filter(Number.isFinite);
               const gaps = times.slice(1).map((time, i) => Math.round((times[i] - time) / 60000));
               const report = {
-                workflow: target.name, externalDispatchRunsInspected: runs.length,
+                workflow: target.name, event: target.event, runsInspected: runs.length,
                 successful: runs.filter(run => run.conclusion === "success").length,
                 failedOrCancelled: runs.filter(run => run.conclusion && run.conclusion !== "success").length,
                 medianIntervalMinutes: gaps.length ? gaps.slice().sort((a,b)=>a-b)[Math.floor(gaps.length/2)] : null,
-                gapsOver7Minutes: gaps.filter(minutes => minutes > 7).length,
+                gapsOverThreshold: gaps.filter(minutes => minutes > target.gapThresholdMinutes).length,
+                gapThresholdMinutes: target.gapThresholdMinutes,
                 insufficientEvidence: runs.length < 3,
                 runs: runs.map(run => ({ id: run.id, createdAt: run.created_at, startedAt: run.run_started_at, conclusion: run.conclusion }))
               };
               reports.push(report);
-              core.summary.addHeading(target.name + ' — Cloudflare external dispatches');
+              core.summary.addHeading(target.name + " — " + (target.event === "schedule" ? "GitHub scheduled runs" : "Cloudflare external dispatches"));
               core.summary.addTable([
-                [{data:"External dispatch runs inspected",header:true},{data:"Successful",header:true},{data:"Failed/cancelled",header:true},{data:"Median interval (min)",header:true},{data:"Gaps >7 min",header:true}],
-                [String(report.externalDispatchRunsInspected),String(report.successful),String(report.failedOrCancelled),String(report.medianIntervalMinutes ?? "—"),String(report.gapsOver7Minutes)]
+                [{data:"Runs inspected",header:true},{data:"Successful",header:true},{data:"Failed/cancelled",header:true},{data:"Median interval (min)",header:true},{data:"Gaps over threshold",header:true}],
+                [String(report.runsInspected),String(report.successful),String(report.failedOrCancelled),String(report.medianIntervalMinutes ?? "—"),String(report.gapsOverThreshold)]
               ]);
-              if (report.insufficientEvidence) core.summary.addQuote("Insufficient Cloudflare-tagged dispatch history to assess cadence reliably.");
+              if (report.insufficientEvidence) core.summary.addQuote("Insufficient " + target.event + " run history to assess cadence reliably.");
             }
-            core.summary.addQuote("Only workflow_dispatch runs labelled [cloudflare_scheduler] are counted. Push, manual dispatch, recovery dispatch and workflow_run executions are excluded.");
+            core.summary.addQuote("Only the configured event type is counted for each workflow. Manual dispatches, recovery dispatches, push runs and workflow_run executions are excluded from scheduled-cadence evidence.");
             await core.summary.write();
             fs.writeFileSync(path.join(process.env.RUNNER_TEMP, "scanner-schedule-audit.json"), JSON.stringify({ generatedAt:new Date().toISOString(), reports }, null, 2));
       - name: Preserve scheduled cadence audit
