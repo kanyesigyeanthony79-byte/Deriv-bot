@@ -24,6 +24,30 @@ function normalizeBackfillCandles(raw, now) {
     .filter((c, i, rows) => i === 0 || c.epoch !== rows[i - 1].epoch);
 }
 
+function candlesFromTickHistory(history, gap, now) {
+  const times = Array.isArray(history?.times) ? history.times : [];
+  const prices = Array.isArray(history?.prices) ? history.prices : [];
+  const buckets = new Map();
+  for (let index = 0; index < Math.min(times.length, prices.length); index += 1) {
+    const epoch = Number(times[index]);
+    const price = Number(prices[index]);
+    if (!Number.isFinite(epoch) || !Number.isFinite(price) ||
+        epoch < gap.start || epoch >= gap.end + SECONDS.M5) continue;
+    const candleEpoch = Math.floor(epoch / SECONDS.M5) * SECONDS.M5;
+    if (candleEpoch < gap.start || candleEpoch > gap.end) continue;
+    const candle = buckets.get(candleEpoch);
+    if (!candle) {
+      buckets.set(candleEpoch, { epoch: candleEpoch, open: price, high: price, low: price, close: price });
+    } else {
+      candle.high = Math.max(candle.high, price);
+      candle.low = Math.min(candle.low, price);
+      candle.close = price;
+    }
+  }
+  return [...buckets.values()].sort((a, b) => a.epoch - b.epoch)
+    .filter(c => validCandle(c) && c.epoch + SECONDS.M5 <= now);
+}
+
 function findM5Gaps(rows) {
   const data = (Array.isArray(rows) ? rows : [])
     .filter(c => validCandle(c) && Number(c.epoch) % SECONDS.M5 === 0)
@@ -97,13 +121,45 @@ async function fetchR10M5Backfill(now, existingRows = [], WebSocketImpl = WebSoc
           granularity: SECONDS.M5, style: "candles", req_id: reqId
         }));
       });
-      const recovered = normalizeBackfillCandles(gapReply.candles, now)
+      let recovered = normalizeBackfillCandles(gapReply.candles, now)
         .filter(c => c.epoch >= gap.start && c.epoch <= gap.end);
+      let tickCount = 0;
+      let tickRecovered = [];
+      if (recovered.length < gap.missingCandles) {
+        const tickReqId = index + 1002;
+        const tickReply = await new Promise((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error("Deriv targeted M5 tick-history request timed out")), 15000);
+          const onMessage = event => {
+            let data;
+            try { data = JSON.parse(String(event.data)); } catch { return; }
+            if (data.req_id !== tickReqId) return;
+            clearTimeout(timer);
+            ws.removeEventListener("message", onMessage);
+            if (data.error) reject(new Error(data.error.message || "Deriv targeted M5 tick-history request failed"));
+            else resolve(data);
+          };
+          ws.addEventListener("message", onMessage);
+          ws.send(JSON.stringify({
+            ticks_history: "R_10", start: gap.start,
+            end: String(gap.end + SECONDS.M5), count: 5000,
+            style: "ticks", req_id: tickReqId
+          }));
+        });
+        tickCount = Math.min(tickReply.history?.times?.length || 0, tickReply.history?.prices?.length || 0);
+        tickRecovered = candlesFromTickHistory(tickReply.history, gap, now);
+        const recoveredEpochs = new Set(recovered.map(c => c.epoch));
+        for (const candle of tickRecovered) {
+          if (!recoveredEpochs.has(candle.epoch)) recovered.push(candle);
+        }
+        recovered.sort((a, b) => a.epoch - b.epoch);
+      }
       candles.push(...recovered);
       console.log(JSON.stringify({
         event: "r10_m5_research_gap_repair",
         start: gap.start, end: gap.end,
         expectedCandles: gap.missingCandles,
+        candleApiCandles: Array.isArray(gapReply.candles) ? gapReply.candles.length : 0,
+        tickCount, tickReconstructedCandles: tickRecovered.length,
         recoveredCandles: recovered.length,
         status: recovered.length === gap.missingCandles ? "success" : "incomplete"
       }));
@@ -279,4 +335,4 @@ async function main() {
   }));
 }
 if (require.main === module) main();
-module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, normalizeBackfillCandles, findM5Gaps, LIMITS, SECONDS, MARKETS, BACKFILL_M5_COUNT };
+module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, normalizeBackfillCandles, candlesFromTickHistory, findM5Gaps, LIMITS, SECONDS, MARKETS, BACKFILL_M5_COUNT };
