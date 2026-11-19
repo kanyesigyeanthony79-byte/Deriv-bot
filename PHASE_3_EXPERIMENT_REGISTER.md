@@ -190,3 +190,27 @@ The single holdout outcome per method is not a valid basis for selecting or reje
 **PR #125 verification:** the draft branch contains the explicit 3,600-second post-boundary embargo and a unit test for the split starts. Lower-Timeframe Research Tests, Multi-Timeframe Engine Tests, and MT5 integration tests all passed on commit `6ebafe302093af026887193ce12104f32366fab0`. A later register-only documentation commit is now the PR head; no new code change was made after those passing tests. PR #125 remains open and unmerged.
 
 **Checkpoint decision:** R_10 minimum replay data is available, but corrected replay evidence is still pending. Continue Phase 3. No strategy promotion, production signal changes, Telegram routing changes, or MT5 execution enablement.
+
+## 12. Post-merge embargo verification and fresh replay — 2026-11-19 19:11 UTC
+
+Source: successful main-branch collector run #412 (workflow run 44595577996), on merge commit `7febd5f2f5ad9bc69ee2d51d1fb50efdea312501`. The collector completed its candle collection, lower-timeframe archive, common-assumption replay, daily archive build, and isolated observation-journal persistence steps successfully.
+
+**Code and CI status:** PR #125 was merged. The Lower-Timeframe Research Tests and MT5 execution integration tests both passed on the merge commit. The collector workflow also succeeded. The Pages build phase succeeded, but its deployment job was cancelled; do not infer a successful website deployment from this run.
+
+**Embargo verification:** the newly generated `lower_tf_common_assumption_replay_report.json` was generated at `2026-11-19T19:11:13.196Z`. Its actual R_10 split bounds now show:
+- Discovery: 1794964260–1795054584.
+- Validation: starts at 1795058184, exactly 3,600 seconds after discovery ends; ends at 1795084692.
+- Holdout: starts at 1795088292, exactly 3,600 seconds after validation ends; ends at 1795114800.
+
+The report assumptions also explicitly describe the post-boundary embargo and the separate purge of setups whose 60-minute outcome horizon crosses a split end. This verifies that the corrected split logic was used in the fresh replay.
+
+**Fresh replay sample size:** the corrected split leaves zero validation entries for all three methods. Each method has only one holdout entry:
+- M15 next-open: one holdout time exit, -0.1224 gross R.
+- M5 EMA pullback: one holdout stop, -1.0000 gross R.
+- M1 micro-break: one holdout time exit, -0.4160 gross R.
+
+Discovery entries were 3 for M15 next-open, 3 for M5 EMA pullback, and 2 for M1 micro-break. The other eligible discovery setups and overlap-skipped setups are itemized in the replay JSON. These samples cannot support a ranking, rejection, validation conclusion, or Gate D pass. The validation segment having zero entries is a particularly clear sign that the available 41.82-hour common overlap is too short for this split design.
+
+**Updated data/archive snapshot:** the lower-timeframe readiness report generated at 19:11:12 UTC shows R_10 latest continuous segments of 2,519 M1 candles, 504 M5 candles, and 1,200 M15 candles, with 41.8167 hours of common overlap. There are no duplicate, invalid, or unaligned candles in those latest segments; one older gap remains in M1 and M5 histories. The daily archive generated at 19:11:13 UTC now covers 7 recoverable dates (2026-11-13 through 2026-11-19), with 80 legacy signals, 403 MTF observations, 6 verified daily reports, and 1 reconstructed day. The 19 Nov record remains explicitly reconstructed from journals, not a verified Telegram daily report.
+
+**Checkpoint decision:** the embargo repair is merged, tested, and confirmed in a fresh replay. However, the corrected replay is too small to evaluate the methods. Continue Phase 3 by collecting a longer uninterrupted common M1/M5/M15 window before rerunning the same frozen experiment. Do not tune on the one-trade holdout, do not treat it as an independent performance verdict, and do not advance to Phase 4. Gates A–D are not certified; no production signal, Telegram routing, or MT5 execution settings are changed.
