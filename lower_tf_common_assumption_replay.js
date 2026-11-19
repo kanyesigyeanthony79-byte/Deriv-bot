@@ -146,11 +146,16 @@ function splitBounds(startEpoch, endEpoch) {
   };
 }
 function blankStats() {
-  return { setups: 0, entries: 0, noEntry: 0, outcomes: { target: 0, stopped: 0, ambiguous: 0, time_exit: 0, incomplete_data: 0, data_gap: 0 }, resolved: 0, averageGrossR: null, totalGrossR: 0 };
+  return { setups: 0, eligibleSetups: 0, overlapSkipped: 0, entries: 0, noEntry: 0, outcomes: { target: 0, stopped: 0, ambiguous: 0, time_exit: 0, incomplete_data: 0, data_gap: 0 }, resolved: 0, averageGrossR: null, totalGrossR: 0 };
 }
-function summarizeTrades(trades, setupCount) {
+function isSetupBlocked(setupEpoch, blockedUntilEpoch) {
+  return Number.isFinite(blockedUntilEpoch) && setupEpoch < blockedUntilEpoch;
+}
+function summarizeTrades(trades, setupCount, overlapSkipped = 0) {
   const result = blankStats();
-  result.setups = setupCount;
+  result.setups = setupCount + overlapSkipped;
+  result.eligibleSetups = setupCount;
+  result.overlapSkipped = overlapSkipped;
   result.entries = trades.length;
   result.noEntry = Math.max(0, setupCount - trades.length);
   for (const t of trades) result.outcomes[t.outcome.status] = (result.outcomes[t.outcome.status] || 0) + 1;
@@ -187,13 +192,22 @@ function replayMarket(marketId, market, bounds) {
   const results = {};
   for (const method of METHODS) {
     const trades = [];
-    const counts = { discovery: 0, validation: 0, holdout: 0 };
+    const counts = {
+      discovery: { setups: 0, overlapSkipped: 0 },
+      validation: { setups: 0, overlapSkipped: 0 },
+      holdout: { setups: 0, overlapSkipped: 0 }
+    };
+    let blockedUntilEpoch = null;
     for (const setup of setups) {
       const split = Object.entries(bounds).find(([, b]) => setup.setupEpoch >= b.start && setup.setupEpoch < b.end);
       if (!split) continue;
       const [splitName, splitRange] = split;
       if (setup.setupEpoch + HORIZON_SECONDS > splitRange.end) continue;
-      counts[splitName]++;
+      counts[splitName].setups++;
+      if (isSetupBlocked(setup.setupEpoch, blockedUntilEpoch)) {
+        counts[splitName].overlapSkipped++;
+        continue;
+      }
       let entry = null;
       if (method === "M15_NEXT_OPEN") {
         const candle = m15.find(c => c.epoch === setup.m15EntryEpoch);
@@ -210,11 +224,16 @@ function replayMarket(marketId, market, bounds) {
         riskDistance, horizonEndEpoch: entry.entryEpoch + HORIZON_SECONDS
       });
       trades.push({ setupEpoch: setup.setupEpoch, triggerEpoch: entry.triggerEpoch, entryEpoch: entry.entryEpoch, entry: entry.entry, direction: setup.direction, riskDistance, outcome });
+      // A position occupies the method until its observed exit. If the outcome
+      // cannot be resolved, conservatively reserve the full one-hour horizon.
+      blockedUntilEpoch = Number.isFinite(outcome.exitEpoch)
+        ? outcome.exitEpoch + TF.M1
+        : entry.entryEpoch + HORIZON_SECONDS;
     }
     results[method] = {
-      discovery: summarizeTrades(trades.filter(t => t.setupEpoch >= bounds.discovery.start && t.setupEpoch < bounds.discovery.end), counts.discovery),
-      validation: summarizeTrades(trades.filter(t => t.setupEpoch >= bounds.validation.start && t.setupEpoch < bounds.validation.end), counts.validation),
-      holdout: summarizeTrades(trades.filter(t => t.setupEpoch >= bounds.holdout.start && t.setupEpoch < bounds.holdout.end), counts.holdout),
+      discovery: summarizeTrades(trades.filter(t => t.setupEpoch >= bounds.discovery.start && t.setupEpoch < bounds.discovery.end), counts.discovery.setups, counts.discovery.overlapSkipped),
+      validation: summarizeTrades(trades.filter(t => t.setupEpoch >= bounds.validation.start && t.setupEpoch < bounds.validation.end), counts.validation.setups, counts.validation.overlapSkipped),
+      holdout: summarizeTrades(trades.filter(t => t.setupEpoch >= bounds.holdout.start && t.setupEpoch < bounds.holdout.end), counts.holdout.setups, counts.holdout.overlapSkipped),
       trades
     };
   }
@@ -300,5 +319,5 @@ module.exports = {
   TF, STOP_ATR_M15, TARGET_R, HORIZON_SECONDS, MINIMUM, METHODS,
   validCandle, continuous, latestContinuousSegment, ema, atr, marketReady, directionAtM15,
   m5PullbackTrigger, m1MicroBreakTrigger, resolveCommonOutcome,
-  splitBounds, summarizeTrades, replayMarket, buildCommonAssumptionReplayReport
+  splitBounds, isSetupBlocked, summarizeTrades, replayMarket, buildCommonAssumptionReplayReport
 };
