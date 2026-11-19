@@ -52,7 +52,7 @@ test("R_10 M5 gap finder returns exact missing candle boundaries", () => {
 test("tick-history fallback reconstructs only M5 buckets containing real ticks", () => {
   const gap = { start: 1794963000, end: 1794963900, missingCandles: 4 };
   const history = {
-    times: [1794963001, 1794963010, 1794963300, 1794963599, 1794964200],
+    times: [1794963001, 1794963010, 1794963300, 1794963601, 1794964200],
     prices: [10, 12, 11, 9, 99]
   };
   const candles = candlesFromTickHistory(history, gap, 1794965000);
@@ -67,6 +67,6 @@ test("tick-history fallback reconstructs only M5 buckets containing real ticks",
 
 test("tick-history fallback excludes incomplete candles and invalid tick rows", () => {
   const gap = { start: 3000, end: 3900, missingCandles: 4 };
-  const history = { times: [3001, 3301, 3601, 3901], prices: [1, "bad", 3, 4] };
-  assert.deepEqual(candlesFromTickHistory(history, gap, 3899), []);
+  const history = { times: [3001, 3301, 3601, 3901], prices: ["bad", 2, 3, 4] };
+  assert.deepEqual(candlesFromTickHistory(history, gap, 3899).map(c => c.epoch), [3300]);
 });
