@@ -110,3 +110,26 @@ A candidate can only be proposed for Phase 4 comparison after passing Gates A–
 - Optimizing parameters repeatedly against the same validation/holdout data.
 
 **Phase 3 completion condition:** At least one candidate has passed the integrity, evidence, matched-baseline, and independent-holdout gates, or all candidates have been documented as not ready / rejected with adequate evidence. Phase 3 can also close with no candidate promoted.
+
+
+## 8. Forward-evidence checkpoint — 2026-11-19 12:07 UTC
+
+Snapshot source: successful collector artifact generated at `2026-11-19T12:07:08Z`. This is a descriptive update to the register, not a parameter change or promotion decision.
+
+| Candidate | Signals | Terminal observations | Target before stop | Stop before target | Time exit | Ambiguous | Reported average R |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| EXP-01 M5 breakout / M1 retest | 112 | 112 | 41 | 69 | 1 | 1 | +0.120 |
+| EXP-02 M5 breakout / M5 retest / M15 trend | 62 | 62 | 5 | 35 | 22 | 0 | -0.237 |
+| EXP-03 M15 trend + M5 EMA pullback | 29 | 29 | 0 | 17 | 12 | 0 | -0.417 |
+
+EXP-01 per-market observations: R_10 13 (4 targets / 9 stops); R_25 19 (6 / 13); R_50 14 (8 / 6); R_75 14 (3 / 11); JD75 17 (3 / 14); JD100 8 (2 / 5, 1 time exit); CRASH500 10 (4 / 5, 1 ambiguous); BOOM500 17 (11 / 6). Seven markets have at least 10 observations; JD100 has 8 and should not be included in any pooled market subset requiring 10 per market.
+
+EXP-01 therefore has materially more forward evidence than the earlier snapshot and clears the raw 50-observation count. This does **not** by itself certify Gate B or justify Phase 4: ambiguous/time-exit observations remain separately reported, and the exact qualifying market subset must be fixed in the analysis. Gate C still requires a candidate-specific matched production-baseline comparison on identical market/time windows and common assumptions.
+
+A separately recorded historical holdout summary for EXP-01 contains 26 trades (13 target / 13 stop), expectancy +0.50R and +0.40R under an assumed 0.10R cost. Its provenance is recorded as source commit `40dd1ce9f035b789d0708e7da440c36ab59eef3` and archive blob `9c5fb79fcae81378cef069948ac0dd9999e256ed`. Treat this as a preliminary holdout record only until the frozen-parameter timing, independence from discovery/validation, and exact sample construction are audited. The assumed cost is a sensitivity, not measured broker spread/slippage.
+
+EXP-02 and EXP-03 remain below the 50-observation forward-evidence threshold. Their negative early results are descriptive warnings, not statistically sufficient rejection decisions.
+
+EXP-06 remains blocked on R_10 M5 continuity. At the same snapshot, latest continuous M1/M5/M15 counts were 2,096 / 419 / 1,200, with 34.82 hours common overlap and zero invalid, duplicate or unaligned candles. The replay did not run. It must not be counted as completed evidence.
+
+**Checkpoint decision:** Continue Phase 3. EXP-01 is the first candidate to prioritize for a rigorous candidate-specific matched-baseline audit; no candidate has been certified through Gates A–D, and no production promotion is proposed.
