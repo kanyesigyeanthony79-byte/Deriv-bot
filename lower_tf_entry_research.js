@@ -24,7 +24,25 @@ function normalizeBackfillCandles(raw, now) {
     .filter((c, i, rows) => i === 0 || c.epoch !== rows[i - 1].epoch);
 }
 
-async function fetchR10M5Backfill(now, WebSocketImpl = WebSocket) {
+function findM5Gaps(rows) {
+  const data = (Array.isArray(rows) ? rows : [])
+    .filter(c => validCandle(c) && Number(c.epoch) % SECONDS.M5 === 0)
+    .sort((a, b) => a.epoch - b.epoch);
+  const gaps = [];
+  for (let i = 1; i < data.length; i += 1) {
+    const difference = Number(data[i].epoch) - Number(data[i - 1].epoch);
+    if (difference > SECONDS.M5 && difference % SECONDS.M5 === 0) {
+      gaps.push({
+        start: Number(data[i - 1].epoch) + SECONDS.M5,
+        end: Number(data[i].epoch) - SECONDS.M5,
+        missingCandles: difference / SECONDS.M5 - 1
+      });
+    }
+  }
+  return gaps;
+}
+
+async function fetchR10M5Backfill(now, existingRows = [], WebSocketImpl = WebSocket) {
   const ws = new WebSocketImpl(PUBLIC);
   try {
     await new Promise((resolve, reject) => {
@@ -51,7 +69,34 @@ async function fetchR10M5Backfill(now, WebSocketImpl = WebSocket) {
     });
     const candles = normalizeBackfillCandles(reply.candles, now);
     if (candles.length < 500) throw new Error("Deriv returned fewer than 500 completed R_10 M5 candles");
-    return candles;
+
+    // Repair historical discontinuities separately from the rolling latest-history
+    // request. The API accepts inclusive start/end candle boundaries.
+    const gapRows = findM5Gaps(existingRows);
+    for (let index = 0; index < gapRows.length; index += 1) {
+      const gap = gapRows[index];
+      const gapReply = await new Promise((resolve, reject) => {
+        const reqId = index + 2;
+        const timer = setTimeout(() => reject(new Error("Deriv targeted M5 gap request timed out")), 15000);
+        const onMessage = event => {
+          let data;
+          try { data = JSON.parse(String(event.data)); } catch { return; }
+          if (data.req_id !== reqId) return;
+          clearTimeout(timer);
+          ws.removeEventListener("message", onMessage);
+          if (data.error) reject(new Error(data.error.message || "Deriv targeted M5 gap request failed"));
+          else resolve(data);
+        };
+        ws.addEventListener("message", onMessage);
+        ws.send(JSON.stringify({
+          ticks_history: "R_10", start: gap.start, end: String(gap.end),
+          granularity: SECONDS.M5, style: "candles", req_id: reqId
+        }));
+      });
+      candles.push(...normalizeBackfillCandles(gapReply.candles, now));
+    }
+    const byEpoch = new Map(candles.map(c => [c.epoch, c]));
+    return [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch);
   } finally {
     try { ws.close(); } catch {}
   }
@@ -192,7 +237,7 @@ async function main() {
   // its signal/Telegram path remain untouched. Failure is non-blocking.
   try {
     const now = Number(latest.generatedEpoch) || Math.floor(Date.now() / 1000);
-    const historicalM5 = await fetchR10M5Backfill(now);
+    const historicalM5 = await fetchR10M5Backfill(now, prior.markets?.R_10?.timeframes?.M5 || []);
     incoming = {
       ...latest.markets,
       R_10: {
@@ -221,4 +266,4 @@ async function main() {
   }));
 }
 if (require.main === module) main();
-module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, normalizeBackfillCandles, LIMITS, SECONDS, MARKETS, BACKFILL_M5_COUNT };
+module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, normalizeBackfillCandles, findM5Gaps, LIMITS, SECONDS, MARKETS, BACKFILL_M5_COUNT };
