@@ -150,3 +150,43 @@ This report is explicitly a contemporaneous co-occurrence match, not a counterfa
 **Required next Gate C work:** build a candidate-specific common-assumption replay for EXP-01 and the production baseline on identical market/time windows, using the same entry timing, stop/target, horizon, outcome resolution and conservative cost sensitivity. If data is insufficient for that replay, record Gate C as not ready rather than extrapolating from the current co-occurrence matches.
 
 **Checkpoint decision remains:** Phase 3 active; EXP-01 is the priority research candidate, but it has not passed the matched-baseline gate or been certified for Phase 4. No production changes or promotion.
+
+
+## 10. R10 lower-timeframe replay checkpoint — 2026-11-19 19:02 UTC
+
+Source snapshots: `lower_tf_entry_research_report.json` and `lower_tf_common_assumption_replay_report.json`, both generated at approximately 19:02 UTC by successful collector run #410.
+
+**Data readiness:** R_10 reached 2,511 latest-continuous M1 candles, 502 M5 candles, and 1,200 M15 candles, with 41.82 hours of common overlap. Invalid, duplicate, and unaligned candle counts were zero. The report changed to `ready_for_lower_timeframe_replay`, and the collector successfully ran the replay step.
+
+**Preliminary replay output:** one market (R_10) was replayed, with only 9 M15 setup candidates in the common 41.82-hour window. The three methods produced:
+- M15 next-open baseline: 5 entries (3 discovery, 1 validation, 1 holdout); all were time exits.
+- M5 EMA pullback: 5 entries (3 discovery, 1 validation, 1 holdout); 4 time exits and 1 holdout stop.
+- M1 micro-break: 4 entries (2 discovery, 1 validation, 1 holdout); all were time exits.
+
+The validation and holdout samples are therefore only one trade per method each. These results are exploratory gross candle-based R, with no spread, commission, or slippage assumptions. They are far too small for ranking, Gate C certification, or a promotion decision. The report itself states that it is not sufficient for strategy ranking or production promotion.
+
+**Integrity correction:** code review found that the replay report declared a one-hour embargo at each split boundary, but the split-boundary function did not actually exclude the post-boundary hour before validation and holdout. The existing replay logic already purged setups whose 60-minute outcome horizon crossed a split end. The preliminary 19:02 split results must be treated as diagnostic only and not as independent holdout evidence until the embargo correction is tested and a fresh replay is generated.
+
+**Repair under review:** draft PR [#125](https://github.com/kanyesigyeanthony79-byte/Deriv-bot/pull/125) adds the explicit post-boundary embargo, adds a unit test for the split windows, and fixes the lower-timeframe test workflow path filters so changes to the common-assumption replay and its test file actually trigger CI. The Lower-Timeframe Research Tests workflow passed on the updated PR head at 19:06 UTC. The PR remains unmerged pending the remaining CI checks and review.
+
+**Checkpoint decision:** R10 data readiness is achieved and an initial replay has been generated, but EXP-06 remains exploratory. No candidate has passed Gates A–D; Phase 3 remains active, and Phase 4 remains on hold. Production signal rules, Telegram routing, and MT5 execution settings remain unchanged.
+
+
+## 11. Latest collector and replay snapshot — 2026-11-19 19:07 UTC
+
+Source: main-branch collector artifacts generated at approximately `2026-11-19T19:07:25Z`; collector run succeeded.
+
+**R_10 data continuity:** latest continuous segments contain 2,516 M1 candles and 503 M5 candles; M15 contains 1,200 candles. Common overlap remains 41.82 hours. The complete retained datasets show one earlier gap on M1 and M5, but no gaps, duplicates, invalid candles, or unaligned timestamps inside the latest continuous segments. This meets the replay's minimum segment and overlap gates.
+
+**Fresh main-branch replay:** the replay artifact was regenerated with 9 R_10 setup candidates. The current artifact still shows validation and holdout starts exactly at their split boundaries, with no one-hour post-boundary exclusion. This is expected because the embargo correction is on draft PR #125 and has not been merged or run by the production collector. Therefore this latest main-branch replay remains diagnostic and must not be treated as corrected independent holdout evidence.
+
+Per-method counts remain extremely small:
+- M15 next-open: 3 discovery, 1 validation, 1 holdout entry.
+- M5 EMA pullback: 3 discovery, 1 validation, 1 holdout entry.
+- M1 micro-break: 2 discovery, 1 validation, 1 holdout entry.
+
+The single holdout outcome per method is not a valid basis for selecting or rejecting a strategy. Results are gross candle-based R and exclude transaction costs.
+
+**PR #125 verification:** the draft branch contains the explicit 3,600-second post-boundary embargo and a unit test for the split starts. Lower-Timeframe Research Tests, Multi-Timeframe Engine Tests, and MT5 integration tests all passed on commit `6ebafe302093af026887193ce12104f32366fab0`. A later register-only documentation commit is now the PR head; no new code change was made after those passing tests. PR #125 remains open and unmerged.
+
+**Checkpoint decision:** R_10 minimum replay data is available, but corrected replay evidence is still pending. Continue Phase 3. No strategy promotion, production signal changes, Telegram routing changes, or MT5 execution enablement.

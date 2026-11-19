@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
-  marketReady, continuous, resolveCommonOutcome, splitBounds, isSetupBlocked, summarizeTrades,
+  marketReady, continuous, resolveCommonOutcome, splitBounds, SPLIT_EMBARGO_SECONDS, isSetupBlocked, summarizeTrades,
   buildCommonAssumptionReplayReport
 } = require("../lower_tf_common_assumption_replay");
 
@@ -87,10 +87,18 @@ test("one-position guard skips overlapping setups but permits a setup at the pri
   assert.equal(isSetupBlocked(1500, null), false);
 });
 
-test("chronological splits are ordered and summary excludes unresolved outcomes from expectancy", () => {
-  const bounds = splitBounds(0,10000);
-  assert.ok(bounds.discovery.end < bounds.validation.end);
-  assert.ok(bounds.validation.end < bounds.holdout.end);
+test("chronological splits exclude a full post-boundary embargo before validation and holdout", () => {
+  const bounds = splitBounds(0,100000);
+  assert.equal(SPLIT_EMBARGO_SECONDS, 3600);
+  assert.equal(bounds.validation.start, bounds.discovery.end + SPLIT_EMBARGO_SECONDS);
+  assert.equal(bounds.holdout.start, bounds.validation.end + SPLIT_EMBARGO_SECONDS);
+  assert.ok(bounds.discovery.end < bounds.validation.start);
+  assert.ok(bounds.validation.end < bounds.holdout.start);
+  assert.ok(bounds.holdout.end > bounds.holdout.start);
+});
+
+test("chronological split summaries exclude unresolved outcomes from expectancy", () => {
+  const bounds = splitBounds(0,100000);
   const summary = summarizeTrades([
     {outcome:{status:"target",realizedR:2}},
     {outcome:{status:"ambiguous",realizedR:null}},
