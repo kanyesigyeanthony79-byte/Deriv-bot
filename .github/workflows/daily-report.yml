@@ -10,6 +10,10 @@ on:
   pull_request:
     paths:
       - "daily_report_runner.js"
+      - "daily_performance_archive.js"
+      - "daily_performance_archive.test.js"
+      - "daily-performance-archive.html"
+      - "index.html"
       - "daily_summary.js"
       - "scripts/demo_readonly_account_snapshot.js"
       - ".github/workflows/daily-report.yml"
@@ -64,11 +68,14 @@ jobs:
           DERIV_ACCOUNT_ID: ${{ secrets.DERIV_ACCOUNT_ID }}
           DERIV_APP_ID: ${{ secrets.DERIV_APP_ID }}
 
+      - name: Build historical daily performance archive
+        run: node daily_performance_archive.js
+
       - name: Save confirmed delivery record
         run: |
           git config user.name "Deriv Daily Reporter"
           git config user.email "actions@users.noreply.github.com"
-          git add trade_journal.json
+          git add trade_journal.json daily_performance_archive.json
           if ! git diff --cached --quiet; then
             git commit -m "Record daily Telegram report delivery"
             for attempt in 1 2 3; do
