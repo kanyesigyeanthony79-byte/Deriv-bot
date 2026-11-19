@@ -40,9 +40,9 @@ test("unconfirmed days are reconstructed and missing days are never invented", (
   assert.equal(a.days[0].legacy.unverified,1);
 });
 
-test("a daily record without explicit Telegram confirmation is not verified", () => {
+test("an unconfirmed saved daily record is not verified", () => {
   const a = buildDailyPerformanceArchive({signals:[],dailyReports:{
-    "2026-11-18":{delivered:true,stats:{generated:9}}
+    "2026-11-18":{delivered:false,telegramConfirmed:false,stats:{generated:9}}
   }},{signals:[]});
   assert.equal(a.days[0].recordStatus,"reconstructed_from_journals");
   assert.equal(a.days[0].reportDelivery,"delivery_not_confirmed");
@@ -55,4 +55,12 @@ test("missing timestamps do not create a false 1970 archive date", () => {
     {signalId:"NO-MTF-DATE",entryCandleEpoch:null,createdEpoch:null,status:"pending"}
   ]});
   assert.equal(a.coverage.days,0);
+});
+
+test("legacy delivered marker is accepted because the daily runner writes it only after delivery succeeds", () => {
+  const a = buildDailyPerformanceArchive({signals:[],dailyReports:{
+    "2026-11-18":{delivered:true,attemptedAt:"2026-11-19T00:15:00Z",stats:{generated:9}}
+  }},{signals:[]});
+  assert.equal(a.days[0].recordStatus,"verified_daily_report");
+  assert.equal(a.days[0].reportDelivery,"telegram_confirmed");
 });
