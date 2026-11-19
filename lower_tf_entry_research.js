@@ -14,6 +14,7 @@ const SECONDS = Object.freeze({ M1: 60, M5: 300, M15: 900 });
 const MARKETS = ["R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500"];
 
 const BACKFILL_M5_COUNT = 1000;
+const GAP_REPAIR_WINDOW_SECONDS = 86400;
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 
 function normalizeBackfillCandles(raw, now) {
@@ -66,6 +67,14 @@ function findM5Gaps(rows) {
   return gaps;
 }
 
+function findRepairableM5Gaps(rows, now) {
+  return findM5Gaps(rows).filter(gap =>
+    Number.isFinite(Number(now)) &&
+    gap.end >= Number(now) - GAP_REPAIR_WINDOW_SECONDS &&
+    gap.end < Number(now)
+  );
+}
+
 async function fetchR10M5Backfill(now, existingRows = [], WebSocketImpl = WebSocket) {
   const ws = new WebSocketImpl(PUBLIC);
   try {
@@ -96,7 +105,16 @@ async function fetchR10M5Backfill(now, existingRows = [], WebSocketImpl = WebSoc
 
     // Repair historical discontinuities separately from the rolling latest-history
     // request. The API accepts inclusive start/end candle boundaries.
-    const gapRows = findM5Gaps(existingRows);
+    const allGapRows = findM5Gaps(existingRows);
+    const gapRows = findRepairableM5Gaps(existingRows, now);
+    const staleGapCount = allGapRows.length - gapRows.length;
+    if (staleGapCount > 0) {
+      console.log(JSON.stringify({
+        event: "r10_m5_research_gap_repair_skipped_stale",
+        skippedGaps: staleGapCount,
+        repairWindowSeconds: GAP_REPAIR_WINDOW_SECONDS
+      }));
+    }
     for (let index = 0; index < gapRows.length; index += 1) {
       const gap = gapRows[index];
       const gapReply = await new Promise((resolve, reject) => {
@@ -335,4 +353,4 @@ async function main() {
   }));
 }
 if (require.main === module) main();
-module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, normalizeBackfillCandles, candlesFromTickHistory, findM5Gaps, LIMITS, SECONDS, MARKETS, BACKFILL_M5_COUNT };
+module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, normalizeBackfillCandles, candlesFromTickHistory, findM5Gaps, findRepairableM5Gaps, LIMITS, SECONDS, MARKETS, BACKFILL_M5_COUNT, GAP_REPAIR_WINDOW_SECONDS };
