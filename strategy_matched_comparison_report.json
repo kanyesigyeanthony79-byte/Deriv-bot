@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-19T08:02:06.000Z",
+  "generatedAt": "2026-11-19T08:07:12.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -20,9 +20,9 @@
     "baselineCategory": "SCALP",
     "baselineSignalsAvailable": 68,
     "candidateStrategies": 7,
-    "candidateSignals": 918,
-    "matchedPairs": 74,
-    "unmatchedCandidates": 844,
+    "candidateSignals": 921,
+    "matchedPairs": 76,
+    "unmatchedCandidates": 845,
     "matchWindowSeconds": 900
   },
   "strategies": [
@@ -985,16 +985,16 @@
     {
       "strategyId": "M5_BREAKOUT_M1_RETEST",
       "label": "M5 breakout / M1 retest",
-      "candidateSignals": 100,
+      "candidateSignals": 101,
       "candidateOutcomeCounts": {
         "tp2_hit": 35,
         "stopped": 62,
         "time_exit": 1,
         "ambiguous": 1,
-        "pending": 1
+        "pending": 2
       },
       "matchedPairs": 7,
-      "unmatchedCandidates": 93,
+      "unmatchedCandidates": 94,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
       "baselineSignalsUsed": 7,
       "pairedOutcomeCounts": [
@@ -1023,9 +1023,9 @@
           "unmatched": 17
         },
         "JD100": {
-          "candidates": 5,
+          "candidates": 6,
           "matched": 1,
-          "unmatched": 4
+          "unmatched": 5
         },
         "JD75": {
           "candidates": 14,
@@ -1321,17 +1321,17 @@
     {
       "strategyId": "M5_BREAKOUT_M5_RETEST_M15_CONFIRM",
       "label": "M5 breakout / M5 retest / M15 confirmation",
-      "candidateSignals": 57,
+      "candidateSignals": 59,
       "candidateOutcomeCounts": {
         "time_exit": 20,
         "stopped": 31,
         "tp2_hit": 5,
-        "pending": 1
+        "pending": 3
       },
-      "matchedPairs": 11,
+      "matchedPairs": 13,
       "unmatchedCandidates": 46,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 11,
+      "baselineSignalsUsed": 13,
       "pairedOutcomeCounts": [
         {
           "key": "stopped / expired",
@@ -1340,6 +1340,10 @@
         {
           "key": "time_exit / expired",
           "count": 4
+        },
+        {
+          "key": "pending / pending",
+          "count": 2
         },
         {
           "key": "stopped / stopped",
@@ -1352,8 +1356,8 @@
       ],
       "byMarket": {
         "R_50": {
-          "candidates": 9,
-          "matched": 0,
+          "candidates": 10,
+          "matched": 1,
           "unmatched": 9
         },
         "JD100": {
@@ -1367,8 +1371,8 @@
           "unmatched": 7
         },
         "R_10": {
-          "candidates": 6,
-          "matched": 3,
+          "candidates": 7,
+          "matched": 4,
           "unmatched": 3
         },
         "R_75": {
@@ -1534,6 +1538,32 @@
           "candidateStatus": "time_exit",
           "baselineStatus": "expired",
           "candidateRealizedR": 0.7115,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "R_10",
+          "direction": "BUY",
+          "candidateSignalId": "R_10-BREAKOUT_RETEST_M5_M15-1795074600",
+          "baselineSignalId": "R_10-SCALP-1795074300",
+          "candidateEntryEpoch": 1795075200,
+          "baselineEntryEpoch": 1795074300,
+          "entryTimeDifferenceSeconds": 900,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "R_50",
+          "direction": "SELL",
+          "candidateSignalId": "R_50-BREAKOUT_RETEST_M5_M15-1795073700",
+          "baselineSignalId": "R_50-SCALP-1795074300",
+          "candidateEntryEpoch": 1795075200,
+          "baselineEntryEpoch": 1795074300,
+          "entryTimeDifferenceSeconds": 900,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
           "baselineRealizedR": null
         }
       ]
