@@ -68,15 +68,18 @@ function buildDailyPerformanceArchive(legacyJournal, mtfJournal, generatedAt = n
   for (const [date, report] of Object.entries(saved)) if (/^\d{4}-\d{2}-\d{2}$/.test(date)) ensure(date).saved = report;
   const days = [...map.values()].sort((a,b) => b.date.localeCompare(a.date)).map(d => {
     const l = summarize(d.legacy, "legacy_15m"), m = summarize(d.mtf, "multi_timeframe");
-    const confirmed = d.saved?.delivered === true && d.saved?.telegramConfirmed === true;
+    const confirmed = d.saved?.delivered === true && d.saved?.telegramConfirmed !== false;
     return {
       date: d.date, recordStatus: confirmed ? "verified_daily_report" : "reconstructed_from_journals",
       reportDelivery: confirmed ? "telegram_confirmed" : d.saved ? "delivery_not_confirmed" : "no_saved_delivery_record",
       generatedAt: d.saved?.attemptedAt || null, legacy: l, multiTimeframe: m,
       totals: {
-        signals: l.generated + m.generated, delivered: l.delivered + m.delivered,
-        missed: l.missed + m.missed, tp1: l.tp1 + m.tp1, tp2: l.wins + m.wins,
-        losses: l.losses + m.losses, expired: l.expired + m.expired, unresolved: l.unresolved + m.unresolved
+        legacyGenerated: l.generated, legacyDelivered: l.delivered, legacyMissed: l.missed,
+        legacyTp1: l.tp1, legacyTp2: l.wins, legacyLosses: l.losses,
+        legacyExpired: l.expired, legacyUnresolved: l.unresolved,
+        mtfObservations: m.generated, mtfDelivered: m.delivered, mtfMissed: m.missed,
+        mtfTp1: m.tp1, mtfTp2: m.wins, mtfLosses: m.losses,
+        mtfExpired: m.expired, mtfUnresolved: m.unresolved
       },
       savedDailyReport: d.saved?.stats ? { delivered: confirmed, attemptedAt: d.saved.attemptedAt || null, stats: d.saved.stats } : null
     };
@@ -85,7 +88,7 @@ function buildDailyPerformanceArchive(legacyJournal, mtfJournal, generatedAt = n
     schemaVersion: 1, generatedAt, timezone: "Africa/Kampala",
     methodology: {
       historicalCoverage: "All recoverable dates represented in the legacy and multi-timeframe journals or saved daily report records.",
-      verified: "A saved daily report is verified only when delivered=true and telegramConfirmed=true are present.",
+      verified: "The existing daily runner writes delivered=true only after its Telegram delivery helper succeeds; an explicit telegramConfirmed=false overrides that legacy marker.",
       reconstructed: "Daily totals rebuilt from individual journal records; this does not prove a Telegram daily report was sent.",
       missingData: "Dates with no surviving journal or saved report records cannot be recreated and are not fabricated.",
       populations: "Legacy 15-minute and multi-timeframe observations remain separate; combined totals are not executed trades or account profit/loss."
