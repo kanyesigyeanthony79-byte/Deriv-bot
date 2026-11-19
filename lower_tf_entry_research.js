@@ -183,8 +183,25 @@ async function main() {
   const latest = JSON.parse(fs.readFileSync(INPUT, "utf8"));
   let prior = { version: 1, markets: {} };
   if (fs.existsSync(ARCHIVE)) prior = JSON.parse(fs.readFileSync(ARCHIVE, "utf8"));
-  const archive = mergeLowerTimeframeArchive(prior, latest.markets);
-  const report = buildReport(archive, latest.markets, { focusMarket: process.env.LOWER_TF_FOCUS_MARKET || null });
+  let incoming = latest.markets;
+  // Isolated research-only historical backfill. Production scanner data and
+  // its signal/Telegram path remain untouched. Failure is non-blocking.
+  try {
+    const now = Number(latest.generatedEpoch) || Math.floor(Date.now() / 1000);
+    const historicalM5 = await fetchR10M5Backfill(now);
+    incoming = {
+      ...latest.markets,
+      R_10: {
+        ...latest.markets.R_10,
+        timeframes: { ...(latest.markets.R_10?.timeframes || {}), M5: historicalM5 }
+      }
+    };
+    console.log(JSON.stringify({ event: "r10_m5_research_backfill", candles: historicalM5.length, status: "success" }));
+  } catch (error) {
+    console.log(JSON.stringify({ event: "r10_m5_research_backfill", status: "failed_nonblocking", message: String(error.message || error).slice(0, 200) }));
+  }
+  const archive = mergeLowerTimeframeArchive(prior, incoming);
+  const report = buildReport(archive, incoming, { focusMarket: process.env.LOWER_TF_FOCUS_MARKET || null });
   fs.writeFileSync(ARCHIVE, JSON.stringify(archive, null, 2) + "\n");
   fs.writeFileSync(REPORT, JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify({
