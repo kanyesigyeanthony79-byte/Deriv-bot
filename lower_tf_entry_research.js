@@ -71,7 +71,7 @@ function findRepairableM5Gaps(rows, now) {
   return findM5Gaps(rows).filter(gap =>
     Number.isFinite(Number(now)) &&
     gap.end >= Number(now) - GAP_REPAIR_WINDOW_SECONDS &&
-    gap.end < Number(now)
+    gap.end + SECONDS.M5 <= Number(now)
   );
 }
 
