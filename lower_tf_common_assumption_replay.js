@@ -193,9 +193,9 @@ function replayMarket(marketId, market, bounds) {
   for (const method of METHODS) {
     const trades = [];
     const counts = {
-      discovery: { setups: 0, overlapSkipped: 0 },
-      validation: { setups: 0, overlapSkipped: 0 },
-      holdout: { setups: 0, overlapSkipped: 0 }
+      discovery: { setups: 0, eligibleSetups: 0, overlapSkipped: 0 },
+      validation: { setups: 0, eligibleSetups: 0, overlapSkipped: 0 },
+      holdout: { setups: 0, eligibleSetups: 0, overlapSkipped: 0 }
     };
     let blockedUntilEpoch = null;
     for (const setup of setups) {
@@ -208,6 +208,7 @@ function replayMarket(marketId, market, bounds) {
         counts[splitName].overlapSkipped++;
         continue;
       }
+      counts[splitName].eligibleSetups++;
       let entry = null;
       if (method === "M15_NEXT_OPEN") {
         const candle = m15.find(c => c.epoch === setup.m15EntryEpoch);
@@ -231,9 +232,9 @@ function replayMarket(marketId, market, bounds) {
         : entry.entryEpoch + HORIZON_SECONDS;
     }
     results[method] = {
-      discovery: summarizeTrades(trades.filter(t => t.setupEpoch >= bounds.discovery.start && t.setupEpoch < bounds.discovery.end), counts.discovery.setups, counts.discovery.overlapSkipped),
-      validation: summarizeTrades(trades.filter(t => t.setupEpoch >= bounds.validation.start && t.setupEpoch < bounds.validation.end), counts.validation.setups, counts.validation.overlapSkipped),
-      holdout: summarizeTrades(trades.filter(t => t.setupEpoch >= bounds.holdout.start && t.setupEpoch < bounds.holdout.end), counts.holdout.setups, counts.holdout.overlapSkipped),
+      discovery: summarizeTrades(trades.filter(t => t.setupEpoch >= bounds.discovery.start && t.setupEpoch < bounds.discovery.end), counts.discovery.eligibleSetups, counts.discovery.overlapSkipped),
+      validation: summarizeTrades(trades.filter(t => t.setupEpoch >= bounds.validation.start && t.setupEpoch < bounds.validation.end), counts.validation.eligibleSetups, counts.validation.overlapSkipped),
+      holdout: summarizeTrades(trades.filter(t => t.setupEpoch >= bounds.holdout.start && t.setupEpoch < bounds.holdout.end), counts.holdout.eligibleSetups, counts.holdout.overlapSkipped),
       trades
     };
   }
