@@ -6027,8 +6027,8 @@
       ],
       "status": "sent",
       "tp1Hit": true,
-      "tp2Hit": false,
-      "finalOutcome": null,
+      "tp2Hit": true,
+      "finalOutcome": "TP2",
       "events": [
         {
           "outcome": "TP1_HIT",
@@ -6040,12 +6040,23 @@
             "low": 3633.12,
             "close": 3635.06
           }
+        },
+        {
+          "outcome": "TP2_HIT",
+          "observedAt": "2026-11-19T21:45:10.290Z",
+          "candleEpoch": 1795123800,
+          "candle": {
+            "open": 3634.78,
+            "high": 3637.01,
+            "low": 3620.74,
+            "close": 3626.28
+          }
         }
       ],
-      "maxFavourablePrice": 3633.12,
-      "maxFavourablePoints": 45.7,
-      "maxFavourablePct": 1.24225,
-      "maxFavourableEpoch": 1795122900
+      "maxFavourablePrice": 3620.74,
+      "maxFavourablePoints": 58.08,
+      "maxFavourablePct": 1.57877,
+      "maxFavourableEpoch": 1795123800
     },
     {
       "signalId": "BOOM500-1795113900",
@@ -6107,8 +6118,20 @@
       "status": "sent",
       "tp1Hit": false,
       "tp2Hit": false,
-      "finalOutcome": null,
-      "events": [],
+      "finalOutcome": "SL",
+      "events": [
+        {
+          "outcome": "SL_HIT",
+          "observedAt": "2026-11-19T21:45:10.888Z",
+          "candleEpoch": 1795123800,
+          "candle": {
+            "open": 5720.87,
+            "high": 5720.87,
+            "low": 5712.47,
+            "close": 5712.47
+          }
+        }
+      ],
       "maxFavourablePrice": 5743.562,
       "maxFavourablePoints": 8.623,
       "maxFavourablePct": 0.15036,
@@ -6534,10 +6557,10 @@
       "tp2Hit": false,
       "finalOutcome": null,
       "events": [],
-      "maxFavourablePrice": 37828.6154,
-      "maxFavourablePoints": 135.619,
-      "maxFavourablePct": 0.35723,
-      "maxFavourableEpoch": 1795122900
+      "maxFavourablePrice": 37694.2851,
+      "maxFavourablePoints": 269.9493,
+      "maxFavourablePct": 0.71106,
+      "maxFavourableEpoch": 1795123800
     },
     {
       "signalId": "CRASH500-1795122000",
@@ -6601,10 +6624,79 @@
       "tp2Hit": false,
       "finalOutcome": null,
       "events": [],
-      "maxFavourablePrice": 2813.436,
-      "maxFavourablePoints": 4.638,
-      "maxFavourablePct": 0.16458,
-      "maxFavourableEpoch": 1795122900
+      "maxFavourablePrice": 2809.249,
+      "maxFavourablePoints": 8.825,
+      "maxFavourablePct": 0.31316,
+      "maxFavourableEpoch": 1795123800
+    },
+    {
+      "signalId": "R_50-1795123800",
+      "marketId": "R_50",
+      "market": "Volatility 50 Index",
+      "direction": "BUY",
+      "localDate": "2026-11-20",
+      "priorityTier": "RESEARCH_PRIORITY",
+      "priorityLabel": "PRIORITY PAIR — RESEARCH WATCH",
+      "priorityMetricName": "historical directional follow-through",
+      "priorityMetricPct": 62.9,
+      "prioritySampleBars": 1080,
+      "priorityEvidenceAsOf": "2026-11-16",
+      "createdAt": "2026-11-19T21:30:00.000Z",
+      "candleEpoch": 1795123800,
+      "score": 94,
+      "entry": 85.8274,
+      "metrics": {
+        "ema20": 85.38616548904776,
+        "ema50": 84.7790994889411,
+        "ema50Previous": 84.55499269864836,
+        "atr": 0.345483041130023,
+        "emaSeparationAtr": 1.7571513731065764,
+        "emaSlopeAtr": 0.6486766747210438,
+        "bodyRatio": 0.44147930237444616,
+        "closeLocation": 0.8188695104013324,
+        "extensionAtr": 1.2771524457728238,
+        "swingAtr": 0.9291338844015478,
+        "candleRange": 0.47589999999999577
+      },
+      "checks": [
+        {
+          "passed": true,
+          "reason": "EMA20/EMA50 trend up, gap 1.76 ATR"
+        },
+        {
+          "passed": true,
+          "reason": "Close on the trend side of EMA20"
+        },
+        {
+          "passed": true,
+          "reason": "EMA50 sloping with the trend"
+        },
+        {
+          "passed": true,
+          "reason": "RSI 64.1 inside 50-68"
+        },
+        {
+          "passed": true,
+          "reason": "Bullish candle, body 44% of range"
+        },
+        {
+          "passed": true,
+          "reason": "Higher low formed"
+        },
+        {
+          "passed": true,
+          "reason": "Not extended from EMA20 (1.3 ATR)"
+        },
+        {
+          "passed": true,
+          "reason": "No spike candle"
+        }
+      ],
+      "status": "sent",
+      "tp1Hit": false,
+      "tp2Hit": false,
+      "finalOutcome": null,
+      "events": []
     }
   ],
   "dailyReports": {
