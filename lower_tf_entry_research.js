@@ -13,6 +13,50 @@ const LIMITS = Object.freeze({ M1: 5000, M5: 2000, M15: 1200 });
 const SECONDS = Object.freeze({ M1: 60, M5: 300, M15: 900 });
 const MARKETS = ["R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500"];
 
+const BACKFILL_M5_COUNT = 1000;
+const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
+
+function normalizeBackfillCandles(raw, now) {
+  return (Array.isArray(raw) ? raw : [])
+    .map(c => ({ epoch: Number(c.epoch), open: Number(c.open), high: Number(c.high), low: Number(c.low), close: Number(c.close) }))
+    .filter(c => validCandle(c) && c.epoch % SECONDS.M5 === 0 && c.epoch + SECONDS.M5 <= now)
+    .sort((a, b) => a.epoch - b.epoch)
+    .filter((c, i, rows) => i === 0 || c.epoch !== rows[i - 1].epoch);
+}
+
+async function fetchR10M5Backfill(now, WebSocketImpl = WebSocket) {
+  const ws = new WebSocketImpl(PUBLIC);
+  try {
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Deriv research backfill connection timed out")), 15000);
+      ws.addEventListener("open", () => { clearTimeout(timer); resolve(); }, { once: true });
+      ws.addEventListener("error", () => { clearTimeout(timer); reject(new Error("Deriv research backfill connection failed")); }, { once: true });
+    });
+    const reply = await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Deriv research backfill request timed out")), 20000);
+      const onMessage = event => {
+        let data;
+        try { data = JSON.parse(String(event.data)); } catch { return; }
+        if (data.req_id !== 1) return;
+        clearTimeout(timer);
+        ws.removeEventListener("message", onMessage);
+        if (data.error) reject(new Error(data.error.message || "Deriv candle history request failed"));
+        else resolve(data);
+      };
+      ws.addEventListener("message", onMessage);
+      ws.send(JSON.stringify({
+        ticks_history: "R_10", adjust_start_time: 1, count: BACKFILL_M5_COUNT,
+        end: "latest", granularity: SECONDS.M5, style: "candles", req_id: 1
+      }));
+    });
+    const candles = normalizeBackfillCandles(reply.candles, now);
+    if (candles.length < 500) throw new Error("Deriv returned fewer than 500 completed R_10 M5 candles");
+    return candles;
+  } finally {
+    try { ws.close(); } catch {}
+  }
+}
+
 function validCandle(c) {
   return c && [c.epoch, c.open, c.high, c.low, c.close].every(Number.isFinite) &&
     c.high >= c.low && c.high >= Math.max(c.open, c.close) &&
@@ -134,7 +178,7 @@ function buildReport(archive, incoming = {}, options = {}) {
     note: "Readiness is based on the latest continuous segment in each timeframe, so an older historical gap no longer blocks research forever. No strategy performance result is claimed until replay completes."
   };
 }
-function main() {
+async function main() {
   if (!fs.existsSync(INPUT)) throw new Error("Missing collector output: " + INPUT);
   const latest = JSON.parse(fs.readFileSync(INPUT, "utf8"));
   let prior = { version: 1, markets: {} };
@@ -156,4 +200,4 @@ function main() {
   }));
 }
 if (require.main === module) main();
-module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, LIMITS, SECONDS, MARKETS };
+module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, normalizeBackfillCandles, LIMITS, SECONDS, MARKETS, BACKFILL_M5_COUNT };
