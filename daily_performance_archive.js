@@ -14,14 +14,14 @@ function readJson(file, fallback) {
   catch (error) { if (error.code === "ENOENT") return fallback; throw error; }
 }
 function dateInUganda(epoch) {
-  if (!Number.isFinite(Number(epoch))) return null;
+  if (epoch === null || epoch === undefined || epoch === "" || !Number.isFinite(Number(epoch))) return null;
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Kampala", year: "numeric", month: "2-digit", day: "2-digit" })
     .format(new Date(Number(epoch) * 1000));
 }
 function legacyDate(r) {
   if (typeof r.localDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(r.localDate)) return r.localDate;
   if (r.createdAt && Number.isFinite(Date.parse(r.createdAt))) return dateInUganda(Date.parse(r.createdAt) / 1000);
-  if (Number.isFinite(Number(r.candleEpoch))) return dateInUganda(r.candleEpoch);
+  if (r.candleEpoch !== null && r.candleEpoch !== undefined && Number.isFinite(Number(r.candleEpoch))) return dateInUganda(r.candleEpoch);
   return null;
 }
 function mtfDate(r) { return dateInUganda(r.entryCandleEpoch ?? r.createdEpoch); }
@@ -29,7 +29,7 @@ function compact(r, source, day) {
   const legacy = source === "legacy_15m";
   return {
     signalId: r.signalId || null, source, date: day,
-    createdAt: r.createdAt || (Number.isFinite(Number(r.entryCandleEpoch)) ? new Date(Number(r.entryCandleEpoch) * 1000).toISOString() : null),
+    createdAt: r.createdAt || (r.entryCandleEpoch !== null && r.entryCandleEpoch !== undefined && Number.isFinite(Number(r.entryCandleEpoch)) ? new Date(Number(r.entryCandleEpoch) * 1000).toISOString() : null),
     market: r.market || r.marketId || "unknown", marketId: r.marketId || null,
     category: r.category || (legacy ? "LEGACY_15M" : "unknown"), direction: r.direction || null,
     entry: r.entry ?? null, stopLoss: r.stopLoss ?? null, tp1: r.tp1 ?? null, tp2: r.tp2 ?? null,
