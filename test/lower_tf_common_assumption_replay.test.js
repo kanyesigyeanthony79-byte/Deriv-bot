@@ -106,6 +106,11 @@ test("chronological splits are ordered and summary excludes unresolved outcomes 
   assert.equal(guarded.eligibleSetups, 2);
   assert.equal(guarded.overlapSkipped, 3);
   assert.equal(guarded.noEntry, 1);
+  const allBlocked = summarizeTrades([], 0, 3);
+  assert.equal(allBlocked.setups, 3);
+  assert.equal(allBlocked.eligibleSetups, 0);
+  assert.equal(allBlocked.overlapSkipped, 3);
+  assert.equal(allBlocked.noEntry, 0);
 });
 
 test("report waits for qualified history and does not publish premature strategy results", () => {
