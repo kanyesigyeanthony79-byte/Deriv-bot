@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
-  marketReady, continuous, resolveCommonOutcome, splitBounds, summarizeTrades,
+  marketReady, continuous, resolveCommonOutcome, splitBounds, isSetupBlocked, summarizeTrades,
   buildCommonAssumptionReplayReport
 } = require("../lower_tf_common_assumption_replay");
 
@@ -80,6 +80,13 @@ test("one-hour time exit uses last completed M1 close and missing history is not
   assert.equal(gap.status,"data_gap");
 });
 
+test("one-position guard skips overlapping setups but permits a setup at the prior exit boundary", () => {
+  assert.equal(isSetupBlocked(1500, 1560), true);
+  assert.equal(isSetupBlocked(1560, 1560), false);
+  assert.equal(isSetupBlocked(1561, 1560), false);
+  assert.equal(isSetupBlocked(1500, null), false);
+});
+
 test("chronological splits are ordered and summary excludes unresolved outcomes from expectancy", () => {
   const bounds = splitBounds(0,10000);
   assert.ok(bounds.discovery.end < bounds.validation.end);
@@ -94,6 +101,11 @@ test("chronological splits are ordered and summary excludes unresolved outcomes 
   assert.equal(summary.resolved,2);
   assert.equal(summary.averageGrossR,0.5);
   assert.equal(summary.outcomes.ambiguous,1);
+  const guarded = summarizeTrades([{outcome:{status:"target",realizedR:2}}], 2, 3);
+  assert.equal(guarded.setups, 5);
+  assert.equal(guarded.eligibleSetups, 2);
+  assert.equal(guarded.overlapSkipped, 3);
+  assert.equal(guarded.noEntry, 1);
 });
 
 test("report waits for qualified history and does not publish premature strategy results", () => {
