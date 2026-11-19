@@ -224,3 +224,26 @@ Discovery entries were 3 for M15 next-open, 3 for M5 EMA pullback, and 2 for M1 
 **Validation status:** the PR's Multi-Timeframe Engine Tests workflow passed, including syntax check and unit tests. The schedule becomes active from main after merge. The first scheduled execution has not yet been observed at the time of this entry; do not describe collection as continuously running until that first run and subsequent persistence are verified.
 
 **Research objective:** grow the uninterrupted M1/M5/M15 R_10 common window and allow the frozen chronological replay to produce adequate validation and holdout samples. No candidate parameters were changed. No Telegram delivery or MT5 execution was enabled. Phase 3 remains active and Phase 4 remains on hold.
+
+
+
+## 14. First verified research-only collector run and watchdog recovery — 2026-11-19 19:30 UTC
+
+**Watchdog repair:** PR [#127](https://github.com/kanyesigyeanthony79-byte/Deriv-bot/pull/127) was merged at commit `5df99a469647e4fe14386965ec52ef228db5bf5d`. It adds the research-only collector workflow to the existing scanner watchdog. The watchdog uses a 25-minute stale threshold for this 15-minute schedule and retains the existing 10-minute recovery cooldown. The watchdog run #577 (ID `44598935863`) completed successfully; its follow-up workflow-run watchdog execution also completed successfully.
+
+**First verified research-only execution:** the watchdog dispatched research-only collector run [#44598979302](https://github.com/kanyesigyeanthony79-byte/Deriv-bot/actions/runs/44598979302) at 19:30:16 UTC. It completed successfully at 19:30:53 UTC. Every job step succeeded: candle collection with delivery/execution paths disabled, lower-timeframe candle archiving, common-assumption replay, daily archive rebuild, journal persistence, and artifact upload. Artifact `scheduled-research-observation-data` was created (727,475 bytes; SHA-256 `4d26abf7f18898b809495d06d373b6d1bb41c0d58f18b239404bd2e2927b49bb`) and is retained until 2026-11-26. This verifies one successful manual recovery dispatch, not yet sustained 15-minute scheduled cadence.
+
+**Isolation:** the workflow file continues to explicitly set `MTF_TELEGRAM_ALERTS=false`, `STRATEGY_COMPARISON_TELEGRAM_ALERTS=false`, `MT5_TRADE_REPORTING_ENABLED=false`, and `MT5_EXECUTION_QUEUE_ENABLED=false`. The successful run does not represent Telegram delivery or MT5 trade execution.
+
+**Updated R_10 readiness snapshot:** generated at `2026-11-19T19:30:45.399Z`. Latest continuous segments: M1 2,539 candles; M5 508; M15 1,200. Common overlap is 42.3167 hours. The full retained M1 and M5 histories each contain one earlier gap; M15 contains none. Latest-segment duplicate, invalid, and unaligned timestamp counts are zero. The largest observed intervals remain 1,440 seconds (M1), 1,500 seconds (M5), and 900 seconds (M15). The readiness mode remains `ready_for_lower_timeframe_replay`.
+
+**Corrected common-assumption replay:** generated at `2026-11-19T19:30:45.588Z`, with 9 setup candidates. The actual split starts retain the full one-hour post-boundary embargo: validation starts 3,600 seconds after discovery ends; holdout starts 3,600 seconds after validation ends. Results remain very small:
+- M15 next-open: discovery 3 entries / 3 resolved / -0.4311 gross R; validation 1 / 1 / -1.0000R (stop); holdout 1 / 1 / -0.1224R (time exit).
+- M5 EMA pullback: discovery 3 / 3 / +0.5256R; validation 0; holdout 1 / 1 / -1.0000R (stop).
+- M1 micro-break: discovery 2 / 2 / -0.3102R; validation 0; holdout 1 / 1 / -0.4160R (time exit).
+
+All reported R values are gross candle-based simulations, not broker fills or realized account P/L, and exclude spread, commission, and slippage. The one-entry holdouts and zero/one-entry validation samples cannot support method selection, rejection, Gate C, or Gate D. No tuning is authorized from these results.
+
+**Updated daily archive:** generated at `2026-11-19T19:30:45.674Z`; 7 recoverable dates (13–19 Nov), 81 legacy signals, 408 MTF observations, 6 verified daily reports, and 1 reconstructed day. The reconstructed 19 Nov day remains distinct from verified original daily reports.
+
+**Checkpoint decision:** one successful research-only collection and persistence cycle is now verified, and watchdog recovery is active. Continue collecting to establish repeated scheduled operation and a longer uninterrupted common M1/M5/M15 window. Phase 3 remains active; Gates A–D are not all certified; Phase 4 remains on hold. No strategy promotion, production signal-rule change, Telegram delivery, or MT5 execution is authorized by this checkpoint.
