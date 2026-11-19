@@ -24,7 +24,58 @@ function normalizeBackfillCandles(raw, now) {
     .filter((c, i, rows) => i === 0 || c.epoch !== rows[i - 1].epoch);
 }
 
-async function fetchR10M5Backfill(now, WebSocketImpl = WebSocket) {
+function findMissingM5Ranges(rows, maxMissingCandles = 12) {
+  const data = (Array.isArray(rows) ? rows : [])
+    .filter(c => validCandle(c) && Number(c.epoch) % SECONDS.M5 === 0)
+    .sort((a, b) => a.epoch - b.epoch);
+  const ranges = [];
+  for (let i = 1; i < data.length; i += 1) {
+    const delta = data[i].epoch - data[i - 1].epoch;
+    const missing = Math.round(delta / SECONDS.M5) - 1;
+    if (delta > SECONDS.M5 && delta % SECONDS.M5 === 0 &&
+        missing > 0 && missing <= maxMissingCandles) {
+      ranges.push({
+        start: data[i - 1].epoch + SECONDS.M5,
+        end: data[i].epoch - SECONDS.M5,
+        missingCandles: missing
+      });
+    }
+  }
+  return ranges;
+}
+
+async function fetchR10M5Range(start, end, WebSocketImpl = WebSocket) {
+  const ws = new WebSocketImpl(PUBLIC);
+  try {
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Deriv gap-repair connection timed out")), 15000);
+      ws.addEventListener("open", () => { clearTimeout(timer); resolve(); }, { once: true });
+      ws.addEventListener("error", () => { clearTimeout(timer); reject(new Error("Deriv gap-repair connection failed")); }, { once: true });
+    });
+    const reply = await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Deriv gap-repair request timed out")), 15000);
+      const onMessage = event => {
+        let data;
+        try { data = JSON.parse(String(event.data)); } catch { return; }
+        if (data.req_id !== 2) return;
+        clearTimeout(timer);
+        ws.removeEventListener("message", onMessage);
+        if (data.error) reject(new Error(data.error.message || "Deriv historical gap request failed"));
+        else resolve(data);
+      };
+      ws.addEventListener("message", onMessage);
+      ws.send(JSON.stringify({
+        ticks_history: "R_10", start, end,
+        granularity: SECONDS.M5, style: "candles", req_id: 2
+      }));
+    });
+    return Array.isArray(reply.candles) ? reply.candles : [];
+  } finally {
+    try { ws.close(); } catch {}
+  }
+}
+
+async function fetchR10M5Backfill(now, existingRows = [], WebSocketImpl = WebSocket) {
   const ws = new WebSocketImpl(PUBLIC);
   try {
     await new Promise((resolve, reject) => {
@@ -49,8 +100,33 @@ async function fetchR10M5Backfill(now, WebSocketImpl = WebSocket) {
         end: "latest", granularity: SECONDS.M5, style: "candles", req_id: 1
       }));
     });
-    const candles = normalizeBackfillCandles(reply.candles, now);
+    let candles = normalizeBackfillCandles(reply.candles, now);
     if (candles.length < 500) throw new Error("Deriv returned fewer than 500 completed R_10 M5 candles");
+    const ranges = findMissingM5Ranges((Array.isArray(existingRows) ? existingRows : []).concat(candles));
+    const repaired = [];
+    for (const range of ranges) {
+      try {
+        const rows = normalizeBackfillCandles(
+          await fetchR10M5Range(range.start, range.end, WebSocketImpl), now
+        );
+        repaired.push(...rows);
+        console.log(JSON.stringify({
+          event: "r10_m5_gap_repair",
+          start: range.start, end: range.end,
+          expectedCandles: range.missingCandles, receivedCandles: rows.length,
+          status: rows.length ? "success" : "empty"
+        }));
+      } catch (error) {
+        console.log(JSON.stringify({
+          event: "r10_m5_gap_repair",
+          start: range.start, end: range.end,
+          expectedCandles: range.missingCandles,
+          status: "failed_nonblocking",
+          message: String(error.message || error).slice(0, 200)
+        }));
+      }
+    }
+    candles = normalizeBackfillCandles(candles.concat(repaired), now);
     return candles;
   } finally {
     try { ws.close(); } catch {}
@@ -192,7 +268,7 @@ async function main() {
   // its signal/Telegram path remain untouched. Failure is non-blocking.
   try {
     const now = Number(latest.generatedEpoch) || Math.floor(Date.now() / 1000);
-    const historicalM5 = await fetchR10M5Backfill(now);
+    const historicalM5 = await fetchR10M5Backfill(now, prior.markets?.R_10?.timeframes?.M5 || []);
     incoming = {
       ...latest.markets,
       R_10: {
@@ -221,4 +297,4 @@ async function main() {
   }));
 }
 if (require.main === module) main();
-module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, normalizeBackfillCandles, LIMITS, SECONDS, MARKETS, BACKFILL_M5_COUNT };
+module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, normalizeBackfillCandles, findMissingM5Ranges, LIMITS, SECONDS, MARKETS, BACKFILL_M5_COUNT };
