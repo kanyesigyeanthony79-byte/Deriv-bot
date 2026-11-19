@@ -3,7 +3,8 @@ run-name: "[research-only] Candle collection - ${{ github.event_name }}"
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    # Offset from quarter-hour boundaries to reduce GitHub scheduler congestion.
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
 
 permissions:
