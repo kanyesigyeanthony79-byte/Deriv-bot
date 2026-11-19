@@ -1,23 +1,23 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-19T20:07:17.000Z",
-  "generatedEpoch": 1795118837,
+  "generatedAt": "2026-11-19T20:12:06.000Z",
+  "generatedEpoch": 1795119126,
   "mode": "signal_alerts_enabled",
   "summary": {
     "markets": 9,
     "signalCounts": {
-      "signal": 1,
-      "no_signal": 21,
-      "timeframe_conflict": 0,
+      "signal": 3,
+      "no_signal": 18,
+      "timeframe_conflict": 1,
       "waiting_pullback": 0,
       "warming": 0,
       "market_filtered": 14,
       "data_gap": 0
     },
     "journal": {
-      "pending": 25,
+      "pending": 26,
+      "stopped": 118,
       "expired": 239,
-      "stopped": 117,
       "tp2_hit": 30,
       "stopped_after_tp1": 2
     },
@@ -25,21 +25,21 @@
       "enabled": true,
       "executionEnabled": false,
       "considered": 5,
-      "sent": 0,
+      "sent": 2,
       "executionQueued": 0,
       "executionFailed": 0,
       "stale": 0,
       "missed": 0,
       "quoteUnavailable": 0,
       "failed": 0,
-      "skipped": 5
+      "skipped": 3
     },
     "outcomeTelegram": {
       "enabled": true,
       "considered": 1,
       "sent": 1,
       "failed": 0,
-      "skipped": 252
+      "skipped": 253
     },
     "mt5TradeReporting": {
       "enabled": true,
@@ -65,7 +65,7 @@
   "mt5Trades": [],
   "strategyComparison": {
     "version": 1,
-    "generatedAt": "2026-11-19T20:07:17.000Z",
+    "generatedAt": "2026-11-19T20:12:06.000Z",
     "timeframe": "M15",
     "mode": "shadow_observation_only",
     "riskModel": {
@@ -1090,7 +1090,7 @@
   },
   "strategyResearch": {
     "version": 1,
-    "generatedAt": "2026-11-19T20:07:32.529Z",
+    "generatedAt": "2026-11-19T20:12:26.364Z",
     "mode": "offline_research_only",
     "markets": {
       "R_10": {
@@ -40299,7 +40299,7 @@
         "note": "Only continuous segments with at least 400 M15 candles are evaluated. Discovery uses the first 50%; the later 50% is held out for validation. Entry is next candle open. Shared exits: 1.5 ATR stop, TP1=2R, TP2=3R, 96-candle horizon. Same-candle stop/target touches are ambiguous. A candidate is shown in validation only after at least 10 resolved validation signals. Expired trades are reported, not counted as wins or losses. This is exploratory research, not a live strategy."
       },
       "frxXAUUSD": {
-        "bars": 1280,
+        "bars": 1281,
         "continuousSegments": 0,
         "qualifiedSegments": 0,
         "minimumBarsRequired": 400,
@@ -64948,37 +64948,37 @@
   "strategyMatchedComparison": {
     "baselineVersion": "MTF_BASELINE_V1",
     "baselineCategory": "SCALP",
-    "baselineSignalsAvailable": 122,
+    "baselineSignalsAvailable": 123,
     "candidateStrategies": 7,
-    "candidateSignals": 1088,
-    "matchedPairs": 118,
+    "candidateSignals": 1089,
+    "matchedPairs": 119,
     "unmatchedCandidates": 970,
     "matchWindowSeconds": 900
   },
   "performanceReport": {
-    "generatedAt": "2026-11-19T20:07:17.000Z",
+    "generatedAt": "2026-11-19T20:12:06.000Z",
     "totals": {
-      "journalRecords": 413,
-      "telegramDelivered": 244,
-      "versionTagged": 231,
+      "journalRecords": 415,
+      "telegramDelivered": 246,
+      "versionTagged": 233,
       "legacyUnversioned": 182
     },
     "overall": {
-      "signals": 244,
-      "telegramSent": 244,
+      "signals": 246,
+      "telegramSent": 246,
       "outcomes": {
         "tp2_hit": 14,
-        "stopped": 69,
+        "stopped": 70,
         "stopped_after_tp1": 1,
         "expired": 139,
-        "pending": 21,
+        "pending": 22,
         "tp1_hit": 0,
         "ambiguous": 0,
         "other": 0
       },
-      "decisiveTp2Rate": 16.9,
-      "decisiveOutcomes": 83,
-      "excludedFromDecisiveRate": 161
+      "decisiveTp2Rate": 16.7,
+      "decisiveOutcomes": 84,
+      "excludedFromDecisiveRate": 162
     },
     "expiryAnalysis": {
       "expiredSignals": 139,
@@ -65088,7 +65088,7 @@
       "note": "Favourable excursion is maximum recorded candle movement divided by risk distance; it is not proof of execution or realised profit. Missing historical timestamps remain missing and are not reconstructed."
     },
     "reviewComparison": {
-      "matchedSignals": 244,
+      "matchedSignals": 246,
       "unmatchedSignals": 0,
       "terminalReviewLevels": 182,
       "byOriginalOutcomeAndAdvisoryStatus": [
@@ -65121,15 +65121,15 @@
           "signals": 10
         },
         {
-          "key": "pending / THESIS_WEAKENING",
-          "signals": 8
-        },
-        {
           "key": "expired / STOP_AFTER_TP1",
           "signals": 7
         },
         {
           "key": "expired / THESIS_INTACT",
+          "signals": 7
+        },
+        {
+          "key": "pending / THESIS_WEAKENING",
           "signals": 7
         },
         {
@@ -65150,6 +65150,10 @@
         },
         {
           "key": "pending / INSUFFICIENT_HISTORY",
+          "signals": 3
+        },
+        {
+          "key": "stopped / THESIS_WEAKENING",
           "signals": 1
         },
         {
@@ -65166,21 +65170,21 @@
     "byVersion": [
       {
         "key": "MTF_BASELINE_V1",
-        "signals": 157,
-        "telegramSent": 157,
+        "signals": 159,
+        "telegramSent": 159,
         "outcomes": {
           "tp2_hit": 2,
-          "stopped": 38,
+          "stopped": 39,
           "stopped_after_tp1": 0,
           "expired": 98,
-          "pending": 19,
+          "pending": 20,
           "tp1_hit": 0,
           "ambiguous": 0,
           "other": 0
         },
-        "decisiveTp2Rate": 5,
-        "decisiveOutcomes": 40,
-        "excludedFromDecisiveRate": 117
+        "decisiveTp2Rate": 4.9,
+        "decisiveOutcomes": 41,
+        "excludedFromDecisiveRate": 118
       },
       {
         "key": "LEGACY_UNVERSIONED",
@@ -65206,9 +65210,9 @@
     "mode": "forward_shadow_observation_only",
     "strategy": "M5 breakout beyond prior 12-bar range; M1 retest confirmation; next-M1-open entry",
     "marketsMonitored": 8,
-    "signalsGenerated": 138,
+    "signalsGenerated": 139,
     "resolvedSignals": 138,
-    "pendingSignals": 0,
+    "pendingSignals": 1,
     "targetBeforeStop": 47,
     "stopBeforeTarget": 89,
     "timeExit": 1,
@@ -65265,7 +65269,7 @@
         "signalsGenerated": 15,
         "riskRejected": 0,
         "overlapSuppressed": 26,
-        "confirmationExpired": 48
+        "confirmationExpired": 49
       },
       "R_75": {
         "dataQuality": "ok",
@@ -65295,7 +65299,7 @@
         "timeExit": 0,
         "targetRatePct": 14.3,
         "averageRealizedR": -0.571,
-        "setupsDetected": 96,
+        "setupsDetected": 97,
         "signalsGenerated": 21,
         "riskRejected": 1,
         "overlapSuppressed": 24,
@@ -65303,17 +65307,17 @@
       },
       "JD100": {
         "dataQuality": "ok",
-        "signals": 13,
+        "signals": 14,
         "resolved": 13,
-        "pending": 0,
+        "pending": 1,
         "targetBeforeStop": 3,
         "stopBeforeTarget": 9,
         "ambiguous": 0,
         "timeExit": 1,
         "targetRatePct": 25,
         "averageRealizedR": -0.206,
-        "setupsDetected": 69,
-        "signalsGenerated": 13,
+        "setupsDetected": 70,
+        "signalsGenerated": 14,
         "riskRejected": 2,
         "overlapSuppressed": 20,
         "confirmationExpired": 34
@@ -65359,12 +65363,12 @@
     "mode": "forward_shadow_observation_only",
     "strategy": "M15 EMA20/50 signal; M5 EMA9/21 alignment and EMA9 pullback/reclaim; next-M5-open entry; 2R target; 1-hour horizon",
     "signalsGenerated": 37,
-    "resolvedSignals": 35,
-    "pendingSignals": 2,
+    "resolvedSignals": 36,
+    "pendingSignals": 1,
     "targetBeforeStop": 1,
     "stopBeforeTarget": 20,
     "targetRatePct": 4.8,
-    "averageRealizedR": -0.336,
+    "averageRealizedR": -0.306,
     "markets": {
       "R_10": {
         "signals": 8,
@@ -65395,12 +65399,12 @@
       },
       "R_75": {
         "signals": 9,
-        "resolved": 8,
-        "pending": 1,
+        "resolved": 9,
+        "pending": 0,
         "targetBeforeStop": 0,
         "stopBeforeTarget": 5,
         "targetRatePct": 0,
-        "averageRealizedR": -0.377
+        "averageRealizedR": -0.252
       },
       "JD75": {
         "signals": 1,
@@ -65444,18 +65448,18 @@
     "mode": "forward_shadow_observation_only",
     "strategy": "M5 breakout beyond prior 12 M5 candles; only aligned, fully closed M15 EMA20/50 trend; M5 retest confirmation; next-M5-open entry",
     "marketsMonitored": 8,
-    "m15ConfirmedSetups": 369,
-    "m15RejectedSetups": 457,
+    "m15ConfirmedSetups": 370,
+    "m15RejectedSetups": 458,
     "m15ReconfirmRejected": 0,
     "signalsGenerated": 76,
-    "resolvedSignals": 74,
-    "pendingSignals": 2,
+    "resolvedSignals": 75,
+    "pendingSignals": 1,
     "targetBeforeStop": 6,
-    "stopBeforeTarget": 40,
+    "stopBeforeTarget": 41,
     "timeExit": 28,
     "ambiguous": 0,
-    "targetRatePct": 13,
-    "averageRealizedR": -0.246,
+    "targetRatePct": 12.8,
+    "averageRealizedR": -0.256,
     "markets": {
       "R_10": {
         "dataQuality": "ok",
@@ -65559,8 +65563,8 @@
       },
       "JD75": {
         "dataQuality": "ok",
-        "setupsDetected": 96,
-        "m15Confirmed": 31,
+        "setupsDetected": 97,
+        "m15Confirmed": 32,
         "m15Rejected": 65,
         "m15ReconfirmRejected": 0,
         "signals": 4,
@@ -65584,9 +65588,9 @@
       },
       "JD100": {
         "dataQuality": "ok",
-        "setupsDetected": 69,
+        "setupsDetected": 70,
         "m15Confirmed": 31,
-        "m15Rejected": 38,
+        "m15Rejected": 39,
         "m15ReconfirmRejected": 0,
         "signals": 8,
         "resolved": 8,
@@ -65639,23 +65643,23 @@
         "m15Rejected": 101,
         "m15ReconfirmRejected": 0,
         "signals": 9,
-        "resolved": 8,
-        "pending": 1,
+        "resolved": 9,
+        "pending": 0,
         "targetBeforeStop": 1,
-        "stopBeforeTarget": 4,
+        "stopBeforeTarget": 5,
         "ambiguous": 0,
         "timeExit": 3,
-        "targetRatePct": 20,
-        "averageRealizedR": -0.005,
+        "targetRatePct": 16.7,
+        "averageRealizedR": -0.115,
         "riskRejected": 3,
         "overlapSuppressed": 7,
         "productionTp1Hits": 2,
-        "productionResolved": 8,
-        "productionPending": 1,
+        "productionResolved": 9,
+        "productionPending": 0,
         "productionTp2Hits": 0,
-        "productionStoppedBeforeTp1": 4,
+        "productionStoppedBeforeTp1": 5,
         "productionStoppedAfterTp1": 0,
-        "productionAverageRealizedR": -0.051
+        "productionAverageRealizedR": -0.156
       }
     },
     "productionManagementSimulation": {
@@ -65664,14 +65668,14 @@
       "tp2R": 3,
       "tp1Hits": 9,
       "tp2Hits": 2,
-      "resolvedSignals": 74,
-      "pendingSignals": 2,
-      "stoppedBeforeTp1": 40,
+      "resolvedSignals": 75,
+      "pendingSignals": 1,
+      "stoppedBeforeTp1": 41,
       "stoppedAfterTp1": 0,
       "ambiguous": 0,
       "timeExit": 32,
-      "averageRealizedR": -0.263,
-      "realizedObservations": 74,
+      "averageRealizedR": -0.273,
+      "realizedObservations": 75,
       "weighting": "Two equal-sized entries close at +1.5R; the third closes at +3R or stop. Weighted basket R is +2R at TP2 and +0.667R if the runner stops after TP1."
     },
     "comparisonModel": {
@@ -65794,15 +65798,15 @@
           "stopEpoch": null,
           "lastProcessedEpoch": 1795104000,
           "outcomeCandles": 9,
-          "lastLivePrice": 4859.777,
-          "lastLiveQuoteEpoch": 1795118850,
+          "lastLivePrice": 4859.481,
+          "lastLiveQuoteEpoch": 1795119144,
           "maxFavourablePrice": 4814.474,
           "maxFavourablePoints": 22.615,
           "maxFavourablePct": 0.46753,
           "maxFavourableEpoch": 1795003200,
           "intendedExpiryEpoch": 1797566400,
-          "currentPrice": 4859.777,
-          "quoteEpoch": 1795118850
+          "currentPrice": 4859.481,
+          "quoteEpoch": 1795119144
         }
       ],
       "timeframeCounts": {
@@ -65951,10 +65955,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 10,
-          "lastLivePrice": 84.9641,
-          "lastLiveQuoteEpoch": 1795118850,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 11,
+          "lastLivePrice": 85.19,
+          "lastLiveQuoteEpoch": 1795119144,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T19:17:06.000Z",
           "telegramAgeSeconds": 126,
@@ -65965,8 +65969,8 @@
           "maxFavourablePoints": 0.1444,
           "maxFavourablePct": 0.16895,
           "maxFavourableEpoch": 1795116000,
-          "currentPrice": 84.9641,
-          "quoteEpoch": 1795118850
+          "currentPrice": 85.19,
+          "quoteEpoch": 1795119144
         },
         {
           "state": "signal",
@@ -66082,10 +66086,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 17,
-          "lastLivePrice": 84.9641,
-          "lastLiveQuoteEpoch": 1795118850,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 18,
+          "lastLivePrice": 85.19,
+          "lastLiveQuoteEpoch": 1795119144,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T18:42:12.000Z",
           "telegramAgeSeconds": 132,
@@ -66096,8 +66100,8 @@
           "maxFavourablePoints": 0.2023,
           "maxFavourablePct": 0.23667,
           "maxFavourableEpoch": 1795114200,
-          "currentPrice": 84.9641,
-          "quoteEpoch": 1795118850
+          "currentPrice": 85.19,
+          "quoteEpoch": 1795119144
         },
         {
           "state": "signal",
@@ -66213,10 +66217,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 18,
-          "lastLivePrice": 84.9641,
-          "lastLiveQuoteEpoch": 1795118850,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 19,
+          "lastLivePrice": 85.19,
+          "lastLiveQuoteEpoch": 1795119144,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T18:37:09.000Z",
           "telegramAgeSeconds": 129,
@@ -66227,8 +66231,8 @@
           "maxFavourablePoints": 0.3208,
           "maxFavourablePct": 0.37583,
           "maxFavourableEpoch": 1795114200,
-          "currentPrice": 84.9641,
-          "quoteEpoch": 1795118850
+          "currentPrice": 85.19,
+          "quoteEpoch": 1795119144
         },
         {
           "state": "signal",
@@ -66344,10 +66348,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 32,
-          "lastLivePrice": 84.9641,
-          "lastLiveQuoteEpoch": 1795118850,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 33,
+          "lastLivePrice": 85.19,
+          "lastLiveQuoteEpoch": 1795119144,
           "telegramStatus": "missed",
           "telegramStatusReason": "live_price_too_far_from_entry",
           "telegramLivePrice": 85.099,
@@ -66357,8 +66361,8 @@
           "maxFavourablePoints": 0.9062,
           "maxFavourablePct": 1.06816,
           "maxFavourableEpoch": 1795110900,
-          "currentPrice": 84.9641,
-          "quoteEpoch": 1795118850
+          "currentPrice": 85.19,
+          "quoteEpoch": 1795119144
         }
       ],
       "timeframeCounts": {
@@ -66377,6 +66381,260 @@
       "marketId": "R_75",
       "marketName": "Volatility 75 Index",
       "signals": [
+        {
+          "state": "signal",
+          "signalId": "R_75-SCALP-1795118700",
+          "marketId": "R_75",
+          "market": "Volatility 75 Index",
+          "category": "SCALP",
+          "categoryLabel": "Scalping",
+          "direction": "SELL",
+          "entryTimeframe": "M5",
+          "setupTimeframe": "M15",
+          "confirmationTimeframe": "M15",
+          "contextTimeframe": "M15",
+          "riskTimeframe": "M15",
+          "targetHorizon": "M15",
+          "candleEpoch": 1795118700,
+          "entryCandleEpoch": 1795118700,
+          "score": 100,
+          "quality": "STRONG",
+          "entryChecks": [
+            {
+              "passed": true,
+              "reason": "EMA20/EMA50 trend down, gap 1.21 ATR"
+            },
+            {
+              "passed": true,
+              "reason": "Close on the trend side of EMA20"
+            },
+            {
+              "passed": true,
+              "reason": "EMA50 sloping with the trend"
+            },
+            {
+              "passed": true,
+              "reason": "RSI 39.5 inside 32-50"
+            },
+            {
+              "passed": true,
+              "reason": "Bearish candle, body 100% of range"
+            },
+            {
+              "passed": true,
+              "reason": "Lower high formed"
+            },
+            {
+              "passed": true,
+              "reason": "Not extended from EMA20 (1.1 ATR)"
+            },
+            {
+              "passed": true,
+              "reason": "No spike candle"
+            }
+          ],
+          "metrics": {
+            "entry": {
+              "ema20": 37802.914367723366,
+              "ema50": 37968.12534133578,
+              "ema50Previous": 38034.39531770318,
+              "atr": 136.7273186837137,
+              "emaSeparationAtr": 1.208324533845264,
+              "emaSlopeAtr": 0.4846871642433259,
+              "bodyRatio": 1,
+              "closeLocation": 1,
+              "extensionAtr": 1.1110440048544614,
+              "swingAtr": 1.2405216575069375,
+              "candleRange": 104.11869999999908
+            },
+            "confirmation": {
+              "state": "aligned",
+              "direction": "SELL",
+              "separationAtr": 1.084346796939504,
+              "slopeAtr": 0.09133081348525204
+            },
+            "context": {
+              "state": "aligned",
+              "direction": "SELL",
+              "separationAtr": 1.084346796939504,
+              "slopeAtr": 0.09133081348525204
+            },
+            "swingSetup": null,
+            "swingHigherBias": null,
+            "swingH4Bias": null,
+            "riskAtr": 237.47128431437082
+          },
+          "entry": 37651.0043,
+          "stopLoss": 37947.8434,
+          "tp1": 37057.3261,
+          "tp2": 36760.487,
+          "riskDistance": 296.8391,
+          "riskReward": {
+            "tp1": 2,
+            "tp2": 3
+          },
+          "maxAgeSeconds": 1800,
+          "intendedExpiryEpoch": 1795120500,
+          "strategyVersion": "MTF_BASELINE_V1",
+          "strategySnapshot": {
+            "entryTimeframe": "M5",
+            "setupTimeframe": "M15",
+            "confirmationTimeframe": "M15",
+            "contextTimeframe": "M15",
+            "riskTimeframe": "M15",
+            "targetHorizon": "M15",
+            "riskReward": {
+              "tp1": 2,
+              "tp2": 3
+            },
+            "maxAgeSeconds": 1800
+          },
+          "status": "pending",
+          "createdEpoch": 1795119126,
+          "tp1Hit": false,
+          "tp1Epoch": null,
+          "tp2Epoch": null,
+          "stopEpoch": null,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 0,
+          "lastLivePrice": 37678.6311,
+          "lastLiveQuoteEpoch": 1795119144,
+          "telegramStatus": "sent",
+          "telegramSentAt": "2026-11-19T20:12:06.000Z",
+          "telegramAgeSeconds": 126,
+          "telegramCandleCloseEpoch": 1795119000,
+          "telegramLivePrice": 37678.6311,
+          "telegramEntryDeviationR": 0.09306994934292155,
+          "currentPrice": 37678.6311,
+          "quoteEpoch": 1795119144
+        },
+        {
+          "state": "signal",
+          "signalId": "R_75-SHORT_TERM-1795118700",
+          "marketId": "R_75",
+          "market": "Volatility 75 Index",
+          "category": "SHORT_TERM",
+          "categoryLabel": "Short-term",
+          "direction": "SELL",
+          "entryTimeframe": "M5",
+          "setupTimeframe": "M15",
+          "confirmationTimeframe": "M30",
+          "contextTimeframe": "M15",
+          "riskTimeframe": "H1",
+          "targetHorizon": "H1",
+          "candleEpoch": 1795118700,
+          "entryCandleEpoch": 1795118700,
+          "score": 100,
+          "quality": "STRONG",
+          "entryChecks": [
+            {
+              "passed": true,
+              "reason": "EMA20/EMA50 trend down, gap 1.21 ATR"
+            },
+            {
+              "passed": true,
+              "reason": "Close on the trend side of EMA20"
+            },
+            {
+              "passed": true,
+              "reason": "EMA50 sloping with the trend"
+            },
+            {
+              "passed": true,
+              "reason": "RSI 39.5 inside 32-50"
+            },
+            {
+              "passed": true,
+              "reason": "Bearish candle, body 100% of range"
+            },
+            {
+              "passed": true,
+              "reason": "Lower high formed"
+            },
+            {
+              "passed": true,
+              "reason": "Not extended from EMA20 (1.1 ATR)"
+            },
+            {
+              "passed": true,
+              "reason": "No spike candle"
+            }
+          ],
+          "metrics": {
+            "entry": {
+              "ema20": 37802.914367723366,
+              "ema50": 37968.12534133578,
+              "ema50Previous": 38034.39531770318,
+              "atr": 136.7273186837137,
+              "emaSeparationAtr": 1.208324533845264,
+              "emaSlopeAtr": 0.4846871642433259,
+              "bodyRatio": 1,
+              "closeLocation": 1,
+              "extensionAtr": 1.1110440048544614,
+              "swingAtr": 1.2405216575069375,
+              "candleRange": 104.11869999999908
+            },
+            "confirmation": {
+              "state": "aligned",
+              "direction": "SELL",
+              "separationAtr": 0.9776226447931473,
+              "slopeAtr": 0.09516653123228179
+            },
+            "context": {
+              "state": "aligned",
+              "direction": "SELL",
+              "separationAtr": 1.084346796939504,
+              "slopeAtr": 0.09133081348525204
+            },
+            "swingSetup": null,
+            "swingHigherBias": null,
+            "swingH4Bias": null,
+            "riskAtr": 464.00106563247704
+          },
+          "entry": 37651.0043,
+          "stopLoss": 38347.0059,
+          "tp1": 36259.0011,
+          "tp2": 35562.9995,
+          "riskDistance": 696.0016,
+          "riskReward": {
+            "tp1": 2,
+            "tp2": 3
+          },
+          "maxAgeSeconds": 21600,
+          "intendedExpiryEpoch": 1795140300,
+          "strategyVersion": "MTF_BASELINE_V1",
+          "strategySnapshot": {
+            "entryTimeframe": "M5",
+            "setupTimeframe": "M15",
+            "confirmationTimeframe": "M30",
+            "contextTimeframe": "M15",
+            "riskTimeframe": "H1",
+            "targetHorizon": "H1",
+            "riskReward": {
+              "tp1": 2,
+              "tp2": 3
+            },
+            "maxAgeSeconds": 21600
+          },
+          "status": "pending",
+          "createdEpoch": 1795119126,
+          "tp1Hit": false,
+          "tp1Epoch": null,
+          "tp2Epoch": null,
+          "stopEpoch": null,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 0,
+          "lastLivePrice": 37678.6311,
+          "lastLiveQuoteEpoch": 1795119144,
+          "telegramStatus": "sent",
+          "telegramSentAt": "2026-11-19T20:12:06.000Z",
+          "telegramAgeSeconds": 126,
+          "telegramCandleCloseEpoch": 1795119000,
+          "telegramLivePrice": 37678.6311,
+          "telegramEntryDeviationR": 0.03969358691129208,
+          "currentPrice": 37678.6311,
+          "quoteEpoch": 1795119144
+        },
         {
           "state": "signal",
           "signalId": "R_75-SHORT_TERM-1795109100",
@@ -66491,10 +66749,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 31,
-          "lastLivePrice": 37693.9157,
-          "lastLiveQuoteEpoch": 1795118850,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 32,
+          "lastLivePrice": 37678.6311,
+          "lastLiveQuoteEpoch": 1795119144,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T17:32:12.000Z",
           "telegramAgeSeconds": 132,
@@ -66505,8 +66763,8 @@
           "maxFavourablePoints": 419.5456,
           "maxFavourablePct": 1.1075,
           "maxFavourableEpoch": 1795117800,
-          "currentPrice": 37693.9157,
-          "quoteEpoch": 1795118850
+          "currentPrice": 37678.6311,
+          "quoteEpoch": 1795119144
         },
         {
           "state": "signal",
@@ -66622,10 +66880,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 40,
-          "lastLivePrice": 37693.9157,
-          "lastLiveQuoteEpoch": 1795118850,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 41,
+          "lastLivePrice": 37678.6311,
+          "lastLiveQuoteEpoch": 1795119144,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T16:47:15.000Z",
           "telegramAgeSeconds": 135,
@@ -66636,8 +66894,8 @@
           "maxFavourablePoints": 464.9907,
           "maxFavourablePct": 1.22599,
           "maxFavourableEpoch": 1795117800,
-          "currentPrice": 37693.9157,
-          "quoteEpoch": 1795118850
+          "currentPrice": 37678.6311,
+          "quoteEpoch": 1795119144
         },
         {
           "state": "signal",
@@ -66753,10 +67011,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 62,
-          "lastLivePrice": 37693.9157,
-          "lastLiveQuoteEpoch": 1795118850,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 63,
+          "lastLivePrice": 37678.6311,
+          "lastLiveQuoteEpoch": 1795119144,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T14:57:08.000Z",
           "telegramAgeSeconds": 128,
@@ -66767,8 +67025,8 @@
           "maxFavourablePoints": 605.7364,
           "maxFavourablePct": 1.59118,
           "maxFavourableEpoch": 1795117800,
-          "currentPrice": 37693.9157,
-          "quoteEpoch": 1795118850
+          "currentPrice": 37678.6311,
+          "quoteEpoch": 1795119144
         }
       ],
       "timeframeCounts": {
@@ -66903,16 +67161,16 @@
           "stopEpoch": null,
           "lastProcessedEpoch": 1795104000,
           "outcomeCandles": 0,
-          "lastLivePrice": 3572.76,
-          "lastLiveQuoteEpoch": 1795118850,
+          "lastLivePrice": 3581.62,
+          "lastLiveQuoteEpoch": 1795119145,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T20:02:06.000Z",
           "telegramAgeSeconds": 126,
           "telegramCandleCloseEpoch": 1795118400,
           "telegramLivePrice": 3542.31,
           "telegramEntryDeviationR": 0.0149261884277655,
-          "currentPrice": 3572.76,
-          "quoteEpoch": 1795118850
+          "currentPrice": 3581.62,
+          "quoteEpoch": 1795119145
         },
         {
           "state": "signal",
@@ -67015,8 +67273,8 @@
           "stopEpoch": null,
           "lastProcessedEpoch": 1795104000,
           "outcomeCandles": 13,
-          "lastLivePrice": 3572.76,
-          "lastLiveQuoteEpoch": 1795118850,
+          "lastLivePrice": 3581.62,
+          "lastLiveQuoteEpoch": 1795119145,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-17T16:34:55.000Z",
           "telegramAgeSeconds": 2095,
@@ -67028,8 +67286,8 @@
           "maxFavourablePct": 14.207,
           "maxFavourableEpoch": 1795075200,
           "intendedExpiryEpoch": 1797508800,
-          "currentPrice": 3572.76,
-          "quoteEpoch": 1795118850
+          "currentPrice": 3581.62,
+          "quoteEpoch": 1795119145
         }
       ],
       "timeframeCounts": {
@@ -67153,11 +67411,11 @@
           "maxFavourablePoints": 17.61,
           "maxFavourablePct": 28.96382,
           "maxFavourableEpoch": 1795046400,
-          "lastLivePrice": 45.6,
-          "lastLiveQuoteEpoch": 1795118851,
+          "lastLivePrice": 45.71,
+          "lastLiveQuoteEpoch": 1795119145,
           "intendedExpiryEpoch": 1797364800,
-          "currentPrice": 45.6,
-          "quoteEpoch": 1795118851
+          "currentPrice": 45.71,
+          "quoteEpoch": 1795119145
         }
       ],
       "timeframeCounts": {
@@ -67192,137 +67450,6 @@
       "marketId": "BOOM500",
       "marketName": "Boom 500 Index",
       "signals": [
-        {
-          "state": "signal",
-          "signalId": "BOOM500-SCALP-1795117200",
-          "marketId": "BOOM500",
-          "market": "Boom 500 Index",
-          "category": "SCALP",
-          "categoryLabel": "Scalping",
-          "direction": "BUY",
-          "entryTimeframe": "M5",
-          "setupTimeframe": "M15",
-          "confirmationTimeframe": "M15",
-          "contextTimeframe": "M15",
-          "riskTimeframe": "M15",
-          "targetHorizon": "M15",
-          "candleEpoch": 1795117200,
-          "entryCandleEpoch": 1795117200,
-          "score": 98,
-          "quality": "STRONG",
-          "entryChecks": [
-            {
-              "passed": true,
-              "reason": "EMA20/EMA50 trend up, gap 1.47 ATR"
-            },
-            {
-              "passed": true,
-              "reason": "Close on the trend side of EMA20"
-            },
-            {
-              "passed": true,
-              "reason": "EMA50 sloping with the trend"
-            },
-            {
-              "passed": true,
-              "reason": "RSI 57.6 inside 50-68"
-            },
-            {
-              "passed": true,
-              "reason": "Bullish candle, body 57% of range"
-            },
-            {
-              "passed": true,
-              "reason": "Higher low formed"
-            },
-            {
-              "passed": true,
-              "reason": "Not extended from EMA20 (1.2 ATR)"
-            },
-            {
-              "passed": true,
-              "reason": "No spike candle"
-            }
-          ],
-          "metrics": {
-            "entry": {
-              "ema20": 5733.543966293021,
-              "ema50": 5724.889494880319,
-              "ema50Previous": 5721.666645910759,
-              "atr": 5.880081422175534,
-              "emaSeparationAtr": 1.4718284988475785,
-              "emaSlopeAtr": 0.5480959765974617,
-              "bodyRatio": 0.565844636251557,
-              "closeLocation": 0.9675709001233131,
-              "extensionAtr": 1.1974381307757103,
-              "swingAtr": 0.8521990836898181,
-              "candleRange": 8.109999999999673
-            },
-            "confirmation": {
-              "state": "aligned",
-              "direction": "BUY",
-              "separationAtr": 1.270349229013302,
-              "slopeAtr": 0.10926366590557512
-            },
-            "context": {
-              "state": "aligned",
-              "direction": "BUY",
-              "separationAtr": 1.270349229013302,
-              "slopeAtr": 0.10926366590557512
-            },
-            "swingSetup": null,
-            "swingHigherBias": null,
-            "swingH4Bias": null,
-            "riskAtr": 12.282752737441628
-          },
-          "entry": 5740.585,
-          "stopLoss": 5725.232,
-          "tp1": 5771.292,
-          "tp2": 5786.645,
-          "riskDistance": 15.353,
-          "riskReward": {
-            "tp1": 2,
-            "tp2": 3
-          },
-          "maxAgeSeconds": 1800,
-          "intendedExpiryEpoch": 1795119000,
-          "strategyVersion": "MTF_BASELINE_V1",
-          "strategySnapshot": {
-            "entryTimeframe": "M5",
-            "setupTimeframe": "M15",
-            "confirmationTimeframe": "M15",
-            "contextTimeframe": "M15",
-            "riskTimeframe": "M15",
-            "targetHorizon": "M15",
-            "riskReward": {
-              "tp1": 2,
-              "tp2": 3
-            },
-            "maxAgeSeconds": 1800
-          },
-          "status": "pending",
-          "createdEpoch": 1795117629,
-          "tp1Hit": false,
-          "tp1Epoch": null,
-          "tp2Epoch": null,
-          "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 4,
-          "lastLivePrice": 5728.256,
-          "lastLiveQuoteEpoch": 1795118851,
-          "telegramStatus": "sent",
-          "telegramSentAt": "2026-11-19T19:47:09.000Z",
-          "telegramAgeSeconds": 129,
-          "telegramCandleCloseEpoch": 1795117500,
-          "telegramLivePrice": 5741.912,
-          "telegramEntryDeviationR": 0.0864326190321253,
-          "maxFavourablePrice": 5743.455,
-          "maxFavourablePoints": 2.87,
-          "maxFavourablePct": 0.04999,
-          "maxFavourableEpoch": 1795117500,
-          "currentPrice": 5728.256,
-          "quoteEpoch": 1795118851
-        },
         {
           "state": "signal",
           "signalId": "BOOM500-SHORT_TERM-1795117200",
@@ -67437,10 +67564,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 4,
-          "lastLivePrice": 5728.256,
-          "lastLiveQuoteEpoch": 1795118851,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 5,
+          "lastLivePrice": 5724.989,
+          "lastLiveQuoteEpoch": 1795119145,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T19:47:09.000Z",
           "telegramAgeSeconds": 129,
@@ -67451,8 +67578,8 @@
           "maxFavourablePoints": 2.87,
           "maxFavourablePct": 0.04999,
           "maxFavourableEpoch": 1795117500,
-          "currentPrice": 5728.256,
-          "quoteEpoch": 1795118851
+          "currentPrice": 5724.989,
+          "quoteEpoch": 1795119145
         },
         {
           "state": "signal",
@@ -67568,10 +67695,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 18,
-          "lastLivePrice": 5728.256,
-          "lastLiveQuoteEpoch": 1795118851,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 19,
+          "lastLivePrice": 5724.989,
+          "lastLiveQuoteEpoch": 1795119145,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T18:37:09.000Z",
           "telegramAgeSeconds": 129,
@@ -67582,8 +67709,8 @@
           "maxFavourablePoints": 9.23,
           "maxFavourablePct": 0.16096,
           "maxFavourableEpoch": 1795116000,
-          "currentPrice": 5728.256,
-          "quoteEpoch": 1795118851
+          "currentPrice": 5724.989,
+          "quoteEpoch": 1795119145
         },
         {
           "state": "signal",
@@ -67699,10 +67826,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 27,
-          "lastLivePrice": 5728.256,
-          "lastLiveQuoteEpoch": 1795118851,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 28,
+          "lastLivePrice": 5724.989,
+          "lastLiveQuoteEpoch": 1795119145,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T17:52:08.000Z",
           "telegramAgeSeconds": 128,
@@ -67713,8 +67840,8 @@
           "maxFavourablePoints": 24.05,
           "maxFavourablePct": 0.42017,
           "maxFavourableEpoch": 1795111200,
-          "currentPrice": 5728.256,
-          "quoteEpoch": 1795118851
+          "currentPrice": 5724.989,
+          "quoteEpoch": 1795119145
         },
         {
           "state": "signal",
@@ -67830,10 +67957,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 34,
-          "lastLivePrice": 5728.256,
-          "lastLiveQuoteEpoch": 1795118851,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 35,
+          "lastLivePrice": 5724.989,
+          "lastLiveQuoteEpoch": 1795119145,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T17:17:06.000Z",
           "telegramAgeSeconds": 126,
@@ -67844,8 +67971,8 @@
           "maxFavourablePoints": 32.402,
           "maxFavourablePct": 0.56692,
           "maxFavourableEpoch": 1795111200,
-          "currentPrice": 5728.256,
-          "quoteEpoch": 1795118851
+          "currentPrice": 5724.989,
+          "quoteEpoch": 1795119145
         }
       ],
       "timeframeCounts": {
@@ -67978,10 +68105,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 5,
-          "lastLivePrice": 3669.55,
-          "lastLiveQuoteEpoch": 1795118851,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 6,
+          "lastLivePrice": 3666.45,
+          "lastLiveQuoteEpoch": 1795119145,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T19:42:21.000Z",
           "telegramAgeSeconds": 141,
@@ -67992,8 +68119,8 @@
           "maxFavourablePoints": 12.34,
           "maxFavourablePct": 0.33582,
           "maxFavourableEpoch": 1795118400,
-          "currentPrice": 3669.55,
-          "quoteEpoch": 1795118851
+          "currentPrice": 3666.45,
+          "quoteEpoch": 1795119145
         },
         {
           "state": "signal",
@@ -68109,10 +68236,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 9,
-          "lastLivePrice": 3669.55,
-          "lastLiveQuoteEpoch": 1795118851,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 10,
+          "lastLivePrice": 3666.45,
+          "lastLiveQuoteEpoch": 1795119145,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T19:22:11.000Z",
           "telegramAgeSeconds": 131,
@@ -68123,8 +68250,8 @@
           "maxFavourablePoints": 11.41,
           "maxFavourablePct": 0.31059,
           "maxFavourableEpoch": 1795118400,
-          "currentPrice": 3669.55,
-          "quoteEpoch": 1795118851
+          "currentPrice": 3666.45,
+          "quoteEpoch": 1795119145
         },
         {
           "state": "signal",
@@ -68240,10 +68367,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 11,
-          "lastLivePrice": 3669.55,
-          "lastLiveQuoteEpoch": 1795118851,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 12,
+          "lastLivePrice": 3666.45,
+          "lastLiveQuoteEpoch": 1795119145,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T19:10:44.000Z",
           "telegramAgeSeconds": 44,
@@ -68254,8 +68381,8 @@
           "maxFavourablePoints": 11.92,
           "maxFavourablePct": 0.32443,
           "maxFavourableEpoch": 1795118400,
-          "currentPrice": 3669.55,
-          "quoteEpoch": 1795118851
+          "currentPrice": 3666.45,
+          "quoteEpoch": 1795119145
         },
         {
           "state": "signal",
@@ -68371,10 +68498,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 22,
-          "lastLivePrice": 3669.55,
-          "lastLiveQuoteEpoch": 1795118851,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 23,
+          "lastLivePrice": 3666.45,
+          "lastLiveQuoteEpoch": 1795119145,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T18:17:16.000Z",
           "telegramAgeSeconds": 136,
@@ -68385,8 +68512,8 @@
           "maxFavourablePoints": 13.9,
           "maxFavourablePct": 0.37811,
           "maxFavourableEpoch": 1795118400,
-          "currentPrice": 3669.55,
-          "quoteEpoch": 1795118851
+          "currentPrice": 3666.45,
+          "quoteEpoch": 1795119145
         },
         {
           "state": "signal",
@@ -68502,10 +68629,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 23,
-          "lastLivePrice": 3669.55,
-          "lastLiveQuoteEpoch": 1795118851,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 24,
+          "lastLivePrice": 3666.45,
+          "lastLiveQuoteEpoch": 1795119145,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T18:12:07.000Z",
           "telegramAgeSeconds": 127,
@@ -68516,8 +68643,8 @@
           "maxFavourablePoints": 16.92,
           "maxFavourablePct": 0.45989,
           "maxFavourableEpoch": 1795118400,
-          "currentPrice": 3669.55,
-          "quoteEpoch": 1795118851
+          "currentPrice": 3666.45,
+          "quoteEpoch": 1795119145
         },
         {
           "state": "signal",
@@ -68633,10 +68760,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 58,
-          "lastLivePrice": 3669.55,
-          "lastLiveQuoteEpoch": 1795118851,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 59,
+          "lastLivePrice": 3666.45,
+          "lastLiveQuoteEpoch": 1795119145,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T15:17:07.000Z",
           "telegramAgeSeconds": 127,
@@ -68647,8 +68774,8 @@
           "maxFavourablePoints": 40.77,
           "maxFavourablePct": 1.10099,
           "maxFavourableEpoch": 1795118400,
-          "currentPrice": 3669.55,
-          "quoteEpoch": 1795118851
+          "currentPrice": 3666.45,
+          "quoteEpoch": 1795119145
         },
         {
           "state": "signal",
@@ -68764,10 +68891,10 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 59,
-          "lastLivePrice": 3669.55,
-          "lastLiveQuoteEpoch": 1795118851,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 60,
+          "lastLivePrice": 3666.45,
+          "lastLiveQuoteEpoch": 1795119145,
           "telegramStatus": "sent",
           "telegramSentAt": "2026-11-19T15:12:15.000Z",
           "telegramAgeSeconds": 135,
@@ -68778,8 +68905,8 @@
           "maxFavourablePoints": 46.2,
           "maxFavourablePct": 1.2458,
           "maxFavourableEpoch": 1795118400,
-          "currentPrice": 3669.55,
-          "quoteEpoch": 1795118851
+          "currentPrice": 3666.45,
+          "quoteEpoch": 1795119145
         },
         {
           "state": "signal",
@@ -68941,16 +69068,16 @@
           "tp1Epoch": null,
           "tp2Epoch": null,
           "stopEpoch": null,
-          "lastProcessedEpoch": 1795118400,
-          "outcomeCandles": 115,
-          "lastLivePrice": 3669.55,
-          "lastLiveQuoteEpoch": 1795118851,
+          "lastProcessedEpoch": 1795118700,
+          "outcomeCandles": 116,
+          "lastLivePrice": 3666.45,
+          "lastLiveQuoteEpoch": 1795119145,
           "maxFavourablePrice": 3662.25,
           "maxFavourablePoints": 65.61,
           "maxFavourablePct": 1.75999,
           "maxFavourableEpoch": 1795118400,
-          "currentPrice": 3669.55,
-          "quoteEpoch": 1795118851
+          "currentPrice": 3666.45,
+          "quoteEpoch": 1795119145
         },
         {
           "state": "signal",
@@ -69057,15 +69184,15 @@
           "maxFavourablePoints": 181.28,
           "maxFavourablePct": 4.71207,
           "maxFavourableEpoch": 1795104000,
-          "lastLivePrice": 3669.55,
-          "lastLiveQuoteEpoch": 1795118851,
+          "lastLivePrice": 3666.45,
+          "lastLiveQuoteEpoch": 1795119145,
           "telegramStatus": "stale",
           "telegramStatusReason": "candidate_outside_close_based_alert_window",
           "telegramAgeSeconds": 20519,
           "telegramCandleCloseEpoch": 1794945600,
           "intendedExpiryEpoch": 1797523200,
-          "currentPrice": 3669.55,
-          "quoteEpoch": 1795118851
+          "currentPrice": 3666.45,
+          "quoteEpoch": 1795119145
         }
       ],
       "timeframeCounts": {
