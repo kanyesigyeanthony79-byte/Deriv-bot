@@ -29,6 +29,10 @@ test("real-data report labels undersized discovery samples and seals holdout",()
   }}}};
   const report=buildExp01MatchedReplayReport(snapshot,"2026-11-20T00:00:00.000Z");
   assert.equal(report.summary.marketsReplayed,1);
+  assert.match(report.scope,/two distinct signal-generation methods/);
+  assert.match(report.scope,/does not use it as a directional filter/);
+  assert.match(report.assumptions.candidate,/not a directional eligibility filter/);
+  assert.match(report.interpretation,/cannot isolate the effect of entry timing alone/);
   assert.equal(report.summary.marketsWaiting,7);
   assert.equal(report.markets.R_10.methods.MTF_BASELINE_SCALP.holdout.status,"sealed_not_evaluated");
   assert.equal(report.markets.R_10.methods.EXP01_COMMON_ENTRY.holdout.status,"sealed_not_evaluated");
