@@ -95,3 +95,25 @@ test("does not invent an outcome when the one-hour observation window is incompl
   const result = resolveOutcome(rows, 0, "BUY", 100, 95, 3600, 900);
   assert.equal(result.status, "censored");
 });
+
+test("selects chronologically non-overlapping setup windows without changing source rows", () => {
+  const { selectNonOverlappingSetups } = require("../volatility10_precision_replay");
+  const rows = [
+    { setupCloseEpoch: 0, id: "a" },
+    { setupCloseEpoch: 1800, id: "b" },
+    { setupCloseEpoch: 4500, id: "c" },
+    { setupCloseEpoch: 9000, id: "d" }
+  ];
+  const selected = selectNonOverlappingSetups(rows);
+  assert.deepEqual(selected.map(row => row.id), ["a", "c", "d"]);
+  assert.deepEqual(rows.map(row => row.id), ["a", "b", "c", "d"]);
+});
+
+test("keeps setups exactly at the prior maximum observation-window boundary", () => {
+  const { selectNonOverlappingSetups } = require("../volatility10_precision_replay");
+  const rows = [
+    { setupCloseEpoch: 1000, id: "a" },
+    { setupCloseEpoch: 5500, id: "b" }
+  ];
+  assert.deepEqual(selectNonOverlappingSetups(rows).map(row => row.id), ["a", "b"]);
+});
