@@ -1,72 +1,72 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-20T00:42:07.000Z",
+  "updatedAt": "2026-11-20T00:47:06.000Z",
   "markets": {
     "R_10": {
-      "lastM15Epoch": 1795133700,
-      "lastM5Epoch": 1795134900,
+      "lastM15Epoch": 1795134600,
+      "lastM5Epoch": 1795135200,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 8,
-      "pendingSetups": [],
+      "pendingSetups": [
+        {
+          "setupCloseEpoch": 1795135500,
+          "direction": "SELL",
+          "expiresEpoch": 1795139100
+        }
+      ],
       "dataQuality": "ok"
     },
     "R_25": {
-      "lastM15Epoch": 1795133700,
-      "lastM5Epoch": 1795134900,
+      "lastM15Epoch": 1795134600,
+      "lastM5Epoch": 1795135200,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 7,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "R_50": {
-      "lastM15Epoch": 1795133700,
-      "lastM5Epoch": 1795134900,
+      "lastM15Epoch": 1795134600,
+      "lastM5Epoch": 1795135200,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 8,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "R_75": {
-      "lastM15Epoch": 1795133700,
-      "lastM5Epoch": 1795134900,
+      "lastM15Epoch": 1795134600,
+      "lastM5Epoch": 1795135200,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 11,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "JD75": {
-      "lastM15Epoch": 1795133700,
-      "lastM5Epoch": 1795134900,
+      "lastM15Epoch": 1795134600,
+      "lastM5Epoch": 1795135200,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 2,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "JD100": {
-      "lastM15Epoch": 1795133700,
-      "lastM5Epoch": 1795134900,
+      "lastM15Epoch": 1795134600,
+      "lastM5Epoch": 1795135200,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 3,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "CRASH500": {
-      "lastM15Epoch": 1795133700,
-      "lastM5Epoch": 1795134900,
+      "lastM15Epoch": 1795134600,
+      "lastM5Epoch": 1795135200,
       "initializedAt": "2026-11-17T14:27:52.000Z",
-      "signals": 1,
-      "pendingSetups": [
-        {
-          "setupCloseEpoch": 1795134600,
-          "direction": "SELL",
-          "expiresEpoch": 1795138200
-        }
-      ],
+      "signals": 2,
+      "pendingSetups": [],
       "dataQuality": "ok"
     },
     "BOOM500": {
-      "lastM15Epoch": 1795133700,
-      "lastM5Epoch": 1795134900,
+      "lastM15Epoch": 1795134600,
+      "lastM5Epoch": 1795135200,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 3,
       "pendingSetups": [],
@@ -74,6 +74,29 @@
     }
   },
   "signals": [
+    {
+      "signalId": "CRASH500-M15_M5_PULLBACK-1795134900",
+      "strategyId": "M15_M5_EMA_PULLBACK",
+      "strategyLabel": "M15 trend + M5 EMA9/21 pullback",
+      "marketId": "CRASH500",
+      "market": "Crash 500 Index",
+      "direction": "SELL",
+      "setupTimeframe": "M15",
+      "entryTimeframe": "M5",
+      "entryCandleEpoch": 1795135200,
+      "triggerEpoch": 1795134900,
+      "entry": 2809.965,
+      "stopLoss": 2816.010765782924,
+      "tp2": 2797.8734684341525,
+      "riskDistance": 6.045765782923809,
+      "riskAtr": 2.123066093422247,
+      "targetR": 2,
+      "status": "pending",
+      "evaluationSource": "forward_shadow",
+      "outcomeBars": 0,
+      "lastProcessedEpoch": 1795134900,
+      "realizedR": null
+    },
     {
       "signalId": "R_75-M15_M5_PULLBACK-1795130100",
       "strategyId": "M15_M5_EMA_PULLBACK",
@@ -1067,9 +1090,9 @@
   "summary": {
     "mode": "forward_shadow_observation_only",
     "strategy": "M15 EMA20/50 signal; M5 EMA9/21 alignment and EMA9 pullback/reclaim; next-M5-open entry; 2R target; 1-hour horizon",
-    "signalsGenerated": 43,
+    "signalsGenerated": 44,
     "resolvedSignals": 43,
-    "pendingSignals": 0,
+    "pendingSignals": 1,
     "targetBeforeStop": 2,
     "stopBeforeTarget": 24,
     "targetRatePct": 7.7,
@@ -1130,9 +1153,9 @@
         "averageRealizedR": -0.805
       },
       "CRASH500": {
-        "signals": 1,
+        "signals": 2,
         "resolved": 1,
-        "pending": 0,
+        "pending": 1,
         "targetBeforeStop": 0,
         "stopBeforeTarget": 0,
         "targetRatePct": null,
