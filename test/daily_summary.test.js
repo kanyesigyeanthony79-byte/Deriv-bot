@@ -104,6 +104,27 @@ test("daily report separates legacy and all multi-timeframe MFE observations", (
 });
 
 
+
+test("MTF delivery summary separates missed entries, actual delivery failures and untracked status", () => {
+  const epoch = Date.parse("2026-11-13T10:00:00Z") / 1000;
+  const mtf = [
+    { signalId: "sent", marketId: "R_50", entryCandleEpoch: epoch, status: "pending", telegramStatus: "sent" },
+    { signalId: "moved", marketId: "R_50", entryCandleEpoch: epoch, status: "pending", telegramStatus: "missed", telegramStatusReason: "live_price_too_far_from_entry" },
+    { signalId: "stale", marketId: "R_50", entryCandleEpoch: epoch, status: "pending", telegramStatus: "stale" },
+    { signalId: "failed", marketId: "R_50", entryCandleEpoch: epoch, status: "pending", telegramStatus: "delivery_failed" },
+    { signalId: "unknown", marketId: "R_50", entryCandleEpoch: epoch, status: "pending" }
+  ];
+  const summary = dailySummary([], "2026-11-13", markets, mtf);
+  assert.equal(summary.multiTimeframe.sent, 1);
+  assert.equal(summary.multiTimeframe.deliveryMissed, 2);
+  assert.equal(summary.multiTimeframe.deliveryFailed, 1);
+  assert.equal(summary.multiTimeframe.deliveryUntracked, 1);
+  const message = buildDailySummaryMessage(summary);
+  assert.match(message, /Not sent \(entry moved \/ stale \/ suppressed\): 2/);
+  assert.match(message, /Delivery failed: 1/);
+  assert.match(message, /Delivery status untracked: 1/);
+});
+
 test("daily report labels the demo snapshot as point-in-time, not daily profit/loss", () => {
   const summary = dailySummary(signals, "2026-11-13", markets);
   const snapshot = {
