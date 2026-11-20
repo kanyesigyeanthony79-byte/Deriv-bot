@@ -239,25 +239,33 @@ async function main() {
     // production journals, dashboards, Telegram delivery, or MT5 reporting.
     if (process.env.RESEARCH_ONLY_MODE === "true") {
       const researchOutput = path.join(DATA_DIR, process.env.RESEARCH_MTF_DATA_FILE || "research_multi_timeframe_data.json");
-      const researchR10JournalPath = path.join(DATA_DIR, "research_r10_forward_shadow_journal.json");
-      const priorResearchR10Journal = fs.existsSync(researchR10JournalPath)
-        ? JSON.parse(fs.readFileSync(researchR10JournalPath, "utf8"))
-        : null;
-      const researchR10Journal = updateR10ForwardShadowJournal(
-        priorResearchR10Journal, output.markets.R_10, now
-      );
-      fs.writeFileSync(researchR10JournalPath, JSON.stringify(researchR10Journal, null, 2) + "\n");
-      output.r10ForwardShadow = researchR10Journal.summary || {
-        mode: "forward_shadow_observation_only",
-        dataQuality: researchR10Journal.dataQuality || "warming",
-        setups: researchR10Journal.setups?.length || 0
-      };
+      const forwardShadowMarkets = ["R_10", "R_25", "R_50", "R_75", "JD75", "JD100"];
+      output.forwardShadow = {};
+      for (const marketId of forwardShadowMarkets) {
+        const journalName = marketId === "R_10"
+          ? "research_r10_forward_shadow_journal.json"
+          : "research_" + marketId.toLowerCase() + "_forward_shadow_journal.json";
+        const journalPath = path.join(DATA_DIR, journalName);
+        const priorJournal = fs.existsSync(journalPath)
+          ? JSON.parse(fs.readFileSync(journalPath, "utf8"))
+          : null;
+        const journal = updateR10ForwardShadowJournal(
+          priorJournal, output.markets[marketId], now, marketId
+        );
+        fs.writeFileSync(journalPath, JSON.stringify(journal, null, 2) + "\n");
+        output.forwardShadow[marketId] = journal.summary || {
+          mode: "forward_shadow_observation_only",
+          dataQuality: journal.dataQuality || "warming",
+          setups: journal.setups?.length || 0
+        };
+        log("market_forward_shadow_updated", {
+          marketId,
+          setups: journal.setups.length,
+          mode: journal.summary?.mode || journal.dataQuality,
+          journal: journalName
+        });
+      }
       fs.writeFileSync(researchOutput, JSON.stringify(output, null, 2) + "\n");
-      log("r10_forward_shadow_updated", {
-        setups: researchR10Journal.setups.length,
-        mode: researchR10Journal.summary?.mode || researchR10Journal.dataQuality,
-        journal: path.basename(researchR10JournalPath)
-      });
       log("research_collection_complete", {
         markets: Object.keys(output.markets).length,
         errors: output.errors.length + Object.values(output.markets).reduce((n, m) => n + m.errors.length, 0),
