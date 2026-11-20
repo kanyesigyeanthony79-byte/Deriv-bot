@@ -49,6 +49,27 @@ test("paginates M1 history beyond the 1,000-candle page size without gaps or dup
   assert.ok(rows.slice(1).every((c, i) => c.epoch - rows[i].epoch === 60));
 });
 
+test("continues pagination when the newest candle is incomplete and the first page is one row short", async () => {
+  const requests = [];
+  const client = {
+    async ask(request) {
+      requests.push(request);
+      if (requests.length === 1) return { candles: makeCandles(1001 * 60, 999) };
+      if (requests.length === 2) return { candles: makeCandles(200 * 60, 802) };
+      throw new Error("Unexpected extra history request");
+    }
+  };
+  const rows = await fetchCandleHistory(client, "R_10", 60, 1800, 200000);
+  assert.equal(requests.length, 2);
+  assert.equal(requests[0].count, 1000);
+  assert.equal(requests[1].count, 802);
+  assert.equal(requests[1].start, 200 * 60);
+  assert.equal(requests[1].end, String(1001 * 60));
+  assert.equal(rows.length, 1800);
+  assert.equal(new Set(rows.map(c => c.epoch)).size, 1800);
+  assert.ok(rows.slice(1).every((c, i) => c.epoch - rows[i].epoch === 60));
+});
+
 test("stops paging when the API returns no earlier candles", async () => {
   let calls = 0;
   const client = { async ask() { calls++; return { candles: calls === 1 ? makeCandles(1000 * 60, 1000) : [] }; } };
