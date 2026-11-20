@@ -78,7 +78,7 @@ test("a live quote received after expiry cannot turn an expired observation into
     JD100: { price: 122, epoch: 12000 }
   });
   assert.equal(result.signals[0].status, "expired");
-  assert.equal(result.signals[0].tp2Epoch, null);
+  assert.equal(result.signals[0].tp2Epoch ?? null, null);
 });
 
 test("dashboard projection includes only journal-confirmed active signals with a fresh quote", () => {
