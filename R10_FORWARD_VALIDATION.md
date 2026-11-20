@@ -17,9 +17,9 @@ This is a forward-only, observation-only evaluation of the existing R10 M15 setu
 
 ## Collection and persistence
 
-The existing multi-timeframe collector runs on its normal schedule and supplies R10 M1/M5/M15 completed candles. It calls `r10_forward_shadow.js`, persists `r10_forward_shadow_journal.json`, and exposes a compact summary in `multi_timeframe_dashboard.json`.
+The dedicated **Research Candle Collector (No Alerts)** runs every 15 minutes using GitHub's native schedule. It calls the existing multi-timeframe collector in `RESEARCH_ONLY_MODE=true`, which disables production journal writes, Telegram delivery, and MT5 reporting. The R10 module runs only in that research-only branch, persists `research_r10_forward_shadow_journal.json`, and adds a compact summary to `research_multi_timeframe_data.json`. The separate research journal is committed by the same scheduled workflow.
 
-The journal records its forward start time, last processed M15 epoch, candle coverage, setup direction/score, each method's trigger/entry/stop/target, and outcome status. It does not rewrite the existing production `trade_journal.json` or the other strategy journals.
+The journal records its forward start time, last processed M15 epoch, candle coverage, setup direction/score, each method's trigger/entry/stop/target, and outcome status. It does not rewrite the production `trade_journal.json`, production dashboard, or other strategy journals.
 
 ## Reading the results
 
