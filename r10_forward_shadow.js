@@ -153,16 +153,22 @@ function updateR10ForwardShadowJournal(prior,market,nowEpoch=Math.floor(Date.now
   if(m1.length<40||m5.length<30||m15.length<65){journal.dataQuality="insufficient_continuous_history";journal.updatedAt=new Date(nowEpoch*1000).toISOString();return journal;}
   journal.dataQuality="ok";
   journal.coverage={M1:{candles:m1.length,start:m1[0].epoch,end:m1.at(-1).epoch},M5:{candles:m5.length,start:m5[0].epoch,end:m5.at(-1).epoch},M15:{candles:m15.length,start:m15[0].epoch,end:m15.at(-1).epoch}};
-  const existing=new Set(journal.setups.map(s=>s.setupEpoch));
-  for(let i=64;i<m15.length-1;i++){
-    const candle=m15[i];if(existing.has(candle.epoch))continue;
-    const closeEpoch=candle.epoch+SECONDS.M15;
-    if(closeEpoch>nowEpoch)continue;
-    const result=evaluate(m15.slice(0,i+1));
-    if(result.state!=="ok"||!["BUY","SELL"].includes(result.signal))continue;
-    const setupAtr=Number(result.metrics?.atr);if(!(setupAtr>0))continue;
-    journal.setups.push({setupEpoch:candle.epoch,setupCloseEpoch:closeEpoch,direction:result.signal,score:result.score,setupAtr,createdAt:new Date(closeEpoch*1000).toISOString(),baseline:{status:"waiting"},m5:{status:"waiting"},m1:{status:"waiting"}});
-    existing.add(candle.epoch);
+  // First run establishes a forward-only starting cursor; older candles are not backfilled
+  // into this journal because those observations predate the forward-validation start.
+  if (!Number.isFinite(journal.lastSetupEpoch)) {
+    journal.lastSetupEpoch = m15.at(-1).epoch;
+    journal.startedAt = new Date(nowEpoch * 1000).toISOString();
+  } else {
+    for(let i=64;i<m15.length-1;i++){
+      const candle=m15[i];if(candle.epoch<=journal.lastSetupEpoch)continue;
+      const closeEpoch=candle.epoch+SECONDS.M15;
+      if(closeEpoch>nowEpoch)continue;
+      const result=evaluate(m15.slice(0,i+1));
+      if(result.state!=="ok"||!["BUY","SELL"].includes(result.signal))continue;
+      const setupAtr=Number(result.metrics?.atr);if(!(setupAtr>0))continue;
+      journal.setups.push({setupEpoch:candle.epoch,setupCloseEpoch:closeEpoch,direction:result.signal,score:result.score,setupAtr,createdAt:new Date(closeEpoch*1000).toISOString(),baseline:{status:"waiting"},m5:{status:"waiting"},m1:{status:"waiting"}});
+    }
+    journal.lastSetupEpoch = Math.max(journal.lastSetupEpoch,m15.at(-1).epoch);
   }
   journal.setups.sort((a,b)=>a.setupEpoch-b.setupEpoch);
   for(const setup of journal.setups){
