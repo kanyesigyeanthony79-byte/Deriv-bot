@@ -279,6 +279,38 @@ function summarize(trades) {
   };
 }
 
+function selectNonOverlappingSetups(setups) {
+  const ordered = (Array.isArray(setups) ? setups : [])
+    .slice()
+    .sort((a, b) => a.setupCloseEpoch - b.setupCloseEpoch);
+  const selected = [];
+  let nextEligibleEpoch = -Infinity;
+  for (const setup of ordered) {
+    if (!Number.isFinite(setup.setupCloseEpoch) || setup.setupCloseEpoch < nextEligibleEpoch) continue;
+    selected.push(setup);
+    // Reserve the full 15-minute entry window plus one-hour outcome horizon.
+    // This is deliberately conservative and common to M15, M5, and M1 methods.
+    nextEligibleEpoch = setup.setupCloseEpoch + ENTRY_WINDOW_SECONDS + OBSERVATION_SECONDS;
+  }
+  return selected;
+}
+
+function summarizeMethods(setups, splitIndex) {
+  const summarizeMethod = key => {
+    const trades = setups.map(setup => ({ setup, trade: setup[key] }));
+    return {
+      all: summarize(trades),
+      discovery: summarize(trades.slice(0, splitIndex)),
+      validation: summarize(trades.slice(splitIndex))
+    };
+  };
+  return {
+    m15Baseline: summarizeMethod("baseline"),
+    m5PrecisionEntry: summarizeMethod("m5"),
+    m1PrecisionEntry: summarizeMethod("m1")
+  };
+}
+
 function runReplay(archive, options = {}) {
   const marketId = options.marketId || MARKET_ID;
   const market = archive?.markets?.[marketId];
@@ -324,16 +356,9 @@ function runReplay(archive, options = {}) {
 
   const splitIndex = Math.ceil(setups.length / 2);
   const splitEpoch = setups[splitIndex]?.setupEpoch ?? null;
-  const summarizeMethod = key => {
-    const trades = setups.map(setup => ({ setup, trade: setup[key] }));
-    const discovery = trades.slice(0, splitIndex);
-    const validation = trades.slice(splitIndex);
-    return {
-      all: summarize(trades),
-      discovery: summarize(discovery),
-      validation: summarize(validation)
-    };
-  };
+  const nonOverlappingSetups = selectNonOverlappingSetups(setups);
+  const nonOverlappingSplitIndex = Math.ceil(nonOverlappingSetups.length / 2);
+  const nonOverlappingSplitEpoch = nonOverlappingSetups[nonOverlappingSplitIndex]?.setupEpoch ?? null;
 
   return {
     version: 1,
@@ -361,10 +386,18 @@ function runReplay(archive, options = {}) {
       validationSetups: setups.length - splitIndex,
       validationStartsAt: splitEpoch ? new Date(splitEpoch * 1000).toISOString() : null
     },
-    results: {
-      m15Baseline: summarizeMethod("baseline"),
-      m5PrecisionEntry: summarizeMethod("m5"),
-      m1PrecisionEntry: summarizeMethod("m1")
+    results: summarizeMethods(setups, splitIndex),
+    overlapSensitivity: {
+      method: "Greedy chronological selection; each selected setup reserves its full 15-minute entry window plus one-hour outcome horizon before another setup may be selected.",
+      selectedSetups: nonOverlappingSetups.length,
+      excludedOverlappingSetups: setups.length - nonOverlappingSetups.length,
+      split: {
+        method: "Chronological 50/50 discovery and validation split within the non-overlapping subset.",
+        discoverySetups: nonOverlappingSplitIndex,
+        validationSetups: nonOverlappingSetups.length - nonOverlappingSplitIndex,
+        validationStartsAt: nonOverlappingSplitEpoch ? new Date(nonOverlappingSplitEpoch * 1000).toISOString() : null
+      },
+      results: summarizeMethods(nonOverlappingSetups, nonOverlappingSplitIndex)
     },
     setups: setups.map(item => ({
       setupTime: new Date(item.setupEpoch * 1000).toISOString(),
@@ -376,7 +409,7 @@ function runReplay(archive, options = {}) {
     })),
     limitations: [
       "The latest common continuous M1/M5/M15 overlap is short; this is a pilot sample, not statistical validation.",
-      "Signals are evaluated per setup and may overlap; results are not a compounded portfolio simulation.",
+      "Primary results are per setup and may overlap; the separate overlap-sensitivity subset greedily reserves the full entry and outcome window, but is still a small pilot rather than a compounded portfolio simulation.",
       "Spread, slippage, commission, and execution latency are not modelled.",
       "OHLC data cannot establish the intrabar order when stop and target are both touched.",
       "No result from this report changes the live scanner, Telegram routing, or MT5 execution permissions."
