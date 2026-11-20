@@ -5,12 +5,21 @@ function reviewSignalCore(signal, timeframes, nowEpoch = Math.floor(Date.now()/1
   if (!signal || !signal.signalId || !["BUY","SELL"].includes(signal.direction)) throw new Error("A valid original signal is required.");
   const tf = signal.entryTimeframe, seconds = FRAME_SECONDS[tf], candles = timeframes && timeframes[tf];
   if (!seconds || !Array.isArray(candles) || !candles.length) return {signalId:signal.signalId,status:"INSUFFICIENT_DATA",headline:"REVIEW UNAVAILABLE",reason:"Latest completed candles are unavailable. Do not infer that the signal is safe."};
-  const completed = candles.filter(c=>Number.isFinite(c.epoch)&&c.epoch+seconds<=nowEpoch).sort((a,b)=>a.epoch-b.epoch);
+  const entryEpoch=Number(signal.entryCandleEpoch);
+  const explicitExpiry=signal.intendedExpiryEpoch!==null&&signal.intendedExpiryEpoch!==undefined?Number(signal.intendedExpiryEpoch):NaN;
+  const maxAge=signal.maxAgeSeconds!==null&&signal.maxAgeSeconds!==undefined?Number(signal.maxAgeSeconds):NaN;
+  const expiryEpoch=Number.isFinite(explicitExpiry)?explicitExpiry:
+    (Number.isFinite(entryEpoch)&&Number.isFinite(maxAge)&&maxAge>0?entryEpoch+maxAge:NaN);
+  if (!Number.isFinite(expiryEpoch)) return {signalId:signal.signalId,status:"EXPIRY_UNKNOWN",headline:"VALIDITY WINDOW UNKNOWN",reason:"This signal has no recorded intended expiry or usable maximum age. The review will not classify later price touches as outcomes."};
+  const completed = candles.filter(c=>Number.isFinite(c.epoch)&&c.epoch+seconds<=nowEpoch&&c.epoch+seconds<=expiryEpoch).sort((a,b)=>a.epoch-b.epoch);
   const last = completed[completed.length-1];
-  if (!last || nowEpoch-(last.epoch+seconds)>seconds*3) return {signalId:signal.signalId,status:"STALE_DATA",headline:"DATA TOO OLD",reason:"The latest completed entry-timeframe candle is stale. No hold/exit conclusion is issued."};
   const buy=signal.direction==="BUY";
-  const afterEntry=completed.filter(c=>Number.isFinite(signal.entryCandleEpoch)?c.epoch>signal.entryCandleEpoch:true);
-  if (!afterEntry.length) return {signalId:signal.signalId,status:"INSUFFICIENT_HISTORY",headline:"REVIEW INCOMPLETE",currentPrice:last.close,lastCandleEpoch:last.epoch,reason:"No completed candles after the original signal candle are available."};
+  const afterEntry=completed.filter(c=>Number.isFinite(entryEpoch)?c.epoch>entryEpoch:true);
+  if (!afterEntry.length) {
+    if (nowEpoch>expiryEpoch) return {signalId:signal.signalId,status:"EXPIRED",headline:"SIGNAL EXPIRED",reason:"The intended validity window ended without a recorded target or stop touch inside that window.",expiryEpoch,advisoryOnly:true};
+    if (!last || nowEpoch-(last.epoch+seconds)>seconds*3) return {signalId:signal.signalId,status:"STALE_DATA",headline:"DATA TOO OLD",reason:"The latest completed candle inside the signal validity window is stale. No hold/exit conclusion is issued."};
+    return {signalId:signal.signalId,status:"INSUFFICIENT_HISTORY",headline:"REVIEW INCOMPLETE",currentPrice:last.close,lastCandleEpoch:last.epoch,expiryEpoch,reason:"No completed candles after the original signal candle are available."};
+  }
   let tp1Epoch=null,tp2Epoch=null,stopEpoch=null,firstTerminal=null;
   for (const candle of afterEntry) {
     const stop=buy?candle.low<=signal.stopLoss:candle.high>=signal.stopLoss;
@@ -21,7 +30,9 @@ function reviewSignalCore(signal, timeframes, nowEpoch = Math.floor(Date.now()/1
     if (stop) { stopEpoch=candle.epoch; firstTerminal={status:tp1Epoch!==null?"STOP_AFTER_TP1":"STOP_LEVEL_TOUCHED",epoch:candle.epoch,headline:tp1Epoch!==null?"STOP TOUCHED AFTER TP1":"STOP-LOSS LEVEL TOUCHED",reason:"A completed candle after the signal crossed the original stop-loss level. Verify the actual broker price and execution; this review does not close a trade."}; break; }
     if (tp2) { tp2Epoch=candle.epoch; firstTerminal={status:"TP2_LEVEL_TOUCHED",epoch:candle.epoch,headline:"TP2 LEVEL TOUCHED",reason:"A completed candle reached the original TP2 level. Verify actual execution and your own exit plan."}; break; }
   }
-  if (firstTerminal) return {signalId:signal.signalId,...firstTerminal,currentPrice:last.close,lastCandleEpoch:last.epoch,tp1Reached:tp1Epoch!==null,tp1Epoch,tp2Epoch,stopEpoch,advisoryOnly:true};
+  if (firstTerminal) return {signalId:signal.signalId,...firstTerminal,currentPrice:last.close,lastCandleEpoch:last.epoch,tp1Reached:tp1Epoch!==null,tp1Epoch,tp2Epoch,stopEpoch,expiryEpoch,advisoryOnly:true};
+  if (nowEpoch>expiryEpoch) return {signalId:signal.signalId,status:tp1Epoch!==null?"EXPIRED_AFTER_TP1":"EXPIRED",headline:tp1Epoch!==null?"EXPIRED AFTER TP1":"SIGNAL EXPIRED",currentPrice:last.close,lastCandleEpoch:last.epoch,tp1Reached:tp1Epoch!==null,tp1Epoch,expiryEpoch,reason:tp1Epoch!==null?"TP1 was reached within the valid window, but neither TP2 nor the stop was reached before expiry.":"No target or stop was reached before the intended validity window ended.",advisoryOnly:true};
+  if (!last || nowEpoch-(last.epoch+seconds)>seconds*3) return {signalId:signal.signalId,status:"STALE_DATA",headline:"DATA TOO OLD",reason:"The latest completed candle inside the signal validity window is stale. No hold/exit conclusion is issued.",expiryEpoch};
   const ema=(values,n)=>{if(values.length<n)return null;let v=values.slice(0,n).reduce((a,b)=>a+b,0)/n;const k=2/(n+1);for(let i=n;i<values.length;i++)v=values[i]*k+v*(1-k);return v;};
   const closes=completed.map(c=>c.close),fast=ema(closes,20),slow=ema(closes,50);
   if(fast===null||slow===null)return {signalId:signal.signalId,status:"INSUFFICIENT_HISTORY",headline:"REVIEW INCOMPLETE",currentPrice:last.close,lastCandleEpoch:last.epoch,tp1Reached:tp1Epoch!==null,tp1Epoch,reason:"Not enough completed candles to assess trend alignment."};
