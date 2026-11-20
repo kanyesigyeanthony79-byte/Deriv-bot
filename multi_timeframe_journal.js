@@ -100,8 +100,15 @@ function updateJournal(journal, markets, nowEpoch, liveQuotes = {}) {
     for (const record of state.signals.filter(s => s.marketId === market.marketId && !TERMINAL.has(s.status))) {
       const frame = market.timeframes && market.timeframes[record.entryTimeframe] || [];
       const later = frame.filter(c => c.epoch > (record.lastProcessedEpoch ?? record.entryCandleEpoch));
+      const frameSeconds = ENTRY_TIMEFRAME_SECONDS[record.entryTimeframe];
+      const expiryEpoch = Number.isFinite(Number(record.intendedExpiryEpoch))
+        ? Number(record.intendedExpiryEpoch)
+        : Number(record.entryCandleEpoch) + Number(record.maxAgeSeconds || DEFAULT_MAX_AGE_SECONDS[record.category] || 1800);
       for (const candle of later) {
         if (TERMINAL.has(record.status)) break;
+        // Only completed entry-timeframe candles that close within the observation
+        // window may affect outcomes or MFE. Never credit post-expiry movement.
+        if (!frameSeconds || candle.epoch + frameSeconds > expiryEpoch) break;
         record.outcomeCandles++;
         record.lastProcessedEpoch = candle.epoch;
         const favourablePrice = record.direction === "BUY" ? candle.high : candle.low;
@@ -125,14 +132,26 @@ function updateJournal(journal, markets, nowEpoch, liveQuotes = {}) {
           record.tp1Hit = true; record.tp1Epoch = candle.epoch; record.status = "tp1_hit";
         }
       }
-      if (!TERMINAL.has(record.status)) applyLiveQuote(record, liveQuotes[record.marketId], nowEpoch);
+      // Expiry takes precedence over a current quote: a quote observed after the
+      // deadline cannot retroactively resolve an expired research observation.
       markExpired(record, nowEpoch);
+      if (!TERMINAL.has(record.status) && nowEpoch <= expiryEpoch) {
+        const quote = liveQuotes[record.marketId];
+        const quoteEpoch = Number(quote?.epoch);
+        if (Number.isFinite(quoteEpoch) && quoteEpoch <= expiryEpoch) applyLiveQuote(record, quote, nowEpoch);
+      }
     }
   }
   for (const record of state.signals) {
     if (!TERMINAL.has(record.status)) {
-      applyLiveQuote(record, liveQuotes[record.marketId], nowEpoch);
       markExpired(record, nowEpoch);
+      const expiryEpoch = Number(record.intendedExpiryEpoch);
+      const quote = liveQuotes[record.marketId];
+      const quoteEpoch = Number(quote?.epoch);
+      if (!TERMINAL.has(record.status) && nowEpoch <= expiryEpoch &&
+          Number.isFinite(quoteEpoch) && quoteEpoch <= expiryEpoch) {
+        applyLiveQuote(record, quote, nowEpoch);
+      }
     }
   }
   state.updatedAt = new Date(nowEpoch * 1000).toISOString();
