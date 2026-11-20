@@ -1,0 +1,13 @@
+"use strict";
+const fs=require("node:fs");
+const path=require("node:path");
+const {getDataDir}=require("./scanner_data_dir");
+const {buildPairedReplayReport}=require("./exp01_paired_replay");
+const dir=getDataDir();
+const prefix=String(process.env.RESEARCH_FILE_PREFIX||"");
+const input=path.join(dir,process.env.RESEARCH_MTF_DATA_FILE||(prefix?prefix+"multi_timeframe_data.json":"multi_timeframe_data.json"));
+const output=path.join(dir,prefix+"exp01_paired_replay_report.json");
+if(!fs.existsSync(input))throw new Error("Research multi-timeframe data missing; paired EXP-01 replay not run.");
+const report=buildPairedReplayReport(JSON.parse(fs.readFileSync(input,"utf8")));
+fs.writeFileSync(output,JSON.stringify(report,null,2)+"\n");
+console.log(JSON.stringify({event:"exp01_paired_replay_completed",marketsReplayed:Object.values(report.markets).filter(x=>x.status==="replayed").length,output}));
