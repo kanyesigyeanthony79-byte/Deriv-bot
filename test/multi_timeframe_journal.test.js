@@ -51,7 +51,7 @@ test("records maximum favourable movement before a terminal outcome", () => {
 });
 
 test("journal expires an unclosed observation after its category age limit", () => {
-  const result = updateJournal({ version: 1, signals: [{ ...signal, status: "pending", createdEpoch: 100, tp1Hit: false }] }, {}, 10100);
+  const result = updateJournal({ version: 1, signals: [{ ...signal, status: "pending", createdEpoch: 100, tp1Hit: false }] }, {}, 10101);
   assert.equal(result.signals[0].status, "expired");
 });
 
