@@ -1,3 +1,4 @@
+import { shouldDeliverTelegramAlert } from "../telegram_routing.mjs";
 
 const MT5_ALLOWED_MARKETS=new Set(["R_10","R_25","R_50","R_75","JD100","CRASH500","BOOM500"]);
 const MT5_MAX_AGE={SCALP:600,SHORT_TERM:1800,POSITION:14400};
@@ -312,6 +313,11 @@ export default {
     if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) return reply({ error: "Telegram secrets are not configured" }, 500);
     try {
       const data = await request.json();
+      // R_50 Telegram is reserved for tagged Original M15 research-priority alerts.
+      // This filter affects notification delivery only, not scanning or MT5 routes.
+      if (!shouldDeliverTelegramAlert(data)) {
+        return reply({ success: true, suppressed: true, reason: "R_50_PRIORITY_PAIR_ONLY" });
+      }
       let message;
 
       if (data.event === "daily_summary") {
