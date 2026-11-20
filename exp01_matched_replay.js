@@ -86,11 +86,13 @@ function makeMethodSetups({marketId,marketName,m1,m5,m15}) {
     const breakout=detectBreakout(m5,i,a5[i]);
     if(!breakout)continue;
     const start=m1.findIndex(x=>x.epoch===setupEpoch);
-    if(start<0)continue;
-    const confirmation=findRetestConfirmation(m1,start,breakout,a1);
-    if(!confirmation)continue;
-    const entry=m1[confirmation.entryIndex];
-    if(entry)candidate.push({setupEpoch,direction:breakout.direction===1?"BUY":"SELL",entryEpoch:entry.epoch,entry:entry.open,riskDistance:risk});
+    let entryEpoch=null, entryPrice=null;
+    if(start>=0){
+      const confirmation=findRetestConfirmation(m1,start,breakout,a1);
+      const entry=confirmation ? m1[confirmation.entryIndex] : null;
+      if(entry){entryEpoch=entry.epoch;entryPrice=entry.open;}
+    }
+    candidate.push({setupEpoch,direction:breakout.direction===1?"BUY":"SELL",entryEpoch,entry:entryPrice,riskDistance:risk});
   }
   return{baseline,candidate};
 }
@@ -109,7 +111,12 @@ function replayMethod(setups,m1,bounds,hours) {
     trades.push({...setup,outcome});
     blockedUntil=Number.isFinite(outcome.exitEpoch)?outcome.exitEpoch+TIMEFRAMES.M1:setup.entryEpoch+HORIZON_SECONDS;
   }
-  return Object.fromEntries(Object.keys(bounds).map(k=>[k,summarizeTrades(trades.filter(t=>t.setupEpoch>=bounds[k].start&&t.setupEpoch<bounds[k].end),counts[k],(bounds[k].end-bounds[k].start)/3600)]));
+  const result={};
+  for(const k of ["discovery","validation"]){
+    result[k]=summarizeTrades(trades.filter(t=>t.setupEpoch>=bounds[k].start&&t.setupEpoch<bounds[k].end),counts[k],(bounds[k].end-bounds[k].start)/3600);
+  }
+  result.holdout={status:"sealed_not_evaluated",startEpoch:bounds.holdout.start,endEpoch:bounds.holdout.end,reason:"Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."};
+  return result;
 }
 function buildExp01MatchedReplayReport(snapshot,generatedAt=new Date().toISOString()) {
   const markets={};
@@ -129,14 +136,14 @@ function buildExp01MatchedReplayReport(snapshot,generatedAt=new Date().toISOStri
   const pooled={};
   for(const method of ["MTF_BASELINE_SCALP","EXP01_COMMON_ENTRY"]){
     pooled[method]={};
-    for(const split of ["discovery","validation","holdout"]){
+    for(const split of ["discovery","validation"]){
       const rows=Object.values(markets).filter(x=>x.status==="replayed").map(x=>x.methods[method][split]);
       const entries=rows.reduce((a,x)=>a+x.entries,0),resolved=rows.reduce((a,x)=>a+x.resolved,0),gross=rows.reduce((a,x)=>a+x.totalGrossR,0);
       const cost=Object.fromEntries(COST_STRESS_R.map(c=>[c.toFixed(2),resolved?Number((rows.reduce((a,x)=>a+(x.meanAfterAssumedCostR[c.toFixed(2)]??0)*x.resolved,0)/resolved).toFixed(4)):null]));
       pooled[method][split]={entries,resolved,totalGrossR:Number(gross.toFixed(4)),meanGrossR:resolved?Number((gross/resolved).toFixed(4)):null,meanAfterAssumedCostR:cost,outcomes:rows.reduce((a,x)=>{for(const[k,v]of Object.entries(x.outcomes))a[k]=(a[k]||0)+v;return a;},{})};
     }
   }
-  return{version:1,generatedAt,mode:"common_assumption_entry_method_replay",scope:"Entry-method comparison only. EXP-01's original M1-local stop sizing is replaced by the production SCALP baseline's common M15 ATR stop; this is not a full reproduction of original EXP-01 trade management.",assumptions:{baseline:"Production MTF_BASELINE_V1 SCALP evaluated on completed M5 candles with completed M15 confirmation/context; next M5 open entry.",candidate:"Frozen EXP-01 M5 breakout beyond prior 12-bar range, followed by M1 retest confirmation; next M1 open entry.",commonRisk:"Both use 1.25 x completed M15 ATR at the M5 setup close.",commonTarget:"Fixed 2R target.",commonHorizon:"60 minutes resolved on completed M1 candles.",ambiguity:"Same-candle stop/target touches are ambiguous.",concurrency:"One open position per method per market; overlapping setups are skipped until prior outcome resolves.",splits:"Per-market chronological 60/20/20; one-hour embargo after discovery and validation boundaries; purge outcomes crossing split end.",costs:"Gross candle R plus hypothetical 0.05R, 0.10R and 0.20R deductions. Not measured broker costs or net returns."},predeclaredDecisionFramework:{primaryMetric:PRIMARY_METRIC,guardrails:GUARDRAILS,costStressR:COST_STRESS_R,note:"Review discovery first. Do not tune on validation or holdout; preserve holdout untouched until the comparison contract is frozen."},summary:{marketsConsidered:MARKETS.length,marketsReplayed:Object.values(markets).filter(x=>x.status==="replayed").length,marketsWaiting:Object.values(markets).filter(x=>x.status!=="replayed").length,pooled},markets,interpretation:"Research-only entry-method comparison. Small samples and missing broker cost data prevent profitability or promotion claims."};
+  return{version:1,generatedAt,mode:"common_assumption_entry_method_replay",scope:"Entry-method comparison only. EXP-01's original M1-local stop sizing is replaced by the production SCALP baseline's common M15 ATR stop; this is not a full reproduction of original EXP-01 trade management. The current chronological holdout partition is sealed and not evaluated because the existing forward-shadow journal already covers this period.",assumptions:{baseline:"Production MTF_BASELINE_V1 SCALP evaluated on completed M5 candles with completed M15 confirmation/context; next M5 open entry.",candidate:"Frozen EXP-01 M5 breakout beyond prior 12-bar range, followed by M1 retest confirmation; next M1 open entry.",commonRisk:"Both use 1.25 x completed M15 ATR at the M5 setup close.",commonTarget:"Fixed 2R target.",commonHorizon:"60 minutes resolved on completed M1 candles.",ambiguity:"Same-candle stop/target touches are ambiguous.",concurrency:"One open position per method per market; overlapping setups are skipped until prior outcome resolves.",splits:"Per-market chronological 60/20/20; one-hour embargo after discovery and validation boundaries; purge outcomes crossing split end.",costs:"Gross candle R plus hypothetical 0.05R, 0.10R and 0.20R deductions. Not measured broker costs or net returns."},predeclaredDecisionFramework:{primaryMetric:PRIMARY_METRIC,guardrails:GUARDRAILS,costStressR:COST_STRESS_R,note:"Review discovery first. Do not tune on validation or holdout; preserve holdout untouched until the comparison contract is frozen."},summary:{marketsConsidered:MARKETS.length,marketsReplayed:Object.values(markets).filter(x=>x.status==="replayed").length,marketsWaiting:Object.values(markets).filter(x=>x.status!=="replayed").length,pooled},markets,interpretation:"Research-only entry-method comparison. The holdout is deliberately not evaluated. Small samples and missing broker cost data prevent profitability or promotion claims."};
 }
 function main(){
   if(!fs.existsSync(INPUT))throw new Error("multi_timeframe_data.json missing; EXP-01 replay not run.");
