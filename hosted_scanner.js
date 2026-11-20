@@ -239,7 +239,15 @@ async function postTelegram(payload) {
     if (!response.ok || result.success !== true) {
       throw new Error(result.error || ("Telegram Worker returned HTTP " + response.status));
     }
+    if (result.suppressed === true) {
+      log("telegram_alert_suppressed", {
+        event: payload.event, marketId: payload.marketId || null,
+        signalId: payload.signalId || null, reason: result.reason || "market_specific_filter"
+      });
+      return result;
+    }
     if (heartbeat && (payload.event === "new_signal" || payload.event === "outcome")) heartbeat.telegram(payload.event, true);
+    return result;
   } catch (error) {
     if (heartbeat && (payload.event === "new_signal" || payload.event === "outcome")) heartbeat.telegram(payload.event, false);
     throw error;
@@ -265,7 +273,7 @@ async function sendOutcome(signal, outcome, candle) {
     tp2: signal.tp2,
     currentPrice: candle.close
   });
-  log("outcome_delivered", { signalId: signal.signalId, market: signal.market, outcome, candle_epoch: candle.epoch, observed_close: candle.close });
+  log("outcome_recorded", { signalId: signal.signalId, market: signal.market, outcome, candle_epoch: candle.epoch, observed_close: candle.close });
   recordJournalOutcome(journal, signal.signalId, outcome, candle);
   saveJournal();
 }
@@ -412,14 +420,15 @@ async function main() {
         }
 
         const levels = makeLevels(candles, result.signal);
-        await postTelegram({
+        const telegramResult = await postTelegram({
           event: "new_signal", source: "LEGACY_15M", signalId, marketId: id, market: name, direction: result.signal, ...levels,
           ...(priority ? {
             priorityTier: priority.tier, priorityLabel: priority.label,
             priorityMetricName: priority.metricName, priorityMetricPct: priority.metricPct
           } : {})
         });
-        journalStatus(signalId, "sent");
+        journalStatus(signalId, telegramResult?.suppressed === true ? "suppressed" : "sent",
+          telegramResult?.suppressed === true ? (telegramResult.reason || "market_specific_telegram_filter") : undefined);
         state.lastSig[id] = candleEpoch;
         state.activeSignals.push({
           signalId,
@@ -438,7 +447,9 @@ async function main() {
           closed: false
         });
         saveState();
-        log("telegram_delivered", { signalId, market: name, direction: result.signal, candle_epoch: candleEpoch, ...levels });
+        log(telegramResult?.suppressed === true ? "telegram_suppressed" : "telegram_delivered",
+          { signalId, market: name, direction: result.signal, candle_epoch: candleEpoch,
+            reason: telegramResult?.reason || null, ...levels });
       } catch (error) {
         heartbeat.market(name, "error", { error: String(error.message || error).slice(0, 200) });
         const pending = [...journal.signals].reverse().find(entry => entry.marketId === id && entry.status === "detected");
