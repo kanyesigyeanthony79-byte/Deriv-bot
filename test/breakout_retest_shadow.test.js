@@ -125,6 +125,21 @@ test("forward journal initializes at the latest M5 candle without historical bac
   assert.equal(second.markets.R_10.lastProcessedM5Epoch, market.timeframes.M5.at(-1).epoch);
 });
 
+test("context direction breakdown is descriptive and excludes unresolved signals", () => {
+  const summary = summarizeBreakoutRetestJournal({ version: 1, markets: {}, signals: [
+    { direction: "BUY", contextM15: "up", status: "tp2_hit", realizedR: 2 },
+    { direction: "SELL", contextM15: "up", status: "stopped", realizedR: -1 },
+    { direction: "BUY", contextM15: "neutral", status: "time_exit", realizedR: 0.5 },
+    { direction: "BUY", contextM15: "down", status: "pending", realizedR: null }
+  ]});
+  assert.deepEqual(summary.contextDirectionBreakdown, {
+    aligned: { resolved: 1, meanRealizedR: 2, targetBeforeStop: 1, stopBeforeTarget: 0, timeExit: 0 },
+    opposed: { resolved: 1, meanRealizedR: -1, targetBeforeStop: 0, stopBeforeTarget: 1, timeExit: 0 },
+    neutral_or_unknown: { resolved: 1, meanRealizedR: 0.5, targetBeforeStop: 0, stopBeforeTarget: 0, timeExit: 1 }
+  });
+  assert.match(summary.contextDirectionBreakdownNote, /Descriptive subgroup diagnostic only/);
+});
+
 test("breakout-retest summary does not publish unverified historical holdout metrics", () => {
   const summary = summarizeBreakoutRetestJournal({ version: 1, signals: [], markets: {} });
   assert.equal(Object.hasOwn(summary, "historicalHoldout"), false);
