@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-20T09:06:40.268Z",
+  "mode": "waiting_for_research_data_quality",
+  "assumptions": {
+    "setup": "M15 direction is generated from completed M15 candles using the existing engine default configuration.",
+    "entries": "Baseline enters at the next M15 open; M5 experiment enters at the next M5 open after EMA9/21 alignment and EMA9 pullback/reclaim; M1 experiment requires M5 EMA9/21 alignment plus an M1 EMA9 pullback and close beyond the prior three-candle micro swing, entering at the next M1 open.",
+    "commonRisk": "All methods use the same 1.5 x M15 ATR risk distance measured at the M15 setup close.",
+    "commonTarget": "Fixed 2R target for all methods.",
+    "commonExit": "All outcomes are resolved on M1 candles, with a 60-minute horizon and same-candle stop/target touches marked ambiguous.",
+    "positionConcurrency": "Each entry method is simulated independently with at most one open position at a time. Later setups are skipped while a prior position remains open; unresolved outcomes reserve the full 60-minute horizon. Reports distinguish overlap-skipped setups from eligible setups with no entry.",
+    "costs": "No spread, commission or slippage assumptions are applied because broker-specific historical cost data is not part of this archive. Results are gross candle-based R, not executable or realised account returns.",
+    "splits": "Chronological 60% discovery, 20% validation and 20% holdout; a one-hour post-boundary embargo is excluded before validation and holdout, and setups whose 60-minute outcome horizon would cross a split end are purged. Holdout is not used for tuning."
+  },
+  "summary": {
+    "marketsConsidered": 8,
+    "focusMarket": "R_10",
+    "marketsReplayed": 0,
+    "marketsWaiting": 1,
+    "marketsOutsideFocus": 7
+  },
+  "markets": {
+    "R_10": {
+      "status": "not_ready",
+      "reason": "Requires continuous M1>=1440, M5>=500, M15>=400 candles, at least 24h common overlap, and zero invalid/duplicate/unaligned candles."
+    },
+    "R_25": {
+      "status": "outside_focus",
+      "reason": "The current lower-timeframe research configuration is focused on R_10."
+    },
+    "R_50": {
+      "status": "outside_focus",
+      "reason": "The current lower-timeframe research configuration is focused on R_10."
+    },
+    "R_75": {
+      "status": "outside_focus",
+      "reason": "The current lower-timeframe research configuration is focused on R_10."
+    },
+    "JD75": {
+      "status": "outside_focus",
+      "reason": "The current lower-timeframe research configuration is focused on R_10."
+    },
+    "JD100": {
+      "status": "outside_focus",
+      "reason": "The current lower-timeframe research configuration is focused on R_10."
+    },
+    "CRASH500": {
+      "status": "outside_focus",
+      "reason": "The current lower-timeframe research configuration is focused on R_10."
+    },
+    "BOOM500": {
+      "status": "outside_focus",
+      "reason": "The current lower-timeframe research configuration is focused on R_10."
+    }
+  },
+  "interpretation": "Exploratory candle-based replay only. Small samples, especially in the holdout split, are not sufficient for strategy ranking or production promotion."
+}
