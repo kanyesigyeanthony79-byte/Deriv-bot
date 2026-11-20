@@ -247,3 +247,32 @@ All reported R values are gross candle-based simulations, not broker fills or re
 **Updated daily archive:** generated at `2026-11-19T19:30:45.674Z`; 7 recoverable dates (13–19 Nov), 81 legacy signals, 408 MTF observations, 6 verified daily reports, and 1 reconstructed day. The reconstructed 19 Nov day remains distinct from verified original daily reports.
 
 **Checkpoint decision:** one successful research-only collection and persistence cycle is now verified, and watchdog recovery is active. Continue collecting to establish repeated scheduled operation and a longer uninterrupted common M1/M5/M15 window. Phase 3 remains active; Gates A–D are not all certified; Phase 4 remains on hold. No strategy promotion, production signal-rule change, Telegram delivery, or MT5 execution is authorized by this checkpoint.
+
+
+## 15. Phase 3 evidence checkpoint — 2026-11-20 04:28 UTC
+
+Source: main-branch research reports generated at approximately `2026-11-20T04:27:24Z`, plus the native GitHub Actions schedule-event audit completed at approximately 04:27:52 UTC.
+
+**R_10 lower-timeframe data readiness:**
+- M1: 5,000 retained candles; latest continuous segment 3,076.
+- M5: 2,000 retained candles; latest continuous segment 615.
+- M15: 1,200 retained candles; latest continuous segment 1,200.
+- Common M1/M5/M15 overlap: 51.0667 hours.
+- One older gap remains in M1 and M5 retained histories; M15 has no gaps. The latest report shows zero duplicates, invalid candles, or unaligned epochs in the focus market.
+- The M5 latest continuous segment exceeds the 500-candle replay threshold. The separate 20-reliable-cycle operational criterion is not established by this count.
+
+**Fresh corrected common-assumption replay:** generated at `2026-11-20T04:27:24.916Z`, using the frozen M15-next-open, M5 EMA pullback, and M1 micro-break methods, common 1.5 × M15 ATR risk, 2R target, M1 outcome resolution, 60-minute horizon, chronological 60/20/20 splits, one-hour post-boundary embargoes, and split-end outcome purging. The R_10 common window contains 11 setup candidates.
+
+| Method | Discovery entries / gross R | Validation entries / gross R | Holdout entries / gross R |
+|---|---:|---:|---:|
+| M15 next-open baseline | 4 / +0.3580R | 2 / -1.1224R | 1 / +0.9963R |
+| M5 EMA pullback | 4 / +1.0902R | 0 / no entry | 1 / +1.0189R |
+| M1 micro-break | 3 / +0.0802R | 1 / -0.4160R | 1 / +0.7958R |
+
+These are gross candle-based R simulations, not broker fills or realized account returns; spread, commission, and slippage are not included. The validation and holdout samples remain far too small for ranking, rejection, or a Gate C/D pass. In particular, zero M5 validation entries is not evidence of either profitability or failure. Do not tune parameters from this holdout.
+
+**Research-only schedule audit:** the native GitHub `schedule` event query still finds exactly one run of `research-candle-collector.yml`: run [#44653745350](https://github.com/kanyesigyeanthony79-byte/Deriv-bot/actions/runs/44653745350), successful at `2026-11-20T01:27:23Z`. The latest watchdog audit inspected one scheduled run, zero failures, and correctly marked cadence evidence insufficient. The required three successful native schedule runs at approximately 15-minute intervals have not yet been observed. Cloudflare-triggered `workflow_dispatch` production collector runs are a separate process and do not count toward this requirement. The research collector watchdog has `autoRecover: false`, so a manual recovery cannot disguise a missing native schedule event.
+
+**Daily performance archive:** generated at `2026-11-20T04:27:24.991Z`; covers 13–20 November (8 recoverable days), 97 legacy signals, 476 multi-timeframe observations, 7 verified daily reports, and 1 reconstructed day. The 20 November record is reconstructed from journals and has no saved original daily-report delivery record. Historical gaps remain unfilled rather than fabricated.
+
+**Gate status and decision:** Phase 3 remains active. Gate A is not fully certified for all candidates; EXP-06 remains an exploratory lower-timeframe replay with a very small sample. Gate B must be assessed candidate-by-candidate from forward-shadow journals, not inferred from this 11-setup replay. Gate C's matched baseline audit and Gate D's independent holdout are not certified for EXP-06. No candidate is promoted, no production signal rules or Telegram routing are changed, and MT5 execution remains disabled. Continue collecting and preserve the frozen experiment definitions. Phase 4 remains on hold.
