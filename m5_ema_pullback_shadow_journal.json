@@ -1,56 +1,50 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-20T08:20:34.000Z",
+  "updatedAt": "2026-11-20T08:35:42.000Z",
   "markets": {
     "R_10": {
-      "lastM15Epoch": 1795161600,
-      "lastM5Epoch": 1795162500,
+      "lastM15Epoch": 1795162500,
+      "lastM5Epoch": 1795163400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 11,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "R_25": {
-      "lastM15Epoch": 1795161600,
-      "lastM5Epoch": 1795162500,
+      "lastM15Epoch": 1795162500,
+      "lastM5Epoch": 1795163400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 9,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "R_50": {
-      "lastM15Epoch": 1795161600,
-      "lastM5Epoch": 1795162500,
+      "lastM15Epoch": 1795162500,
+      "lastM5Epoch": 1795163400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
-      "signals": 11,
-      "pendingSetups": [
-        {
-          "setupCloseEpoch": 1795160700,
-          "direction": "SELL",
-          "expiresEpoch": 1795164300
-        }
-      ],
+      "signals": 12,
+      "pendingSetups": [],
       "dataQuality": "ok"
     },
     "R_75": {
-      "lastM15Epoch": 1795161600,
-      "lastM5Epoch": 1795162500,
+      "lastM15Epoch": 1795162500,
+      "lastM5Epoch": 1795163400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 11,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "JD75": {
-      "lastM15Epoch": 1795161600,
-      "lastM5Epoch": 1795162500,
+      "lastM15Epoch": 1795162500,
+      "lastM5Epoch": 1795163400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 5,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "JD100": {
-      "lastM15Epoch": 1795161600,
-      "lastM5Epoch": 1795162500,
+      "lastM15Epoch": 1795162500,
+      "lastM5Epoch": 1795163400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 4,
       "pendingSetups": [
@@ -63,16 +57,16 @@
       "dataQuality": "ok"
     },
     "CRASH500": {
-      "lastM15Epoch": 1795161600,
-      "lastM5Epoch": 1795162500,
+      "lastM15Epoch": 1795162500,
+      "lastM5Epoch": 1795163400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 2,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "BOOM500": {
-      "lastM15Epoch": 1795161600,
-      "lastM5Epoch": 1795162500,
+      "lastM15Epoch": 1795162500,
+      "lastM5Epoch": 1795163400,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 3,
       "pendingSetups": [],
@@ -80,6 +74,29 @@
     }
   },
   "signals": [
+    {
+      "signalId": "R_50-M15_M5_PULLBACK-1795163100",
+      "strategyId": "M15_M5_EMA_PULLBACK",
+      "strategyLabel": "M15 trend + M5 EMA9/21 pullback",
+      "marketId": "R_50",
+      "market": "Volatility 50 Index",
+      "direction": "SELL",
+      "setupTimeframe": "M15",
+      "entryTimeframe": "M5",
+      "entryCandleEpoch": 1795163400,
+      "triggerEpoch": 1795163100,
+      "entry": 82.9273,
+      "stopLoss": 83.20731259783135,
+      "tp2": 82.36727480433731,
+      "riskDistance": 0.2800125978313446,
+      "riskAtr": 1.2778612558244795,
+      "targetR": 2,
+      "status": "pending",
+      "evaluationSource": "forward_shadow",
+      "outcomeBars": 0,
+      "lastProcessedEpoch": 1795163100,
+      "realizedR": null
+    },
     {
       "signalId": "JD100-M15_M5_PULLBACK-1795161300",
       "strategyId": "M15_M5_EMA_PULLBACK",
@@ -97,11 +114,11 @@
       "riskDistance": 0.36564571788544953,
       "riskAtr": 1.425757389669079,
       "targetR": 2,
-      "status": "pending",
+      "status": "target",
       "evaluationSource": "forward_shadow",
-      "outcomeBars": 4,
-      "lastProcessedEpoch": 1795162500,
-      "realizedR": null
+      "outcomeBars": 5,
+      "lastProcessedEpoch": 1795162800,
+      "realizedR": 2
     },
     {
       "signalId": "R_25-M15_M5_PULLBACK-1795159800",
@@ -120,11 +137,11 @@
       "riskDistance": 6.320110777832724,
       "riskAtr": 1.8972999970022588,
       "targetR": 2,
-      "status": "pending",
+      "status": "target",
       "evaluationSource": "forward_shadow",
-      "outcomeBars": 9,
-      "lastProcessedEpoch": 1795162500,
-      "realizedR": null
+      "outcomeBars": 11,
+      "lastProcessedEpoch": 1795163100,
+      "realizedR": 2
     },
     {
       "signalId": "JD75-M15_M5_PULLBACK-1795159500",
@@ -1372,13 +1389,13 @@
   "summary": {
     "mode": "forward_shadow_observation_only",
     "strategy": "M15 EMA20/50 signal; M5 EMA9/21 alignment and EMA9 pullback/reclaim; next-M5-open entry; 2R target; 1-hour horizon",
-    "signalsGenerated": 56,
-    "resolvedSignals": 54,
-    "pendingSignals": 2,
-    "targetBeforeStop": 5,
+    "signalsGenerated": 57,
+    "resolvedSignals": 56,
+    "pendingSignals": 1,
+    "targetBeforeStop": 7,
     "stopBeforeTarget": 31,
-    "targetRatePct": 13.9,
-    "averageRealizedR": -0.281,
+    "targetRatePct": 18.4,
+    "averageRealizedR": -0.2,
     "markets": {
       "R_10": {
         "signals": 11,
@@ -1391,17 +1408,17 @@
       },
       "R_25": {
         "signals": 9,
-        "resolved": 8,
-        "pending": 1,
-        "targetBeforeStop": 1,
+        "resolved": 9,
+        "pending": 0,
+        "targetBeforeStop": 2,
         "stopBeforeTarget": 4,
-        "targetRatePct": 20,
-        "averageRealizedR": -0.234
+        "targetRatePct": 33.3,
+        "averageRealizedR": 0.014
       },
       "R_50": {
-        "signals": 11,
+        "signals": 12,
         "resolved": 11,
-        "pending": 0,
+        "pending": 1,
         "targetBeforeStop": 2,
         "stopBeforeTarget": 6,
         "targetRatePct": 25,
@@ -1427,12 +1444,12 @@
       },
       "JD100": {
         "signals": 4,
-        "resolved": 3,
-        "pending": 1,
-        "targetBeforeStop": 0,
+        "resolved": 4,
+        "pending": 0,
+        "targetBeforeStop": 1,
         "stopBeforeTarget": 2,
-        "targetRatePct": 0,
-        "averageRealizedR": -0.805
+        "targetRatePct": 33.3,
+        "averageRealizedR": -0.103
       },
       "CRASH500": {
         "signals": 2,
