@@ -40,3 +40,14 @@ test("real-data report labels undersized discovery samples and seals holdout",()
   assert.equal(report.summary.pooled.EXP01_COMMON_ENTRY.discovery.sampleSufficiency.status,"insufficient_sample");
   assert.equal(report.summary.pooled.EXP01_COMMON_ENTRY.discovery.sampleSufficiency.minimumResolvedObservations,50);
 });
+
+
+test("split-end setups are explicitly counted as purged, not silently dropped",()=>{
+  const bounds={discovery:{start:0,end:10000},validation:{start:13600,end:20000},holdout:{start:23600,end:30000}};
+  const setup={setupEpoch:9500,direction:"BUY",entryEpoch:9800,entry:100,riskDistance:1};
+  const result=replayMethod([setup],bars(60,9800),bounds,8);
+  assert.equal(result.discovery.setups,1);
+  assert.equal(result.discovery.purgedAtSplitEnd,1);
+  assert.equal(result.discovery.entries,0);
+  assert.equal(result.holdout.status,"sealed_not_evaluated");
+});
