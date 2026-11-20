@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { reviewSignal } = require("../signal_review");
-const signal = { signalId:"R_25-SCALP-1000",direction:"BUY",entry:100,stopLoss:90,tp1:110,tp2:120,entryTimeframe:"M1" };
+const signal = { signalId:"R_25-SCALP-1000",direction:"BUY",entry:100,stopLoss:90,tp1:110,tp2:120,entryTimeframe:"M1",entryCandleEpoch:940,maxAgeSeconds:199060,intendedExpiryEpoch:200000 };
 const candles = (count, close=105, low=104, high=106) => Array.from({length:count},(_,i)=>({epoch:1000+i*60,open:close-0.2,high,low,close}));
 test("rejects missing signal",()=>assert.throws(()=>reviewSignal(null,{})));
 test("reports stale candles without a safety claim",()=>{
@@ -83,6 +83,7 @@ test("uses the explicit expiry boundary and reports TP1 before expiry",()=>{
  assert.equal(r.tp1Reached,true);
 });
 test("does not classify a signal when its validity window is unknown",()=>{
- const r=reviewSignal({...signal,entryCandleEpoch:1000},{M1:candles(60,95,89,96)},1000+60*60);
+ const {intendedExpiryEpoch,maxAgeSeconds,...withoutExpiry}=signal;
+ const r=reviewSignal({...withoutExpiry,entryCandleEpoch:1000},{M1:candles(60,95,89,96)},1000+60*60);
  assert.equal(r.status,"EXPIRY_UNKNOWN");
 });
