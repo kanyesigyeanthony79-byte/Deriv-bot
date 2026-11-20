@@ -386,6 +386,20 @@ async function main() {
   if (FILE_PREFIX) {
     const now = Number(latest.generatedEpoch) || Math.floor(Date.now() / 1000);
     for (const marketId of [...EXPANDED_M5_BACKFILL_MARKETS, "frxXAUUSD"]) {
+      // Backfill only until a market has a 500-candle continuous M5 segment.
+      // This avoids repeating 1,000-candle history requests on every 15-minute
+      // collector run after the market has passed the M5 coverage threshold.
+      const existingM5 = prior.markets?.[marketId]?.timeframes?.M5 || [];
+      const existingM5Segment = frameStats(existingM5, "M5").latestSegmentCandles;
+      if (existingM5Segment >= 500) {
+        console.log(JSON.stringify({
+          event: "research_m5_backfill",
+          marketId,
+          existingContinuousCandles: existingM5Segment,
+          status: "skipped_already_qualified"
+        }));
+        continue;
+      }
       try {
         const historicalM5 = await fetchMarketM5Backfill(marketId, now);
         if (latest.markets[marketId]) {
