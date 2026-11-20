@@ -66,6 +66,11 @@ jobs:
           RESEARCH_FILE_PREFIX: "research_"
           RESEARCH_MTF_DATA_FILE: "research_multi_timeframe_data.json"
 
+      - name: Run EXP-01 candidate opportunity overlap replay
+        run: node exp01_candidate_opportunity_replay.js
+        env:
+          RESEARCH_MTF_DATA_FILE: "research_multi_timeframe_data.json"
+
       - name: Persist research observations and journals
         run: |
           git config user.name "github-actions[bot]"
