@@ -169,6 +169,33 @@ function blankStats() {
   return { barsEvaluated: 0, noSignalBars: 0, signalsGenerated: 0, firstEpoch: null, lastEpoch: null };
 }
 
+function summarizeSignalOutcomes(signals) {
+  const terminal = signals.filter(s => isTerminal(s.status));
+  const tp1 = signals.filter(s => s.tp1Hit).length;
+  const wins = signals.filter(s => s.tp1Hit && s.status !== "stopped_after_tp1" && s.status !== "ambiguous").length;
+  const tp2 = signals.filter(s => s.status === "tp2_hit").length;
+  const fullStops = signals.filter(s => s.status === "stopped").length;
+  const stoppedAfterTp1 = signals.filter(s => s.status === "stopped_after_tp1").length;
+  const expired = signals.filter(s => s.status === "expired").length;
+  const ambiguous = signals.filter(s => s.status === "ambiguous").length;
+  const realized = terminal.map(s => s.realizedR).filter(Number.isFinite);
+  const pct = (n, d) => d ? Number((n / d * 100).toFixed(1)) : null;
+  return {
+    resolvedSignals: terminal.length,
+    pendingSignals: signals.length - terminal.length,
+    winRate: pct(wins, terminal.length),
+    tp1HitRate: pct(tp1, terminal.length),
+    tp2HitRate: pct(tp2, terminal.length),
+    stopLossRate: pct(fullStops, terminal.length),
+    stoppedAfterTP1Rate: pct(stoppedAfterTp1, terminal.length),
+    anyStopRate: pct(fullStops + stoppedAfterTp1, terminal.length),
+    expiredRate: pct(expired, terminal.length),
+    ambiguousRate: pct(ambiguous, terminal.length),
+    averageRealizedR: realized.length ? Number((realized.reduce((sum, value) => sum + value, 0) / realized.length).toFixed(2)) : null,
+    realizedRObservations: realized.length
+  };
+}
+
 function summarizeStrategyJournal(journal) {
   const markets = {};
   const pct = (n, d) => d ? Number((n / d * 100).toFixed(1)) : null;
@@ -177,36 +204,29 @@ function summarizeStrategyJournal(journal) {
     for (const strategy of STRATEGIES) {
       const counters = marketStats.strategies?.[strategy.id] || blankStats();
       const signals = (journal.signals || []).filter(s => s.marketId === marketId && s.strategyId === strategy.id);
-      const terminal = signals.filter(s => isTerminal(s.status));
-      const tp1 = signals.filter(s => s.tp1Hit).length;
-      const wins = signals.filter(s => s.tp1Hit && s.status !== "stopped_after_tp1" && s.status !== "ambiguous").length;
-      const tp2 = signals.filter(s => s.status === "tp2_hit").length;
-      const fullStops = signals.filter(s => s.status === "stopped").length;
-      const stoppedAfterTp1 = signals.filter(s => s.status === "stopped_after_tp1").length;
-      const stops = fullStops + stoppedAfterTp1;
-      const expired = signals.filter(s => s.status === "expired").length;
-      const ambiguous = signals.filter(s => s.status === "ambiguous").length;
-      const realized = terminal.map(s => s.realizedR).filter(Number.isFinite);
+      const forward = signals.filter(s => s.evaluationSource === "forward_shadow");
+      const allOutcomes = summarizeSignalOutcomes(signals);
+      const forwardOutcomes = summarizeSignalOutcomes(forward);
       markets[marketId][strategy.id] = {
         label: strategy.label,
         ...counters,
         totalSignalsInJournal: signals.length,
         historicalBackfillSignals: signals.filter(s => !s.evaluationSource || s.evaluationSource === "historical_backfill").length,
-        forwardShadowSignals: signals.filter(s => s.evaluationSource === "forward_shadow").length,
-        resolvedSignals: terminal.length,
-        pendingSignals: signals.filter(s => !isTerminal(s.status)).length,
-        winRate: pct(wins, terminal.length),
-        tp1HitRate: pct(tp1, terminal.length),
-        tp2HitRate: pct(tp2, terminal.length),
-        stopLossRate: pct(fullStops, terminal.length),
-        stoppedAfterTP1Rate: pct(stoppedAfterTp1, terminal.length),
-        anyStopRate: pct(stops, terminal.length),
-        expiredRate: pct(expired, terminal.length),
-        ambiguousRate: pct(ambiguous, terminal.length),
+        forwardShadowSignals: forward.length,
+        ...allOutcomes,
+        forwardResolvedSignals: forwardOutcomes.resolvedSignals,
+        forwardPendingSignals: forwardOutcomes.pendingSignals,
+        forwardWinRate: forwardOutcomes.winRate,
+        forwardTp1HitRate: forwardOutcomes.tp1HitRate,
+        forwardTp2HitRate: forwardOutcomes.tp2HitRate,
+        forwardStopLossRate: forwardOutcomes.stopLossRate,
+        forwardStoppedAfterTP1Rate: forwardOutcomes.stoppedAfterTP1Rate,
+        forwardExpiredRate: forwardOutcomes.expiredRate,
+        forwardAmbiguousRate: forwardOutcomes.ambiguousRate,
+        forwardAverageRealizedR: forwardOutcomes.averageRealizedR,
+        forwardRealizedRObservations: forwardOutcomes.realizedRObservations,
         noEntryRate: pct(counters.noSignalBars, counters.barsEvaluated),
-        signalsPerDay: counters.barsEvaluated ? Number((counters.signalsGenerated / counters.barsEvaluated * 96).toFixed(2)) : 0,
-        averageRealizedR: realized.length ? Number((realized.reduce((sum, value) => sum + value, 0) / realized.length).toFixed(2)) : null,
-        realizedRObservations: realized.length
+        signalsPerDay: counters.barsEvaluated ? Number((counters.signalsGenerated / counters.barsEvaluated * 96).toFixed(2)) : 0
       };
     }
   }
@@ -214,16 +234,9 @@ function summarizeStrategyJournal(journal) {
   for (const strategy of STRATEGIES) {
     const rows = Object.values(markets).map(m => m[strategy.id]).filter(Boolean);
     const signals = (journal.signals || []).filter(s => s.strategyId === strategy.id);
-    const terminal = signals.filter(s => isTerminal(s.status));
-    const tp1 = signals.filter(s => s.tp1Hit).length;
-    const wins = signals.filter(s => s.tp1Hit && s.status !== "stopped_after_tp1" && s.status !== "ambiguous").length;
-    const tp2 = signals.filter(s => s.status === "tp2_hit").length;
-    const fullStops = signals.filter(s => s.status === "stopped").length;
-    const stoppedAfterTp1 = signals.filter(s => s.status === "stopped_after_tp1").length;
-    const stops = fullStops + stoppedAfterTp1;
-    const expired = signals.filter(s => s.status === "expired").length;
-    const ambiguous = signals.filter(s => s.status === "ambiguous").length;
-    const realized = terminal.map(s => s.realizedR).filter(Number.isFinite);
+    const forward = signals.filter(s => s.evaluationSource === "forward_shadow");
+    const allOutcomes = summarizeSignalOutcomes(signals);
+    const forwardOutcomes = summarizeSignalOutcomes(forward);
     const barsEvaluated = rows.reduce((sum, row) => sum + row.barsEvaluated, 0);
     const noSignalBars = rows.reduce((sum, row) => sum + row.noSignalBars, 0);
     totals[strategy.id] = {
@@ -233,20 +246,20 @@ function summarizeStrategyJournal(journal) {
       noEntryRate: pct(noSignalBars, barsEvaluated),
       signalsGenerated: rows.reduce((sum, row) => sum + row.signalsGenerated, 0),
       historicalBackfillSignals: signals.filter(s => !s.evaluationSource || s.evaluationSource === "historical_backfill").length,
-      forwardShadowSignals: signals.filter(s => s.evaluationSource === "forward_shadow").length,
-      resolvedSignals: terminal.length,
-      pendingSignals: signals.filter(s => !isTerminal(s.status)).length,
-      winRate: pct(wins, terminal.length),
-      tp1HitRate: pct(tp1, terminal.length),
-      tp2HitRate: pct(tp2, terminal.length),
-      stopLossRate: pct(fullStops, terminal.length),
-      stoppedAfterTP1Rate: pct(stoppedAfterTp1, terminal.length),
-      anyStopRate: pct(stops, terminal.length),
-      expiredRate: pct(expired, terminal.length),
-      ambiguousRate: pct(ambiguous, terminal.length),
-      signalsPerDay: Number(rows.reduce((sum, row) => sum + row.signalsPerDay, 0).toFixed(2)),
-      averageRealizedR: realized.length ? Number((realized.reduce((sum, value) => sum + value, 0) / realized.length).toFixed(2)) : null,
-      realizedRObservations: realized.length
+      forwardShadowSignals: forward.length,
+      ...allOutcomes,
+      forwardResolvedSignals: forwardOutcomes.resolvedSignals,
+      forwardPendingSignals: forwardOutcomes.pendingSignals,
+      forwardWinRate: forwardOutcomes.winRate,
+      forwardTp1HitRate: forwardOutcomes.tp1HitRate,
+      forwardTp2HitRate: forwardOutcomes.tp2HitRate,
+      forwardStopLossRate: forwardOutcomes.stopLossRate,
+      forwardStoppedAfterTP1Rate: forwardOutcomes.stoppedAfterTP1Rate,
+      forwardExpiredRate: forwardOutcomes.expiredRate,
+      forwardAmbiguousRate: forwardOutcomes.ambiguousRate,
+      forwardAverageRealizedR: forwardOutcomes.averageRealizedR,
+      forwardRealizedRObservations: forwardOutcomes.realizedRObservations,
+      signalsPerDay: Number(rows.reduce((sum, row) => sum + row.signalsPerDay, 0).toFixed(2))
     };
   }
   return {
@@ -257,7 +270,7 @@ function summarizeStrategyJournal(journal) {
     riskModel: { stopAtr: STOP_ATR, tp1R: TP1_R, tp2R: TP2_R, maxAgeSeconds: MAX_AGE_SECONDS },
     winRateDefinition: "TP1 reached and not subsequently stopped; TP1 followed by a stop is excluded from wins and reported separately as stopped_after_tp1.",
     realizedRNote: "Average realized R includes only unambiguous TP2 (+3R) and full stop-loss (-1R) outcomes. stopped_after_tp1 is excluded until a partial-exit rule is explicitly defined.",
-    sourceNote: "Historical backfill evaluates previously completed candles. Forward shadow signals are evaluated as new M15 candles close. These are analytical signals, not executed demo trades.",
+    sourceNote: "Forward-only metrics use signals first generated on new completed M15 candles and exclude historical backfill. Historical backfill remains archived separately. These are analytical signals, not executed demo trades.",
     markets,
     totals
   };
