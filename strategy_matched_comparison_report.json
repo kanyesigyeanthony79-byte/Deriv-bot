@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-20T01:47:05.000Z",
+  "generatedAt": "2026-11-20T01:52:06.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -20,8 +20,8 @@
     "baselineCategory": "SCALP",
     "baselineSignalsAvailable": 147,
     "candidateStrategies": 7,
-    "candidateSignals": 1184,
-    "matchedPairs": 128,
+    "candidateSignals": 1186,
+    "matchedPairs": 130,
     "unmatchedCandidates": 1056,
     "matchWindowSeconds": 900
   },
@@ -1380,18 +1380,18 @@
     {
       "strategyId": "M5_BREAKOUT_M1_RETEST",
       "label": "M5 breakout / M1 retest",
-      "candidateSignals": 169,
+      "candidateSignals": 170,
       "candidateOutcomeCounts": {
         "tp2_hit": 58,
         "stopped": 107,
         "time_exit": 2,
         "ambiguous": 1,
-        "pending": 1
+        "pending": 2
       },
-      "matchedPairs": 10,
+      "matchedPairs": 11,
       "unmatchedCandidates": 159,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 10,
+      "baselineSignalsUsed": 11,
       "pairedOutcomeCounts": [
         {
           "key": "stopped / expired",
@@ -1400,6 +1400,10 @@
         {
           "key": "tp2_hit / expired",
           "count": 2
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         },
         {
           "key": "stopped / stopped",
@@ -1443,8 +1447,8 @@
           "unmatched": 16
         },
         "R_10": {
-          "candidates": 22,
-          "matched": 2,
+          "candidates": 23,
+          "matched": 3,
           "unmatched": 20
         }
       },
@@ -1577,6 +1581,19 @@
           "candidateStatus": "stopped",
           "baselineStatus": "stopped",
           "candidateRealizedR": -1,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "R_10",
+          "direction": "SELL",
+          "candidateSignalId": "R_10-BREAKOUT_RETEST-1795139100",
+          "baselineSignalId": "R_10-SCALP-1795138500",
+          "candidateEntryEpoch": 1795139400,
+          "baselineEntryEpoch": 1795138500,
+          "entryTimeDifferenceSeconds": 900,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
           "baselineRealizedR": null
         }
       ]
@@ -1873,16 +1890,17 @@
     {
       "strategyId": "M5_BREAKOUT_M5_RETEST_M15_CONFIRM",
       "label": "M5 breakout / M5 retest / M15 confirmation",
-      "candidateSignals": 82,
+      "candidateSignals": 83,
       "candidateOutcomeCounts": {
         "time_exit": 33,
         "stopped": 43,
-        "tp2_hit": 6
+        "tp2_hit": 6,
+        "pending": 1
       },
-      "matchedPairs": 22,
+      "matchedPairs": 23,
       "unmatchedCandidates": 60,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 22,
+      "baselineSignalsUsed": 23,
       "pairedOutcomeCounts": [
         {
           "key": "stopped / expired",
@@ -1899,6 +1917,10 @@
         {
           "key": "tp2_hit / expired",
           "count": 2
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         }
       ],
       "byMarket": {
@@ -1918,8 +1940,8 @@
           "unmatched": 9
         },
         "R_10": {
-          "candidates": 10,
-          "matched": 4,
+          "candidates": 11,
+          "matched": 5,
           "unmatched": 6
         },
         "R_75": {
@@ -2228,6 +2250,19 @@
           "candidateStatus": "stopped",
           "baselineStatus": "stopped",
           "candidateRealizedR": -1,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "R_10",
+          "direction": "SELL",
+          "candidateSignalId": "R_10-BREAKOUT_RETEST_M5_M15-1795138800",
+          "baselineSignalId": "R_10-SCALP-1795138500",
+          "candidateEntryEpoch": 1795139100,
+          "baselineEntryEpoch": 1795138500,
+          "entryTimeDifferenceSeconds": 600,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
           "baselineRealizedR": null
         }
       ]
