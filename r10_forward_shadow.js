@@ -140,10 +140,10 @@ function updateTradeOutcome(trade,rows,tf) {
   if(outcome.status!=="pending")Object.assign(trade,outcome);
   return trade;
 }
-function updateR10ForwardShadowJournal(prior,market,nowEpoch=Math.floor(Date.now()/1000)) {
+function updateR10ForwardShadowJournal(prior,market,nowEpoch=Math.floor(Date.now()/1000),marketId=MARKET_ID) {
   const journal=prior&&prior.version===1&&Array.isArray(prior.setups)
-    ? prior : {version:1,createdAt:new Date(nowEpoch*1000).toISOString(),updatedAt:null,marketId:MARKET_ID,setups:[]};
-  if(!market||market.marketId!==MARKET_ID||!market.timeframes)return journal;
+    ? prior : {version:1,createdAt:new Date(nowEpoch*1000).toISOString(),updatedAt:null,marketId,setups:[]};
+  if(!market||market.marketId!==marketId||!market.timeframes)return journal;
   const frames={
     M1:latestContinuousSegment(market.timeframes.M1,SECONDS.M1),
     M5:latestContinuousSegment(market.timeframes.M5,SECONDS.M5),
