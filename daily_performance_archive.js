@@ -49,7 +49,7 @@ function summarize(records, source) {
   return {
     source, generated: records.length, delivered: count(r => r.telegramStatus === "sent"),
     missed: count(r => ["suppressed", "stale", "delivery_failed", "failed", "not_sent"].includes(status(r)) ||
-      ["delivery_failed", "failed", "not_sent"].includes(r.telegramStatus)),
+      ["missed", "suppressed", "stale", "delivery_failed", "failed", "not_sent"].includes(r.telegramStatus)),
     tp1: count(r => r.tp1Hit || ["tp1_hit", "stopped_after_tp1", "sl_after_tp1"].includes(status(r))),
     wins, losses, resolved, winRate: resolved ? Number((wins / resolved * 100).toFixed(1)) : null,
     expired: count(r => status(r) === "expired"), ambiguous: count(r => status(r) === "ambiguous"),
