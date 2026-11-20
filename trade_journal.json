@@ -7320,14 +7320,26 @@
         }
       ],
       "status": "sent",
-      "tp1Hit": false,
+      "tp1Hit": true,
       "tp2Hit": false,
       "finalOutcome": null,
-      "events": [],
-      "maxFavourablePrice": 83.3892,
-      "maxFavourablePoints": 0.7819,
-      "maxFavourablePct": 0.92894,
-      "maxFavourableEpoch": 1795149900
+      "events": [
+        {
+          "outcome": "TP1_HIT",
+          "observedAt": "2026-11-20T05:15:19.405Z",
+          "candleEpoch": 1795150800,
+          "candle": {
+            "open": 83.3998,
+            "high": 83.4234,
+            "low": 82.9139,
+            "close": 82.9339
+          }
+        }
+      ],
+      "maxFavourablePrice": 82.9139,
+      "maxFavourablePoints": 1.2572,
+      "maxFavourablePct": 1.49362,
+      "maxFavourableEpoch": 1795150800
     },
     {
       "signalId": "R_50-1795147200",
@@ -7461,10 +7473,10 @@
       "tp2Hit": false,
       "finalOutcome": null,
       "events": [],
-      "maxFavourablePrice": 3521.81,
-      "maxFavourablePoints": 21.82,
-      "maxFavourablePct": 0.61575,
-      "maxFavourableEpoch": 1795149000
+      "maxFavourablePrice": 3517.32,
+      "maxFavourablePoints": 26.31,
+      "maxFavourablePct": 0.74246,
+      "maxFavourableEpoch": 1795150800
     },
     {
       "signalId": "R_10-1795149900",
@@ -7527,7 +7539,11 @@
       "tp1Hit": false,
       "tp2Hit": false,
       "finalOutcome": null,
-      "events": []
+      "events": [],
+      "maxFavourablePrice": 4835.584,
+      "maxFavourablePoints": 0.881,
+      "maxFavourablePct": 0.01822,
+      "maxFavourableEpoch": 1795150800
     },
     {
       "signalId": "BOOM500-1795149900",
@@ -7580,6 +7596,69 @@
         {
           "passed": true,
           "reason": "Not extended from EMA20 (0.7 ATR)"
+        },
+        {
+          "passed": true,
+          "reason": "No spike candle"
+        }
+      ],
+      "status": "sent",
+      "tp1Hit": false,
+      "tp2Hit": false,
+      "finalOutcome": null,
+      "events": []
+    },
+    {
+      "signalId": "R_25-1795150800",
+      "marketId": "R_25",
+      "market": "Volatility 25 Index",
+      "direction": "SELL",
+      "localDate": "2026-11-20",
+      "createdAt": "2026-11-20T05:00:00.000Z",
+      "candleEpoch": 1795150800,
+      "score": 95,
+      "entry": 2863.061,
+      "metrics": {
+        "ema20": 2871.811495865923,
+        "ema50": 2879.427123618246,
+        "ema50Previous": 2881.826440970654,
+        "atr": 6.566889674373977,
+        "emaSeparationAtr": 1.15970088275448,
+        "emaSlopeAtr": 0.3653658689852877,
+        "bodyRatio": 0.6532480423513587,
+        "closeLocation": 0.9463990294474103,
+        "extensionAtr": 1.332517569172813,
+        "swingAtr": 0.8268754721416086,
+        "candleRange": 9.067000000000007
+      },
+      "checks": [
+        {
+          "passed": true,
+          "reason": "EMA20/EMA50 trend down, gap 1.16 ATR"
+        },
+        {
+          "passed": true,
+          "reason": "Close on the trend side of EMA20"
+        },
+        {
+          "passed": true,
+          "reason": "EMA50 sloping with the trend"
+        },
+        {
+          "passed": true,
+          "reason": "RSI 38.5 inside 32-50"
+        },
+        {
+          "passed": true,
+          "reason": "Bearish candle, body 65% of range"
+        },
+        {
+          "passed": true,
+          "reason": "Lower high formed"
+        },
+        {
+          "passed": true,
+          "reason": "Not extended from EMA20 (1.3 ATR)"
         },
         {
           "passed": true,
