@@ -63,7 +63,7 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
   const hasWorkerAuth = Boolean(workerUrl && env.SIGNAL_API_KEY);
   const telegramEnabled = env.MTF_TELEGRAM_ALERTS === "true" && hasWorkerAuth;
   const executionEnabled = env.MT5_EXECUTION_QUEUE_ENABLED === "true" && hasWorkerAuth;
-  const result = { enabled: telegramEnabled, executionEnabled, considered: 0, sent: 0, executionQueued: 0, executionFailed: 0, stale: 0, missed: 0, quoteUnavailable: 0, failed: 0, skipped: 0 };
+  const result = { enabled: telegramEnabled, executionEnabled, considered: 0, sent: 0, executionQueued: 0, executionFailed: 0, stale: 0, missed: 0, quoteUnavailable: 0, failed: 0, skipped: 0, suppressed: 0 };
   if (!telegramEnabled && !executionEnabled) {
     log("mtf_alerts_disabled", { reason: "telegram_and_execution_flags_off_or_worker_secrets_missing" });
     return result;
@@ -167,6 +167,14 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
         });
         const body = await response.json().catch(() => ({}));
         if (!response.ok || body.success !== true) throw new Error(body.error || ("Telegram Worker HTTP " + response.status));
+        if (body.suppressed === true) {
+          record.telegramStatus = "suppressed";
+          record.telegramStatusReason = body.reason || "market_specific_telegram_filter";
+          record.telegramSuppressedAt = new Date(nowEpoch * 1000).toISOString();
+          result.suppressed++; persist(journal);
+          log("mtf_telegram_suppressed", { signalId: candidate.signalId, marketId: candidate.marketId, reason: record.telegramStatusReason });
+          continue;
+        }
         record.telegramStatus = "sent";
         record.telegramSentAt = new Date(nowEpoch * 1000).toISOString();
         record.telegramAgeSeconds = freshness.ageSeconds;
@@ -202,7 +210,7 @@ async function sendOutcomeAlerts(journal, nowEpoch, env, options = {}) {
   const persist = options.persist || (() => {});
   const fetchImpl = options.fetchImpl || fetch;
   const liveQuotes = options.liveQuotes || {};
-  const result = { enabled: false, considered: 0, sent: 0, failed: 0, skipped: 0 };
+  const result = { enabled: false, considered: 0, sent: 0, failed: 0, skipped: 0, suppressed: 0 };
   if (env.MTF_TELEGRAM_ALERTS !== "true" || !env.TELEGRAM_WORKER_URL || !env.SIGNAL_API_KEY) {
     log("mtf_outcome_alerts_disabled", { reason: "feature_flag_or_secrets_missing" });
     return result;
@@ -235,6 +243,13 @@ async function sendOutcomeAlerts(journal, nowEpoch, env, options = {}) {
         });
         const body = await response.json().catch(() => ({}));
         if (!response.ok || body.success !== true) throw new Error(body.error || ("Telegram Worker HTTP " + response.status));
+        if (body.suppressed === true) {
+          record.telegramOutcomeEvents[outcome] = "suppressed";
+          record.telegramOutcomeSuppressedAt = new Date(nowEpoch * 1000).toISOString();
+          result.suppressed++; persist(journal);
+          log("mtf_outcome_suppressed", { signalId: record.signalId, outcome, marketId: record.marketId });
+          continue;
+        }
         record.telegramOutcomeEvents[outcome] = "sent";
         record.telegramOutcomeSentAt = new Date(nowEpoch * 1000).toISOString();
         result.sent++;
