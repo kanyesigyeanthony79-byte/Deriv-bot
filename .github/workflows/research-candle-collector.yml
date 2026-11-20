@@ -10,9 +10,11 @@ on:
 permissions:
   contents: write
 
-# Serialize with the production scanner/collector so journal commits cannot race.
+# Research outputs use dedicated files; no production journals or dashboards are written.
+# This independent group prevents frequent production dispatches from replacing
+# a pending research schedule run.
 concurrency:
-  group: deriv-signal-scanners
+  group: deriv-research-candle-collector
   cancel-in-progress: false
 
 jobs:
@@ -37,28 +39,34 @@ jobs:
           STRATEGY_COMPARISON_TELEGRAM_ALERTS: "false"
           MT5_TRADE_REPORTING_ENABLED: "false"
           MT5_EXECUTION_QUEUE_ENABLED: "false"
+          RESEARCH_ONLY_MODE: "true"
+          RESEARCH_MTF_DATA_FILE: "research_multi_timeframe_data.json"
 
       - name: Archive lower-timeframe research candles
         run: node lower_tf_entry_research.js
         env:
           LOWER_TF_FOCUS_MARKET: R_10
+          RESEARCH_FILE_PREFIX: "research_"
+          RESEARCH_MTF_DATA_FILE: "research_multi_timeframe_data.json"
 
       - name: Run common-assumption replay when data is ready
         run: node lower_tf_common_assumption_replay.js
+        env:
+          RESEARCH_FILE_PREFIX: "research_"
 
       - name: Run EXP-01 common-assumption matched replay
         run: node exp01_matched_replay.js
-
-      - name: Rebuild historical daily performance archive
-        run: node daily_performance_archive.js
+        env:
+          RESEARCH_FILE_PREFIX: "research_"
+          RESEARCH_MTF_DATA_FILE: "research_multi_timeframe_data.json"
 
       - name: Persist research observations and journals
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add daily_performance_archive.json multi_timeframe_journal.json multi_timeframe_dashboard.json signal_review_data.json strategy_version_performance_report.json strategy_matched_comparison_report.json strategy_comparison_journal.json strategy_research_candles.json strategy_research_report.json lower_tf_research_candles.json lower_tf_entry_research_report.json lower_tf_common_assumption_replay_report.json exp01_matched_replay_report.json breakout_retest_shadow_journal.json m5_ema_pullback_shadow_journal.json breakout_retest_m5_m15_shadow_journal.json
+          git add research_multi_timeframe_data.json research_lower_tf_research_candles.json research_lower_tf_entry_research_report.json research_lower_tf_common_assumption_replay_report.json research_exp01_matched_replay_report.json
           if ! git diff --cached --quiet; then
-            git commit -m "Update scheduled research candle observations"
+            git commit -m "Update isolated scheduled research observations"
             for attempt in 1 2 3; do
               git fetch origin main
               git rebase origin/main
@@ -72,6 +80,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: scheduled-research-observation-data
-          path: multi_timeframe_data.json
+          path: research_multi_timeframe_data.json
           if-no-files-found: error
           retention-days: 7
