@@ -182,12 +182,18 @@ function updateR10ForwardShadowJournal(prior,market,nowEpoch=Math.floor(Date.now
     if(setup.m5.status==="waiting"){
       const trigger=findM5Trigger(m5,setup.setupCloseEpoch,setup.direction);
       if(trigger){const trade=tradeForTrigger(m5,"M5",trigger,setup.direction,setup.setupAtr,setup.setupCloseEpoch);if(trade.status!=="waiting")Object.assign(setup.m5,trade);}
-      else if(m5.at(-1).epoch+SECONDS.M5>=setup.setupCloseEpoch+ENTRY_WINDOW_SECONDS)setup.m5.status="no_trigger";
+      else if(m5.at(-1).epoch+SECONDS.M5>=setup.setupCloseEpoch+ENTRY_WINDOW_SECONDS){
+        setup.m5.status=m5[0].epoch>setup.setupCloseEpoch?"censored":"no_trigger";
+        if(setup.m5.status==="censored")setup.m5.reason="M5 continuous segment does not cover the full trigger window.";
+      }
     }
     if(setup.m1.status==="waiting"){
       const trigger=findM1Trigger(m1,m5,setup.setupCloseEpoch,setup.direction);
       if(trigger){const trade=tradeForTrigger(m1,"M1",trigger,setup.direction,setup.setupAtr,setup.setupCloseEpoch);if(trade.status!=="waiting")Object.assign(setup.m1,trade);}
-      else if(m1.at(-1).epoch+SECONDS.M1>=setup.setupCloseEpoch+ENTRY_WINDOW_SECONDS)setup.m1.status="no_trigger";
+      else if(m1.at(-1).epoch+SECONDS.M1>=setup.setupCloseEpoch+ENTRY_WINDOW_SECONDS){
+        setup.m1.status=m1[0].epoch>setup.setupCloseEpoch?"censored":"no_trigger";
+        if(setup.m1.status==="censored")setup.m1.reason="M1 continuous segment does not cover the full trigger window.";
+      }
     }
     for(const [tf,key] of [["M15","baseline"],["M5","m5"],["M1","m1"]]){
       const trade=setup[key];
