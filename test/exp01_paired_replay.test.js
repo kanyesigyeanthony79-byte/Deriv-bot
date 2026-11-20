@@ -62,5 +62,23 @@ test("incomplete and ambiguous outcomes do not become resolved paired difference
   const s=summarizePairedRows(rows);
   assert.equal(s.pairedResolved,0);
   assert.equal(s.meanCandidateMinusBaselineR,null);
-  assert.equal(s.pairedDifference95PctInterval,null);
+  assert.equal(s.pairedDifference95PctIntervalUnclustered,null);
+});
+
+test("shared event evaluator receives only M5 setup and already-completed M15 candles",()=>{
+  const m1=bars(1200,0,60,100);
+  const m5=bars(90,0,300,100);
+  const m15=bars(90,0,900,100);
+  const seen=[];
+  const {buildSharedEvents}=require("../exp01_paired_replay");
+  const events=buildSharedEvents({marketId:"R_10",m1,m5,m15,baselineEvaluator:(id,name,category,frames,index)=>{
+    const eventClose=frames.M5[index].epoch+300;
+    assert.ok(frames.M15.every(c=>c.epoch+900<=eventClose));
+    assert.equal(frames.M5.length,index+1);
+    seen.push({eventClose,m15Count:frames.M15.length});
+    return {state:"signal",direction:"BUY"};
+  }});
+  assert.ok(events.length>0);
+  assert.equal(events.length,new Set(events.map(e=>e.pairKey)).size);
+  assert.ok(seen.length>0);
 });
