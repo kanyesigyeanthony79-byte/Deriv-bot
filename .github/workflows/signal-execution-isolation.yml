@@ -1,0 +1,28 @@
+name: Signal and execution isolation tests
+
+on:
+  push:
+    branches: [feat/isolated-signal-execution-services]
+    paths:
+      - "service_supervisor.js"
+      - "test/service_supervisor.test.js"
+      - ".github/workflows/signal-execution-isolation.yml"
+  pull_request:
+    paths:
+      - "service_supervisor.js"
+      - "test/service_supervisor.test.js"
+      - ".github/workflows/signal-execution-isolation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  isolation-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test independent service failure handling
+        run: node --test test/service_supervisor.test.js
