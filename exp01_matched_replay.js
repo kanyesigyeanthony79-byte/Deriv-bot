@@ -64,7 +64,7 @@ function resolveCommonOutcome({m1,entryEpoch,entry,direction,riskDistance}) {
   const last=bars[bars.length-1], move=direction==="BUY"?last.close-entry:entry-last.close;
   return{status:"time_exit",realizedR:Number((move/riskDistance).toFixed(4)),exitEpoch:last.epoch+TIMEFRAMES.M1};
 }
-function blankStats(){return{setups:0,eligibleSetups:0,overlapSkipped:0,noEntry:0,purgedAfterEntry:0,entries:0,resolved:0,outcomes:{target:0,stopped:0,time_exit:0,ambiguous:0,incomplete_data:0,data_gap:0},totalGrossR:0,meanGrossR:null,meanAfterAssumedCostR:{},maxDrawdownR:0,signalsPerDay:null};}
+function blankStats(){return{setups:0,eligibleSetups:0,overlapSkipped:0,noEntry:0,purgedAtSplitEnd:0,purgedAfterEntry:0,entries:0,resolved:0,outcomes:{target:0,stopped:0,time_exit:0,ambiguous:0,incomplete_data:0,data_gap:0},totalGrossR:0,meanGrossR:null,meanAfterAssumedCostR:{},maxDrawdownR:0,signalsPerDay:null};}
 function summarizeTrades(trades,counts,hours) {
   const s=blankStats();Object.assign(s,counts);s.entries=trades.length;
   for(const t of trades)s.outcomes[t.outcome.status]=(s.outcomes[t.outcome.status]||0)+1;
@@ -98,12 +98,13 @@ function makeMethodSetups({marketId,marketName,m1,m5,m15}) {
   return{baseline,candidate};
 }
 function replayMethod(setups,m1,bounds,hours) {
-  const trades=[],counts=Object.fromEntries(Object.keys(bounds).map(k=>[k,{setups:0,eligibleSetups:0,overlapSkipped:0,noEntry:0,purgedAfterEntry:0}]));
+  const trades=[],counts=Object.fromEntries(Object.keys(bounds).map(k=>[k,{setups:0,eligibleSetups:0,overlapSkipped:0,noEntry:0,purgedAtSplitEnd:0,purgedAfterEntry:0}]));
   let blockedUntil=null;
   for(const setup of setups){
     const match=splitForEpoch(setup.setupEpoch,bounds);if(!match)continue;
-    const [name,range]=match;if(setup.setupEpoch+HORIZON_SECONDS>range.end)continue;
+    const [name,range]=match;
     counts[name].setups++;
+    if(setup.setupEpoch+HORIZON_SECONDS>range.end){counts[name].purgedAtSplitEnd++;continue;}
     if(Number.isFinite(blockedUntil)&&setup.setupEpoch<blockedUntil){counts[name].overlapSkipped++;continue;}
     counts[name].eligibleSetups++;
     if(!Number.isFinite(setup.entryEpoch)||!Number.isFinite(setup.entry)){counts[name].noEntry++;continue;}
