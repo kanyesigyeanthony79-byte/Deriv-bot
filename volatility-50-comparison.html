@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10251d">
+<title>Volatility 50 · Signal System Comparison</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1712;--panel:#14251d;--line:#2c4939;--txt:#eef5ef;--muted:#a8b9ad;--gold:#d5a83d;--green:#55c58b;--red:#f07878}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#10251d,#09120e 70%);color:var(--txt);font:14px system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:980px;margin:auto;padding:20px 14px 40px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+a{color:var(--gold)}h1{font-size:24px;margin:18px 0 6px}h2{font-size:17px;margin:22px 0 9px}.muted{color:var(--muted);font-size:12px;line-height:1.55}
+.pill{border:1px solid var(--line);padding:6px 10px;border-radius:30px;color:var(--gold);font-size:11px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px;margin:10px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:650px;font-size:12px}th,td{text-align:left;padding:9px 7px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--muted);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px;margin:12px 0}.metric{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px}.metric strong{display:block;font-size:23px;margin-top:5px}
+.buy{color:var(--green)}.sell{color:var(--red)}.notice{border-left:3px solid var(--gold);background:#1a281e;padding:12px;border-radius:8px;font-size:12px;line-height:1.6;margin:13px 0}
+button{background:#1b3026;color:var(--txt);border:1px solid var(--line);border-radius:9px;padding:9px 12px;font-weight:650}
+</style>
+</head>
+<body><main>
+<div class="top"><a href="./index.html">← Dashboard</a><span class="pill">RESEARCH · OBSERVATION ONLY</span></div>
+<h1>Volatility 50 · signal system comparison</h1>
+<p class="muted">Compares Original 15-Minute, its Priority Pair research-watch subset, and Promoted MTF using the existing archived signal journals. No live data collection or production settings are changed.</p>
+<div class="notice" id="period">Loading the common comparison window…</div>
+<div class="grid" id="headline"></div>
+<h2>Head-to-head · delivered Telegram signals</h2>
+<div class="card"><table><thead><tr><th>Signal stream</th><th>Generated</th><th>Delivered</th><th>BUY sent</th><th>SELL sent</th><th>TP2</th><th>Stops</th><th>Expired</th><th>Pending</th><th>TP2 / (TP2 + stops)</th></tr></thead><tbody id="summary"><tr><td colspan="10">Loading journals…</td></tr></tbody></table></div>
+<h2>BUY versus SELL · delivered signals</h2>
+<div class="card"><table><thead><tr><th>System</th><th>Direction</th><th>Delivered</th><th>TP2</th><th>Stops</th><th>Expired</th><th>Pending</th><th>Decisive outcomes</th><th>TP2 / decisive</th></tr></thead><tbody id="directions"></tbody></table></div>
+<h2>Promoted MTF · setup breakdown</h2>
+<div class="card"><table><thead><tr><th>Setup</th><th>Generated</th><th>Delivered</th><th>BUY sent</th><th>SELL sent</th><th>TP2</th><th>Stops</th><th>Expired</th><th>Pending</th></tr></thead><tbody id="setups"></tbody></table></div>
+<div class="notice"><b>Important interpretation:</b> Priority Pair is a label on qualifying Original 15-Minute R_50 signals, not an independent signal generator. The Original row includes the Priority Pair subset; do not add those two rows together. Expired and pending signals are not automatically counted as losses. The TP2 ratio uses only TP2 and stop outcomes, excludes unresolved/expired records, and is a descriptive sample statistic—not a validated win rate or profitability estimate. Spread, slippage and commissions are not included.</div>
+<p class="muted" id="status">Loading archived records…</p>
+</main>
+<script>
+(async()=>{
+ const $=id=>document.getElementById(id);
+ const fmtPct=(w,l)=>w+l?((100*w/(w+l)).toFixed(1)+"%"):"—";
+ const esc=v=>String(v??"—").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ const aggregate=(rows,legacy)=>{
+   const sent=rows.filter(x=>legacy?x.status==="sent":x.telegramStatus==="sent");
+   const outcome=x=>legacy?(x.finalOutcome||"pending"):(x.outcome||"pending");
+   const result={generated:rows.length,delivered:sent.length,buy:sent.filter(x=>x.direction==="BUY").length,sell:sent.filter(x=>x.direction==="SELL").length,tp2:0,stops:0,expired:0,pending:0,byDirection:{}};
+   for(const x of sent){const o=outcome(x);if(o==="TP2"||o==="tp2_hit")result.tp2++;else if(["SL","SL_AFTER_TP1","stopped","stopped_after_tp1"].includes(o))result.stops++;else if(o==="expired")result.expired++;else result.pending++;}
+   for(const dir of ["BUY","SELL"]){
+     const a=sent.filter(x=>x.direction===dir), s={delivered:a.length,tp2:0,stops:0,expired:0,pending:0};
+     for(const x of a){const o=outcome(x);if(o==="TP2"||o==="tp2_hit")s.tp2++;else if(["SL","SL_AFTER_TP1","stopped","stopped_after_tp1"].includes(o))s.stops++;else if(o==="expired")s.expired++;else s.pending++;}
+     s.decisive=s.tp2+s.stops;s.rate=fmtPct(s.tp2,s.stops);result.byDirection[dir]=s;
+   }
+   result.rate=fmtPct(result.tp2,result.stops);return result;
+ };
+ try{
+  const [a,b]=await Promise.all([
+   fetch("./trade_journal.json?v="+Date.now(),{cache:"no-store"}),
+   fetch("./daily_performance_archive.json?v="+Date.now(),{cache:"no-store"})
+  ]);
+  if(!a.ok||!b.ok)throw new Error("Journal fetch failed ("+a.status+" / "+b.status+")");
+  const originalData=await a.json(),archive=await b.json();
+  const original=(originalData.signals||[]).filter(x=>x.marketId==="R_50");
+  const priority=original.filter(x=>x.priorityLabel==="PRIORITY PAIR — RESEARCH WATCH");
+  if(!priority.length)throw new Error("No Priority Pair R_50 records found in the original journal.");
+  const times=priority.map(x=>Date.parse(x.createdAt)).filter(Number.isFinite),start=Math.min(...times),end=Math.max(...times);
+  const inWindow=x=>{const t=Date.parse(x.createdAt);return Number.isFinite(t)&&t>=start&&t<=end;};
+  const originalWindow=original.filter(inWindow),priorityWindow=priority.filter(inWindow);
+  const mtfAll=(archive.days||[]).flatMap(d=>d.multiTimeframe?.signals||[]);
+  const mtf=mtfAll.filter(x=>x.marketId==="R_50"&&inWindow(x));
+  const all=[
+   ["Original 15-Minute · all",originalWindow,true],
+   ["Priority Pair · subset",priorityWindow,true],
+   ["Promoted MTF · all setups",mtf,false]
+  ].map(([name,rows,legacy])=>({name,rows,stats:aggregate(rows,legacy),legacy}));
+  $("period").textContent="Common window: "+new Date(start).toLocaleString()+" – "+new Date(end).toLocaleString()+" · "+priorityWindow.length+" Priority Pair observations define the window.";
+  $("headline").innerHTML=[
+   ["Priority Pair BUY",priorityWindow.filter(x=>x.direction==="BUY").length],
+   ["Priority Pair SELL",priorityWindow.filter(x=>x.direction==="SELL").length],
+   ["MTF observations",mtf.length],
+   ["MTF delivered",mtf.filter(x=>x.telegramStatus==="sent").length]
+  ].map(([label,n])=>'<div class="metric"><span class="muted">'+esc(label)+'</span><strong>'+n+'</strong></div>').join("");
+  $("summary").innerHTML=all.map(x=>{const s=x.stats;return '<tr><td>'+esc(x.name)+'</td><td>'+s.generated+'</td><td>'+s.delivered+'</td><td>'+s.buy+'</td><td>'+s.sell+'</td><td>'+s.tp2+'</td><td>'+s.stops+'</td><td>'+s.expired+'</td><td>'+s.pending+'</td><td>'+s.rate+'</td></tr>';}).join("");
+  $("directions").innerHTML=all.flatMap(x=>["BUY","SELL"].map(dir=>{const s=x.stats.byDirection[dir];return '<tr><td>'+esc(x.name)+'</td><td class="'+dir.toLowerCase()+'">'+dir+'</td><td>'+s.delivered+'</td><td>'+s.tp2+'</td><td>'+s.stops+'</td><td>'+s.expired+'</td><td>'+s.pending+'</td><td>'+s.decisive+'</td><td>'+s.rate+'</td></tr>';})).join("");
+  const categories=["SCALP","SHORT_TERM"];
+  $("setups").innerHTML=categories.map(cat=>{const rows=mtf.filter(x=>x.category===cat),s=aggregate(rows,false);return '<tr><td>'+esc(cat==="SCALP"?"Scalping":"Short-term")+'</td><td>'+s.generated+'</td><td>'+s.delivered+'</td><td>'+s.buy+'</td><td>'+s.sell+'</td><td>'+s.tp2+'</td><td>'+s.stops+'</td><td>'+s.expired+'</td><td>'+s.pending+'</td></tr>';}).join("");
+  $("status").textContent="Loaded "+originalData.signals.length+" original journal records and "+mtfAll.length+" MTF journal records. R_50 only · local display times; archived source timestamps are UTC.";
+ }catch(e){$("status").textContent="Could not build comparison: "+e.message;$("summary").innerHTML='<tr><td colspan="10">'+esc(e.message)+'</td></tr>';}
+})();
+</script></body></html>
