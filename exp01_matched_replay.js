@@ -7,8 +7,9 @@ const { evaluateCategory, TIMEFRAMES } = require("./multi_timeframe_engine");
 const { atrSeries, detectBreakout, findRetestConfirmation } = require("./breakout_retest_shadow");
 
 const DATA_DIR = getDataDir();
-const INPUT = path.join(DATA_DIR, "multi_timeframe_data.json");
-const OUTPUT = path.join(DATA_DIR, "exp01_matched_replay_report.json");
+const FILE_PREFIX = String(process.env.RESEARCH_FILE_PREFIX || "");
+const INPUT = path.join(DATA_DIR, process.env.RESEARCH_MTF_DATA_FILE || (FILE_PREFIX ? FILE_PREFIX + "multi_timeframe_data.json" : "multi_timeframe_data.json"));
+const OUTPUT = path.join(DATA_DIR, FILE_PREFIX + "exp01_matched_replay_report.json");
 const MARKETS = Object.freeze(["R_10","R_25","R_50","R_75","JD75","JD100","CRASH500","BOOM500"]);
 const STOP_ATR_M15 = 1.25;
 const TARGET_R = 2;
