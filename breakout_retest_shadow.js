@@ -216,6 +216,25 @@ function blankMarketState() {
 
 function summarizeBreakoutRetestJournal(journal) {
   const signals = journal?.signals || [];
+  // Descriptive only: context is recorded, not used as an entry filter.
+  const contextGroups = { aligned: [], opposed: [], neutral_or_unknown: [] };
+  for (const signal of signals) {
+    if (!Number.isFinite(signal.realizedR)) continue;
+    const directionContext = signal.direction === "BUY" ? "up" : signal.direction === "SELL" ? "down" : null;
+    if (directionContext && signal.contextM15 === directionContext) contextGroups.aligned.push(signal);
+    else if (["up", "down"].includes(signal.contextM15)) contextGroups.opposed.push(signal);
+    else contextGroups.neutral_or_unknown.push(signal);
+  }
+  const contextDirectionBreakdown = Object.fromEntries(Object.entries(contextGroups).map(([group, rows]) => [
+    group,
+    {
+      resolved: rows.length,
+      meanRealizedR: rows.length ? Number((rows.reduce((sum, signal) => sum + signal.realizedR, 0) / rows.length).toFixed(3)) : null,
+      targetBeforeStop: rows.filter(signal => signal.status === "tp2_hit").length,
+      stopBeforeTarget: rows.filter(signal => signal.status === "stopped").length,
+      timeExit: rows.filter(signal => signal.status === "time_exit").length
+    }
+  ]));
   const terminal = signals.filter(s => TERMINAL.has(s.status));
   const target = terminal.filter(s => s.status === "tp2_hit").length;
   const stopped = terminal.filter(s => s.status === "stopped").length;
@@ -258,6 +277,8 @@ function summarizeBreakoutRetestJournal(journal) {
     targetRatePct: decisive ? Number((target / decisive * 100).toFixed(1)) : null,
     averageRealizedR: realized.length ? Number((realized.reduce((a, b) => a + b, 0) / realized.length).toFixed(3)) : null,
     markets,
+    contextDirectionBreakdown,
+    contextDirectionBreakdownNote: "Descriptive subgroup diagnostic only; M15 context is not used to select or filter entries. Small, non-independent shadow samples do not establish predictive value.",
     note: "Research-only forward shadow. Historical M1-entry results are not the production M5/M15 signal rules. M15 context is recorded, not used as a directional filter. No Telegram alerts or MT5 execution."
   };
 }
