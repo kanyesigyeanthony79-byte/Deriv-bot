@@ -137,7 +137,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 
   <section id="strategy-comparison">
     <h2>Parallel strategy comparison · M15 shadow test</h2>
-    <div class="muted">EMA20/50 baseline vs EMA9/21 vs EMA9/21 with the frozen body/close quality gate vs EMA20/50 pullback. All are observation-only comparisons on completed candles. The quality-gate row retains the existing engine's EMA9/21 base checks and adds body ratio ≥ 0.7360851 and direction-adjusted close location ≥ 0.9288402; it is a shadow variant, not the exact standalone Deepnote replay or a live alert rule. Historical backfill is separated from new forward observations.</div>
+    <div class="muted">EMA20/50 baseline vs EMA20/50 with pullback confirmation. Both are observation-only comparisons on the same completed candles and use identical entry/SL/TP rules. Historical backfill is separated from new forward observations.</div>
     <div class="card mtf-table-wrap" style="margin-top:10px">
       <table><thead><tr><th>Strategy</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>Win %</th><th>TP1 %</th><th>TP2 %</th><th>Full SL %</th><th>SL after TP1 %</th><th>Avg R</th><th>/day</th></tr></thead>
       <tbody id="strategyTotals"><tr><td colspan="11" class="muted">Waiting for comparison data…</td></tr></tbody></table>
@@ -433,7 +433,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       $("strategyStatus").textContent="Waiting for the observation collector to publish the strategy journal.";
       return;
     }
-    const ids=["EMA20_50","EMA9_21","EMA9_21_BODY_CLOSE","EMA20_50_PULLBACK"];
+    const ids=["EMA20_50","EMA20_50_PULLBACK"];
     const pct=v=>v===null||v===undefined?"—":Number(v).toFixed(1)+"%";
     const num=v=>v===null||v===undefined?"—":Number(v).toFixed(2);
     $("strategyTotals").innerHTML=ids.map(id=>{
