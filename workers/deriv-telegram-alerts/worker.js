@@ -1,4 +1,12 @@
-import { shouldDeliverTelegramAlert } from "../../telegram_routing.mjs";
+function shouldDeliverTelegramAlert(data = {}) {
+  if (data.event === "daily_summary") return true;
+  const marketId = String(data.marketId || "").trim().toUpperCase();
+  const market = String(data.market || "");
+  const isR50 = marketId === "R_50" || /\bvolatility\s*50(?:\s+index)?\b/i.test(market);
+  if (!isR50) return true;
+  return data.source === "LEGACY_15M" && data.priorityTier === "RESEARCH_PRIORITY";
+}
+
 
 const MT5_ALLOWED_MARKETS=new Set(["R_10","R_25","R_50","R_75","JD100","CRASH500","BOOM500"]);
 const MT5_MAX_AGE={SCALP:600,SHORT_TERM:1800,POSITION:14400};
