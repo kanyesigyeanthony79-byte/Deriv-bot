@@ -444,5 +444,6 @@ module.exports = {
   structureStop,
   resolveOutcome,
   summarize,
+  selectNonOverlappingSetups,
   SECONDS
 };
