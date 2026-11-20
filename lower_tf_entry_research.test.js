@@ -6,8 +6,9 @@ const { buildReport, mergeLowerTimeframeArchive, SECONDS, MARKETS, LIMITS, R10_A
 const IDS = ["R_10", "R_25", "R_50"];
 const BASE = Math.floor(1794000000 / 900) * 900;
 
-test("includes Jump 75 in the lower-timeframe research archive", () => {
+test("includes Jump 75 and Gold in the lower-timeframe research archive", () => {
   assert.ok(MARKETS.includes("JD75"));
+  assert.ok(MARKETS.includes("frxXAUUSD"));
 });
 
 function candles(tf, count) {
