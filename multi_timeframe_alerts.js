@@ -222,7 +222,7 @@ async function sendOutcomeAlerts(journal, nowEpoch, env, options = {}) {
       const quote = liveQuotes[record.marketId];
       const payload = {
         event: "outcome", source: "PROMOTED_MTF", outcome, signalId: record.signalId,
-        market: String(record.market || record.marketId) + " | " + String(record.categoryLabel || record.category || ""),
+        marketId: record.marketId, market: String(record.market || record.marketId) + " | " + String(record.categoryLabel || record.category || ""),
         direction: record.direction, entry: record.entry, stopLoss: record.stopLoss,
         tp1: record.tp1, tp2: record.tp2,
         currentPrice: Number.isFinite(Number(quote?.price)) ? Number(quote.price) : undefined,
