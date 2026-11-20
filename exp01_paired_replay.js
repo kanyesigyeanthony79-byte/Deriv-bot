@@ -34,13 +34,13 @@ function buildSharedEvents({ marketId, marketName, m1, m5, m15, baselineEvaluato
   for (let i = MIN_M5_INDEX; i < m5.length - 1; i++) {
     const setupCandle = m5[i];
     const setupEpoch = setupCandle.epoch + TIMEFRAMES.M5;
-    const completedM15 = m15.filter(c => c.epoch + TIMEFRAMES.M15 <= setupEpoch);\n    const baseline = baselineEvaluator(marketId, marketName || marketId, "SCALP", { M5: m5.slice(0, i + 1), M15: completedM15 }, i);
+    const completedM15 = m15.filter(c => c.epoch + TIMEFRAMES.M15 <= setupEpoch);
+    const baseline = baselineEvaluator(marketId, marketName || marketId, "SCALP", { M5: m5.slice(0, i + 1), M15: completedM15 }, i);
     if (baseline.state !== "signal") continue;
     const direction = baseline.direction;
     const key = pairKey(marketId, setupEpoch, direction);
     if (seen.has(key)) continue;
     seen.add(key);
-    const completedM15 = m15.filter(c => c.epoch + TIMEFRAMES.M15 <= setupEpoch);
     const riskDistance = atr(completedM15, 14) * STOP_ATR_M15;
     const nextM5 = m5[i + 1];
     const breakout = detectBreakout(m5, i, m5Atr[i]);
@@ -136,7 +136,10 @@ function summarizePairedRows(rows) {
     pairedResolved: diffs.length,
     meanCandidateMinusBaselineR: mean === null ? null : Number(mean.toFixed(4)),
     medianCandidateMinusBaselineR: diffs.length ? Number(percentile(sorted,0.5).toFixed(4)) : null,
-    pairedDifference95PctIntervalUnclustered: se === null ? null : [Number((mean-1.96*se).toFixed(4)),Number((mean+1.96*se).toFixed(4))],\n    marketClusterCount: clusterMeans.length,\n    marketClusteredMeanDifferenceR: clusterMean === null ? null : Number(clusterMean.toFixed(4)),\n    marketClustered95PctInterval: clusterSe === null || clusterMeans.length < 3 ? null : [Number((clusterMean-tCritical*clusterSe).toFixed(4)),Number((clusterMean+tCritical*clusterSe).toFixed(4))],
+    pairedDifference95PctIntervalUnclustered: se === null ? null : [Number((mean-1.96*se).toFixed(4)),Number((mean+1.96*se).toFixed(4))],
+    marketClusterCount: clusterMeans.length,
+    marketClusteredMeanDifferenceR: clusterMean === null ? null : Number(clusterMean.toFixed(4)),
+    marketClustered95PctInterval: clusterSe === null || clusterMeans.length < 3 ? null : [Number((clusterMean-tCritical*clusterSe).toFixed(4)),Number((clusterMean+tCritical*clusterSe).toFixed(4))],
     pairedClaimStatus: diffs.length >= 50 ? "minimum_pair_count_met_review_uncertainty_and_market_clusters" : "exploratory_inconclusive_under_50_pairs",
     perMarket
   };
@@ -166,7 +169,8 @@ function buildPairedReplayReport(snapshot, generatedAt = new Date().toISOString(
     const replay=replaySharedEvents(events,a1,bounds);
     markets[id]={status:"replayed",commonWindow:{startEpoch:start,endEpoch:end,hours:Number(((end-start)/3600).toFixed(3))},
       sharedEligibleEvents:events.length,counts:replay.counts,
-      discovery:summarizePairedRows(replay.rows.discovery),validation:summarizePairedRows(replay.rows.validation),\n      discoveryEventAccounting:replay.rows.discovery,validationEventAccounting:replay.rows.validation,
+      discovery:summarizePairedRows(replay.rows.discovery),validation:summarizePairedRows(replay.rows.validation),
+      discoveryEventAccounting:replay.rows.discovery,validationEventAccounting:replay.rows.validation,
       holdout:{status:"sealed_not_evaluated",reason:"Current historical holdout remains sealed; use a later untouched forward period."}};
   }
   return {version:1,generatedAt,mode:"paired_entry_policy_replay",researchOnly:true,
