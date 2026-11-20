@@ -159,7 +159,7 @@ function updateR10ForwardShadowJournal(prior,market,nowEpoch=Math.floor(Date.now
     journal.lastSetupEpoch = m15.at(-1).epoch;
     journal.startedAt = new Date(nowEpoch * 1000).toISOString();
   } else {
-    for(let i=64;i<m15.length-1;i++){
+    for(let i=64;i<m15.length;i++){
       const candle=m15[i];if(candle.epoch<=journal.lastSetupEpoch)continue;
       const closeEpoch=candle.epoch+SECONDS.M15;
       if(closeEpoch>nowEpoch)continue;
