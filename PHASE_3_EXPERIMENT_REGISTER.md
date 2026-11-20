@@ -276,3 +276,29 @@ These are gross candle-based R simulations, not broker fills or realized account
 **Daily performance archive:** generated at `2026-11-20T04:27:24.991Z`; covers 13–20 November (8 recoverable days), 97 legacy signals, 476 multi-timeframe observations, 7 verified daily reports, and 1 reconstructed day. The 20 November record is reconstructed from journals and has no saved original daily-report delivery record. Historical gaps remain unfilled rather than fabricated.
 
 **Gate status and decision:** Phase 3 remains active. Gate A is not fully certified for all candidates; EXP-06 remains an exploratory lower-timeframe replay with a very small sample. Gate B must be assessed candidate-by-candidate from forward-shadow journals, not inferred from this 11-setup replay. Gate C's matched baseline audit and Gate D's independent holdout are not certified for EXP-06. No candidate is promoted, no production signal rules or Telegram routing are changed, and MT5 execution remains disabled. Continue collecting and preserve the frozen experiment definitions. Phase 4 remains on hold.
+
+
+## 16. EXP-01 forward-evidence Gate B review — 2026-11-20 04:30 UTC
+
+Sources: `breakout_retest_shadow_journal.json` and `strategy_matched_comparison_report.json`, both generated at `2026-11-20T04:27:05Z`. This review evaluates EXP-01 only; it does not change its frozen parameters.
+
+**Gate B — forward evidence:** the EXP-01 M5 breakout / M1 retest journal contains 178 forward-shadow observations, all explicitly marked `evaluationSource=forward_shadow`. Of these, 177 have numeric terminal R outcomes and one is ambiguous. The 177 resolved observations are distributed across eight markets:
+
+| Market | Resolved observations |
+|---|---:|
+| R_10 | 24 |
+| R_25 | 28 |
+| R_50 | 19 |
+| R_75 | 23 |
+| JD75 | 25 |
+| JD100 | 20 |
+| CRASH500 | 16 |
+| BOOM500 | 22 |
+
+Terminal status counts are 114 stopped, 60 TP2 hits, 3 time exits, and 1 ambiguous (178 total). Each of the eight markets has at least 10 resolved observations, and the total exceeds the 50-observation threshold. **EXP-01 meets the numerical Gate B evidence thresholds in this snapshot.** This is a sample-size/evidence-coverage finding only; it is not a profitability conclusion or a Gate C/D pass.
+
+**Gate C — current match audit is insufficient:** the contemporaneous co-occurrence report lists 11 EXP-01 / MTF baseline pairs and 167 unmatched candidate observations. Of the 11 pairs, 7 are candidate stops against an expired baseline, 3 are candidate TP2 hits against an expired baseline, and 1 pair has both sides stopped. The baseline's numeric realized-R field is null even in that final pair. The report explicitly warns that this is not a counterfactual replay: entries, stop distances, targets, management, and horizons can differ. An unmatched baseline is not a baseline loss. Therefore these 11 pairs do not provide a valid expectancy comparison and **Gate C remains not passed**.
+
+**Next Phase 3 work for EXP-01:** build or verify a candidate-specific matched replay on identical market/time windows, with the baseline and EXP-01 evaluated using the same entry/exit assumptions, risk distance, outcome horizon, and conservative cost sensitivity. Declare the primary metric and guardrails before reading the validation sample. Preserve a fresh untouched chronological holdout for Gate D. Do not tune EXP-01 from its current forward outcomes or use the contemporaneous match report to claim an edge.
+
+**Decision:** Gate B numerical thresholds are met for EXP-01 in this snapshot. Gate A implementation integrity still requires complete candidate-specific audit; Gate C and Gate D remain unverified. No candidate is promoted, no production signal or Telegram behavior changes, and MT5 execution remains disabled.
