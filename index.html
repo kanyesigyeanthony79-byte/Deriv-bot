@@ -273,9 +273,6 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 
   systemTabs.forEach(btn=>btn.addEventListener("click",()=>showSystem(btn.dataset.systemTab)));
   showSystem("promoted");
-  document.getElementById("forwardShadowRefresh").addEventListener("click",refreshForwardShadow);
-  refreshForwardShadow();
-  setInterval(refreshForwardShadow,60000);
   document.addEventListener("click",event=>{
     const filterButton=event.target.closest("[data-signal-filter]");
     const metricButton=event.target.closest("[data-metric-filter]");
@@ -289,6 +286,9 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   const JOURNAL_URL = "./trade_journal.json";
   let latestSignals = [];
   const $ = id => document.getElementById(id);
+  document.getElementById("forwardShadowRefresh").addEventListener("click",refreshForwardShadow);
+  refreshForwardShadow();
+  setInterval(refreshForwardShadow,60000);
   const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const fmt = v => Number.isFinite(Number(v)) ? Number(v).toFixed(2) : "—";
   const time = s => { const d=new Date(s); return Number.isNaN(d.getTime())? "—" : d.toLocaleString(); };
