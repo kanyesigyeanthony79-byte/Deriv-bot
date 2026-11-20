@@ -302,9 +302,10 @@ function buildCommonAssumptionReplayReport(archive, readinessReport, generatedAt
 }
 
 function main() {
-  const archivePath = path.join(DATA_DIR, "lower_tf_research_candles.json");
-  const readinessPath = path.join(DATA_DIR, "lower_tf_entry_research_report.json");
-  const outputPath = path.join(DATA_DIR, "lower_tf_common_assumption_replay_report.json");
+  const prefix = String(process.env.RESEARCH_FILE_PREFIX || "");
+  const archivePath = path.join(DATA_DIR, prefix + "lower_tf_research_candles.json");
+  const readinessPath = path.join(DATA_DIR, prefix + "lower_tf_entry_research_report.json");
+  const outputPath = path.join(DATA_DIR, prefix + "lower_tf_common_assumption_replay_report.json");
   if (!fs.existsSync(archivePath) || !fs.existsSync(readinessPath)) {
     throw new Error("Lower-timeframe archive/readiness report is missing; replay was not run.");
   }
