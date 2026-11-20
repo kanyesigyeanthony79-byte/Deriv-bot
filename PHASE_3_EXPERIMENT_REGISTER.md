@@ -329,3 +329,31 @@ Implementation merged in [PR #133](https://github.com/kanyesigyeanthony79-byte/D
 **Holdout protection:** the current 20% chronological holdout partition is sealed and not evaluated because the existing forward-shadow journal already covers this period. Gate D still requires a later untouched period after the comparison contract is frozen. The report generator emits the holdout as `sealed_not_evaluated`.
 
 **Status:** implementation tests passed on PR #133 (Lower-Timeframe Research Tests, Multi-Timeframe Engine Tests, and MT5 execution integration tests). The replay report is pending its next successful research-only collector execution. Gate C and Gate D remain unverified; no production rules, Telegram routing, or MT5 execution settings were changed.
+
+
+## 18. R10 replay and research-history expansion checkpoint — 2026-11-20 07:46 UTC
+
+**Source snapshot:** lower_tf_entry_research_report.json and lower_tf_common_assumption_replay_report.json generated at approximately 2026-11-20T07:46:13Z. This snapshot predates the merge of research-output isolation PR #144; it is retained as a valid earlier research observation, not represented as a post-isolation scheduled run.
+
+**R_10 readiness:**
+- M1: 5,000 retained candles; latest continuous segment 3,274.
+- M5: 2,000 retained candles; latest continuous segment 655.
+- M15: 1,200 retained candles; latest continuous segment 1,200.
+- One older gap remains in M1 and M5. Duplicate, invalid, and unaligned counts are zero.
+- The common latest continuous window is approximately 54.6 hours. The replay contains 13 setup candidates.
+
+**Corrected EXP-06 common-assumption replay:** frozen methods, common 1.5 × M15 ATR risk, 2R target, M1 outcome resolution, 60-minute horizon, chronological 60/20/20 splits, one-hour post-boundary embargoes, and split-end outcome purging.
+
+| Method | Discovery entries / gross R | Validation entries / gross R | Holdout entries / gross R |
+|---|---:|---:|---:|
+| M15 next-open | 4 / +0.3580R | 1 / -0.1224R | 2 / +0.9160R |
+| M5 EMA pullback | 4 / +1.0902R | 1 / -1.0000R | 2 / +0.7685R |
+| M1 micro-break | 3 / +0.0802R | 1 / -0.4160R | 2 / +0.5454R |
+
+The validation and holdout samples remain too small for method selection, rejection, or Gate C/D certification. Outcomes are gross candle-based simulations; transaction costs and executable fills are not included. Do not tune parameters from this sample.
+
+**Research isolation:** PR #144 was merged as e96c4320364b71af1f14293e7947a46fe90bcd09. The research collector now writes research-prefixed files and has a separate concurrency group. Its Telegram and MT5 reporting/execution flags remain false. A post-merge native scheduled run is still required to verify the isolated workflow end to end.
+
+**History-retention repair:** PR #147 was merged as 86c0e662fe2eb5414e4d6154ee2dc1dad5ab13a5. R_10-only research retention is now M1 15,000, M5 4,000, and M15 1,800 candles; other markets retain their prior caps. Regression tests passed. The larger window will accumulate gradually from subsequent scheduled observations; it does not reconstruct missing candles or bridge gaps. A fresh replay is required after enough additional continuous data has accumulated.
+
+**Decision:** Phase 3 remains active. EXP-06 is still exploratory and insufficient for conclusions. No candidate has passed Gates A–D, no strategy is promoted, production signal rules remain unchanged, and Phase 4 remains on hold.
