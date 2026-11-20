@@ -60,3 +60,29 @@ test("stale data offers a fresh-data option, not a hold recommendation",()=>{
  assert.equal(r.status,"STALE_DATA");
  assert.ok(r.recommendationOptions.some(x=>x.label==="Wait for fresh completed candles"));
 });
+
+test("does not credit TP2 reached after the intended expiry",()=>{
+ const series=candles(60,105,104,106);
+ series[20]={epoch:2200,open:115,high:121,low:114,close:120};
+ const r=reviewSignal({...signal,entryCandleEpoch:1000,intendedExpiryEpoch:2000,maxAgeSeconds:1000},{M1:series},1000+60*60);
+ assert.equal(r.status,"EXPIRED");
+ assert.notEqual(r.status,"TP2_LEVEL_TOUCHED");
+});
+test("does not credit a stop reached after the intended expiry",()=>{
+ const series=candles(60,105,104,106);
+ series[20]={epoch:2200,open:95,high:96,low:89,close:90};
+ const r=reviewSignal({...signal,entryCandleEpoch:1000,intendedExpiryEpoch:2000,maxAgeSeconds:1000},{M1:series},1000+60*60);
+ assert.equal(r.status,"EXPIRED");
+});
+test("uses the explicit expiry boundary and reports TP1 before expiry",()=>{
+ const series=candles(60,105,104,106);
+ series[10]={epoch:1600,open:105,high:111,low:104,close:109};
+ series[20]={epoch:2200,open:115,high:121,low:114,close:120};
+ const r=reviewSignal({...signal,entryCandleEpoch:1000,intendedExpiryEpoch:2000,maxAgeSeconds:1000},{M1:series},1000+60*60);
+ assert.equal(r.status,"EXPIRED_AFTER_TP1");
+ assert.equal(r.tp1Reached,true);
+});
+test("does not classify a signal when its validity window is unknown",()=>{
+ const r=reviewSignal({...signal,entryCandleEpoch:1000},{M1:candles(60,95,89,96)},1000+60*60);
+ assert.equal(r.status,"EXPIRY_UNKNOWN");
+});
