@@ -8128,8 +8128,8 @@
       ],
       "status": "sent",
       "tp1Hit": true,
-      "tp2Hit": false,
-      "finalOutcome": null,
+      "tp2Hit": true,
+      "finalOutcome": "TP2",
       "events": [
         {
           "outcome": "TP1_HIT",
@@ -8141,12 +8141,23 @@
             "low": 82.2392,
             "close": 82.2396
           }
+        },
+        {
+          "outcome": "TP2_HIT",
+          "observedAt": "2026-11-20T17:45:10.848Z",
+          "candleEpoch": 1795195800,
+          "candle": {
+            "open": 81.982,
+            "high": 82.0369,
+            "low": 81.6699,
+            "close": 81.746
+          }
         }
       ],
-      "maxFavourablePrice": 81.878,
-      "maxFavourablePoints": 1.6564,
-      "maxFavourablePct": 1.9829,
-      "maxFavourableEpoch": 1795187700
+      "maxFavourablePrice": 81.6699,
+      "maxFavourablePoints": 1.8645,
+      "maxFavourablePct": 2.23201,
+      "maxFavourableEpoch": 1795195800
     },
     {
       "signalId": "JD100-1795159800",
@@ -8339,7 +8350,7 @@
       "status": "sent",
       "tp1Hit": true,
       "tp2Hit": false,
-      "finalOutcome": null,
+      "finalOutcome": "SL_AFTER_TP1",
       "events": [
         {
           "outcome": "TP1_HIT",
@@ -8350,6 +8361,17 @@
             "high": 4829.061,
             "low": 4825.633,
             "close": 4825.978
+          }
+        },
+        {
+          "outcome": "SL_HIT",
+          "observedAt": "2026-11-20T17:45:08.404Z",
+          "candleEpoch": 1795195800,
+          "candle": {
+            "open": 4842.205,
+            "high": 4845.109,
+            "low": 4841.384,
+            "close": 4843.415
           }
         }
       ],
@@ -9317,10 +9339,10 @@
           }
         }
       ],
-      "maxFavourablePrice": 81.878,
-      "maxFavourablePoints": 1.0549,
-      "maxFavourablePct": 1.27199,
-      "maxFavourableEpoch": 1795187700
+      "maxFavourablePrice": 81.6699,
+      "maxFavourablePoints": 1.263,
+      "maxFavourablePct": 1.52292,
+      "maxFavourableEpoch": 1795195800
     },
     {
       "signalId": "frxXAUUSD-1795184100",
@@ -9536,10 +9558,10 @@
       "tp2Hit": false,
       "finalOutcome": null,
       "events": [],
-      "maxFavourablePrice": 81.8933,
-      "maxFavourablePoints": 0.2748,
-      "maxFavourablePct": 0.33444,
-      "maxFavourableEpoch": 1795194900
+      "maxFavourablePrice": 81.6699,
+      "maxFavourablePoints": 0.4982,
+      "maxFavourablePct": 0.60632,
+      "maxFavourableEpoch": 1795195800
     },
     {
       "signalId": "frxXAUUSD-1795194000",
@@ -9607,6 +9629,69 @@
       "maxFavourablePoints": 13.08,
       "maxFavourablePct": 0.36988,
       "maxFavourableEpoch": 1795194900
+    },
+    {
+      "signalId": "R_75-1795195800",
+      "marketId": "R_75",
+      "market": "Volatility 75 Index",
+      "direction": "BUY",
+      "localDate": "2026-11-20",
+      "createdAt": "2026-11-20T17:30:00.000Z",
+      "candleEpoch": 1795195800,
+      "score": 75,
+      "entry": 39591.9498,
+      "metrics": {
+        "ema20": 39558.367540152074,
+        "ema50": 39268.351463176725,
+        "ema50Previous": 39184.885034872685,
+        "atr": 249.93133805339662,
+        "emaSeparationAtr": 1.1603830045249819,
+        "emaSlopeAtr": 0.3339574338861338,
+        "bodyRatio": 0.6843633190313407,
+        "closeLocation": 0.907645573828401,
+        "extensionAtr": 0.13436594270044433,
+        "swingAtr": 0.21115839418554141,
+        "candleRange": 240.64250000000175
+      },
+      "checks": [
+        {
+          "passed": true,
+          "reason": "EMA20/EMA50 trend up, gap 1.16 ATR"
+        },
+        {
+          "passed": true,
+          "reason": "Close on the trend side of EMA20"
+        },
+        {
+          "passed": true,
+          "reason": "EMA50 sloping with the trend"
+        },
+        {
+          "passed": true,
+          "reason": "RSI 53.1 inside 50-68"
+        },
+        {
+          "passed": true,
+          "reason": "Bullish candle, body 68% of range"
+        },
+        {
+          "passed": true,
+          "reason": "Higher low formed"
+        },
+        {
+          "passed": true,
+          "reason": "Not extended from EMA20 (0.1 ATR)"
+        },
+        {
+          "passed": true,
+          "reason": "No spike candle"
+        }
+      ],
+      "status": "sent",
+      "tp1Hit": false,
+      "tp2Hit": false,
+      "finalOutcome": null,
+      "events": []
     }
   ],
   "dailyReports": {
