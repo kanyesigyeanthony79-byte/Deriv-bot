@@ -16,8 +16,8 @@ function candles(count, step = 900, start = 1_700_000_000) {
   }));
 }
 
-test("defines the four comparison strategies", () => {
-  assert.deepEqual(STRATEGIES.map(s => s.id), ["EMA20_50", "EMA9_21", "EMA9_21_BODY_CLOSE", "EMA20_50_PULLBACK"]);
+test("defines only the two retained M15 comparison strategies", () => {
+  assert.deepEqual(STRATEGIES.map(s => s.id), ["EMA20_50", "EMA20_50_PULLBACK"]);
 });
 
 test("all strategies wait for a common 65 completed M15 candles", () => {
