@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-20T06:12:07.000Z",
+  "generatedAt": "2026-11-20T06:17:05.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -18,10 +18,10 @@
   "summary": {
     "baselineVersion": "MTF_BASELINE_V1",
     "baselineCategory": "SCALP",
-    "baselineSignalsAvailable": 161,
+    "baselineSignalsAvailable": 163,
     "candidateStrategies": 7,
-    "candidateSignals": 1248,
-    "matchedPairs": 139,
+    "candidateSignals": 1250,
+    "matchedPairs": 141,
     "unmatchedCandidates": 1109,
     "matchWindowSeconds": 900
   },
@@ -457,9 +457,9 @@
       "candidateSignals": 443,
       "candidateOutcomeCounts": {
         "stopped": 283,
-        "tp2_hit": 122,
+        "tp2_hit": 123,
         "stopped_after_tp1": 22,
-        "tp1_hit": 8,
+        "tp1_hit": 7,
         "pending": 8
       },
       "matchedPairs": 39,
@@ -1479,17 +1479,18 @@
     {
       "strategyId": "M5_BREAKOUT_M1_RETEST",
       "label": "M5 breakout / M1 retest",
-      "candidateSignals": 188,
+      "candidateSignals": 189,
       "candidateOutcomeCounts": {
         "tp2_hit": 66,
         "stopped": 118,
         "time_exit": 3,
-        "ambiguous": 1
+        "ambiguous": 1,
+        "pending": 1
       },
-      "matchedPairs": 11,
-      "unmatchedCandidates": 177,
+      "matchedPairs": 13,
+      "unmatchedCandidates": 176,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 11,
+      "baselineSignalsUsed": 13,
       "pairedOutcomeCounts": [
         {
           "key": "stopped / expired",
@@ -1498,6 +1499,14 @@
         {
           "key": "tp2_hit / expired",
           "count": 3
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
+        },
+        {
+          "key": "stopped / pending",
+          "count": 1
         },
         {
           "key": "stopped / stopped",
@@ -1532,12 +1541,12 @@
         },
         "R_75": {
           "candidates": 26,
-          "matched": 1,
-          "unmatched": 25
+          "matched": 2,
+          "unmatched": 24
         },
         "CRASH500": {
-          "candidates": 18,
-          "matched": 0,
+          "candidates": 19,
+          "matched": 1,
           "unmatched": 18
         },
         "R_10": {
@@ -1688,6 +1697,32 @@
           "candidateStatus": "tp2_hit",
           "baselineStatus": "expired",
           "candidateRealizedR": 2,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "R_75",
+          "direction": "BUY",
+          "candidateSignalId": "R_75-BREAKOUT_RETEST-1795154100",
+          "baselineSignalId": "R_75-SCALP-1795155000",
+          "candidateEntryEpoch": 1795154160,
+          "baselineEntryEpoch": 1795155000,
+          "entryTimeDifferenceSeconds": 840,
+          "candidateStatus": "stopped",
+          "baselineStatus": "pending",
+          "candidateRealizedR": -1,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "CRASH500",
+          "direction": "SELL",
+          "candidateSignalId": "CRASH500-BREAKOUT_RETEST-1795155000",
+          "baselineSignalId": "CRASH500-SCALP-1795154400",
+          "candidateEntryEpoch": 1795155300,
+          "baselineEntryEpoch": 1795154400,
+          "entryTimeDifferenceSeconds": 900,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
           "baselineRealizedR": null
         }
       ]
@@ -2023,15 +2058,15 @@
     {
       "strategyId": "M5_BREAKOUT_M5_RETEST_M15_CONFIRM",
       "label": "M5 breakout / M5 retest / M15 confirmation",
-      "candidateSignals": 88,
+      "candidateSignals": 89,
       "candidateOutcomeCounts": {
         "time_exit": 35,
         "stopped": 43,
         "tp2_hit": 8,
-        "pending": 2
+        "pending": 3
       },
       "matchedPairs": 23,
-      "unmatchedCandidates": 65,
+      "unmatchedCandidates": 66,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
       "baselineSignalsUsed": 23,
       "pairedOutcomeCounts": [
@@ -2059,9 +2094,9 @@
           "unmatched": 12
         },
         "JD100": {
-          "candidates": 8,
+          "candidates": 9,
           "matched": 3,
-          "unmatched": 5
+          "unmatched": 6
         },
         "CRASH500": {
           "candidates": 10,
