@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-20T20:12:16.000Z",
+  "generatedAt": "2026-11-20T20:25:36.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -18,10 +18,10 @@
   "summary": {
     "baselineVersion": "MTF_BASELINE_V1",
     "baselineCategory": "SCALP",
-    "baselineSignalsAvailable": 230,
+    "baselineSignalsAvailable": 236,
     "candidateStrategies": 7,
-    "candidateSignals": 1404,
-    "matchedPairs": 179,
+    "candidateSignals": 1405,
+    "matchedPairs": 180,
     "unmatchedCandidates": 1225,
     "matchWindowSeconds": 900
   },
@@ -34,8 +34,8 @@
         "stopped": 163,
         "tp2_hit": 81,
         "stopped_after_tp1": 16,
-        "tp1_hit": 3,
-        "pending": 9
+        "tp1_hit": 5,
+        "pending": 7
       },
       "matchedPairs": 39,
       "unmatchedCandidates": 233,
@@ -52,15 +52,11 @@
         },
         {
           "key": "pending / expired",
-          "count": 3
+          "count": 4
         },
         {
           "key": "tp1_hit / expired",
           "count": 2
-        },
-        {
-          "key": "pending / pending",
-          "count": 1
         },
         {
           "key": "stopped / stopped",
@@ -622,7 +618,7 @@
           "baselineEntryEpoch": 1795204200,
           "entryTimeDifferenceSeconds": 300,
           "candidateStatus": "pending",
-          "baselineStatus": "pending",
+          "baselineStatus": "expired",
           "candidateRealizedR": null,
           "baselineRealizedR": null
         }
@@ -1384,8 +1380,8 @@
         "stopped": 105,
         "tp2_hit": 52,
         "stopped_after_tp1": 12,
-        "tp1_hit": 2,
-        "pending": 6
+        "tp1_hit": 4,
+        "pending": 4
       },
       "matchedPairs": 19,
       "unmatchedCandidates": 158,
@@ -1401,7 +1397,7 @@
           "count": 6
         },
         {
-          "key": "pending / pending",
+          "key": "pending / expired",
           "count": 1
         },
         {
@@ -1708,7 +1704,7 @@
           "baselineEntryEpoch": 1795204200,
           "entryTimeDifferenceSeconds": 300,
           "candidateStatus": "pending",
-          "baselineStatus": "pending",
+          "baselineStatus": "expired",
           "candidateRealizedR": null,
           "baselineRealizedR": null
         }
@@ -2037,17 +2033,17 @@
     {
       "strategyId": "M15_M5_EMA_PULLBACK",
       "label": "M15 trend / M5 EMA pullback",
-      "candidateSignals": 69,
+      "candidateSignals": 70,
       "candidateOutcomeCounts": {
         "time_exit": 25,
         "stop": 35,
-        "target": 8,
+        "target": 9,
         "pending": 1
       },
-      "matchedPairs": 26,
+      "matchedPairs": 27,
       "unmatchedCandidates": 43,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 26,
+      "baselineSignalsUsed": 27,
       "pairedOutcomeCounts": [
         {
           "key": "stop / expired",
@@ -2064,6 +2060,10 @@
         {
           "key": "target / expired",
           "count": 6
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         }
       ],
       "byMarket": {
@@ -2083,8 +2083,8 @@
           "unmatched": 5
         },
         "R_50": {
-          "candidates": 15,
-          "matched": 8,
+          "candidates": 16,
+          "matched": 9,
           "unmatched": 7
         },
         "BOOM500": {
@@ -2445,6 +2445,19 @@
           "candidateStatus": "time_exit",
           "baselineStatus": "expired",
           "candidateRealizedR": 0.1995,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "R_50",
+          "direction": "SELL",
+          "candidateSignalId": "R_50-M15_M5_PULLBACK-1795205100",
+          "baselineSignalId": "R_50-SCALP-1795205700",
+          "candidateEntryEpoch": 1795205400,
+          "baselineEntryEpoch": 1795205700,
+          "entryTimeDifferenceSeconds": 300,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
           "baselineRealizedR": null
         }
       ]
