@@ -40,7 +40,6 @@ const REVIEW_DATA = path.join(DATA_DIR, "signal_review_data.json");
 const PERFORMANCE_REPORT = path.join(DATA_DIR, "strategy_version_performance_report.json");
 const BREAKOUT_RETEST_JOURNAL = path.join(DATA_DIR, "breakout_retest_shadow_journal.json");
 const BREAKOUT_RETEST_M5_M15_JOURNAL = path.join(DATA_DIR, "breakout_retest_m5_m15_shadow_journal.json");
-const R10_FORWARD_SHADOW_JOURNAL = path.join(DATA_DIR, "r10_forward_shadow_journal.json");
 const log = (event, details = {}) => console.log(JSON.stringify({ time: new Date().toISOString(), event, ...details }));
 
 function connect(url) {
@@ -240,7 +239,25 @@ async function main() {
     // production journals, dashboards, Telegram delivery, or MT5 reporting.
     if (process.env.RESEARCH_ONLY_MODE === "true") {
       const researchOutput = path.join(DATA_DIR, process.env.RESEARCH_MTF_DATA_FILE || "research_multi_timeframe_data.json");
+      const researchR10JournalPath = path.join(DATA_DIR, "research_r10_forward_shadow_journal.json");
+      const priorResearchR10Journal = fs.existsSync(researchR10JournalPath)
+        ? JSON.parse(fs.readFileSync(researchR10JournalPath, "utf8"))
+        : null;
+      const researchR10Journal = updateR10ForwardShadowJournal(
+        priorResearchR10Journal, output.markets.R_10, now
+      );
+      fs.writeFileSync(researchR10JournalPath, JSON.stringify(researchR10Journal, null, 2) + "\n");
+      output.r10ForwardShadow = researchR10Journal.summary || {
+        mode: "forward_shadow_observation_only",
+        dataQuality: researchR10Journal.dataQuality || "warming",
+        setups: researchR10Journal.setups?.length || 0
+      };
       fs.writeFileSync(researchOutput, JSON.stringify(output, null, 2) + "\n");
+      log("r10_forward_shadow_updated", {
+        setups: researchR10Journal.setups.length,
+        mode: researchR10Journal.summary?.mode || researchR10Journal.dataQuality,
+        journal: path.basename(researchR10JournalPath)
+      });
       log("research_collection_complete", {
         markets: Object.keys(output.markets).length,
         errors: output.errors.length + Object.values(output.markets).reduce((n, m) => n + m.errors.length, 0),
@@ -301,19 +318,6 @@ async function main() {
     );
     fs.writeFileSync(BREAKOUT_RETEST_M5_M15_JOURNAL, JSON.stringify(breakoutRetestM5M15Journal, null, 2) + "\n");
     output.breakoutRetestM5M15Shadow = breakoutRetestM5M15Journal.summary;
-    // Separate R10 precision-entry forward journal; never routes alerts or orders.
-    const priorR10ForwardJournal = fs.existsSync(R10_FORWARD_SHADOW_JOURNAL)
-      ? JSON.parse(fs.readFileSync(R10_FORWARD_SHADOW_JOURNAL, "utf8"))
-      : null;
-    const r10ForwardJournal = updateR10ForwardShadowJournal(
-      priorR10ForwardJournal, output.markets.R_10, now
-    );
-    fs.writeFileSync(R10_FORWARD_SHADOW_JOURNAL, JSON.stringify(r10ForwardJournal, null, 2) + "\n");
-    output.r10ForwardShadow = r10ForwardJournal.summary || {
-      mode: "forward_shadow_observation_only",
-      dataQuality: r10ForwardJournal.dataQuality || "warming",
-      setups: r10ForwardJournal.setups?.length || 0
-    };
     const matchedComparisonReport = buildMatchedComparisonReport({
       baselineJournal: journal, strategyJournal, breakoutRetestJournal,
       m5PullbackJournal, breakoutRetestM5M15Journal, generatedAt: output.generatedAt
@@ -386,7 +390,6 @@ async function main() {
       breakoutRetestShadow: output.breakoutRetestShadow,
       m5EmaPullbackShadow: output.m5EmaPullbackShadow,
       breakoutRetestM5M15Shadow: output.breakoutRetestM5M15Shadow,
-      r10ForwardShadow: output.r10ForwardShadow,
       markets: Object.values(output.markets).map(m => ({
         marketId: m.marketId, marketName: m.marketName, signals: dashboardSignalsForMarket(m, journal, now, liveQuotes),
         timeframeCounts: Object.fromEntries(Object.entries(m.timeframes).map(([tf, candles]) => [tf, candles.length])),
