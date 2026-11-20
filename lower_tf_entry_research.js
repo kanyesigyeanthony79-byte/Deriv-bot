@@ -377,8 +377,10 @@ async function main() {
   } catch (error) {
     console.log(JSON.stringify({ event: "r10_m5_research_backfill", status: "failed_nonblocking", message: String(error.message || error).slice(0, 200) }));
   }
-  // Gold is collected into the same isolated research archive, with its own
-  // completed M5 history backfill. Failure never blocks synthetic-index research.
+  // Gold's additional historical request is restricted to the isolated
+  // research-prefixed workflow. Ordinary collector runs keep their prior
+  // request pattern and only archive the M5 candles already collected.
+  if (FILE_PREFIX) {
   try {
     const now = Number(latest.generatedEpoch) || Math.floor(Date.now() / 1000);
     const historicalM5 = await fetchGoldM5Backfill(now);
@@ -394,6 +396,7 @@ async function main() {
     console.log(JSON.stringify({ event: "gold_m5_research_backfill", candles: historicalM5.length, status: "success" }));
   } catch (error) {
     console.log(JSON.stringify({ event: "gold_m5_research_backfill", status: "failed_nonblocking", message: String(error.message || error).slice(0, 200) }));
+  }
   }
   const archive = mergeLowerTimeframeArchive(prior, incoming);
   const report = buildReport(archive, incoming, { focusMarket: process.env.LOWER_TF_FOCUS_MARKET || null });
