@@ -225,15 +225,16 @@ function summarizeBreakoutRetestJournal(journal) {
     else if (["up", "down"].includes(signal.contextM15)) contextGroups.opposed.push(signal);
     else contextGroups.neutral_or_unknown.push(signal);
   }
-  const contextDirectionBreakdown = Object.fromEntries(Object.entries(contextGroups).map(([group, rows]) => ({
-    [group]: {
+  const contextDirectionBreakdown = Object.fromEntries(Object.entries(contextGroups).map(([group, rows]) => [
+    group,
+    {
       resolved: rows.length,
       meanRealizedR: rows.length ? Number((rows.reduce((sum, signal) => sum + signal.realizedR, 0) / rows.length).toFixed(3)) : null,
       targetBeforeStop: rows.filter(signal => signal.status === "tp2_hit").length,
       stopBeforeTarget: rows.filter(signal => signal.status === "stopped").length,
       timeExit: rows.filter(signal => signal.status === "time_exit").length
     }
-  })).reduce((a, b) => Object.assign(a, b), {}));
+  ]));
   const terminal = signals.filter(s => TERMINAL.has(s.status));
   const target = terminal.filter(s => s.status === "tp2_hit").length;
   const stopped = terminal.filter(s => s.status === "stopped").length;
