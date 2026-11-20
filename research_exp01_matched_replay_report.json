@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-20T20:31:27.828Z",
+  "generatedAt": "2026-11-20T20:45:46.608Z",
   "mode": "common_assumption_entry_method_replay",
   "scope": "Common-risk/common-target replay of two distinct signal-generation methods, not an isolated entry-only comparison: the production MTF baseline requires M15 confirmation/context alignment, while the EXP-01 breakout/retest candidate records M15 context but does not use it as a directional filter. EXP-01 original M1-local stop sizing is replaced by the common M15 ATR stop, so this is not a full reproduction of original EXP-01 trade management. The current chronological holdout partition is sealed and not evaluated because the existing forward-shadow journal already covers this period.",
   "assumptions": {
@@ -37,19 +37,19 @@
     "pooled": {
       "MTF_BASELINE_SCALP": {
         "discovery": {
-          "entries": 11,
-          "resolved": 11,
-          "totalGrossR": -0.2716,
-          "meanGrossR": -0.0247,
+          "entries": 14,
+          "resolved": 14,
+          "totalGrossR": 0.125,
+          "meanGrossR": 0.0089,
           "meanAfterAssumedCostR": {
-            "0.05": -0.0747,
-            "0.10": -0.1247,
-            "0.20": -0.2247
+            "0.05": -0.0411,
+            "0.10": -0.0911,
+            "0.20": -0.1911
           },
           "outcomes": {
             "target": 0,
-            "stopped": 4,
-            "time_exit": 7,
+            "stopped": 5,
+            "time_exit": 9,
             "ambiguous": 0,
             "incomplete_data": 0,
             "data_gap": 0
@@ -57,7 +57,7 @@
           "sampleSufficiency": {
             "status": "insufficient_sample",
             "minimumResolvedObservations": 50,
-            "actualResolvedObservations": 11,
+            "actualResolvedObservations": 14,
             "minimumMarketsWithTenResolved": 3,
             "actualMarketsWithTenResolved": 0,
             "maximumAmbiguousRatePct": 5,
@@ -66,19 +66,19 @@
           }
         },
         "validation": {
-          "entries": 5,
-          "resolved": 5,
-          "totalGrossR": 1.3925,
-          "meanGrossR": 0.2785,
+          "entries": 6,
+          "resolved": 6,
+          "totalGrossR": 1.7535,
+          "meanGrossR": 0.2923,
           "meanAfterAssumedCostR": {
-            "0.05": 0.2285,
-            "0.10": 0.1785,
-            "0.20": 0.0785
+            "0.05": 0.2422,
+            "0.10": 0.1923,
+            "0.20": 0.0922
           },
           "outcomes": {
             "target": 1,
             "stopped": 2,
-            "time_exit": 2,
+            "time_exit": 3,
             "ambiguous": 0,
             "incomplete_data": 0,
             "data_gap": 0
@@ -86,7 +86,7 @@
           "sampleSufficiency": {
             "status": "insufficient_sample",
             "minimumResolvedObservations": 50,
-            "actualResolvedObservations": 5,
+            "actualResolvedObservations": 6,
             "minimumMarketsWithTenResolved": 3,
             "actualMarketsWithTenResolved": 0,
             "maximumAmbiguousRatePct": 5,
@@ -97,19 +97,19 @@
       },
       "EXP01_COMMON_ENTRY": {
         "discovery": {
-          "entries": 20,
-          "resolved": 20,
-          "totalGrossR": 2.6675,
-          "meanGrossR": 0.1334,
+          "entries": 19,
+          "resolved": 19,
+          "totalGrossR": 2.8577,
+          "meanGrossR": 0.1504,
           "meanAfterAssumedCostR": {
-            "0.05": 0.0834,
-            "0.10": 0.0334,
-            "0.20": -0.0666
+            "0.05": 0.1004,
+            "0.10": 0.0504,
+            "0.20": -0.0496
           },
           "outcomes": {
             "target": 2,
             "stopped": 5,
-            "time_exit": 13,
+            "time_exit": 12,
             "ambiguous": 0,
             "incomplete_data": 0,
             "data_gap": 0
@@ -117,7 +117,7 @@
           "sampleSufficiency": {
             "status": "insufficient_sample",
             "minimumResolvedObservations": 50,
-            "actualResolvedObservations": 20,
+            "actualResolvedObservations": 19,
             "minimumMarketsWithTenResolved": 3,
             "actualMarketsWithTenResolved": 0,
             "maximumAmbiguousRatePct": 5,
@@ -128,17 +128,17 @@
         "validation": {
           "entries": 4,
           "resolved": 4,
-          "totalGrossR": -1.4197,
-          "meanGrossR": -0.3549,
+          "totalGrossR": -2.2845,
+          "meanGrossR": -0.5711,
           "meanAfterAssumedCostR": {
-            "0.05": -0.405,
-            "0.10": -0.455,
-            "0.20": -0.5549
+            "0.05": -0.6212,
+            "0.10": -0.6712,
+            "0.20": -0.7711
           },
           "outcomes": {
             "target": 0,
-            "stopped": 2,
-            "time_exit": 2,
+            "stopped": 3,
+            "time_exit": 1,
             "ambiguous": 0,
             "incomplete_data": 0,
             "data_gap": 0
@@ -161,8 +161,8 @@
     "R_10": {
       "status": "replayed",
       "commonWindow": {
-        "startEpoch": 1795134900,
-        "endEpoch": 1795206600,
+        "startEpoch": 1795135800,
+        "endEpoch": 1795207500,
         "hours": 19.917
       },
       "candleCounts": {
@@ -171,15 +171,15 @@
         "M15": 999
       },
       "setupCandidates": {
-        "baseline": 7,
-        "exp01": 25
+        "baseline": 6,
+        "exp01": 26
       },
       "methods": {
         "MTF_BASELINE_SCALP": {
           "discovery": {
-            "setups": 4,
+            "setups": 3,
             "eligibleSetups": 2,
-            "overlapSkipped": 2,
+            "overlapSkipped": 1,
             "noEntry": 0,
             "purgedAtSplitEnd": 0,
             "purgedAfterEntry": 0,
@@ -232,8 +232,8 @@
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795195860,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795196760,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         },
@@ -266,11 +266,11 @@
             "signalsPerDay": 8.033
           },
           "validation": {
-            "setups": 3,
+            "setups": 4,
             "eligibleSetups": 2,
             "overlapSkipped": 0,
             "noEntry": 2,
-            "purgedAtSplitEnd": 1,
+            "purgedAtSplitEnd": 2,
             "purgedAfterEntry": 0,
             "entries": 0,
             "resolved": 0,
@@ -294,32 +294,32 @@
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795195860,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795196760,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         }
       },
       "splitBounds": {
         "discovery": {
-          "start": 1795134900,
-          "end": 1795177920
+          "start": 1795135800,
+          "end": 1795178820
         },
         "validation": {
-          "start": 1795181520,
-          "end": 1795192260
+          "start": 1795182420,
+          "end": 1795193160
         },
         "holdout": {
-          "start": 1795195860,
-          "end": 1795206600
+          "start": 1795196760,
+          "end": 1795207500
         }
       }
     },
     "R_25": {
       "status": "replayed",
       "commonWindow": {
-        "startEpoch": 1795134900,
-        "endEpoch": 1795206600,
+        "startEpoch": 1795135800,
+        "endEpoch": 1795207500,
         "hours": 19.917
       },
       "candleCounts": {
@@ -389,8 +389,8 @@
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795195860,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795196760,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         },
@@ -423,9 +423,9 @@
             "signalsPerDay": 6.025
           },
           "validation": {
-            "setups": 9,
+            "setups": 7,
             "eligibleSetups": 2,
-            "overlapSkipped": 3,
+            "overlapSkipped": 1,
             "noEntry": 1,
             "purgedAtSplitEnd": 4,
             "purgedAfterEntry": 0,
@@ -433,50 +433,50 @@
             "resolved": 1,
             "outcomes": {
               "target": 0,
-              "stopped": 0,
-              "time_exit": 1,
+              "stopped": 1,
+              "time_exit": 0,
               "ambiguous": 0,
               "incomplete_data": 0,
               "data_gap": 0
             },
-            "totalGrossR": -0.1352,
-            "meanGrossR": -0.1352,
+            "totalGrossR": -1,
+            "meanGrossR": -1,
             "meanAfterAssumedCostR": {
-              "0.05": -0.1852,
-              "0.10": -0.2352,
-              "0.20": -0.3352
+              "0.05": -1.05,
+              "0.10": -1.1,
+              "0.20": -1.2
             },
-            "maxDrawdownR": 0.1352,
+            "maxDrawdownR": 1,
             "signalsPerDay": 8.045
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795195860,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795196760,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         }
       },
       "splitBounds": {
         "discovery": {
-          "start": 1795134900,
-          "end": 1795177920
+          "start": 1795135800,
+          "end": 1795178820
         },
         "validation": {
-          "start": 1795181520,
-          "end": 1795192260
+          "start": 1795182420,
+          "end": 1795193160
         },
         "holdout": {
-          "start": 1795195860,
-          "end": 1795206600
+          "start": 1795196760,
+          "end": 1795207500
         }
       }
     },
     "R_50": {
       "status": "replayed",
       "commonWindow": {
-        "startEpoch": 1795134900,
-        "endEpoch": 1795206600,
+        "startEpoch": 1795135800,
+        "endEpoch": 1795207500,
         "hours": 19.917
       },
       "candleCounts": {
@@ -485,37 +485,37 @@
         "M15": 999
       },
       "setupCandidates": {
-        "baseline": 12,
-        "exp01": 24
+        "baseline": 13,
+        "exp01": 25
       },
       "methods": {
         "MTF_BASELINE_SCALP": {
           "discovery": {
-            "setups": 2,
-            "eligibleSetups": 2,
+            "setups": 3,
+            "eligibleSetups": 3,
             "overlapSkipped": 0,
             "noEntry": 0,
             "purgedAtSplitEnd": 0,
             "purgedAfterEntry": 0,
-            "entries": 2,
-            "resolved": 2,
+            "entries": 3,
+            "resolved": 3,
             "outcomes": {
               "target": 0,
               "stopped": 2,
-              "time_exit": 0,
+              "time_exit": 1,
               "ambiguous": 0,
               "incomplete_data": 0,
               "data_gap": 0
             },
-            "totalGrossR": -2,
-            "meanGrossR": -1,
+            "totalGrossR": -0.6034,
+            "meanGrossR": -0.2011,
             "meanAfterAssumedCostR": {
-              "0.05": -1.05,
-              "0.10": -1.1,
-              "0.20": -1.2
+              "0.05": -0.2511,
+              "0.10": -0.3011,
+              "0.20": -0.4011
             },
-            "maxDrawdownR": 2,
-            "signalsPerDay": 4.017
+            "maxDrawdownR": 1,
+            "signalsPerDay": 6.025
           },
           "validation": {
             "setups": 3,
@@ -546,8 +546,8 @@
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795195860,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795196760,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         },
@@ -608,32 +608,32 @@
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795195860,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795196760,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         }
       },
       "splitBounds": {
         "discovery": {
-          "start": 1795134900,
-          "end": 1795177920
+          "start": 1795135800,
+          "end": 1795178820
         },
         "validation": {
-          "start": 1795181520,
-          "end": 1795192260
+          "start": 1795182420,
+          "end": 1795193160
         },
         "holdout": {
-          "start": 1795195860,
-          "end": 1795206600
+          "start": 1795196760,
+          "end": 1795207500
         }
       }
     },
     "R_75": {
       "status": "replayed",
       "commonWindow": {
-        "startEpoch": 1795134900,
-        "endEpoch": 1795206600,
+        "startEpoch": 1795135800,
+        "endEpoch": 1795207500,
         "hours": 19.917
       },
       "candleCounts": {
@@ -642,15 +642,15 @@
         "M15": 999
       },
       "setupCandidates": {
-        "baseline": 10,
+        "baseline": 11,
         "exp01": 27
       },
       "methods": {
         "MTF_BASELINE_SCALP": {
           "discovery": {
-            "setups": 5,
+            "setups": 6,
             "eligibleSetups": 2,
-            "overlapSkipped": 3,
+            "overlapSkipped": 4,
             "noEntry": 0,
             "purgedAtSplitEnd": 0,
             "purgedAfterEntry": 0,
@@ -675,46 +675,46 @@
             "signalsPerDay": 4.017
           },
           "validation": {
-            "setups": 3,
-            "eligibleSetups": 1,
+            "setups": 4,
+            "eligibleSetups": 2,
             "overlapSkipped": 0,
             "noEntry": 0,
             "purgedAtSplitEnd": 2,
             "purgedAfterEntry": 0,
-            "entries": 1,
-            "resolved": 1,
+            "entries": 2,
+            "resolved": 2,
             "outcomes": {
               "target": 0,
               "stopped": 0,
-              "time_exit": 1,
+              "time_exit": 2,
               "ambiguous": 0,
               "incomplete_data": 0,
               "data_gap": 0
             },
-            "totalGrossR": 0.2763,
-            "meanGrossR": 0.2763,
+            "totalGrossR": 0.6373,
+            "meanGrossR": 0.3186,
             "meanAfterAssumedCostR": {
-              "0.05": 0.2263,
-              "0.10": 0.1763,
-              "0.20": 0.0763
+              "0.05": 0.2686,
+              "0.10": 0.2187,
+              "0.20": 0.1186
             },
             "maxDrawdownR": 0,
-            "signalsPerDay": 8.045
+            "signalsPerDay": 16.089
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795195860,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795196760,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         },
         "EXP01_COMMON_ENTRY": {
           "discovery": {
-            "setups": 13,
+            "setups": 15,
             "eligibleSetups": 5,
-            "overlapSkipped": 7,
+            "overlapSkipped": 8,
             "noEntry": 3,
-            "purgedAtSplitEnd": 1,
+            "purgedAtSplitEnd": 2,
             "purgedAfterEntry": 0,
             "entries": 2,
             "resolved": 2,
@@ -739,9 +739,9 @@
           "validation": {
             "setups": 5,
             "eligibleSetups": 2,
-            "overlapSkipped": 0,
+            "overlapSkipped": 1,
             "noEntry": 0,
-            "purgedAtSplitEnd": 3,
+            "purgedAtSplitEnd": 2,
             "purgedAfterEntry": 0,
             "entries": 2,
             "resolved": 2,
@@ -765,32 +765,32 @@
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795195860,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795196760,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         }
       },
       "splitBounds": {
         "discovery": {
-          "start": 1795134900,
-          "end": 1795177920
+          "start": 1795135800,
+          "end": 1795178820
         },
         "validation": {
-          "start": 1795181520,
-          "end": 1795192260
+          "start": 1795182420,
+          "end": 1795193160
         },
         "holdout": {
-          "start": 1795195860,
-          "end": 1795206600
+          "start": 1795196760,
+          "end": 1795207500
         }
       }
     },
     "JD75": {
       "status": "replayed",
       "commonWindow": {
-        "startEpoch": 1795134900,
-        "endEpoch": 1795206600,
+        "startEpoch": 1795135800,
+        "endEpoch": 1795207500,
         "hours": 19.917
       },
       "candleCounts": {
@@ -800,7 +800,7 @@
       },
       "setupCandidates": {
         "baseline": 0,
-        "exp01": 34
+        "exp01": 35
       },
       "methods": {
         "MTF_BASELINE_SCALP": {
@@ -860,8 +860,8 @@
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795195860,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795196760,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         },
@@ -922,32 +922,32 @@
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795195860,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795196760,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         }
       },
       "splitBounds": {
         "discovery": {
-          "start": 1795134900,
-          "end": 1795177920
+          "start": 1795135800,
+          "end": 1795178820
         },
         "validation": {
-          "start": 1795181520,
-          "end": 1795192260
+          "start": 1795182420,
+          "end": 1795193160
         },
         "holdout": {
-          "start": 1795195860,
-          "end": 1795206600
+          "start": 1795196760,
+          "end": 1795207500
         }
       }
     },
     "JD100": {
       "status": "replayed",
       "commonWindow": {
-        "startEpoch": 1795134900,
-        "endEpoch": 1795206600,
+        "startEpoch": 1795135800,
+        "endEpoch": 1795207500,
         "hours": 19.917
       },
       "candleCounts": {
@@ -956,37 +956,37 @@
         "M15": 999
       },
       "setupCandidates": {
-        "baseline": 15,
-        "exp01": 20
+        "baseline": 16,
+        "exp01": 19
       },
       "methods": {
         "MTF_BASELINE_SCALP": {
           "discovery": {
             "setups": 11,
-            "eligibleSetups": 3,
+            "eligibleSetups": 4,
             "overlapSkipped": 6,
             "noEntry": 0,
-            "purgedAtSplitEnd": 2,
+            "purgedAtSplitEnd": 1,
             "purgedAfterEntry": 0,
-            "entries": 3,
-            "resolved": 3,
+            "entries": 4,
+            "resolved": 4,
             "outcomes": {
               "target": 0,
               "stopped": 0,
-              "time_exit": 3,
+              "time_exit": 4,
               "ambiguous": 0,
               "incomplete_data": 0,
               "data_gap": 0
             },
             "totalGrossR": 1.0739,
-            "meanGrossR": 0.358,
+            "meanGrossR": 0.2685,
             "meanAfterAssumedCostR": {
-              "0.05": 0.308,
-              "0.10": 0.258,
-              "0.20": 0.158
+              "0.05": 0.2185,
+              "0.10": 0.1685,
+              "0.20": 0.0685
             },
             "maxDrawdownR": 0.2417,
-            "signalsPerDay": 6.025
+            "signalsPerDay": 8.033
           },
           "validation": {
             "setups": 1,
@@ -1017,44 +1017,44 @@
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795195860,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795196760,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         },
         "EXP01_COMMON_ENTRY": {
           "discovery": {
-            "setups": 5,
-            "eligibleSetups": 4,
+            "setups": 4,
+            "eligibleSetups": 3,
             "overlapSkipped": 1,
             "noEntry": 2,
             "purgedAtSplitEnd": 0,
             "purgedAfterEntry": 0,
-            "entries": 2,
-            "resolved": 2,
+            "entries": 1,
+            "resolved": 1,
             "outcomes": {
               "target": 0,
               "stopped": 0,
-              "time_exit": 2,
+              "time_exit": 1,
               "ambiguous": 0,
               "incomplete_data": 0,
               "data_gap": 0
             },
-            "totalGrossR": -0.5051,
-            "meanGrossR": -0.2525,
+            "totalGrossR": -0.3149,
+            "meanGrossR": -0.3149,
             "meanAfterAssumedCostR": {
-              "0.05": -0.3026,
-              "0.10": -0.3525,
-              "0.20": -0.4526
+              "0.05": -0.3649,
+              "0.10": -0.4149,
+              "0.20": -0.5149
             },
-            "maxDrawdownR": 0.5051,
-            "signalsPerDay": 4.017
+            "maxDrawdownR": 0.3149,
+            "signalsPerDay": 2.008
           },
           "validation": {
-            "setups": 7,
-            "eligibleSetups": 4,
+            "setups": 6,
+            "eligibleSetups": 3,
             "overlapSkipped": 0,
-            "noEntry": 3,
+            "noEntry": 2,
             "purgedAtSplitEnd": 3,
             "purgedAfterEntry": 0,
             "entries": 1,
@@ -1079,24 +1079,24 @@
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795195860,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795196760,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         }
       },
       "splitBounds": {
         "discovery": {
-          "start": 1795134900,
-          "end": 1795177920
+          "start": 1795135800,
+          "end": 1795178820
         },
         "validation": {
-          "start": 1795181520,
-          "end": 1795192260
+          "start": 1795182420,
+          "end": 1795193160
         },
         "holdout": {
-          "start": 1795195860,
-          "end": 1795206600
+          "start": 1795196760,
+          "end": 1795207500
         }
       }
     },
@@ -1104,12 +1104,12 @@
       "status": "replayed",
       "commonWindow": {
         "startEpoch": 1795156620,
-        "endEpoch": 1795206600,
-        "hours": 13.883
+        "endEpoch": 1795207500,
+        "hours": 14.133
       },
       "candleCounts": {
-        "M1": 833,
-        "M5": 166,
+        "M1": 848,
+        "M5": 169,
         "M15": 999
       },
       "setupCandidates": {
@@ -1143,7 +1143,7 @@
               "0.20": -1.2
             },
             "maxDrawdownR": 1,
-            "signalsPerDay": 2.881
+            "signalsPerDay": 2.83
           },
           "validation": {
             "setups": 0,
@@ -1174,18 +1174,18 @@
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795200204,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795200924,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         },
         "EXP01_COMMON_ENTRY": {
           "discovery": {
-            "setups": 19,
+            "setups": 20,
             "eligibleSetups": 9,
-            "overlapSkipped": 1,
+            "overlapSkipped": 3,
             "noEntry": 8,
-            "purgedAtSplitEnd": 9,
+            "purgedAtSplitEnd": 8,
             "purgedAfterEntry": 0,
             "entries": 1,
             "resolved": 1,
@@ -1205,14 +1205,14 @@
               "0.20": 1.7783
             },
             "maxDrawdownR": 0,
-            "signalsPerDay": 2.881
+            "signalsPerDay": 2.83
           },
           "validation": {
             "setups": 9,
-            "eligibleSetups": 2,
+            "eligibleSetups": 0,
             "overlapSkipped": 0,
-            "noEntry": 2,
-            "purgedAtSplitEnd": 7,
+            "noEntry": 0,
+            "purgedAtSplitEnd": 9,
             "purgedAfterEntry": 0,
             "entries": 0,
             "resolved": 0,
@@ -1236,8 +1236,8 @@
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795200204,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795200924,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         }
@@ -1245,15 +1245,15 @@
       "splitBounds": {
         "discovery": {
           "start": 1795156620,
-          "end": 1795186608
+          "end": 1795187148
         },
         "validation": {
-          "start": 1795190208,
-          "end": 1795196604
+          "start": 1795190748,
+          "end": 1795197324
         },
         "holdout": {
-          "start": 1795200204,
-          "end": 1795206600
+          "start": 1795200924,
+          "end": 1795207500
         }
       }
     },
@@ -1261,46 +1261,46 @@
       "status": "replayed",
       "commonWindow": {
         "startEpoch": 1795156620,
-        "endEpoch": 1795206600,
-        "hours": 13.883
+        "endEpoch": 1795207500,
+        "hours": 14.133
       },
       "candleCounts": {
-        "M1": 833,
-        "M5": 166,
+        "M1": 848,
+        "M5": 169,
         "M15": 999
       },
       "setupCandidates": {
-        "baseline": 5,
-        "exp01": 28
+        "baseline": 6,
+        "exp01": 29
       },
       "methods": {
         "MTF_BASELINE_SCALP": {
           "discovery": {
             "setups": 2,
-            "eligibleSetups": 0,
+            "eligibleSetups": 1,
             "overlapSkipped": 0,
             "noEntry": 0,
-            "purgedAtSplitEnd": 2,
+            "purgedAtSplitEnd": 1,
             "purgedAfterEntry": 0,
-            "entries": 0,
-            "resolved": 0,
+            "entries": 1,
+            "resolved": 1,
             "outcomes": {
               "target": 0,
-              "stopped": 0,
+              "stopped": 1,
               "time_exit": 0,
               "ambiguous": 0,
               "incomplete_data": 0,
               "data_gap": 0
             },
-            "totalGrossR": 0,
-            "meanGrossR": null,
+            "totalGrossR": -1,
+            "meanGrossR": -1,
             "meanAfterAssumedCostR": {
-              "0.05": null,
-              "0.10": null,
-              "0.20": null
+              "0.05": -1.05,
+              "0.10": -1.1,
+              "0.20": -1.2
             },
-            "maxDrawdownR": 0,
-            "signalsPerDay": 0
+            "maxDrawdownR": 1,
+            "signalsPerDay": 2.83
           },
           "validation": {
             "setups": 2,
@@ -1327,12 +1327,12 @@
               "0.20": 0.9162
             },
             "maxDrawdownR": 0,
-            "signalsPerDay": 13.508
+            "signalsPerDay": 13.139
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795200204,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795200924,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         },
@@ -1362,14 +1362,14 @@
               "0.20": -0.9722
             },
             "maxDrawdownR": 1.5444,
-            "signalsPerDay": 5.762
+            "signalsPerDay": 5.66
           },
           "validation": {
-            "setups": 7,
-            "eligibleSetups": 3,
+            "setups": 10,
+            "eligibleSetups": 5,
             "overlapSkipped": 0,
-            "noEntry": 3,
-            "purgedAtSplitEnd": 4,
+            "noEntry": 5,
+            "purgedAtSplitEnd": 5,
             "purgedAfterEntry": 0,
             "entries": 0,
             "resolved": 0,
@@ -1393,8 +1393,8 @@
           },
           "holdout": {
             "status": "sealed_not_evaluated",
-            "startEpoch": 1795200204,
-            "endEpoch": 1795206600,
+            "startEpoch": 1795200924,
+            "endEpoch": 1795207500,
             "reason": "Do not consume the current holdout window: EXP-01 forward-shadow observations already cover this period. Gate D requires a later untouched period after the comparison contract is frozen."
           }
         }
@@ -1402,15 +1402,15 @@
       "splitBounds": {
         "discovery": {
           "start": 1795156620,
-          "end": 1795186608
+          "end": 1795187148
         },
         "validation": {
-          "start": 1795190208,
-          "end": 1795196604
+          "start": 1795190748,
+          "end": 1795197324
         },
         "holdout": {
-          "start": 1795200204,
-          "end": 1795206600
+          "start": 1795200924,
+          "end": 1795207500
         }
       }
     }
