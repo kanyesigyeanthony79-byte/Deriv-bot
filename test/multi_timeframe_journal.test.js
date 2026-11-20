@@ -6,7 +6,7 @@ const { touchStatus, applyLiveQuote, updateJournal, summarizeJournal, dashboardS
 const signal = {
   signalId: "JD100-SWING-100", marketId: "JD100", direction: "BUY",
   entryTimeframe: "H1", entryCandleEpoch: 100, entry: 100,
-  stopLoss: 90, tp1: 110, tp2: 120, maxAgeSeconds: 1000
+  stopLoss: 90, tp1: 110, tp2: 120, maxAgeSeconds: 10000
 };
 const candle = (epoch, high, low) => ({ epoch, open: 100, high, low, close: 100 });
 
@@ -51,8 +51,34 @@ test("records maximum favourable movement before a terminal outcome", () => {
 });
 
 test("journal expires an unclosed observation after its category age limit", () => {
-  const result = updateJournal({ version: 1, signals: [{ ...signal, status: "pending", createdEpoch: 100, tp1Hit: false }] }, {}, 1200);
+  const result = updateJournal({ version: 1, signals: [{ ...signal, status: "pending", createdEpoch: 100, tp1Hit: false }] }, {}, 10100);
   assert.equal(result.signals[0].status, "expired");
+});
+
+
+test("outcomes and MFE ignore completed candles that close after the observation deadline", () => {
+  const buySignal = { ...signal, signalId: "JD100-SHORT_TERM-EXPIRY", category: "SHORT_TERM", state: "signal" };
+  const result = updateJournal({ version: 1, signals: [] }, {
+    JD100: { marketId: "JD100", signals: [buySignal], timeframes: { H1: [
+      candle(100, 105, 95),
+      candle(200, 108, 99),
+      candle(11000, 130, 99)
+    ] } }
+  }, 12000);
+  const record = result.signals[0];
+  assert.equal(record.status, "expired");
+  assert.equal(record.outcomeCandles, 1);
+  assert.equal(record.maxFavourablePoints, 8, "post-expiry MFE must not be credited");
+  assert.equal(record.tp1Hit, false, "post-expiry TP1 must not be credited");
+});
+
+test("a live quote received after expiry cannot turn an expired observation into TP2", () => {
+  const record = { ...signal, signalId: "late-quote", status: "pending", createdEpoch: 100, tp1Hit: false };
+  const result = updateJournal({ version: 1, signals: [record] }, {}, 12000, {
+    JD100: { price: 122, epoch: 12000 }
+  });
+  assert.equal(result.signals[0].status, "expired");
+  assert.equal(result.signals[0].tp2Epoch, null);
 });
 
 test("dashboard projection includes only journal-confirmed active signals with a fresh quote", () => {
