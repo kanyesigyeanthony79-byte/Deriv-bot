@@ -233,6 +233,21 @@ async function main() {
       output.markets[marketId] = marketData;
     }
 
+    // Research runs persist a dedicated candle snapshot and return before touching
+    // production journals, dashboards, Telegram delivery, or MT5 reporting.
+    if (process.env.RESEARCH_ONLY_MODE === "true") {
+      const researchOutput = path.join(DATA_DIR, process.env.RESEARCH_MTF_DATA_FILE || "research_multi_timeframe_data.json");
+      fs.writeFileSync(researchOutput, JSON.stringify(output, null, 2) + "\n");
+      log("research_collection_complete", {
+        markets: Object.keys(output.markets).length,
+        errors: output.errors.length + Object.values(output.markets).reduce((n, m) => n + m.errors.length, 0),
+        output: path.basename(researchOutput),
+        productionStateWrites: false
+      });
+      if (Object.keys(output.markets).length !== MARKETS.length) process.exitCode = 1;
+      return;
+    }
+
     const liveQuotes = await fetchLiveQuotes(client, output.markets);
     log("live_quotes_collected", { available: Object.keys(liveQuotes).length, expected: Object.keys(output.markets).length });
     const mt5TradeLedger = await fetchMt5TradeLedger(process.env, log);
