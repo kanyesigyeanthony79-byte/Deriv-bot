@@ -341,3 +341,30 @@ test("MT5 queue remains disabled unless its explicit feature flag is true", asyn
   assert.deepEqual(urls, ["https://worker.example"]);
   assert.equal(journal.signals[0].mt5QueueStatus, undefined);
 });
+
+
+test("market-filtered R_50 MTF candidate is recorded as suppressed, not delivered", async () => {
+  const { markets, journal } = fixture([candidate()]);
+  const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
+  const result = await sendCandidateAlerts(markets, journal, 1301, env, {
+    liveQuotes: { R_50: { price: 100 } },
+    fetchImpl: async () => ({ ok: true, json: async () => ({ success: true, suppressed: true, reason: "R_50_PRIORITY_PAIR_ONLY" }) })
+  });
+  assert.equal(result.sent, 0);
+  assert.equal(result.suppressed, 1);
+  assert.equal(journal.signals[0].telegramStatus, "suppressed");
+  assert.equal(journal.signals[0].telegramStatusReason, "R_50_PRIORITY_PAIR_ONLY");
+});
+
+test("market-filtered R_50 MTF outcome is recorded as suppressed, not delivered", async () => {
+  const journal = { version: 1, signals: [{
+    ...candidate(), status: "tp2_hit", tp1Hit: true, telegramStatus: "sent"
+  }] };
+  const env = { MTF_TELEGRAM_ALERTS: "true", TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret" };
+  const result = await sendOutcomeAlerts(journal, 2000, env, {
+    fetchImpl: async () => ({ ok: true, json: async () => ({ success: true, suppressed: true, reason: "R_50_PRIORITY_PAIR_ONLY" }) })
+  });
+  assert.equal(result.sent, 0);
+  assert.equal(result.suppressed, 2);
+  assert.deepEqual(journal.signals[0].telegramOutcomeEvents, { TP1_HIT: "suppressed", TP2_HIT: "suppressed" });
+});
