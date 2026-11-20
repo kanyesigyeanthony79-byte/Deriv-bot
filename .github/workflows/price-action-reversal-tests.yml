@@ -1,0 +1,28 @@
+name: Price-action reversal research tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "price_action_reversal.js"
+      - "test/price_action_reversal.test.js"
+      - ".github/workflows/price-action-reversal-tests.yml"
+  push:
+    branches: [feat/price-action-reversal-research]
+    paths:
+      - "price_action_reversal.js"
+      - "test/price_action_reversal.test.js"
+      - ".github/workflows/price-action-reversal-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node --test test/price_action_reversal.test.js
