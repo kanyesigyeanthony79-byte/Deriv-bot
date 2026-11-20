@@ -42,6 +42,6 @@ test("R_10 M5 gap repair identifies only short, exactly aligned missing ranges",
   const candle = epoch => ({ epoch, open: 1, high: 2, low: 1, close: 2 });
   assert.deepEqual(findMissingM5Ranges([
     candle(3000), candle(3300), candle(4800), candle(5100),
-    candle(5101), candle(9000)
-  ]), [{ start: 3600, end: 4500, missingCandles: 3 }]);
+    candle(5101), candle(9300)
+  ]), [{ start: 3600, end: 4500, missingCandles: 4 }]);
 });
