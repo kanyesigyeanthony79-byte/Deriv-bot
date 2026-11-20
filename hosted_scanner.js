@@ -250,6 +250,7 @@ async function sendOutcome(signal, outcome, candle) {
   await postTelegram({
     event: "outcome",
     source: "LEGACY_15M",
+    marketId: signal.marketId,
     outcome,
     signalId: signal.signalId,
     market: signal.market,
@@ -412,7 +413,7 @@ async function main() {
 
         const levels = makeLevels(candles, result.signal);
         await postTelegram({
-          event: "new_signal", source: "LEGACY_15M", signalId, market: name, direction: result.signal, ...levels,
+          event: "new_signal", source: "LEGACY_15M", signalId, marketId: id, market: name, direction: result.signal, ...levels,
           ...(priority ? {
             priorityTier: priority.tier, priorityLabel: priority.label,
             priorityMetricName: priority.metricName, priorityMetricPct: priority.metricPct
