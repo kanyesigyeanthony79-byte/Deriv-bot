@@ -49,6 +49,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   <nav class="system-tabs" aria-label="Signal system dashboard">
     <button class="btn system-tab" type="button" data-system-tab="promoted" aria-pressed="true">Promoted System</button>
     <button class="btn system-tab" type="button" data-system-tab="original" aria-pressed="false">Original System</button>
+    <button class="btn system-tab" type="button" data-system-tab="research" aria-pressed="false">Research &amp; Forward Shadow</button>
   </nav>
 
   <section id="promoted-system" class="hero system-view" data-system-view="promoted" style="margin-top:12px">
@@ -80,6 +81,21 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     </nav>
     <div class="signal-list" id="promotedSignals" aria-live="polite"><div class="signal-empty">Loading current signal states…</div></div>
     <div class="notice">Production status is read from the latest collector snapshot. A signal is shown only while its price-observation state is pending or TP1 touched and its quote is fresh. This is not proof of an MT5 order. Research/shadow strategies are not promoted or executed here.</div>
+  </section>
+
+
+  <section id="forward-shadow" class="hero system-view" data-system-view="research" style="margin-top:12px">
+    <div class="top"><h2 style="margin:0">Research lab · six-market forward shadow</h2><span class="pill">OBSERVATION ONLY</span></div>
+    <p style="margin-top:8px">Independent forward observations across R_10, R_25, R_50, R_75, JD75 and JD100. This section reads the six dedicated research journals directly. It does not feed production signals, Telegram or MT5 execution.</p>
+    <div class="row"><button class="btn primary smallbtn" id="forwardShadowRefresh" type="button">Refresh research journals</button><span class="muted" id="forwardShadowUpdated" aria-live="polite">Loading six market journals…</span></div>
+    <div class="notice">A newly initialized journal or zero setups is not a loss and is not evidence of a strategy edge. Historical candles are not backfilled into forward results. Gross R excludes broker-specific spread, commission, slippage and executable-fill costs.</div>
+    <h3 style="margin-top:16px">Market coverage &amp; journal health</h3>
+    <div class="mtf-grid" id="forwardShadowMarkets"><div class="card muted">Loading market journals…</div></div>
+    <h3 style="margin-top:16px">Method results · market by market</h3>
+    <div class="card mtf-table-wrap"><table><thead><tr><th>Market</th><th>Method</th><th>Setups</th><th>Resolved</th><th>Target</th><th>Stop</th><th>Time exit</th><th>Pending</th><th>Ambiguous</th><th>Gross expectancy (R)</th></tr></thead><tbody id="forwardShadowMethods"><tr><td colspan="10" class="muted">Waiting for research journals…</td></tr></tbody></table></div>
+    <h3 style="margin-top:16px">Forward setup ledger</h3>
+    <div class="card mtf-table-wrap"><table><thead><tr><th>Setup time</th><th>Market</th><th>Direction</th><th>Score</th><th>Baseline M15</th><th>M5 entry</th><th>M1 entry</th></tr></thead><tbody id="forwardShadowSetups"><tr><td colspan="7" class="muted">No forward setups recorded yet.</td></tr></tbody></table></div>
+    <div class="muted" style="margin-top:10px">Gold remains in its separate candle-collection/research track. CRASH500 and BOOM500 are not members of this six-market validation cohort. Production configuration is unchanged.</div>
   </section>
 
   <section class="system-view" data-system-view="original">
@@ -229,8 +245,37 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     document.querySelectorAll("[data-system-view]").forEach(el=>{el.hidden=el.dataset.systemView!==name;});
     systemTabs.forEach(btn=>btn.setAttribute("aria-pressed",String(btn.dataset.systemTab===name)));
   }
+
+  const FORWARD_SHADOW_MARKETS=[["R_10","research_r10_forward_shadow_journal.json"],["R_25","research_r_25_forward_shadow_journal.json"],["R_50","research_r_50_forward_shadow_journal.json"],["R_75","research_r_75_forward_shadow_journal.json"],["JD75","research_jd75_forward_shadow_journal.json"],["JD100","research_jd100_forward_shadow_journal.json"]];
+  const fsEsc=s=>String(s??"—").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const fsNum=v=>v===null||v===undefined||!Number.isFinite(Number(v))?"—":Number(v).toFixed(2);
+  const fsTime=v=>{if(!v)return "—";const d=new Date(v);return Number.isNaN(d.getTime())?String(v):d.toLocaleString();};
+  async function refreshForwardShadow(){
+    const status=$("forwardShadowUpdated");if(status)status.textContent="Refreshing six independent journals…";
+    const results=await Promise.all(FORWARD_SHADOW_MARKETS.map(async([marketId,file])=>{
+      try{const response=await fetch("./"+file+"?v="+Date.now(),{cache:"no-store"});if(!response.ok)throw new Error("HTTP "+response.status);const journal=await response.json();if(journal.marketId!==marketId)throw new Error("Market identity mismatch");return {marketId,journal,error:null};}
+      catch(error){return {marketId,journal:null,error:error.message};}
+    }));
+    const good=results.filter(x=>x.journal);let setupRows=[],methodRows=[];
+    $("forwardShadowMarkets").innerHTML=results.map(({marketId,journal,error})=>{
+      if(error)return '<div class="mtf-card"><div class="mtf-head"><span>'+fsEsc(marketId)+'</span><span class="mtf-tag">UNAVAILABLE</span></div><div class="mtf-state none">NOT LOADED</div><div class="detail">'+fsEsc(error)+'</div></div>';
+      const c=journal.coverage||{},s=journal.summary||{};
+      for(const [key,label] of [["baseline","Baseline · M15"],["m5","M5 entry"],["m1","M1 entry"]]){const m=s.methods?.[key]||{};methodRows.push('<tr><td>'+fsEsc(marketId)+'</td><td>'+label+'</td><td>'+fsEsc(m.setups??0)+'</td><td>'+fsEsc(m.resolved??0)+'</td><td>'+fsEsc(m.target??0)+'</td><td>'+fsEsc(m.stop??0)+'</td><td>'+fsEsc(m.timeExit??0)+'</td><td>'+fsEsc(m.pending??0)+'</td><td>'+fsEsc(m.ambiguous??0)+'</td><td>'+fsNum(m.expectancyR)+'</td></tr>');}
+      (journal.setups||[]).forEach(setup=>setupRows.push({marketId,setup}));
+      const coverage=["M1","M5","M15"].map(tf=>tf+": "+(c[tf]?.candles??0)).join(" · ");
+      return '<div class="mtf-card"><div class="mtf-head"><span>'+fsEsc(marketId)+'</span><span class="mtf-tag">'+fsEsc(journal.dataQuality||"unknown")+'</span></div><div class="mtf-state">'+fsEsc(s.setups??journal.setups?.length??0)+' setups</div><div class="detail">Updated: '+fsEsc(fsTime(journal.updatedAt))+'<br>'+fsEsc(coverage)+'<br>Cursor: '+fsEsc(fsTime(journal.lastSetupEpoch?journal.lastSetupEpoch*1000:null))+'</div></div>';
+    }).join("");
+    $("forwardShadowMethods").innerHTML=methodRows.join("")||'<tr><td colspan="10" class="muted">No method summaries available.</td></tr>';
+    setupRows.sort((a,b)=>(a.setup.setupCloseEpoch||a.setup.setupEpoch||0)-(b.setup.setupCloseEpoch||b.setup.setupEpoch||0));
+    $("forwardShadowSetups").innerHTML=setupRows.length?setupRows.map(({marketId,setup})=>{const cell=t=>{const r=t?.r;return fsEsc(t?.status||"—")+(Number.isFinite(r)?" · "+fsNum(r)+"R":"")+(t?.entry!==undefined?" · "+fsNum(t.entry):"");};return '<tr><td>'+fsEsc(fsTime(setup.createdAt||((setup.setupCloseEpoch||setup.setupEpoch||0)*1000)))+'</td><td>'+fsEsc(marketId)+'</td><td>'+fsEsc(setup.direction)+'</td><td>'+fsEsc(setup.score??"—")+'</td><td>'+cell(setup.baseline)+'</td><td>'+cell(setup.m5)+'</td><td>'+cell(setup.m1)+'</td></tr>';}).join(""):'<tr><td colspan="7" class="muted">No qualifying forward setups have been recorded yet. The journals are initialized and awaiting new completed M15 observations.</td></tr>';
+    if(status)status.textContent=good.length+"/6 journals loaded · "+setupRows.length+" qualifying setups · refreshed "+new Date().toLocaleTimeString();
+  }
+
   systemTabs.forEach(btn=>btn.addEventListener("click",()=>showSystem(btn.dataset.systemTab)));
   showSystem("promoted");
+  document.getElementById("forwardShadowRefresh").addEventListener("click",refreshForwardShadow);
+  refreshForwardShadow();
+  setInterval(refreshForwardShadow,60000);
   document.addEventListener("click",event=>{
     const filterButton=event.target.closest("[data-signal-filter]");
     const metricButton=event.target.closest("[data-metric-filter]");
