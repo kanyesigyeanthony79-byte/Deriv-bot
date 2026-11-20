@@ -10,7 +10,7 @@ test("reports stale candles without a safety claim",()=>{
  assert.equal(r.status,"STALE_DATA");
 });
 test("reports insufficient history",()=>{
- const r=reviewSignal(signal,{M1:candles(10)},1000+10*60);
+ const r=reviewSignal({...signal,entryCandleEpoch:1540},{M1:candles(10)},1000+10*60);
  assert.equal(r.status,"INSUFFICIENT_HISTORY");
 });
 test("flags stop touched before trend assessment",()=>{
