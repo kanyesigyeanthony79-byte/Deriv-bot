@@ -3,13 +3,54 @@
 const FRAME_SECONDS = { M1:60, M5:300, M15:900, H1:3600, H4:14400, D1:86400, W1:604800 };
 function reviewSignalCore(signal, timeframes, nowEpoch = Math.floor(Date.now()/1000)) {
   if (!signal || !signal.signalId || !["BUY","SELL"].includes(signal.direction)) throw new Error("A valid original signal is required.");
+  // The journal is authoritative for terminal outcomes. Never replay a terminal
+  // signal against today's rolling candle window: later price touches are not
+  // evidence about the original outcome window.
+  const journalStatus = String(signal.status || "").toLowerCase();
+  const terminalStatuses = new Set(["tp2_hit", "stopped", "stopped_after_tp1", "ambiguous", "expired"]);
+  if (terminalStatuses.has(journalStatus)) {
+    const rawTerminalEpoch = journalStatus === "expired" ? signal.expiredEpoch
+      : journalStatus === "tp2_hit" ? signal.tp2Epoch
+      : journalStatus === "ambiguous" || journalStatus.startsWith("stopped") ? signal.stopEpoch
+      : null;
+    const terminalEpoch = rawTerminalEpoch === null || rawTerminalEpoch === "" ? NaN : Number(rawTerminalEpoch);
+    const rawExpiryEpoch = signal.intendedExpiryEpoch;
+    const expiryEpoch = rawExpiryEpoch === null || rawExpiryEpoch === "" ? NaN : Number(rawExpiryEpoch);
+    const labels = {
+      tp2_hit: ["JOURNAL_TP2_RECORDED", "JOURNAL RECORD: TP2"],
+      stopped: ["JOURNAL_STOP_RECORDED", "JOURNAL RECORD: STOP"],
+      stopped_after_tp1: ["JOURNAL_STOP_AFTER_TP1_RECORDED", "JOURNAL RECORD: STOP AFTER TP1"],
+      ambiguous: ["JOURNAL_AMBIGUOUS_RECORDED", "JOURNAL RECORD: AMBIGUOUS"],
+      expired: ["JOURNAL_EXPIRED_RECORDED", "JOURNAL RECORD: EXPIRED"]
+    };
+    const [status, headline] = labels[journalStatus];
+    return {
+      signalId: signal.signalId, status, headline, journalStatus,
+      terminalEpoch: Number.isFinite(terminalEpoch) ? terminalEpoch : null,
+      intendedExpiryEpoch: Number.isFinite(expiryEpoch) ? expiryEpoch : null,
+      tp1Reached: Boolean(signal.tp1Hit), tp1Epoch: signal.tp1Epoch || null,
+      reason: journalStatus === "expired"
+        ? (Number.isFinite(expiryEpoch)
+          ? "The journal recorded this observation as expired. Its advisory review is closed at the recorded expiry; later price movements are excluded."
+          : "The journal recorded this observation as expired, but the intended expiry boundary is missing. Historical candle reconciliation is unavailable; no boundary is inferred.")
+        : "The journal has already recorded a terminal outcome. This review preserves that outcome and does not replay later candles as a correction.",
+      reconciliation: journalStatus === "expired" && !Number.isFinite(expiryEpoch)
+        ? "NON_COMPARABLE_MISSING_EXPIRY_BOUNDARY" : "JOURNAL_TERMINAL_OUTCOME_PRESERVED",
+      advisoryOnly: true
+    };
+  }
   const tf = signal.entryTimeframe, seconds = FRAME_SECONDS[tf], candles = timeframes && timeframes[tf];
   if (!seconds || !Array.isArray(candles) || !candles.length) return {signalId:signal.signalId,status:"INSUFFICIENT_DATA",headline:"REVIEW UNAVAILABLE",reason:"Latest completed candles are unavailable. Do not infer that the signal is safe."};
   const completed = candles.filter(c=>Number.isFinite(c.epoch)&&c.epoch+seconds<=nowEpoch).sort((a,b)=>a.epoch-b.epoch);
   const last = completed[completed.length-1];
   if (!last || nowEpoch-(last.epoch+seconds)>seconds*3) return {signalId:signal.signalId,status:"STALE_DATA",headline:"DATA TOO OLD",reason:"The latest completed entry-timeframe candle is stale. No hold/exit conclusion is issued."};
   const buy=signal.direction==="BUY";
-  const afterEntry=completed.filter(c=>Number.isFinite(signal.entryCandleEpoch)?c.epoch>signal.entryCandleEpoch:true);
+  const rawExpiryEpoch = signal.intendedExpiryEpoch;
+  const expiryEpoch = rawExpiryEpoch === null || rawExpiryEpoch === "" ? NaN : Number(rawExpiryEpoch);
+  const withinObservationWindow = Number.isFinite(expiryEpoch)
+    ? completed.filter(c => c.epoch + seconds <= expiryEpoch)
+    : completed;
+  const afterEntry=withinObservationWindow.filter(c=>Number.isFinite(signal.entryCandleEpoch)?c.epoch>signal.entryCandleEpoch:true);
   if (!afterEntry.length) return {signalId:signal.signalId,status:"INSUFFICIENT_HISTORY",headline:"REVIEW INCOMPLETE",currentPrice:last.close,lastCandleEpoch:last.epoch,reason:"No completed candles after the original signal candle are available."};
   let tp1Epoch=null,tp2Epoch=null,stopEpoch=null,firstTerminal=null;
   for (const candle of afterEntry) {
