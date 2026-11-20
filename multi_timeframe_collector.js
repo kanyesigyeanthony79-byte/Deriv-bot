@@ -308,7 +308,7 @@ async function main() {
     const r10ForwardJournal = updateR10ForwardShadowJournal(
       priorR10ForwardJournal, output.markets.R_10, now
     );
-    fs.writeFileSync(R10_FORWARD_SHADOW_JOURNAL, JSON.stringify(r10ForwardJournal, null, 2) + "\\n");
+    fs.writeFileSync(R10_FORWARD_SHADOW_JOURNAL, JSON.stringify(r10ForwardJournal, null, 2) + "\n");
     output.r10ForwardShadow = r10ForwardJournal.summary || {
       mode: "forward_shadow_observation_only",
       dataQuality: r10ForwardJournal.dataQuality || "warming",
