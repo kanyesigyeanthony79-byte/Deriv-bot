@@ -15,6 +15,17 @@ function classifyMtfOverlap(baseline, candidateDirection) {
   return "mtf_" + (baseline?.state || "unknown");
 }
 
+function findRetestWithinSplit(m1, atrValues, setupEpoch, setup, splitEndEpoch) {
+  // Keep all prior candles for causal ATR values, but never inspect a candle
+  // whose close falls beyond this chronological split boundary.
+  const boundaryIndex = m1.findIndex(c => c.epoch + TIMEFRAMES.M1 > splitEndEpoch);
+  const length = boundaryIndex < 0 ? m1.length : boundaryIndex;
+  const boundedM1 = m1.slice(0, length);
+  const startIndex = boundedM1.findIndex(c => c.epoch === setupEpoch);
+  if (startIndex < 0) return null;
+  return findRetestConfirmation(boundedM1, startIndex, setup, atrValues.slice(0, length));
+}
+
 function buildCandidateOpportunityReport(snapshot, generatedAt = new Date().toISOString()) {
   const markets = {};
   const pooled = {
@@ -74,8 +85,7 @@ function buildCandidateOpportunityReport(snapshot, generatedAt = new Date().toIS
       const baseline = evaluateCategory(id, market.marketName || id, "SCALP",
         { M5: a5.slice(0, i + 1), M15: completedM15 }, i);
 
-      const startIndex = a1.findIndex(c => c.epoch === setupEpoch);
-      const confirmation = startIndex < 0 ? null : findRetestConfirmation(a1, startIndex, breakout, m1Atr);
+      const confirmation = findRetestWithinSplit(a1, m1Atr, setupEpoch, breakout, range.end);
       const candidate = confirmation && a1[confirmation.entryIndex]
         ? { entryEpoch: a1[confirmation.entryIndex].epoch, entry: a1[confirmation.entryIndex].open }
         : null;
@@ -185,4 +195,4 @@ function main() {
   }));
 }
 if (require.main === module) main();
-module.exports = { classifyMtfOverlap, buildCandidateOpportunityReport };
+module.exports = { classifyMtfOverlap, findRetestWithinSplit, buildCandidateOpportunityReport };
