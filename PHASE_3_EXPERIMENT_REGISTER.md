@@ -302,3 +302,30 @@ Terminal status counts are 114 stopped, 60 TP2 hits, 3 time exits, and 1 ambiguo
 **Next Phase 3 work for EXP-01:** build or verify a candidate-specific matched replay on identical market/time windows, with the baseline and EXP-01 evaluated using the same entry/exit assumptions, risk distance, outcome horizon, and conservative cost sensitivity. Declare the primary metric and guardrails before reading the validation sample. Preserve a fresh untouched chronological holdout for Gate D. Do not tune EXP-01 from its current forward outcomes or use the contemporaneous match report to claim an edge.
 
 **Decision:** Gate B numerical thresholds are met for EXP-01 in this snapshot. Gate A implementation integrity still requires complete candidate-specific audit; Gate C and Gate D remain unverified. No candidate is promoted, no production signal or Telegram behavior changes, and MT5 execution remains disabled.
+
+
+## 17. EXP-01 common-assumption entry-method replay implementation — 2026-11-20 04:38 UTC
+
+Implementation merged in [PR #133](https://github.com/kanyesigyeanthony79-byte/Deriv-bot/pull/133), commit `055dba90f3731794fa20a210c8cf30addb232913`. The first real-data report has not yet been generated; therefore this entry records the methodology and implementation status, not a Gate C result.
+
+**Comparison populations:**
+- Production control: `MTF_BASELINE_V1` SCALP category, evaluated on completed M5 candles with completed M15 confirmation/context; enter at the next M5 open.
+- EXP-01: frozen M5 breakout beyond the prior 12-bar range, then completed M1 retest confirmation; enter at the next M1 open.
+- Both are evaluated over the same market-specific common M1/M5/M15 continuous window.
+
+**Common outcome contract:**
+- Stop distance: 1.25 × completed M15 ATR at the M5 setup close, applied identically to both entry methods.
+- Target: fixed 2R.
+- Outcome resolution: completed M1 candles over 60 minutes.
+- Same-candle stop and target touches: ambiguous, excluded from numeric expectancy.
+- One open position per method per market; overlapping setups are skipped.
+- Chronological 60/20/20 discovery/validation/holdout boundaries, one-hour post-boundary embargoes, and split-end outcome purging.
+- Report gross candle R plus hypothetical 0.05R, 0.10R and 0.20R round-trip deductions. These are sensitivity scenarios, not measured broker costs.
+
+**Pre-declared comparison framework:** primary metric is mean R after the hypothetical 0.10R deduction per resolved observation. Report drawdown sequence, signal frequency, market coverage, outcome categories and the other cost sensitivities as guardrails/context. The assumed cost deductions must not be described as actual net returns.
+
+**Scope limitation:** this isolates the entry-method difference. It intentionally replaces EXP-01's original M1-local stop sizing with the production SCALP M15-ATR stop so both methods share the same risk/exit contract. It is not a full reproduction of EXP-01's original trade management and cannot alone certify Gate C.
+
+**Holdout protection:** the current 20% chronological holdout partition is sealed and not evaluated because the existing forward-shadow journal already covers this period. Gate D still requires a later untouched period after the comparison contract is frozen. The report generator emits the holdout as `sealed_not_evaluated`.
+
+**Status:** implementation tests passed on PR #133 (Lower-Timeframe Research Tests, Multi-Timeframe Engine Tests, and MT5 execution integration tests). The replay report is pending its next successful research-only collector execution. Gate C and Gate D remain unverified; no production rules, Telegram routing, or MT5 execution settings were changed.
