@@ -2,7 +2,7 @@
 // Paired EXP-01 entry-policy replay. Offline research only; does not alter native replay.
 const { TIMEFRAMES, evaluateCategory } = require("./multi_timeframe_engine");
 const { detectBreakout, findRetestConfirmation, atrSeries } = require("./breakout_retest_shadow");
-const { latestContinuousSegment, splitBounds, resolveCommonOutcome, atr, STOP_ATR_M15, TARGET_R, HORIZON_SECONDS, EMBARGO_SECONDS, MARKETS } = require("./exp01_matched_replay");
+const { latestContinuousSegment, splitBounds, resolveCommonOutcome, atr, STOP_ATR_M15, TARGET_R, HORIZON_SECONDS, MARKETS } = require("./exp01_matched_replay");
 
 const MAX_CANDIDATE_WAIT_SECONDS = 3 * TIMEFRAMES.M5;
 const MIN_M5_INDEX = 64;
@@ -26,7 +26,7 @@ function candidateEntry({ m1, m5, m5Index, m1Atr, breakout, setupEpoch, directio
   return { status: "entry", reason: null, entryEpoch: candle.epoch, entry: candle.open };
 }
 
-function buildSharedEvents({ marketId, marketName, m1, m5, m15 }) {
+function buildSharedEvents({ marketId, marketName, m1, m5, m15, baselineEvaluator = evaluateCategory }) {
   const events = [];
   const m1Atr = atrSeries(m1, 14);
   const m5Atr = atrSeries(m5, 14);
@@ -34,7 +34,7 @@ function buildSharedEvents({ marketId, marketName, m1, m5, m15 }) {
   for (let i = MIN_M5_INDEX; i < m5.length - 1; i++) {
     const setupCandle = m5[i];
     const setupEpoch = setupCandle.epoch + TIMEFRAMES.M5;
-    const baseline = evaluateCategory(marketId, marketName || marketId, "SCALP", { M5: m5, M15: m15 }, i);
+    const completedM15 = m15.filter(c => c.epoch + TIMEFRAMES.M15 <= setupEpoch);\n    const baseline = baselineEvaluator(marketId, marketName || marketId, "SCALP", { M5: m5.slice(0, i + 1), M15: completedM15 }, i);
     if (baseline.state !== "signal") continue;
     const direction = baseline.direction;
     const key = pairKey(marketId, setupEpoch, direction);
@@ -118,10 +118,17 @@ function summarizePairedRows(rows) {
   const variance = diffs.length > 1 ? diffs.reduce((a,b)=>a+(b-mean)**2,0)/(diffs.length-1) : null;
   const se = variance === null ? null : Math.sqrt(variance/diffs.length);
   const perMarket = {};
+  const clusterMeans = [];
   for (const market of [...new Set(rows.map(r=>r.marketId))]) {
     const ds = resolved.filter(r=>r.marketId===market).map(r=>r.candidate.outcome.realizedR-r.baseline.outcome.realizedR);
-    perMarket[market] = { pairedResolved: ds.length, meanDifferenceR: ds.length ? Number((ds.reduce((a,b)=>a+b,0)/ds.length).toFixed(4)) : null };
+    const marketMean = ds.length ? ds.reduce((a,b)=>a+b,0)/ds.length : null;
+    perMarket[market] = { pairedResolved: ds.length, meanDifferenceR: marketMean === null ? null : Number(marketMean.toFixed(4)) };
+    if (marketMean !== null) clusterMeans.push(marketMean);
   }
+  const clusterMean = clusterMeans.length ? clusterMeans.reduce((a,b)=>a+b,0)/clusterMeans.length : null;
+  const clusterVariance = clusterMeans.length > 1 ? clusterMeans.reduce((a,b)=>a+(b-clusterMean)**2,0)/(clusterMeans.length-1) : null;
+  const clusterSe = clusterVariance === null ? null : Math.sqrt(clusterVariance/clusterMeans.length);
+  const tCritical = ({2:4.303,3:3.182,4:2.776,5:2.571,6:2.447,7:2.365,8:2.306,9:2.262})[clusterMeans.length-1] || 1.96;
   return {
     sharedEligibleEvents: rows.length,
     baselineEntries: rows.filter(r=>["target","stopped","time_exit","ambiguous","incomplete_data","data_gap"].includes(r.baseline?.status)).length,
@@ -129,7 +136,7 @@ function summarizePairedRows(rows) {
     pairedResolved: diffs.length,
     meanCandidateMinusBaselineR: mean === null ? null : Number(mean.toFixed(4)),
     medianCandidateMinusBaselineR: diffs.length ? Number(percentile(sorted,0.5).toFixed(4)) : null,
-    pairedDifference95PctInterval: se === null ? null : [Number((mean-1.96*se).toFixed(4)),Number((mean+1.96*se).toFixed(4))],
+    pairedDifference95PctIntervalUnclustered: se === null ? null : [Number((mean-1.96*se).toFixed(4)),Number((mean+1.96*se).toFixed(4))],\n    marketClusterCount: clusterMeans.length,\n    marketClusteredMeanDifferenceR: clusterMean === null ? null : Number(clusterMean.toFixed(4)),\n    marketClustered95PctInterval: clusterSe === null || clusterMeans.length < 3 ? null : [Number((clusterMean-tCritical*clusterSe).toFixed(4)),Number((clusterMean+tCritical*clusterSe).toFixed(4))],
     pairedClaimStatus: diffs.length >= 50 ? "minimum_pair_count_met_review_uncertainty_and_market_clusters" : "exploratory_inconclusive_under_50_pairs",
     perMarket
   };
@@ -159,13 +166,13 @@ function buildPairedReplayReport(snapshot, generatedAt = new Date().toISOString(
     const replay=replaySharedEvents(events,a1,bounds);
     markets[id]={status:"replayed",commonWindow:{startEpoch:start,endEpoch:end,hours:Number(((end-start)/3600).toFixed(3))},
       sharedEligibleEvents:events.length,counts:replay.counts,
-      discovery:summarizePairedRows(replay.rows.discovery),validation:summarizePairedRows(replay.rows.validation),
+      discovery:summarizePairedRows(replay.rows.discovery),validation:summarizePairedRows(replay.rows.validation),\n      discoveryEventAccounting:replay.rows.discovery,validationEventAccounting:replay.rows.validation,
       holdout:{status:"sealed_not_evaluated",reason:"Current historical holdout remains sealed; use a later untouched forward period."}};
   }
   return {version:1,generatedAt,mode:"paired_entry_policy_replay",researchOnly:true,
     contract:"Shared production MTF completed-candle eligibility and direction; baseline next M5 open versus EXP-01 breakout/retest next M1 open within 15 minutes; shared setup-time M15 ATR risk, 2R target and 60-minute M1 outcome horizon.",
     safeguards:{minimumPairedResolved:50,maximumCandidateWaitSeconds:MAX_CANDIDATE_WAIT_SECONDS,holdout:"sealed_not_evaluated",nativeStrategyReplay:"unchanged_and_separate"},
-    markets,interpretation:"Paired differences are computed only for same-key events where both policies have resolved outcomes. Fewer than 50 pairs is exploratory and inconclusive; market-level results and uncertainty must be reviewed. This is not a profitability or promotion verdict."};
+    markets,interpretation:"Paired differences are computed only for same-key events where both policies have resolved outcomes. Fewer than 50 pairs is exploratory and inconclusive; market-level results and market-clustered uncertainty must be reviewed; the unclustered interval is supplemental only. This is not a profitability or promotion verdict."};
 }
 
 module.exports={MAX_CANDIDATE_WAIT_SECONDS,pairKey,candidateEntry,buildSharedEvents,replaySharedEvents,summarizePairedRows,buildPairedReplayReport};
