@@ -44,15 +44,24 @@ function applyLiveQuote(record, quote, nowEpoch) {
   return record;
 }
 
+function intendedExpiryEpoch(record) {
+  const stored = record && record.intendedExpiryEpoch;
+  if (stored !== null && stored !== undefined && Number.isFinite(Number(stored))) return Number(stored);
+  const entryEpoch = Number(record && record.entryCandleEpoch);
+  const maxAgeSeconds = Number(record && record.maxAgeSeconds || DEFAULT_MAX_AGE_SECONDS[record && record.category] || 1800);
+  return Number.isFinite(entryEpoch) && Number.isFinite(maxAgeSeconds) && maxAgeSeconds > 0
+    ? entryEpoch + maxAgeSeconds : null;
+}
+
 function markExpired(record, nowEpoch) {
   if (!record || TERMINAL.has(record.status)) return false;
-  const entryEpoch = Number(record.entryCandleEpoch);
-  const maxAgeSeconds = Number(record.maxAgeSeconds || DEFAULT_MAX_AGE_SECONDS[record.category] || 1800);
-  if (!Number.isFinite(entryEpoch) || !Number.isFinite(maxAgeSeconds) || maxAgeSeconds <= 0) return false;
+  const deadline = intendedExpiryEpoch(record);
+  if (!Number.isFinite(deadline)) return false;
   // Store the intended deadline for new and still-active legacy observations.
   // Already-expired historical records are never backfilled or rewritten.
-  if (!Number.isFinite(Number(record.intendedExpiryEpoch))) {
-    record.intendedExpiryEpoch = entryEpoch + maxAgeSeconds;
+  if (record.intendedExpiryEpoch === null || record.intendedExpiryEpoch === undefined ||
+      !Number.isFinite(Number(record.intendedExpiryEpoch))) {
+    record.intendedExpiryEpoch = deadline;
   }
   if (nowEpoch > Number(record.intendedExpiryEpoch)) {
     record.status = "expired";
@@ -101,14 +110,12 @@ function updateJournal(journal, markets, nowEpoch, liveQuotes = {}) {
       const frame = market.timeframes && market.timeframes[record.entryTimeframe] || [];
       const later = frame.filter(c => c.epoch > (record.lastProcessedEpoch ?? record.entryCandleEpoch));
       const frameSeconds = ENTRY_TIMEFRAME_SECONDS[record.entryTimeframe];
-      const expiryEpoch = Number.isFinite(Number(record.intendedExpiryEpoch))
-        ? Number(record.intendedExpiryEpoch)
-        : Number(record.entryCandleEpoch) + Number(record.maxAgeSeconds || DEFAULT_MAX_AGE_SECONDS[record.category] || 1800);
+      const expiryEpoch = intendedExpiryEpoch(record);
       for (const candle of later) {
         if (TERMINAL.has(record.status)) break;
         // Only completed entry-timeframe candles that close within the observation
         // window may affect outcomes or MFE. Never credit post-expiry movement.
-        if (!frameSeconds || candle.epoch + frameSeconds > expiryEpoch) break;
+        if (!frameSeconds || !Number.isFinite(expiryEpoch) || candle.epoch + frameSeconds > expiryEpoch) break;
         record.outcomeCandles++;
         record.lastProcessedEpoch = candle.epoch;
         const favourablePrice = record.direction === "BUY" ? candle.high : candle.low;
@@ -145,7 +152,7 @@ function updateJournal(journal, markets, nowEpoch, liveQuotes = {}) {
   for (const record of state.signals) {
     if (!TERMINAL.has(record.status)) {
       markExpired(record, nowEpoch);
-      const expiryEpoch = Number(record.intendedExpiryEpoch);
+      const expiryEpoch = intendedExpiryEpoch(record);
       const quote = liveQuotes[record.marketId];
       const quoteEpoch = Number(quote?.epoch);
       if (!TERMINAL.has(record.status) && nowEpoch <= expiryEpoch &&
@@ -192,4 +199,4 @@ function summarizeJournal(journal) {
   for (const s of journal.signals || []) counts[s.status] = (counts[s.status] || 0) + 1;
   return counts;
 }
-module.exports = { STRATEGY_VERSION, TERMINAL, touchStatus, applyLiveQuote, markExpired, updateJournal, summarizeJournal, dashboardSignalsForMarket };
+module.exports = { STRATEGY_VERSION, TERMINAL, touchStatus, applyLiveQuote, markExpired, intendedExpiryEpoch, updateJournal, summarizeJournal, dashboardSignalsForMarket };
