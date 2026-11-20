@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { buildReport, SECONDS, MARKETS } = require("./lower_tf_entry_research");
+const { buildReport, mergeLowerTimeframeArchive, SECONDS, MARKETS, LIMITS, R10_ARCHIVE_LIMITS } = require("./lower_tf_entry_research");
 
 const IDS = ["R_10", "R_25", "R_50"];
 const BASE = Math.floor(1794000000 / 900) * 900;
@@ -81,4 +81,27 @@ test("focused pair qualification does not wait for three markets", () => {
   assert.equal(focused.mode, "ready_for_lower_timeframe_replay");
   assert.equal(portfolio.marketsReady, 1);
   assert.equal(portfolio.mode, "collecting_lower_timeframe_history");
+});
+
+
+test("expands retained history only for R_10 without changing other markets", () => {
+  const prior = { version: 1, markets: {
+    R_10: { marketName: "R_10", timeframes: {
+      M1: candles("M1", 16000), M5: candles("M5", 4100), M15: candles("M15", 1900)
+    } },
+    R_25: { marketName: "R_25", timeframes: {
+      M1: candles("M1", 6000), M5: candles("M5", 2100), M15: candles("M15", 1300)
+    } }
+  } };
+  const merged = mergeLowerTimeframeArchive(prior, {
+    R_10: { marketName: "R_10", timeframes: {} },
+    R_25: { marketName: "R_25", timeframes: {} }
+  });
+  assert.equal(merged.markets.R_10.timeframes.M1.length, R10_ARCHIVE_LIMITS.M1);
+  assert.equal(merged.markets.R_10.timeframes.M5.length, R10_ARCHIVE_LIMITS.M5);
+  assert.equal(merged.markets.R_10.timeframes.M15.length, R10_ARCHIVE_LIMITS.M15);
+  assert.equal(merged.markets.R_25.timeframes.M1.length, LIMITS.M1);
+  assert.equal(merged.markets.R_25.timeframes.M5.length, LIMITS.M5);
+  assert.equal(merged.markets.R_25.timeframes.M15.length, LIMITS.M15);
+  assert.equal(merged.markets.R_10.timeframes.M1[0].epoch, BASE + (16000 - R10_ARCHIVE_LIMITS.M1) * SECONDS.M1);
 });
