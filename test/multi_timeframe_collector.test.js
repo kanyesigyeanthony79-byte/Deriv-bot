@@ -30,8 +30,8 @@ test("paginates M1 history beyond the 1,000-candle page size without gaps or dup
   const client = {
     async ask(request) {
       requests.push(request);
-      if (requests.length === 1) return { candles: makeCandles(1000 * 60, 1000) };
-      if (requests.length === 2) return { candles: makeCandles(200 * 60, 801) };
+      if (requests.length === 1) return { candles: makeCandles(1000 * 60, 999) };
+      if (requests.length === 2) return { candles: makeCandles(199 * 60, 802) };
       throw new Error("Unexpected extra history request");
     }
   };
@@ -39,11 +39,11 @@ test("paginates M1 history beyond the 1,000-candle page size without gaps or dup
   assert.equal(requests.length, 2);
   assert.equal(requests[0].count, 1000);
   assert.equal(requests[0].end, "latest");
-  assert.equal(requests[1].count, 801);
-  assert.equal(requests[1].start, 200 * 60);
+  assert.equal(requests[1].count, 802);
+  assert.equal(requests[1].start, 199 * 60);
   assert.equal(requests[1].end, String(1000 * 60));
   assert.equal(rows.length, 1800);
-  assert.equal(rows[0].epoch, 200 * 60);
+  assert.equal(rows[0].epoch, 199 * 60);
   assert.equal(rows.at(-1).epoch, 119940);
   assert.equal(new Set(rows.map(c => c.epoch)).size, 1800);
   assert.ok(rows.slice(1).every((c, i) => c.epoch - rows[i].epoch === 60));
