@@ -10,7 +10,10 @@ const FILE_PREFIX = String(process.env.RESEARCH_FILE_PREFIX || "");
 const INPUT = path.join(DATA_DIR, process.env.RESEARCH_MTF_DATA_FILE || (FILE_PREFIX ? FILE_PREFIX + "multi_timeframe_data.json" : "multi_timeframe_data.json"));
 const ARCHIVE = path.join(DATA_DIR, FILE_PREFIX + "lower_tf_research_candles.json");
 const REPORT = path.join(DATA_DIR, FILE_PREFIX + "lower_tf_entry_research_report.json");
+// Default retention remains unchanged for other markets. R_10 receives a longer
+// research-only archive so the latest continuous replay window can grow over time.
 const LIMITS = Object.freeze({ M1: 5000, M5: 2000, M15: 1200 });
+const R10_ARCHIVE_LIMITS = Object.freeze({ M1: 15000, M5: 4000, M15: 1800 });
 const SECONDS = Object.freeze({ M1: 60, M5: 300, M15: 900 });
 const MARKETS = ["R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500"];
 
@@ -219,8 +222,9 @@ function mergeLowerTimeframeArchive(prior, incoming) {
           low: Number(c.low), close: Number(c.close)
         });
       }
+      const retentionLimit = marketId === "R_10" ? R10_ARCHIVE_LIMITS[tf] : LIMITS[tf];
       saved.timeframes[tf] = [...byEpoch.values()]
-        .sort((a, b) => a.epoch - b.epoch).slice(-LIMITS[tf]);
+        .sort((a, b) => a.epoch - b.epoch).slice(-retentionLimit);
     }
   }
   archive.updatedAt = new Date().toISOString();
@@ -356,4 +360,4 @@ async function main() {
   }));
 }
 if (require.main === module) main();
-module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, normalizeBackfillCandles, candlesFromTickHistory, findM5Gaps, findRepairableM5Gaps, LIMITS, SECONDS, MARKETS, BACKFILL_M5_COUNT, GAP_REPAIR_WINDOW_SECONDS, MAX_REPAIR_GAP_CANDLES };
+module.exports = { mergeLowerTimeframeArchive, frameStats, buildReport, normalizeBackfillCandles, candlesFromTickHistory, findM5Gaps, findRepairableM5Gaps, LIMITS, SECONDS, MARKETS, BACKFILL_M5_COUNT, GAP_REPAIR_WINDOW_SECONDS, MAX_REPAIR_GAP_CANDLES, R10_ARCHIVE_LIMITS };
