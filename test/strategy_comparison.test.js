@@ -3,7 +3,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   STRATEGIES, ema, atr, pullbackConfirmed, makeLevels, evaluateStrategy,
-  updateSignalOutcome, updateStrategyJournal
+  updateSignalOutcome, updateStrategyJournal, summarizeStrategyJournal
 } = require("../strategy_comparison");
 
 function candles(count, step = 900, start = 1_700_000_000) {
@@ -79,4 +79,26 @@ test("shadow journal evaluates each common candle once and is idempotent", () =>
   assert.equal(second.signals.length, 0);
   assert.equal(second.summary.timeframe, "M15");
   assert.equal(second.summary.mode, "shadow_observation_only");
+});
+
+test("forward outcome metrics exclude historical backfill signals", () => {
+  const signals = [
+    { marketId: "R_10", strategyId: "EMA20_50", evaluationSource: "forward_shadow", status: "tp2_hit", tp1Hit: true, realizedR: 3 },
+    { marketId: "R_10", strategyId: "EMA20_50", evaluationSource: "forward_shadow", status: "stopped", tp1Hit: false, realizedR: -1 },
+    { marketId: "R_10", strategyId: "EMA20_50", evaluationSource: "forward_shadow", status: "pending", tp1Hit: false, realizedR: null },
+    { marketId: "R_10", strategyId: "EMA20_50", evaluationSource: "historical_backfill", status: "tp2_hit", tp1Hit: true, realizedR: 3 }
+  ];
+  const summary = summarizeStrategyJournal({
+    version: 1, updatedAt: "2026-11-20T00:00:00.000Z",
+    markets: { R_10: { strategies: { EMA20_50: { barsEvaluated: 10, noSignalBars: 6, signalsGenerated: 4 } } } },
+    signals
+  });
+  const total = summary.totals.EMA20_50;
+  assert.equal(total.historicalBackfillSignals, 1);
+  assert.equal(total.forwardShadowSignals, 3);
+  assert.equal(total.forwardResolvedSignals, 2);
+  assert.equal(total.forwardPendingSignals, 1);
+  assert.equal(total.forwardTp2HitRate, 50);
+  assert.equal(total.forwardAverageRealizedR, 1);
+  assert.equal(summary.markets.R_10.EMA20_50.forwardResolvedSignals, 2);
 });
