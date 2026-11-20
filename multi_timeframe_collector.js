@@ -86,7 +86,9 @@ async function fetchCandleHistory(client, symbol, granularity, count, now) {
   const byEpoch = new Map();
   let end = "latest";
   let remaining = Math.max(0, Number(count) || 0);
-  const maxPages = Math.ceil(remaining / 1000);
+  // Allow one extra page because filtering the still-open latest candle can
+  // make an otherwise full first response one row short of the requested page.
+  const maxPages = Math.ceil(remaining / 1000) + 1;
   for (let page = 0; page < maxPages && remaining > 0; page++) {
     const requested = Math.min(1000, remaining);
     const pageRequest = {
@@ -102,7 +104,6 @@ async function fetchCandleHistory(client, symbol, granularity, count, now) {
     const earliest = rows[0].epoch;
     end = String(earliest);
     remaining = Math.max(0, count - byEpoch.size);
-    if (rows.length < requested) break;
   }
   return [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch).slice(-count);
 }
