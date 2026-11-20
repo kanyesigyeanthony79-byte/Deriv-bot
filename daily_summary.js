@@ -68,10 +68,15 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
   const mtfUnresolved = mtfRows.filter(signal =>
     !["tp2_hit", "stopped", "stopped_after_tp1", "expired", "ambiguous", "state_missing", "unverified"].includes(signal.status)).length;
   const mtfSent = mtfRows.filter(signal => signal.telegramStatus === "sent").length;
+  const mtfDeliveryMissed = mtfRows.filter(signal =>
+    ["missed", "stale", "not_sent", "suppressed"].includes(signal.telegramStatus)).length;
   const mtfDeliveryFailed = mtfRows.filter(signal =>
-    ["failed", "delivery_failed", "not_sent"].includes(signal.telegramStatus)).length;
+    ["failed", "delivery_failed"].includes(signal.telegramStatus)).length;
+  const knownDeliveryStatuses = new Set([
+    "sent", "missed", "stale", "not_sent", "suppressed", "failed", "delivery_failed"
+  ]);
   const mtfDeliveryUntracked = mtfRows.filter(signal =>
-    !signal.telegramStatus || !["sent", "failed", "delivery_failed", "not_sent"].includes(signal.telegramStatus)).length;
+    !knownDeliveryStatuses.has(String(signal.telegramStatus || "").toLowerCase())).length;
   const mtfResolved = mtfWins + mtfLosses;
   const mtfWinRate = mtfResolved ? Number((mtfWins / mtfResolved * 100).toFixed(1)) : null;
 
@@ -107,8 +112,9 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
     mfeCount: movementRows.length, mfeTop: movementRows.slice(0, 12),
     legacyMfeCount: legacyMfe.length, mtfMfeCount: mtfMfe.length,
     multiTimeframe: {
-      generated: mtfRows.length, sent: mtfSent, deliveryFailed: mtfDeliveryFailed,
-      deliveryUntracked: mtfDeliveryUntracked, tp1: mtfTp1, tp2: mtfWins,
+      generated: mtfRows.length, sent: mtfSent, deliveryMissed: mtfDeliveryMissed,
+      deliveryFailed: mtfDeliveryFailed, deliveryUntracked: mtfDeliveryUntracked,
+      tp1: mtfTp1, tp2: mtfWins,
       wins: mtfWins, losses: mtfLosses, resolved: mtfResolved, winRate: mtfWinRate,
       netSignalOutcomes: mtfWins - mtfLosses, expired: mtfExpired,
       ambiguous: mtfAmbiguous, unverified: mtfUnverified, unresolved: mtfUnresolved,
@@ -120,7 +126,7 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
 
 function buildDailySummaryMessage(summary, accountSnapshot = null) {
   const mtf = summary.multiTimeframe || {
-    generated: 0, sent: 0, deliveryFailed: 0, deliveryUntracked: 0, tp1: 0,
+    generated: 0, sent: 0, deliveryMissed: 0, deliveryFailed: 0, deliveryUntracked: 0, tp1: 0,
     wins: 0, losses: 0, winRate: null, netSignalOutcomes: 0,
     expired: 0, ambiguous: 0, unverified: 0, unresolved: 0, byMarket: [], mfeCount: 0
   };
@@ -148,6 +154,7 @@ function buildDailySummaryMessage(summary, accountSnapshot = null) {
     "\nHistorical 62.9% directional follow-through is context only, not a strategy win rate." +
     "\n\nMULTI-TIMEFRAME OBSERVATION SIGNALS" +
     "\nGenerated: " + mtf.generated + "\nTelegram sent: " + mtf.sent +
+    "\nNot sent (entry moved / stale / suppressed): " + (mtf.deliveryMissed ?? 0) +
     "\nDelivery failed: " + mtf.deliveryFailed +
     "\nDelivery status untracked: " + mtf.deliveryUntracked +
     "\nWins (TP2): " + mtf.wins + "\nLosses (SL): " + mtf.losses +
