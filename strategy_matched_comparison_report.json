@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-20T19:25:47.000Z",
+  "generatedAt": "2026-11-20T19:40:34.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -18,29 +18,29 @@
   "summary": {
     "baselineVersion": "MTF_BASELINE_V1",
     "baselineCategory": "SCALP",
-    "baselineSignalsAvailable": 226,
+    "baselineSignalsAvailable": 227,
     "candidateStrategies": 7,
-    "candidateSignals": 1397,
-    "matchedPairs": 176,
-    "unmatchedCandidates": 1221,
+    "candidateSignals": 1399,
+    "matchedPairs": 177,
+    "unmatchedCandidates": 1222,
     "matchWindowSeconds": 900
   },
   "strategies": [
     {
       "strategyId": "EMA20_50",
       "label": "EMA20_50",
-      "candidateSignals": 269,
+      "candidateSignals": 270,
       "candidateOutcomeCounts": {
         "stopped": 163,
         "tp2_hit": 81,
         "stopped_after_tp1": 16,
-        "tp1_hit": 2,
+        "tp1_hit": 3,
         "pending": 7
       },
-      "matchedPairs": 37,
+      "matchedPairs": 38,
       "unmatchedCandidates": 232,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 37,
+      "baselineSignalsUsed": 38,
       "pairedOutcomeCounts": [
         {
           "key": "stopped / expired",
@@ -57,6 +57,10 @@
         {
           "key": "tp1_hit / expired",
           "count": 2
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         },
         {
           "key": "stopped / stopped",
@@ -109,8 +113,8 @@
           "unmatched": 19
         },
         "frxXAUUSD": {
-          "candidates": 25,
-          "matched": 7,
+          "candidates": 26,
+          "matched": 8,
           "unmatched": 18
         }
       },
@@ -593,6 +597,19 @@
           "entryTimeDifferenceSeconds": 0,
           "candidateStatus": "pending",
           "baselineStatus": "expired",
+          "candidateRealizedR": null,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "frxXAUUSD",
+          "direction": "SELL",
+          "candidateSignalId": "frxXAUUSD-EMA20_50-1795202100",
+          "baselineSignalId": "frxXAUUSD-SCALP-1795202700",
+          "candidateEntryEpoch": 1795202100,
+          "baselineEntryEpoch": 1795202700,
+          "entryTimeDifferenceSeconds": 600,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
           "candidateRealizedR": null,
           "baselineRealizedR": null
         }
@@ -1354,8 +1371,8 @@
         "stopped": 105,
         "tp2_hit": 52,
         "stopped_after_tp1": 12,
-        "tp1_hit": 1,
-        "pending": 5
+        "tp1_hit": 2,
+        "pending": 4
       },
       "matchedPairs": 18,
       "unmatchedCandidates": 157,
@@ -1670,16 +1687,16 @@
     {
       "strategyId": "M5_BREAKOUT_M1_RETEST",
       "label": "M5 breakout / M1 retest",
-      "candidateSignals": 242,
+      "candidateSignals": 243,
       "candidateOutcomeCounts": {
-        "tp2_hit": 81,
+        "tp2_hit": 83,
         "stopped": 154,
         "time_exit": 4,
         "ambiguous": 1,
-        "pending": 2
+        "pending": 1
       },
       "matchedPairs": 19,
-      "unmatchedCandidates": 223,
+      "unmatchedCandidates": 224,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
       "baselineSignalsUsed": 19,
       "pairedOutcomeCounts": [
@@ -1689,11 +1706,7 @@
         },
         {
           "key": "tp2_hit / expired",
-          "count": 6
-        },
-        {
-          "key": "pending / pending",
-          "count": 1
+          "count": 7
         },
         {
           "key": "stopped / stopped",
@@ -1717,9 +1730,9 @@
           "unmatched": 27
         },
         "JD75": {
-          "candidates": 38,
+          "candidates": 39,
           "matched": 2,
-          "unmatched": 36
+          "unmatched": 37
         },
         "BOOM500": {
           "candidates": 22,
@@ -1985,9 +1998,9 @@
           "candidateEntryEpoch": 1795202640,
           "baselineEntryEpoch": 1795201800,
           "entryTimeDifferenceSeconds": 840,
-          "candidateStatus": "pending",
-          "baselineStatus": "pending",
-          "candidateRealizedR": null,
+          "candidateStatus": "tp2_hit",
+          "baselineStatus": "expired",
+          "candidateRealizedR": 2,
           "baselineRealizedR": null
         }
       ]
