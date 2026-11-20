@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-20T21:50:41.000Z",
+  "generatedAt": "2026-11-20T22:05:42.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -1750,11 +1750,10 @@
       "label": "M5 breakout / M1 retest",
       "candidateSignals": 250,
       "candidateOutcomeCounts": {
-        "tp2_hit": 83,
+        "tp2_hit": 84,
         "stopped": 161,
         "time_exit": 4,
-        "ambiguous": 1,
-        "pending": 1
+        "ambiguous": 1
       },
       "matchedPairs": 21,
       "unmatchedCandidates": 229,
@@ -1763,22 +1762,18 @@
       "pairedOutcomeCounts": [
         {
           "key": "stopped / expired",
-          "count": 11
+          "count": 12
         },
         {
           "key": "tp2_hit / expired",
           "count": 7
         },
         {
-          "key": "pending / pending",
-          "count": 1
-        },
-        {
-          "key": "stopped / pending",
-          "count": 1
-        },
-        {
           "key": "stopped / stopped",
+          "count": 1
+        },
+        {
+          "key": "tp2_hit / pending",
           "count": 1
         }
       ],
@@ -2081,7 +2076,7 @@
           "baselineEntryEpoch": 1795210200,
           "entryTimeDifferenceSeconds": 660,
           "candidateStatus": "stopped",
-          "baselineStatus": "pending",
+          "baselineStatus": "expired",
           "candidateRealizedR": -1,
           "baselineRealizedR": null
         },
@@ -2093,9 +2088,9 @@
           "candidateEntryEpoch": 1795211340,
           "baselineEntryEpoch": 1795211100,
           "entryTimeDifferenceSeconds": 240,
-          "candidateStatus": "pending",
+          "candidateStatus": "tp2_hit",
           "baselineStatus": "pending",
-          "candidateRealizedR": null,
+          "candidateRealizedR": 2,
           "baselineRealizedR": null
         }
       ]
@@ -2577,7 +2572,7 @@
           "count": 4
         },
         {
-          "key": "pending / pending",
+          "key": "pending / expired",
           "count": 1
         }
       ],
@@ -3049,7 +3044,7 @@
           "baselineEntryEpoch": 1795210200,
           "entryTimeDifferenceSeconds": 300,
           "candidateStatus": "pending",
-          "baselineStatus": "pending",
+          "baselineStatus": "expired",
           "candidateRealizedR": null,
           "baselineRealizedR": null
         }
