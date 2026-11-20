@@ -73,3 +73,40 @@ test("rejects non-HTTPS review page configuration without blocking alert deliver
   assert.equal(response.status, 200);
   assert.equal(Object.hasOwn(payload, "reply_markup"), false);
 });
+
+
+test("R_50 suppresses Promoted MTF alerts without calling Telegram", async () => {
+  const { response } = await send({
+    ...signal, source: "PROMOTED_MTF", marketId: "R_50", market: "Volatility 50 Index"
+  });
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.success, true);
+  assert.equal(body.suppressed, true);
+  assert.equal(captured.length, 0);
+});
+
+test("R_50 allows both BUY and SELL Priority Pair Original M15 alerts", async () => {
+  for (const direction of ["BUY", "SELL"]) {
+    const { response, payload } = await send({
+      ...signal, source: "LEGACY_15M", marketId: "R_50", market: "Volatility 50 Index",
+      priorityTier: "RESEARCH_PRIORITY", priorityLabel: "PRIORITY PAIR — RESEARCH WATCH", direction
+    });
+    assert.equal(response.status, 200);
+    assert.match(payload.text, /PRIORITY PAIR/);
+    assert.match(payload.text, new RegExp(direction));
+  }
+});
+
+test("R_50 suppresses untagged Original M15 alerts but other markets remain unchanged", async () => {
+  const blocked = await send({
+    ...signal, source: "LEGACY_15M", marketId: "R_50", market: "Volatility 50 Index"
+  });
+  assert.equal((await blocked.response.json()).suppressed, true);
+  assert.equal(captured.length, 0);
+  const allowed = await send({
+    ...signal, source: "PROMOTED_MTF", marketId: "R_75", market: "Volatility 75 Index"
+  });
+  assert.equal(allowed.response.status, 200);
+  assert.ok(allowed.payload);
+});
