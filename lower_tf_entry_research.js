@@ -15,7 +15,7 @@ const REPORT = path.join(DATA_DIR, FILE_PREFIX + "lower_tf_entry_research_report
 const LIMITS = Object.freeze({ M1: 5000, M5: 2000, M15: 1200 });
 const R10_ARCHIVE_LIMITS = Object.freeze({ M1: 15000, M5: 4000, M15: 1800 });
 const SECONDS = Object.freeze({ M1: 60, M5: 300, M15: 900 });
-const MARKETS = ["R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500"];
+const MARKETS = ["R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "frxXAUUSD"];
 
 const BACKFILL_M5_COUNT = 1000;
 const GAP_REPAIR_WINDOW_SECONDS = 86400;
@@ -195,6 +195,40 @@ async function fetchR10M5Backfill(now, existingRows = [], WebSocketImpl = WebSoc
   }
 }
 
+
+async function fetchGoldM5Backfill(now, WebSocketImpl = WebSocket) {
+  const ws = new WebSocketImpl(PUBLIC);
+  try {
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Gold research backfill connection timed out")), 15000);
+      ws.addEventListener("open", () => { clearTimeout(timer); resolve(); }, { once: true });
+      ws.addEventListener("error", () => { clearTimeout(timer); reject(new Error("Gold research backfill connection failed")); }, { once: true });
+    });
+    const reply = await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Gold research backfill request timed out")), 20000);
+      const onMessage = event => {
+        let data;
+        try { data = JSON.parse(String(event.data)); } catch { return; }
+        if (data.req_id !== 1) return;
+        clearTimeout(timer);
+        ws.removeEventListener("message", onMessage);
+        if (data.error) reject(new Error(data.error.message || "Deriv Gold candle history request failed"));
+        else resolve(data);
+      };
+      ws.addEventListener("message", onMessage);
+      ws.send(JSON.stringify({
+        ticks_history: "frxXAUUSD", adjust_start_time: 1, count: BACKFILL_M5_COUNT,
+        end: "latest", granularity: SECONDS.M5, style: "candles", req_id: 1
+      }));
+    });
+    const candles = normalizeBackfillCandles(reply.candles, now);
+    if (candles.length < 500) throw new Error("Deriv returned fewer than 500 completed Gold M5 candles");
+    return candles;
+  } finally {
+    try { ws.close(); } catch {}
+  }
+}
+
 function validCandle(c) {
   return c && [c.epoch, c.open, c.high, c.low, c.close].every(Number.isFinite) &&
     c.high >= c.low && c.high >= Math.max(c.open, c.close) &&
@@ -342,6 +376,24 @@ async function main() {
     console.log(JSON.stringify({ event: "r10_m5_research_backfill", candles: historicalM5.length, status: "success" }));
   } catch (error) {
     console.log(JSON.stringify({ event: "r10_m5_research_backfill", status: "failed_nonblocking", message: String(error.message || error).slice(0, 200) }));
+  }
+  // Gold is collected into the same isolated research archive, with its own
+  // completed M5 history backfill. Failure never blocks synthetic-index research.
+  try {
+    const now = Number(latest.generatedEpoch) || Math.floor(Date.now() / 1000);
+    const historicalM5 = await fetchGoldM5Backfill(now);
+    if (latest.markets.frxXAUUSD) {
+      incoming = {
+        ...incoming,
+        frxXAUUSD: {
+          ...latest.markets.frxXAUUSD,
+          timeframes: { ...(latest.markets.frxXAUUSD.timeframes || {}), M5: historicalM5 }
+        }
+      };
+    }
+    console.log(JSON.stringify({ event: "gold_m5_research_backfill", candles: historicalM5.length, status: "success" }));
+  } catch (error) {
+    console.log(JSON.stringify({ event: "gold_m5_research_backfill", status: "failed_nonblocking", message: String(error.message || error).slice(0, 200) }));
   }
   const archive = mergeLowerTimeframeArchive(prior, incoming);
   const report = buildReport(archive, incoming, { focusMarket: process.env.LOWER_TF_FOCUS_MARKET || null });
