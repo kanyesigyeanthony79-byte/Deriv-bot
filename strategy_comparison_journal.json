@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-20T05:07:12.000Z",
+  "updatedAt": "2026-11-20T05:10:51.000Z",
   "markets": {
     "R_10": {
       "lastEvaluatedEpoch": 1795149900,
@@ -36,7 +36,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-20T05:07:12.000Z"
+        "checkedAt": "2026-11-20T05:10:51.000Z"
       }
     },
     "R_25": {
@@ -73,7 +73,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-20T05:07:12.000Z"
+        "checkedAt": "2026-11-20T05:10:51.000Z"
       }
     },
     "R_50": {
@@ -110,7 +110,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-20T05:07:12.000Z"
+        "checkedAt": "2026-11-20T05:10:51.000Z"
       }
     },
     "R_75": {
@@ -147,7 +147,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-20T05:07:12.000Z"
+        "checkedAt": "2026-11-20T05:10:51.000Z"
       }
     },
     "JD100": {
@@ -184,7 +184,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-20T05:07:12.000Z"
+        "checkedAt": "2026-11-20T05:10:51.000Z"
       }
     },
     "frxXAUUSD": {
@@ -221,7 +221,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-20T05:07:12.000Z"
+        "checkedAt": "2026-11-20T05:10:51.000Z"
       }
     },
     "CRASH500": {
@@ -258,7 +258,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-20T05:07:12.000Z"
+        "checkedAt": "2026-11-20T05:10:51.000Z"
       }
     },
     "BOOM500": {
@@ -295,7 +295,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-20T05:07:12.000Z"
+        "checkedAt": "2026-11-20T05:10:51.000Z"
       }
     },
     "JD75": {
@@ -332,7 +332,7 @@
       },
       "dataQuality": {
         "status": "ok",
-        "checkedAt": "2026-11-20T05:07:12.000Z"
+        "checkedAt": "2026-11-20T05:10:51.000Z"
       }
     }
   },
@@ -129604,7 +129604,7 @@
   ],
   "summary": {
     "version": 1,
-    "generatedAt": "2026-11-20T05:07:12.000Z",
+    "generatedAt": "2026-11-20T05:10:51.000Z",
     "timeframe": "M15",
     "mode": "shadow_observation_only",
     "riskModel": {
@@ -129615,7 +129615,7 @@
     },
     "winRateDefinition": "TP1 reached and not subsequently stopped; TP1 followed by a stop is excluded from wins and reported separately as stopped_after_tp1.",
     "realizedRNote": "Average realized R includes only unambiguous TP2 (+3R) and full stop-loss (-1R) outcomes. stopped_after_tp1 is excluded until a partial-exit rule is explicitly defined.",
-    "sourceNote": "Historical backfill evaluates previously completed candles. Forward shadow signals are evaluated as new M15 candles close. These are analytical signals, not executed demo trades.",
+    "sourceNote": "Forward-only metrics use signals first generated on new completed M15 candles and exclude historical backfill. Historical backfill remains archived separately. These are analytical signals, not executed demo trades.",
     "markets": {
       "R_10": {
         "EMA20_50": {
@@ -129638,10 +129638,21 @@
           "anyStopRate": 63.6,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 92.5,
-          "signalsPerDay": 7.16,
           "averageRealizedR": 0.64,
-          "realizedRObservations": 39
+          "realizedRObservations": 39,
+          "forwardResolvedSignals": 35,
+          "forwardPendingSignals": 3,
+          "forwardWinRate": 40,
+          "forwardTp1HitRate": 51.4,
+          "forwardTp2HitRate": 34.3,
+          "forwardStopLossRate": 54.3,
+          "forwardStoppedAfterTP1Rate": 11.4,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": 0.55,
+          "forwardRealizedRObservations": 31,
+          "noEntryRate": 92.5,
+          "signalsPerDay": 7.16
         },
         "EMA20_50_PULLBACK": {
           "label": "EMA20/50 + pullback",
@@ -129663,10 +129674,21 @@
           "anyStopRate": 72.7,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 96.2,
-          "signalsPerDay": 3.66,
           "averageRealizedR": 0.2,
-          "realizedRObservations": 20
+          "realizedRObservations": 20,
+          "forwardResolvedSignals": 19,
+          "forwardPendingSignals": 2,
+          "forwardWinRate": 42.1,
+          "forwardTp1HitRate": 52.6,
+          "forwardTp2HitRate": 31.6,
+          "forwardStopLossRate": 57.9,
+          "forwardStoppedAfterTP1Rate": 10.5,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": 0.41,
+          "forwardRealizedRObservations": 17,
+          "noEntryRate": 96.2,
+          "signalsPerDay": 3.66
         }
       },
       "R_25": {
@@ -129690,10 +129712,21 @@
           "anyStopRate": 69.4,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 94.3,
-          "signalsPerDay": 5.49,
           "averageRealizedR": 0.26,
-          "realizedRObservations": 35
+          "realizedRObservations": 35,
+          "forwardResolvedSignals": 28,
+          "forwardPendingSignals": 0,
+          "forwardWinRate": 35.7,
+          "forwardTp1HitRate": 39.3,
+          "forwardTp2HitRate": 35.7,
+          "forwardStopLossRate": 60.7,
+          "forwardStoppedAfterTP1Rate": 3.6,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": 0.48,
+          "forwardRealizedRObservations": 27,
+          "noEntryRate": 94.3,
+          "signalsPerDay": 5.49
         },
         "EMA20_50_PULLBACK": {
           "label": "EMA20/50 + pullback",
@@ -129715,10 +129748,21 @@
           "anyStopRate": 72,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 96,
-          "signalsPerDay": 3.81,
           "averageRealizedR": 0.17,
-          "realizedRObservations": 24
+          "realizedRObservations": 24,
+          "forwardResolvedSignals": 20,
+          "forwardPendingSignals": 0,
+          "forwardWinRate": 30,
+          "forwardTp1HitRate": 35,
+          "forwardTp2HitRate": 30,
+          "forwardStopLossRate": 65,
+          "forwardStoppedAfterTP1Rate": 5,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": 0.26,
+          "forwardRealizedRObservations": 19,
+          "noEntryRate": 96,
+          "signalsPerDay": 3.81
         }
       },
       "R_50": {
@@ -129742,10 +129786,21 @@
           "anyStopRate": 73.3,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 92.5,
-          "signalsPerDay": 7.16,
           "averageRealizedR": 0.23,
-          "realizedRObservations": 39
+          "realizedRObservations": 39,
+          "forwardResolvedSignals": 28,
+          "forwardPendingSignals": 2,
+          "forwardWinRate": 28.6,
+          "forwardTp1HitRate": 39.3,
+          "forwardTp2HitRate": 28.6,
+          "forwardStopLossRate": 60.7,
+          "forwardStoppedAfterTP1Rate": 10.7,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": 0.28,
+          "forwardRealizedRObservations": 25,
+          "noEntryRate": 92.5,
+          "signalsPerDay": 7.16
         },
         "EMA20_50_PULLBACK": {
           "label": "EMA20/50 + pullback",
@@ -129767,10 +129822,21 @@
           "anyStopRate": 74.1,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 95.7,
-          "signalsPerDay": 4.11,
           "averageRealizedR": 0.27,
-          "realizedRObservations": 22
+          "realizedRObservations": 22,
+          "forwardResolvedSignals": 18,
+          "forwardPendingSignals": 0,
+          "forwardWinRate": 27.8,
+          "forwardTp1HitRate": 38.9,
+          "forwardTp2HitRate": 27.8,
+          "forwardStopLossRate": 61.1,
+          "forwardStoppedAfterTP1Rate": 11.1,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": 0.25,
+          "forwardRealizedRObservations": 16,
+          "noEntryRate": 95.7,
+          "signalsPerDay": 4.11
         }
       },
       "R_75": {
@@ -129794,10 +129860,21 @@
           "anyStopRate": 88.4,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 93.2,
-          "signalsPerDay": 6.55,
           "averageRealizedR": -0.46,
-          "realizedRObservations": 37
+          "realizedRObservations": 37,
+          "forwardResolvedSignals": 30,
+          "forwardPendingSignals": 0,
+          "forwardWinRate": 0,
+          "forwardTp1HitRate": 16.7,
+          "forwardTp2HitRate": 0,
+          "forwardStopLossRate": 83.3,
+          "forwardStoppedAfterTP1Rate": 16.7,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": -1,
+          "forwardRealizedRObservations": 25,
+          "noEntryRate": 93.2,
+          "signalsPerDay": 6.55
         },
         "EMA20_50_PULLBACK": {
           "label": "EMA20/50 + pullback",
@@ -129819,10 +129896,21 @@
           "anyStopRate": 87.5,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 94.9,
-          "signalsPerDay": 4.88,
           "averageRealizedR": -0.43,
-          "realizedRObservations": 28
+          "realizedRObservations": 28,
+          "forwardResolvedSignals": 23,
+          "forwardPendingSignals": 0,
+          "forwardWinRate": 0,
+          "forwardTp1HitRate": 17.4,
+          "forwardTp2HitRate": 0,
+          "forwardStopLossRate": 82.6,
+          "forwardStoppedAfterTP1Rate": 17.4,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": -1,
+          "forwardRealizedRObservations": 19,
+          "noEntryRate": 94.9,
+          "signalsPerDay": 4.88
         }
       },
       "JD100": {
@@ -129846,10 +129934,21 @@
           "anyStopRate": 62.5,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 96.2,
-          "signalsPerDay": 3.66,
           "averageRealizedR": 0.5,
-          "realizedRObservations": 24
+          "realizedRObservations": 24,
+          "forwardResolvedSignals": 18,
+          "forwardPendingSignals": 0,
+          "forwardWinRate": 33.3,
+          "forwardTp1HitRate": 33.3,
+          "forwardTp2HitRate": 33.3,
+          "forwardStopLossRate": 66.7,
+          "forwardStoppedAfterTP1Rate": 0,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": 0.33,
+          "forwardRealizedRObservations": 18,
+          "noEntryRate": 96.2,
+          "signalsPerDay": 3.66
         },
         "EMA20_50_PULLBACK": {
           "label": "EMA20/50 + pullback",
@@ -129871,10 +129970,21 @@
           "anyStopRate": 73.3,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 97.6,
-          "signalsPerDay": 2.29,
           "averageRealizedR": 0.07,
-          "realizedRObservations": 15
+          "realizedRObservations": 15,
+          "forwardResolvedSignals": 11,
+          "forwardPendingSignals": 0,
+          "forwardWinRate": 18.2,
+          "forwardTp1HitRate": 18.2,
+          "forwardTp2HitRate": 18.2,
+          "forwardStopLossRate": 81.8,
+          "forwardStoppedAfterTP1Rate": 0,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": -0.27,
+          "forwardRealizedRObservations": 11,
+          "noEntryRate": 97.6,
+          "signalsPerDay": 2.29
         }
       },
       "frxXAUUSD": {
@@ -129898,10 +130008,21 @@
           "anyStopRate": 67.2,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 92,
-          "signalsPerDay": 7.67,
           "averageRealizedR": 0.38,
-          "realizedRObservations": 58
+          "realizedRObservations": 58,
+          "forwardResolvedSignals": 19,
+          "forwardPendingSignals": 1,
+          "forwardWinRate": 57.9,
+          "forwardTp1HitRate": 57.9,
+          "forwardTp2HitRate": 57.9,
+          "forwardStopLossRate": 42.1,
+          "forwardStoppedAfterTP1Rate": 0,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": 1.32,
+          "forwardRealizedRObservations": 19,
+          "noEntryRate": 92,
+          "signalsPerDay": 7.67
         },
         "EMA20_50_PULLBACK": {
           "label": "EMA20/50 + pullback",
@@ -129923,10 +130044,21 @@
           "anyStopRate": 60.5,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 95.1,
-          "signalsPerDay": 4.7,
           "averageRealizedR": 0.71,
-          "realizedRObservations": 35
+          "realizedRObservations": 35,
+          "forwardResolvedSignals": 8,
+          "forwardPendingSignals": 0,
+          "forwardWinRate": 75,
+          "forwardTp1HitRate": 75,
+          "forwardTp2HitRate": 75,
+          "forwardStopLossRate": 25,
+          "forwardStoppedAfterTP1Rate": 0,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": 2,
+          "forwardRealizedRObservations": 8,
+          "noEntryRate": 95.1,
+          "signalsPerDay": 4.7
         }
       },
       "CRASH500": {
@@ -129950,10 +130082,21 @@
           "anyStopRate": 60,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 93.7,
-          "signalsPerDay": 6.1,
           "averageRealizedR": 0.6,
-          "realizedRObservations": 40
+          "realizedRObservations": 40,
+          "forwardResolvedSignals": 26,
+          "forwardPendingSignals": 0,
+          "forwardWinRate": 50,
+          "forwardTp1HitRate": 50,
+          "forwardTp2HitRate": 50,
+          "forwardStopLossRate": 50,
+          "forwardStoppedAfterTP1Rate": 0,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": 1,
+          "forwardRealizedRObservations": 26,
+          "noEntryRate": 93.7,
+          "signalsPerDay": 6.1
         },
         "EMA20_50_PULLBACK": {
           "label": "EMA20/50 + pullback",
@@ -129975,10 +130118,21 @@
           "anyStopRate": 63,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 95.7,
-          "signalsPerDay": 4.11,
           "averageRealizedR": 0.48,
-          "realizedRObservations": 27
+          "realizedRObservations": 27,
+          "forwardResolvedSignals": 21,
+          "forwardPendingSignals": 0,
+          "forwardWinRate": 47.6,
+          "forwardTp1HitRate": 47.6,
+          "forwardTp2HitRate": 47.6,
+          "forwardStopLossRate": 52.4,
+          "forwardStoppedAfterTP1Rate": 0,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": 0.9,
+          "forwardRealizedRObservations": 21,
+          "noEntryRate": 95.7,
+          "signalsPerDay": 4.11
         }
       },
       "BOOM500": {
@@ -130002,10 +130156,21 @@
           "anyStopRate": 65,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 93.5,
-          "signalsPerDay": 6.25,
           "averageRealizedR": 0.56,
-          "realizedRObservations": 36
+          "realizedRObservations": 36,
+          "forwardResolvedSignals": 28,
+          "forwardPendingSignals": 1,
+          "forwardWinRate": 32.1,
+          "forwardTp1HitRate": 39.3,
+          "forwardTp2HitRate": 32.1,
+          "forwardStopLossRate": 60.7,
+          "forwardStoppedAfterTP1Rate": 7.1,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": 0.38,
+          "forwardRealizedRObservations": 26,
+          "noEntryRate": 93.5,
+          "signalsPerDay": 6.25
         },
         "EMA20_50_PULLBACK": {
           "label": "EMA20/50 + pullback",
@@ -130027,10 +130192,21 @@
           "anyStopRate": 66.7,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 96,
-          "signalsPerDay": 3.81,
           "averageRealizedR": 0.52,
-          "realizedRObservations": 21
+          "realizedRObservations": 21,
+          "forwardResolvedSignals": 20,
+          "forwardPendingSignals": 1,
+          "forwardWinRate": 35,
+          "forwardTp1HitRate": 45,
+          "forwardTp2HitRate": 35,
+          "forwardStopLossRate": 55,
+          "forwardStoppedAfterTP1Rate": 10,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": 0.56,
+          "forwardRealizedRObservations": 18,
+          "noEntryRate": 96,
+          "signalsPerDay": 3.81
         }
       },
       "JD75": {
@@ -130054,10 +130230,21 @@
           "anyStopRate": 70.4,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 93.9,
-          "signalsPerDay": 5.81,
           "averageRealizedR": 0.25,
-          "realizedRObservations": 67
+          "realizedRObservations": 67,
+          "forwardResolvedSignals": 11,
+          "forwardPendingSignals": 1,
+          "forwardWinRate": 27.3,
+          "forwardTp1HitRate": 27.3,
+          "forwardTp2HitRate": 27.3,
+          "forwardStopLossRate": 72.7,
+          "forwardStoppedAfterTP1Rate": 0,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": 0.09,
+          "forwardRealizedRObservations": 11,
+          "noEntryRate": 93.9,
+          "signalsPerDay": 5.81
         },
         "EMA20_50_PULLBACK": {
           "label": "EMA20/50 + pullback",
@@ -130079,10 +130266,21 @@
           "anyStopRate": 61.9,
           "expiredRate": 0,
           "ambiguousRate": 0,
-          "noEntryRate": 96.5,
-          "signalsPerDay": 3.39,
           "averageRealizedR": 0.56,
-          "realizedRObservations": 41
+          "realizedRObservations": 41,
+          "forwardResolvedSignals": 8,
+          "forwardPendingSignals": 0,
+          "forwardWinRate": 37.5,
+          "forwardTp1HitRate": 37.5,
+          "forwardTp2HitRate": 37.5,
+          "forwardStopLossRate": 62.5,
+          "forwardStoppedAfterTP1Rate": 0,
+          "forwardExpiredRate": 0,
+          "forwardAmbiguousRate": 0,
+          "forwardAverageRealizedR": 0.5,
+          "forwardRealizedRObservations": 8,
+          "noEntryRate": 96.5,
+          "signalsPerDay": 3.39
         }
       }
     },
@@ -130105,9 +130303,20 @@
         "anyStopRate": 69.3,
         "expiredRate": 0,
         "ambiguousRate": 0,
-        "signalsPerDay": 55.85,
         "averageRealizedR": 0.32,
-        "realizedRObservations": 375
+        "realizedRObservations": 375,
+        "forwardResolvedSignals": 223,
+        "forwardPendingSignals": 8,
+        "forwardWinRate": 33.2,
+        "forwardTp1HitRate": 39.9,
+        "forwardTp2HitRate": 32.3,
+        "forwardStopLossRate": 61,
+        "forwardStoppedAfterTP1Rate": 6.7,
+        "forwardExpiredRate": 0,
+        "forwardAmbiguousRate": 0,
+        "forwardAverageRealizedR": 0.38,
+        "forwardRealizedRObservations": 208,
+        "signalsPerDay": 55.85
       },
       "EMA20_50_PULLBACK": {
         "label": "EMA20/50 + pullback",
@@ -130127,9 +130336,20 @@
         "anyStopRate": 69.4,
         "expiredRate": 0,
         "ambiguousRate": 0,
-        "signalsPerDay": 34.76,
         "averageRealizedR": 0.32,
-        "realizedRObservations": 233
+        "realizedRObservations": 233,
+        "forwardResolvedSignals": 148,
+        "forwardPendingSignals": 3,
+        "forwardWinRate": 31.8,
+        "forwardTp1HitRate": 39.2,
+        "forwardTp2HitRate": 30.4,
+        "forwardStopLossRate": 62.2,
+        "forwardStoppedAfterTP1Rate": 7.4,
+        "forwardExpiredRate": 0,
+        "forwardAmbiguousRate": 0,
+        "forwardAverageRealizedR": 0.31,
+        "forwardRealizedRObservations": 137,
+        "signalsPerDay": 34.76
       }
     }
   },
