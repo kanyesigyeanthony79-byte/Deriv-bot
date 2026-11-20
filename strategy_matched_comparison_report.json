@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-20T08:05:23.000Z",
+  "generatedAt": "2026-11-20T08:20:34.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -18,29 +18,29 @@
   "summary": {
     "baselineVersion": "MTF_BASELINE_V1",
     "baselineCategory": "SCALP",
-    "baselineSignalsAvailable": 176,
+    "baselineSignalsAvailable": 177,
     "candidateStrategies": 7,
-    "candidateSignals": 1270,
-    "matchedPairs": 148,
-    "unmatchedCandidates": 1122,
+    "candidateSignals": 1272,
+    "matchedPairs": 149,
+    "unmatchedCandidates": 1123,
     "matchWindowSeconds": 900
   },
   "strategies": [
     {
       "strategyId": "EMA20_50",
       "label": "EMA20_50",
-      "candidateSignals": 240,
+      "candidateSignals": 241,
       "candidateOutcomeCounts": {
         "stopped": 143,
         "tp2_hit": 72,
         "stopped_after_tp1": 15,
         "tp1_hit": 4,
-        "pending": 6
+        "pending": 7
       },
-      "matchedPairs": 28,
+      "matchedPairs": 29,
       "unmatchedCandidates": 212,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 28,
+      "baselineSignalsUsed": 29,
       "pairedOutcomeCounts": [
         {
           "key": "stopped / expired",
@@ -53,6 +53,10 @@
         {
           "key": "pending / expired",
           "count": 2
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         },
         {
           "key": "stopped / stopped",
@@ -75,8 +79,8 @@
           "unmatched": 28
         },
         "JD100": {
-          "candidates": 19,
-          "matched": 2,
+          "candidates": 20,
+          "matched": 3,
           "unmatched": 17
         },
         "R_75": {
@@ -472,6 +476,19 @@
           "entryTimeDifferenceSeconds": 300,
           "candidateStatus": "pending",
           "baselineStatus": "expired",
+          "candidateRealizedR": null,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "JD100",
+          "direction": "BUY",
+          "candidateSignalId": "JD100-EMA20_50-1795161600",
+          "baselineSignalId": "JD100-SCALP-1795161600",
+          "candidateEntryEpoch": 1795161600,
+          "baselineEntryEpoch": 1795161600,
+          "entryTimeDifferenceSeconds": 0,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
           "candidateRealizedR": null,
           "baselineRealizedR": null
         }
@@ -1501,16 +1518,16 @@
     {
       "strategyId": "M5_BREAKOUT_M1_RETEST",
       "label": "M5 breakout / M1 retest",
-      "candidateSignals": 193,
+      "candidateSignals": 194,
       "candidateOutcomeCounts": {
-        "tp2_hit": 67,
-        "stopped": 120,
+        "tp2_hit": 68,
+        "stopped": 121,
         "time_exit": 3,
         "ambiguous": 1,
-        "pending": 2
+        "pending": 1
       },
       "matchedPairs": 14,
-      "unmatchedCandidates": 179,
+      "unmatchedCandidates": 180,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
       "baselineSignalsUsed": 14,
       "pairedOutcomeCounts": [
@@ -1523,19 +1540,19 @@
           "count": 4
         },
         {
-          "key": "pending / pending",
+          "key": "stopped / stopped",
           "count": 1
         },
         {
-          "key": "stopped / stopped",
+          "key": "tp2_hit / pending",
           "count": 1
         }
       ],
       "byMarket": {
         "R_50": {
-          "candidates": 20,
+          "candidates": 21,
           "matched": 0,
-          "unmatched": 20
+          "unmatched": 21
         },
         "R_25": {
           "candidates": 29,
@@ -1751,9 +1768,9 @@
           "candidateEntryEpoch": 1795161540,
           "baselineEntryEpoch": 1795161300,
           "entryTimeDifferenceSeconds": 240,
-          "candidateStatus": "pending",
+          "candidateStatus": "tp2_hit",
           "baselineStatus": "pending",
-          "candidateRealizedR": null,
+          "candidateRealizedR": 2,
           "baselineRealizedR": null
         }
       ]
