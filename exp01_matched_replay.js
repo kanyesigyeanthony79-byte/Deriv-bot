@@ -140,10 +140,30 @@ function buildExp01MatchedReplayReport(snapshot,generatedAt=new Date().toISOStri
       const rows=Object.values(markets).filter(x=>x.status==="replayed").map(x=>x.methods[method][split]);
       const entries=rows.reduce((a,x)=>a+x.entries,0),resolved=rows.reduce((a,x)=>a+x.resolved,0),gross=rows.reduce((a,x)=>a+x.totalGrossR,0);
       const cost=Object.fromEntries(COST_STRESS_R.map(c=>[c.toFixed(2),resolved?Number((rows.reduce((a,x)=>a+(x.meanAfterAssumedCostR[c.toFixed(2)]??0)*x.resolved,0)/resolved).toFixed(4)):null]));
-      pooled[method][split]={entries,resolved,totalGrossR:Number(gross.toFixed(4)),meanGrossR:resolved?Number((gross/resolved).toFixed(4)):null,meanAfterAssumedCostR:cost,outcomes:rows.reduce((a,x)=>{for(const[k,v]of Object.entries(x.outcomes))a[k]=(a[k]||0)+v;return a;},{})};
+      const outcomes=rows.reduce((a,x)=>{for(const[k,v]of Object.entries(x.outcomes))a[k]=(a[k]||0)+v;return a;},{});
+      const marketsWithTenResolved=rows.filter(x=>x.resolved>=10).length;
+      const ambiguousRatePct=entries?Number(((outcomes.ambiguous||0)/entries*100).toFixed(2)):0;
+      const sampleSufficient=resolved>=GUARDRAILS.minimumResolvedObservations &&
+        marketsWithTenResolved>=GUARDRAILS.minimumMarketsWithTenResolved &&
+        ambiguousRatePct<=GUARDRAILS.maximumAmbiguousRatePct;
+      pooled[method][split]={
+        entries,resolved,totalGrossR:Number(gross.toFixed(4)),
+        meanGrossR:resolved?Number((gross/resolved).toFixed(4)):null,
+        meanAfterAssumedCostR:cost,outcomes,
+        sampleSufficiency:{
+          status:sampleSufficient?"sample_sufficient":"insufficient_sample",
+          minimumResolvedObservations:GUARDRAILS.minimumResolvedObservations,
+          actualResolvedObservations:resolved,
+          minimumMarketsWithTenResolved:GUARDRAILS.minimumMarketsWithTenResolved,
+          actualMarketsWithTenResolved:marketsWithTenResolved,
+          maximumAmbiguousRatePct:GUARDRAILS.maximumAmbiguousRatePct,
+          actualAmbiguousRatePct:ambiguousRatePct,
+          note:"This is a sample-size/data-quality gate only, not a profitability or strategy-promotion verdict."
+        }
+      };
     }
   }
-  return{version:1,generatedAt,mode:"common_assumption_entry_method_replay",scope:"Entry-method comparison only. EXP-01's original M1-local stop sizing is replaced by the production SCALP baseline's common M15 ATR stop; this is not a full reproduction of original EXP-01 trade management. The current chronological holdout partition is sealed and not evaluated because the existing forward-shadow journal already covers this period.",assumptions:{baseline:"Production MTF_BASELINE_V1 SCALP evaluated on completed M5 candles with completed M15 confirmation/context; next M5 open entry.",candidate:"Frozen EXP-01 M5 breakout beyond prior 12-bar range, followed by M1 retest confirmation; next M1 open entry.",commonRisk:"Both use 1.25 x completed M15 ATR at the M5 setup close.",commonTarget:"Fixed 2R target.",commonHorizon:"60 minutes resolved on completed M1 candles.",ambiguity:"Same-candle stop/target touches are ambiguous.",concurrency:"One open position per method per market; overlapping setups are skipped until prior outcome resolves.",splits:"Per-market chronological 60/20/20; one-hour embargo after discovery and validation boundaries; purge outcomes crossing split end.",costs:"Gross candle R plus hypothetical 0.05R, 0.10R and 0.20R deductions. Not measured broker costs or net returns."},predeclaredDecisionFramework:{primaryMetric:PRIMARY_METRIC,guardrails:GUARDRAILS,costStressR:COST_STRESS_R,note:"Review discovery first. Do not tune on validation or holdout; preserve holdout untouched until the comparison contract is frozen."},summary:{marketsConsidered:MARKETS.length,marketsReplayed:Object.values(markets).filter(x=>x.status==="replayed").length,marketsWaiting:Object.values(markets).filter(x=>x.status!=="replayed").length,pooled},markets,interpretation:"Research-only entry-method comparison. The holdout is deliberately not evaluated. Small samples and missing broker cost data prevent profitability or promotion claims."};
+  return{version:1,generatedAt,mode:"common_assumption_entry_method_replay",scope:"Entry-method comparison only. EXP-01's original M1-local stop sizing is replaced by the production SCALP baseline's common M15 ATR stop; this is not a full reproduction of original EXP-01 trade management. The current chronological holdout partition is sealed and not evaluated because the existing forward-shadow journal already covers this period.",assumptions:{baseline:"Production MTF_BASELINE_V1 SCALP evaluated on completed M5 candles with completed M15 confirmation/context; next M5 open entry.",candidate:"Frozen EXP-01 M5 breakout beyond prior 12-bar range, followed by M1 retest confirmation; next M1 open entry.",commonRisk:"Both use 1.25 x completed M15 ATR at the M5 setup close.",commonTarget:"Fixed 2R target.",commonHorizon:"60 minutes resolved on completed M1 candles.",ambiguity:"Same-candle stop/target touches are ambiguous.",concurrency:"One open position per method per market; overlapping setups are skipped until prior outcome resolves.",splits:"Per-market chronological 60/20/20; one-hour embargo after discovery and validation boundaries; purge outcomes crossing split end.",costs:"Gross candle R plus hypothetical 0.05R, 0.10R and 0.20R deductions. Not measured broker costs or net returns."},predeclaredDecisionFramework:{primaryMetric:PRIMARY_METRIC,guardrails:GUARDRAILS,costStressR:COST_STRESS_R,note:"Review discovery first. Sample sufficiency requires at least 50 resolved observations, at least three markets with ten resolved observations each, and no more than 5% ambiguous entries. This is not a profitability verdict. Do not tune on validation; preserve the current holdout sealed."},summary:{marketsConsidered:MARKETS.length,marketsReplayed:Object.values(markets).filter(x=>x.status==="replayed").length,marketsWaiting:Object.values(markets).filter(x=>x.status!=="replayed").length,pooled},markets,interpretation:"Research-only entry-method comparison. The holdout is deliberately not evaluated. Small samples and missing broker cost data prevent profitability or promotion claims."};
 }
 function main(){
   if(!fs.existsSync(INPUT))throw new Error("multi_timeframe_data.json missing; EXP-01 replay not run.");

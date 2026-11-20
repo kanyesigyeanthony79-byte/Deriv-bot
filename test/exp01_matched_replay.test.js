@@ -1,7 +1,7 @@
 "use strict";
 const test=require("node:test");
 const assert=require("node:assert/strict");
-const {splitBounds,resolveCommonOutcome,summarizeTrades,replayMethod,COST_STRESS_R,PRIMARY_METRIC}=require("../exp01_matched_replay");
+const {splitBounds,resolveCommonOutcome,summarizeTrades,replayMethod,buildExp01MatchedReplayReport,COST_STRESS_R,PRIMARY_METRIC}=require("../exp01_matched_replay");
 function bars(n,start=0,close=100){return Array.from({length:n},(_,i)=>({epoch:start+i*60,open:close,high:close+0.1,low:close-0.1,close}));}
 test("primary metric and hypothetical cost sensitivities are predeclared",()=>{assert.equal(PRIMARY_METRIC,"mean_R_after_0.10R_assumed_cost_per_resolved_trade");assert.deepEqual(COST_STRESS_R,[0.05,0.10,0.20]);});
 test("chronological splits preserve one-hour embargoes",()=>{const b=splitBounds(0,100000);assert.equal(b.validation.start,b.discovery.end+3600);assert.equal(b.holdout.start,b.validation.end+3600);});
@@ -17,4 +17,22 @@ test("unconfirmed EXP-01 breakouts are counted as no-entry setups and holdout st
   assert.equal(result.discovery.noEntry,1);
   assert.equal(result.discovery.entries,0);
   assert.equal(result.holdout.status,"sealed_not_evaluated");
+});
+
+test("real-data report labels undersized discovery samples and seals holdout",()=>{
+  const start=1_700_000_100;
+  const make=(n,step)=>Array.from({length:n},(_,i)=>({
+    epoch:start+i*step,open:100,high:101,low:99,close:100
+  }));
+  const snapshot={markets:{R_10:{marketName:"Volatility 10 Index",timeframes:{
+    M1:make(1200,60),M5:make(240,300),M15:make(80,900)
+  }}}};
+  const report=buildExp01MatchedReplayReport(snapshot,"2026-11-20T00:00:00.000Z");
+  assert.equal(report.summary.marketsReplayed,1);
+  assert.equal(report.summary.marketsWaiting,7);
+  assert.equal(report.markets.R_10.methods.MTF_BASELINE_SCALP.holdout.status,"sealed_not_evaluated");
+  assert.equal(report.markets.R_10.methods.EXP01_COMMON_ENTRY.holdout.status,"sealed_not_evaluated");
+  assert.equal(report.summary.pooled.MTF_BASELINE_SCALP.discovery.sampleSufficiency.status,"insufficient_sample");
+  assert.equal(report.summary.pooled.EXP01_COMMON_ENTRY.discovery.sampleSufficiency.status,"insufficient_sample");
+  assert.equal(report.summary.pooled.EXP01_COMMON_ENTRY.discovery.sampleSufficiency.minimumResolvedObservations,50);
 });
