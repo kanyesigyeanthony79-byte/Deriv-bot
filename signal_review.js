@@ -3,6 +3,28 @@
 const FRAME_SECONDS = { M1:60, M5:300, M15:900, H1:3600, H4:14400, D1:86400, W1:604800 };
 function reviewSignalCore(signal, timeframes, nowEpoch = Math.floor(Date.now()/1000)) {
   if (!signal || !signal.signalId || !["BUY","SELL"].includes(signal.direction)) throw new Error("A valid original signal is required.");
+  // Preserve terminal outcomes already observed by the original MTF journal.
+  // A shorter advisory candle window must not downgrade a recorded outcome.
+  const recorded = {
+    tp2_hit: ["TP2_LEVEL_TOUCHED", "TP2 LEVEL TOUCHED"],
+    stopped: ["STOP_LEVEL_TOUCHED", "STOP-LOSS LEVEL TOUCHED"],
+    stopped_after_tp1: ["STOP_AFTER_TP1", "STOP TOUCHED AFTER TP1"],
+    ambiguous: ["AMBIGUOUS_CANDLE", "AMBIGUOUS CANDLE — VERIFY PRICE"],
+    expired: ["EXPIRED", "SIGNAL EXPIRED"]
+  }[signal.status];
+  if (recorded) {
+    const [status, headline] = recorded;
+    const epoch = status === "TP2_LEVEL_TOUCHED" ? signal.tp2Epoch
+      : status === "STOP_LEVEL_TOUCHED" || status === "STOP_AFTER_TP1" || status === "AMBIGUOUS_CANDLE" ? signal.stopEpoch
+      : signal.expiredEpoch;
+    return { signalId: signal.signalId, status, headline, epoch: epoch || null,
+      tp1Reached: Boolean(signal.tp1Hit || signal.tp1Epoch), tp1Epoch: signal.tp1Epoch || null,
+      tp2Epoch: signal.tp2Epoch || null, stopEpoch: signal.stopEpoch || null,
+      expiryEpoch: signal.intendedExpiryEpoch || null, sourceJournalStatus: signal.status,
+      outcomeSource: "original_mtf_journal",
+      reason: "This signal already has a terminal outcome recorded by the original MTF journal. The advisory review preserves that outcome rather than reclassifying it from a limited candle snapshot.",
+      advisoryOnly: true };
+  }
   const tf = signal.entryTimeframe, seconds = FRAME_SECONDS[tf], candles = timeframes && timeframes[tf];
   if (!seconds || !Array.isArray(candles) || !candles.length) return {signalId:signal.signalId,status:"INSUFFICIENT_DATA",headline:"REVIEW UNAVAILABLE",reason:"Latest completed candles are unavailable. Do not infer that the signal is safe."};
   const entryEpoch=Number(signal.entryCandleEpoch);
