@@ -161,7 +161,8 @@ test("missing live quote blocks delivery without falsely marking signal sent", a
   const env={MTF_TELEGRAM_ALERTS:"true",TELEGRAM_WORKER_URL:"https://worker.example",SIGNAL_API_KEY:"secret"};
   const result=await sendCandidateAlerts(markets,journal,1301,env,{liveQuotes:{},fetchImpl:async()=>({ok:true,json:async()=>({success:true})})});
   assert.equal(result.quoteUnavailable,1);
-  assert.equal(journal.signals[0].telegramStatus,null);
+  assert.equal(journal.signals[0].telegramStatus,"quote_unavailable");
+  assert.equal(journal.signals[0].telegramStatusReason,"live_quote_unavailable");
 });
 
 test("candidate outside the alert age window is not sent", async () => {

@@ -25,6 +25,9 @@ test("archive reconstructs every recoverable day and separates signal pipelines"
   assert.equal(day.multiTimeframe.generated, 2);
   assert.equal(day.multiTimeframe.wins, 1);
   assert.equal(day.multiTimeframe.missed, 1, "not-sent delivery states must be counted as missed");
+  assert.equal(day.multiTimeframe.deliveryBreakdown.suppressed, 1);
+  assert.equal(day.multiTimeframe.deliveryBreakdown.untracked, 0);
+  assert.equal(day.multiTimeframe.deliveryBreakdown.sent, 1);
   assert.equal(day.legacy.signals[0].source, "legacy_15m");
   assert.equal(a.coverage.verifiedDailyReports, 1);
   assert.equal(legacyDate({createdAt:"2026-11-18T19:30:00.000Z"}), "2026-11-18");

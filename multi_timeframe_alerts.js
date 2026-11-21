@@ -78,7 +78,9 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
     if (!record || !["pending", "tp1_hit"].includes(record.status)) { result.skipped++; continue; }
     const executionEligible = MT5_EXECUTION_MARKETS.has(String(candidate.marketId || ""));
     const needQueue = executionEnabled && executionEligible && record.mt5QueueStatus !== "queued" && record.mt5QueueStatus !== "stale";
-    const needTelegram = telegramEnabled && !record.telegramStatus;
+    // Quote collection can be temporarily unavailable. Keep that explicit in
+    // the journal, but allow a later collector run to retry the Telegram send.
+    const needTelegram = telegramEnabled && (!record.telegramStatus || record.telegramStatus === "quote_unavailable");
     if (!needQueue && !needTelegram) { result.skipped++; continue; }
 
     const strategyVersion = record.strategyVersion || candidate.strategyVersion || null;
@@ -117,7 +119,17 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
     const quote = liveQuotes[candidate.marketId];
     const priceCheck = assessEntryPrice(candidate, quote && quote.price);
     if (!quote || !Number.isFinite(Number(quote.price))) {
+      if (needTelegram) {
+        record.telegramStatus = "quote_unavailable";
+        record.telegramStatusReason = "live_quote_unavailable";
+        record.telegramQuoteCheckedAt = new Date(nowEpoch * 1000).toISOString();
+      }
+      if (needQueue) {
+        record.mt5QueueStatus = "quote_unavailable";
+        record.mt5QueueStatusReason = "live_quote_unavailable";
+      }
       result.quoteUnavailable++;
+      persist(journal);
       log("mtf_live_quote_unavailable", { signalId: candidate.signalId, marketId: candidate.marketId });
       continue;
     }

@@ -119,10 +119,26 @@ test("MTF delivery summary separates missed entries, actual delivery failures an
   assert.equal(summary.multiTimeframe.deliveryMissed, 2);
   assert.equal(summary.multiTimeframe.deliveryFailed, 1);
   assert.equal(summary.multiTimeframe.deliveryUntracked, 1);
+  assert.equal(summary.multiTimeframe.deliveryBreakdown.price_out_of_range, 1);
+  assert.equal(summary.multiTimeframe.deliveryBreakdown.stale, 1);
+  assert.equal(summary.multiTimeframe.deliveryBreakdown.delivery_failed, 1);
+  assert.equal(summary.multiTimeframe.deliveryBreakdown.untracked, 1);
   const message = buildDailySummaryMessage(summary);
   assert.match(message, /Not sent \(entry moved \/ stale \/ suppressed\): 2/);
   assert.match(message, /Delivery failed: 1/);
   assert.match(message, /Delivery status untracked: 1/);
+});
+
+test("daily MTF delivery breakdown separates unavailable quotes from untracked records", () => {
+  const epoch = Date.parse("2026-11-13T10:00:00Z") / 1000;
+  const summary = dailySummary([], "2026-11-13", markets, [
+    { signalId: "quote", marketId: "R_50", entryCandleEpoch: epoch, status: "pending", telegramStatus: "quote_unavailable" },
+    { signalId: "suppressed", marketId: "R_50", entryCandleEpoch: epoch, status: "pending", telegramStatus: "suppressed" }
+  ]);
+  assert.equal(summary.multiTimeframe.deliveryBreakdown.quote_unavailable, 1);
+  assert.equal(summary.multiTimeframe.deliveryBreakdown.suppressed, 1);
+  assert.equal(summary.multiTimeframe.deliveryUntracked, 0);
+  assert.match(buildDailySummaryMessage(summary), /quote unavailable 1/);
 });
 
 test("daily report labels the demo snapshot as point-in-time, not daily profit/loss", () => {

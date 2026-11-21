@@ -69,14 +69,25 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
     !["tp2_hit", "stopped", "stopped_after_tp1", "expired", "ambiguous", "state_missing", "unverified"].includes(signal.status)).length;
   const mtfSent = mtfRows.filter(signal => signal.telegramStatus === "sent").length;
   const mtfDeliveryMissed = mtfRows.filter(signal =>
-    ["missed", "stale", "not_sent", "suppressed"].includes(signal.telegramStatus)).length;
+    ["missed", "stale", "not_sent", "suppressed", "quote_unavailable"].includes(signal.telegramStatus)).length;
   const mtfDeliveryFailed = mtfRows.filter(signal =>
     ["failed", "delivery_failed"].includes(signal.telegramStatus)).length;
+  const deliveryBreakdown = {
+    sent: mtfSent,
+    price_out_of_range: mtfRows.filter(signal => signal.telegramStatus === "missed" && signal.telegramStatusReason === "live_price_too_far_from_entry").length,
+    tp1_already_reached: mtfRows.filter(signal => signal.telegramStatus === "missed" && signal.telegramStatusReason === "tp1_already_reached").length,
+    stale: mtfRows.filter(signal => signal.telegramStatus === "stale").length,
+    quote_unavailable: mtfRows.filter(signal => signal.telegramStatus === "quote_unavailable").length,
+    delivery_failed: mtfDeliveryFailed,
+    suppressed: mtfRows.filter(signal => ["suppressed", "not_sent"].includes(signal.telegramStatus)).length,
+    untracked: 0
+  };
   const knownDeliveryStatuses = new Set([
-    "sent", "missed", "stale", "not_sent", "suppressed", "failed", "delivery_failed"
+    "sent", "missed", "stale", "not_sent", "suppressed", "failed", "delivery_failed", "quote_unavailable"
   ]);
   const mtfDeliveryUntracked = mtfRows.filter(signal =>
     !knownDeliveryStatuses.has(String(signal.telegramStatus || "").toLowerCase())).length;
+  deliveryBreakdown.untracked = mtfDeliveryUntracked;
   const mtfResolved = mtfWins + mtfLosses;
   const mtfWinRate = mtfResolved ? Number((mtfWins / mtfResolved * 100).toFixed(1)) : null;
 
@@ -114,6 +125,7 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
     multiTimeframe: {
       generated: mtfRows.length, sent: mtfSent, deliveryMissed: mtfDeliveryMissed,
       deliveryFailed: mtfDeliveryFailed, deliveryUntracked: mtfDeliveryUntracked,
+      deliveryBreakdown,
       tp1: mtfTp1, tp2: mtfWins,
       wins: mtfWins, losses: mtfLosses, resolved: mtfResolved, winRate: mtfWinRate,
       netSignalOutcomes: mtfWins - mtfLosses, expired: mtfExpired,
@@ -126,7 +138,8 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
 
 function buildDailySummaryMessage(summary, accountSnapshot = null) {
   const mtf = summary.multiTimeframe || {
-    generated: 0, sent: 0, deliveryMissed: 0, deliveryFailed: 0, deliveryUntracked: 0, tp1: 0,
+    generated: 0, sent: 0, deliveryMissed: 0, deliveryFailed: 0, deliveryUntracked: 0,
+    deliveryBreakdown: { sent: 0, price_out_of_range: 0, tp1_already_reached: 0, stale: 0, quote_unavailable: 0, delivery_failed: 0, suppressed: 0, untracked: 0 }, tp1: 0,
     wins: 0, losses: 0, winRate: null, netSignalOutcomes: 0,
     expired: 0, ambiguous: 0, unverified: 0, unresolved: 0, byMarket: [], mfeCount: 0
   };
@@ -157,6 +170,11 @@ function buildDailySummaryMessage(summary, accountSnapshot = null) {
     "\nNot sent (entry moved / stale / suppressed): " + (mtf.deliveryMissed ?? 0) +
     "\nDelivery failed: " + mtf.deliveryFailed +
     "\nDelivery status untracked: " + mtf.deliveryUntracked +
+    "\nDelivery breakdown: price out of range " + (mtf.deliveryBreakdown?.price_out_of_range ?? 0) +
+    ", TP1 already reached " + (mtf.deliveryBreakdown?.tp1_already_reached ?? 0) +
+    ", stale " + (mtf.deliveryBreakdown?.stale ?? 0) +
+    ", quote unavailable " + (mtf.deliveryBreakdown?.quote_unavailable ?? 0) +
+    ", suppressed " + (mtf.deliveryBreakdown?.suppressed ?? 0) +
     "\nWins (TP2): " + mtf.wins + "\nLosses (SL): " + mtf.losses +
     "\nWin rate (resolved wins/losses): " + (mtf.winRate === null ? "N/A" : mtf.winRate + "%") +
     "\nNet signal outcomes (wins - losses): " + (mtf.netSignalOutcomes > 0 ? "+" : "") + mtf.netSignalOutcomes +

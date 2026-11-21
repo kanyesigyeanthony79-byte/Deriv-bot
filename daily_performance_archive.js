@@ -43,13 +43,24 @@ function compact(r, source, day) {
 function summarizeRecords(records, source) {
   const status = r => String(r.outcome || "").toLowerCase();
   const count = fn => records.filter(fn).length;
+  const telegramStatus = r => String(r.telegramStatus || "untracked").toLowerCase();
+  const deliveryBreakdown = {
+    sent: count(r => telegramStatus(r) === "sent"),
+    price_out_of_range: count(r => telegramStatus(r) === "missed" && r.reason === "live_price_too_far_from_entry"),
+    tp1_already_reached: count(r => telegramStatus(r) === "missed" && r.reason === "tp1_already_reached"),
+    stale: count(r => telegramStatus(r) === "stale"),
+    quote_unavailable: count(r => telegramStatus(r) === "quote_unavailable"),
+    delivery_failed: count(r => ["failed", "delivery_failed"].includes(telegramStatus(r))),
+    suppressed: count(r => ["suppressed", "not_sent"].includes(telegramStatus(r))),
+    untracked: count(r => !["sent", "missed", "stale", "quote_unavailable", "failed", "delivery_failed", "suppressed", "not_sent"].includes(telegramStatus(r)))
+  };
   const wins = count(r => ["tp2", "tp2_hit"].includes(status(r)));
   const losses = count(r => ["sl", "sl_after_tp1", "stopped", "stopped_after_tp1"].includes(status(r)));
   const resolved = wins + losses;
   return {
-    source, generated: records.length, delivered: count(r => r.telegramStatus === "sent"),
+    source, generated: records.length, delivered: deliveryBreakdown.sent, deliveryBreakdown,
     missed: count(r => ["suppressed", "stale", "delivery_failed", "failed", "not_sent"].includes(status(r)) ||
-      ["missed", "suppressed", "stale", "delivery_failed", "failed", "not_sent"].includes(r.telegramStatus)),
+      ["missed", "suppressed", "stale", "quote_unavailable", "delivery_failed", "failed", "not_sent"].includes(telegramStatus(r))),
     tp1: count(r => r.tp1Hit || ["tp1_hit", "stopped_after_tp1", "sl_after_tp1"].includes(status(r))),
     wins, losses, resolved, winRate: resolved ? Number((wins / resolved * 100).toFixed(1)) : null,
     expired: count(r => status(r) === "expired"), ambiguous: count(r => status(r) === "ambiguous"),
