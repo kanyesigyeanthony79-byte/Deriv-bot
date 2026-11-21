@@ -21,7 +21,7 @@ function createHeartbeat({ filePath, markets, now = () => new Date() }) {
     marketsFailed: 0,
     marketsUnavailable: 0,
     signalsDetected: 0,
-    telegram: { signalsDelivered: 0, signalsFailed: 0, outcomesDelivered: 0, outcomesFailed: 0 },
+    telegram: { signalsDelivered: 0, signalsFailed: 0, outcomesDelivered: 0, outcomesFailed: 0, lastError: null },
     marketResults: []
   };
 
@@ -62,11 +62,18 @@ function createHeartbeat({ filePath, markets, now = () => new Date() }) {
   }
 
   function signalDetected() { record.signalsDetected++; persist(); }
-  function telegram(kind, success) {
+  function telegram(kind, success, details = {}) {
     const key = kind === "new_signal"
       ? (success ? "signalsDelivered" : "signalsFailed")
       : (success ? "outcomesDelivered" : "outcomesFailed");
     record.telegram[key]++;
+    if (!success && details.error) {
+      record.telegram.lastError = {
+        event: kind,
+        message: String(details.error).slice(0, 400),
+        at: now().toISOString()
+      };
+    }
     persist();
   }
   function finish(status = "success", error = null) {
