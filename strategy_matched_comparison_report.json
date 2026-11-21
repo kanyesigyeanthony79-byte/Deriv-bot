@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-21T02:30:34.000Z",
+  "generatedAt": "2026-11-21T02:45:31.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -18,27 +18,27 @@
   "summary": {
     "baselineVersion": "MTF_BASELINE_V1",
     "baselineCategory": "SCALP",
-    "baselineSignalsAvailable": 264,
+    "baselineSignalsAvailable": 266,
     "candidateStrategies": 7,
-    "candidateSignals": 1471,
-    "matchedPairs": 205,
-    "unmatchedCandidates": 1266,
+    "candidateSignals": 1474,
+    "matchedPairs": 207,
+    "unmatchedCandidates": 1267,
     "matchWindowSeconds": 900
   },
   "strategies": [
     {
       "strategyId": "EMA20_50",
       "label": "EMA20_50",
-      "candidateSignals": 286,
+      "candidateSignals": 287,
       "candidateOutcomeCounts": {
-        "stopped": 165,
+        "stopped": 166,
         "tp2_hit": 86,
         "stopped_after_tp1": 18,
         "tp1_hit": 3,
         "pending": 14
       },
       "matchedPairs": 48,
-      "unmatchedCandidates": 238,
+      "unmatchedCandidates": 239,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
       "baselineSignalsUsed": 48,
       "pairedOutcomeCounts": [
@@ -52,11 +52,7 @@
         },
         {
           "key": "pending / expired",
-          "count": 6
-        },
-        {
-          "key": "pending / pending",
-          "count": 2
+          "count": 8
         },
         {
           "key": "stopped / stopped",
@@ -112,9 +108,9 @@
           "unmatched": 26
         },
         "JD75": {
-          "candidates": 23,
+          "candidates": 24,
           "matched": 3,
-          "unmatched": 20
+          "unmatched": 21
         },
         "frxXAUUSD": {
           "candidates": 28,
@@ -730,7 +726,7 @@
           "baselineEntryEpoch": 1795226700,
           "entryTimeDifferenceSeconds": 300,
           "candidateStatus": "pending",
-          "baselineStatus": "pending",
+          "baselineStatus": "expired",
           "candidateRealizedR": null,
           "baselineRealizedR": null
         },
@@ -743,7 +739,7 @@
           "baselineEntryEpoch": 1795227300,
           "entryTimeDifferenceSeconds": 0,
           "candidateStatus": "pending",
-          "baselineStatus": "pending",
+          "baselineStatus": "expired",
           "candidateRealizedR": null,
           "baselineRealizedR": null
         }
@@ -1502,10 +1498,10 @@
       "label": "EMA20_50_PULLBACK",
       "candidateSignals": 186,
       "candidateOutcomeCounts": {
-        "stopped": 106,
+        "stopped": 107,
         "tp2_hit": 57,
         "stopped_after_tp1": 12,
-        "pending": 10,
+        "pending": 9,
         "tp1_hit": 1
       },
       "matchedPairs": 23,
@@ -1523,11 +1519,7 @@
         },
         {
           "key": "pending / expired",
-          "count": 3
-        },
-        {
-          "key": "pending / pending",
-          "count": 1
+          "count": 4
         },
         {
           "key": "stopped / stopped",
@@ -1881,7 +1873,7 @@
           "baselineEntryEpoch": 1795227300,
           "entryTimeDifferenceSeconds": 0,
           "candidateStatus": "pending",
-          "baselineStatus": "pending",
+          "baselineStatus": "expired",
           "candidateRealizedR": null,
           "baselineRealizedR": null
         }
@@ -1890,18 +1882,18 @@
     {
       "strategyId": "M5_BREAKOUT_M1_RETEST",
       "label": "M5 breakout / M1 retest",
-      "candidateSignals": 272,
+      "candidateSignals": 273,
       "candidateOutcomeCounts": {
-        "tp2_hit": 92,
+        "tp2_hit": 93,
         "stopped": 173,
         "time_exit": 5,
         "ambiguous": 1,
         "pending": 1
       },
-      "matchedPairs": 22,
+      "matchedPairs": 23,
       "unmatchedCandidates": 250,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 22,
+      "baselineSignalsUsed": 23,
       "pairedOutcomeCounts": [
         {
           "key": "stopped / expired",
@@ -1914,6 +1906,10 @@
         {
           "key": "stopped / stopped",
           "count": 2
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         }
       ],
       "byMarket": {
@@ -1953,8 +1949,8 @@
           "unmatched": 18
         },
         "R_10": {
-          "candidates": 40,
-          "matched": 5,
+          "candidates": 41,
+          "matched": 6,
           "unmatched": 35
         }
       },
@@ -2244,23 +2240,36 @@
           "baselineStatus": "stopped",
           "candidateRealizedR": -1,
           "baselineRealizedR": null
+        },
+        {
+          "marketId": "R_10",
+          "direction": "BUY",
+          "candidateSignalId": "R_10-BREAKOUT_RETEST-1795228200",
+          "baselineSignalId": "R_10-SCALP-1795228800",
+          "candidateEntryEpoch": 1795228560,
+          "baselineEntryEpoch": 1795228800,
+          "entryTimeDifferenceSeconds": 240,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
+          "baselineRealizedR": null
         }
       ]
     },
     {
       "strategyId": "M15_M5_EMA_PULLBACK",
       "label": "M15 trend / M5 EMA pullback",
-      "candidateSignals": 75,
+      "candidateSignals": 76,
       "candidateOutcomeCounts": {
         "time_exit": 28,
-        "stop": 36,
+        "stop": 37,
         "target": 10,
         "pending": 1
       },
-      "matchedPairs": 30,
+      "matchedPairs": 31,
       "unmatchedCandidates": 45,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 30,
+      "baselineSignalsUsed": 31,
       "pairedOutcomeCounts": [
         {
           "key": "time_exit / expired",
@@ -2277,6 +2286,10 @@
         {
           "key": "stop / stopped",
           "count": 6
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         }
       ],
       "byMarket": {
@@ -2296,8 +2309,8 @@
           "unmatched": 5
         },
         "R_50": {
-          "candidates": 18,
-          "matched": 11,
+          "candidates": 19,
+          "matched": 12,
           "unmatched": 7
         },
         "BOOM500": {
@@ -2710,6 +2723,19 @@
           "candidateStatus": "stop",
           "baselineStatus": "expired",
           "candidateRealizedR": -1,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "R_50",
+          "direction": "SELL",
+          "candidateSignalId": "R_50-M15_M5_PULLBACK-1795227900",
+          "baselineSignalId": "R_50-SCALP-1795228200",
+          "candidateEntryEpoch": 1795228200,
+          "baselineEntryEpoch": 1795228200,
+          "entryTimeDifferenceSeconds": 0,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
           "baselineRealizedR": null
         }
       ]
