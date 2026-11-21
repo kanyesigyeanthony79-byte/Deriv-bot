@@ -18,6 +18,7 @@ const { updateBreakoutRetestJournal } = require("./breakout_retest_shadow");
 const { updateM5PullbackJournal } = require("./m5_ema_pullback_shadow");
 const { updateJournal: updateBreakoutRetestM5M15Journal } = require("./breakout_retest_m5_m15_shadow");
 const { updateR10ForwardShadowJournal } = require("./r10_forward_shadow");
+const { updateWeakCohortForwardShadowJournal } = require("./weak_cohort_forward_shadow");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 // Jump 75 and Gold are scanned for observation and Telegram alerts only.
@@ -36,6 +37,7 @@ const FRAMES = [
 const OUTPUT = path.join(DATA_DIR, "multi_timeframe_data.json");
 const JOURNAL = path.join(DATA_DIR, "multi_timeframe_journal.json");
 const DASHBOARD = path.join(DATA_DIR, "multi_timeframe_dashboard.json");
+const WEAK_COHORT_FORWARD_SHADOW = path.join(DATA_DIR, "weak_cohort_forward_shadow_journal.json");
 const REVIEW_DATA = path.join(DATA_DIR, "signal_review_data.json");
 const PERFORMANCE_REPORT = path.join(DATA_DIR, "strategy_version_performance_report.json");
 const BREAKOUT_RETEST_JOURNAL = path.join(DATA_DIR, "breakout_retest_shadow_journal.json");
@@ -358,6 +360,12 @@ async function main() {
     const outcomeAlertSummary = await sendOutcomeAlerts(journal, now, process.env, {
       log, liveQuotes, persist: persistJournal
     });
+    const priorWeakCohortShadow = fs.existsSync(WEAK_COHORT_FORWARD_SHADOW)
+      ? JSON.parse(fs.readFileSync(WEAK_COHORT_FORWARD_SHADOW, "utf8"))
+      : null;
+    const weakCohortForwardShadow = updateWeakCohortForwardShadowJournal(priorWeakCohortShadow, journal, now);
+    fs.writeFileSync(WEAK_COHORT_FORWARD_SHADOW, JSON.stringify(weakCohortForwardShadow, null, 2) + "\n");
+    output.weakCohortForwardShadow = weakCohortForwardShadow.summary;
     fs.writeFileSync(JOURNAL, JSON.stringify(journal, null, 2) + "\n");
     fs.writeFileSync(OUTPUT, JSON.stringify(output, null, 2) + "\n");
     const reviewCandidates = new Map();
@@ -398,6 +406,7 @@ async function main() {
       breakoutRetestShadow: output.breakoutRetestShadow,
       m5EmaPullbackShadow: output.m5EmaPullbackShadow,
       breakoutRetestM5M15Shadow: output.breakoutRetestM5M15Shadow,
+      weakCohortForwardShadow: output.weakCohortForwardShadow,
       markets: Object.values(output.markets).map(m => ({
         marketId: m.marketId, marketName: m.marketName, signals: dashboardSignalsForMarket(m, journal, now, liveQuotes),
         timeframeCounts: Object.fromEntries(Object.entries(m.timeframes).map(([tf, candles]) => [tf, candles.length])),
