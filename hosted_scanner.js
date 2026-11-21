@@ -236,7 +236,15 @@ async function postTelegram(payload) {
   });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || result.success !== true) {
-      throw new Error(result.error || ("Telegram Worker returned HTTP " + response.status));
+      const telegram = result.telegram && typeof result.telegram === "object" ? result.telegram : {};
+      const detail = [
+        telegram.httpStatus ? "Telegram HTTP " + telegram.httpStatus : null,
+        telegram.errorCode ? "code " + telegram.errorCode : null,
+        telegram.description || null,
+        result.detail || null
+      ].filter(Boolean).join(": ");
+      throw new Error((result.error || ("Telegram Worker returned HTTP " + response.status)) +
+        (detail ? " — " + detail : ""));
     }
     if (result.suppressed === true) {
       log("telegram_alert_suppressed", {
