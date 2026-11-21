@@ -288,7 +288,7 @@ async function main() {
     const priorPrecisionV2Shadow = fs.existsSync(PRECISION_V2_FORWARD_SHADOW)
       ? JSON.parse(fs.readFileSync(PRECISION_V2_FORWARD_SHADOW, "utf8")) : null;
     const precisionV2Shadow = updatePrecisionV2ForwardShadowJournal(priorPrecisionV2Shadow, journal, now);
-    fs.writeFileSync(PRECISION_V2_FORWARD_SHADOW, JSON.stringify(precisionV2Shadow, null, 2) + "\\n");
+    fs.writeFileSync(PRECISION_V2_FORWARD_SHADOW, JSON.stringify(precisionV2Shadow, null, 2) + "\n");
     output.precisionV2ForwardShadow = precisionV2Shadow.summary;
     if (mt5TradeLedger.connected) {
       for (const record of journal.signals) {
