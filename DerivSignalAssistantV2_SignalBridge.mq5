@@ -10,6 +10,7 @@
 CTrade trade;
 
 input bool   InpEnableTrading = false; // Keep false until demo validation is complete
+input bool   InpObserveOnly = true;    // Receive/validate signals without sending orders
 input string InpBridgeUrl = "https://deriv-telegram-alerts.kanyesigyeanthony79-451.workers.dev";
 input string InpApiKey = "";           // Same value as GitHub SIGNAL_API_KEY
 input string InpClientId = "MT5-DEMO-01";
@@ -839,7 +840,7 @@ bool OpenSignalBasket(const string signalId,const string marketId,
 //+------------------------------------------------------------------+
 void PollSignalQueue()
 {
-   if(CountOurPositions() > 0) return;
+   if(!InpObserveOnly && CountOurPositions() > 0) return;
    string response;
    string url = InpBridgeUrl + "/mt5/next?clientId=" + InpClientId;
    int http = HttpGet(url,response);
@@ -873,7 +874,7 @@ void PollSignalQueue()
    if(WasProcessed(signalId))
    {
       Print("Duplicate signal blocked locally: ",signalId);
-      AcknowledgeSignal(signalId,"accepted");
+      AcknowledgeSignal(signalId,InpObserveOnly ? "observed" : "accepted");
       return;
    }
 
@@ -891,6 +892,20 @@ void PollSignalQueue()
       MarkProcessed(signalId);
       AcknowledgeSignal(signalId,"rejected");
       Print("Stale or unsupported signal category rejected: ",signalId);
+      return;
+   }
+
+   // Observation mode is a hard no-order path. It records and acknowledges signals
+   // without ever calling the order-opening function.
+   if(InpObserveOnly)
+   {
+      MarkProcessed(signalId);
+      Print("OBSERVATION ONLY: signal received and validated. ID=",signalId,
+            " market=",marketId," direction=",direction,
+            " category=",category," entry=",DoubleToString(entry,8),
+            " SL=",DoubleToString(stopLoss,8)," TP1=",DoubleToString(tp1,8),
+            " TP2=",DoubleToString(tp2,8),". No orders were sent.");
+      AcknowledgeSignal(signalId,"observed");
       return;
    }
 
@@ -957,8 +972,9 @@ int OnInit()
 
    RefreshDailyBaseline();
    EventSetTimer(InpPollSeconds);
-   Print("Deriv Signal Assistant V2.10 initialized in DEMO mode. Trading enabled=",
+   Print("Deriv Signal Assistant V2.11 initialized in DEMO mode. Trading enabled=",
          (InpEnableTrading ? "true" : "false"),
+         " observation only=",(InpObserveOnly ? "true" : "false"),
          ". Markets: R_10, R_25, R_50, R_75, JD100, CRASH500, BOOM500. Gold excluded.");
    CheckBridgeHealth();
    return INIT_SUCCEEDED;
@@ -973,6 +989,12 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTimer()
 {
+   if(InpObserveOnly)
+   {
+      CheckBridgeHealth();
+      PollSignalQueue();
+      return;
+   }
    SyncOpenTradeBaskets();
    SyncClosedTradeDeals();
    ManageBasket();
