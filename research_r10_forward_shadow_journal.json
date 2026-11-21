@@ -1,7 +1,7 @@
 {
   "version": 1,
   "createdAt": "2026-11-20T15:49:07.000Z",
-  "updatedAt": "2026-11-21T03:18:48.000Z",
+  "updatedAt": "2026-11-21T11:24:19.000Z",
   "marketId": "R_10",
   "setups": [
     {
@@ -83,7 +83,7 @@
       "setupAtr": 3.94165102753107,
       "createdAt": "2026-11-21T02:30:00.000Z",
       "baseline": {
-        "status": "pending",
+        "status": "time_exit",
         "entry": 4855.635,
         "entryEpoch": 1795228200,
         "stopLoss": 4849.722523458704,
@@ -92,10 +92,13 @@
         "target": 4867.4599530825935,
         "horizonEndEpoch": 1795231800,
         "timeframe": "M15",
-        "direction": "BUY"
+        "direction": "BUY",
+        "r": 0.4456677301966163,
+        "barsObserved": 4,
+        "outcomeEpoch": 1795230900
       },
       "m5": {
-        "status": "pending",
+        "status": "time_exit",
         "entry": 4854.907,
         "entryEpoch": 1795229100,
         "triggerEpoch": 1795228800,
@@ -105,7 +108,10 @@
         "target": 4859.828200913439,
         "horizonEndEpoch": 1795232700,
         "timeframe": "M5",
-        "direction": "BUY"
+        "direction": "BUY",
+        "r": -0.24465572960287132,
+        "barsObserved": 12,
+        "outcomeEpoch": 1795232400
       },
       "m1": {
         "status": "target",
@@ -132,7 +138,7 @@
       "setupAtr": 3.948377671697738,
       "createdAt": "2026-11-21T03:00:00.000Z",
       "baseline": {
-        "status": "pending",
+        "status": "time_exit",
         "entry": 4856.501,
         "entryEpoch": 1795230000,
         "stopLoss": 4850.578433492454,
@@ -141,13 +147,16 @@
         "target": 4868.346133015093,
         "horizonEndEpoch": 1795233600,
         "timeframe": "M15",
-        "direction": "BUY"
+        "direction": "BUY",
+        "r": -0.9637713637706729,
+        "barsObserved": 4,
+        "outcomeEpoch": 1795232700
       },
       "m5": {
         "status": "no_trigger"
       },
       "m1": {
-        "status": "pending",
+        "status": "stop",
         "entry": 4859.103,
         "entryEpoch": 1795230840,
         "triggerEpoch": 1795230780,
@@ -157,7 +166,10 @@
         "target": 4865.01850334497,
         "horizonEndEpoch": 1795234440,
         "timeframe": "M1",
-        "direction": "BUY"
+        "direction": "BUY",
+        "r": -1,
+        "barsObserved": 20,
+        "outcomeEpoch": 1795231980
       }
     }
   ],
@@ -165,68 +177,68 @@
   "coverage": {
     "M1": {
       "candles": 1800,
-      "start": 1795123080,
-      "end": 1795231020
+      "start": 1795152240,
+      "end": 1795260180
     },
     "M5": {
       "candles": 239,
-      "start": 1795159200,
-      "end": 1795230600
+      "start": 1795188300,
+      "end": 1795259700
     },
     "M15": {
       "candles": 999,
-      "start": 1794331800,
-      "end": 1795230000
+      "start": 1794360600,
+      "end": 1795258800
     }
   },
-  "lastSetupEpoch": 1795230000,
+  "lastSetupEpoch": 1795258800,
   "startedAt": "2026-11-20T15:49:07.000Z",
   "summary": {
     "mode": "forward_shadow_observation_only",
-    "generatedAt": "2026-11-21T03:18:48.000Z",
+    "generatedAt": "2026-11-21T11:24:19.000Z",
     "setups": 4,
     "methods": {
       "baseline": {
+        "setups": 4,
+        "resolved": 4,
+        "target": 0,
+        "stop": 0,
+        "timeExit": 4,
+        "ambiguous": 0,
+        "pending": 0,
+        "noTrigger": 0,
+        "wideRisk": 0,
+        "invalidRisk": 0,
+        "censored": 0,
+        "expectancyR": -0.049
+      },
+      "m5": {
         "setups": 4,
         "resolved": 2,
         "target": 0,
         "stop": 0,
         "timeExit": 2,
         "ambiguous": 0,
-        "pending": 2,
-        "noTrigger": 0,
-        "wideRisk": 0,
-        "invalidRisk": 0,
-        "censored": 0,
-        "expectancyR": 0.16
-      },
-      "m5": {
-        "setups": 4,
-        "resolved": 1,
-        "target": 0,
-        "stop": 0,
-        "timeExit": 1,
-        "ambiguous": 0,
-        "pending": 1,
+        "pending": 0,
         "noTrigger": 2,
         "wideRisk": 0,
         "invalidRisk": 0,
         "censored": 0,
-        "expectancyR": -0.279
+        "expectancyR": -0.262
       },
       "m1": {
         "setups": 4,
-        "resolved": 1,
+        "resolved": 2,
         "target": 1,
-        "stop": 0,
+        "stop": 1,
         "timeExit": 0,
         "ambiguous": 0,
-        "pending": 1,
+        "pending": 0,
         "noTrigger": 2,
         "wideRisk": 0,
         "invalidRisk": 0,
         "censored": 0,
-        "expectancyR": 2
+        "expectancyR": 0.5
       }
     },
     "nonOverlapping": {
@@ -239,31 +251,31 @@
       "methods": {
         "baseline": {
           "setups": 2,
-          "resolved": 1,
+          "resolved": 2,
           "target": 0,
           "stop": 0,
-          "timeExit": 1,
+          "timeExit": 2,
           "ambiguous": 0,
-          "pending": 1,
+          "pending": 0,
           "noTrigger": 0,
           "wideRisk": 0,
           "invalidRisk": 0,
           "censored": 0,
-          "expectancyR": 0.013
+          "expectancyR": 0.229
         },
         "m5": {
           "setups": 2,
-          "resolved": 1,
+          "resolved": 2,
           "target": 0,
           "stop": 0,
-          "timeExit": 1,
+          "timeExit": 2,
           "ambiguous": 0,
-          "pending": 1,
+          "pending": 0,
           "noTrigger": 0,
           "wideRisk": 0,
           "invalidRisk": 0,
           "censored": 0,
-          "expectancyR": -0.279
+          "expectancyR": -0.262
         },
         "m1": {
           "setups": 2,
