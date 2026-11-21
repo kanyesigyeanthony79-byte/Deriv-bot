@@ -1,7 +1,7 @@
 {
   "version": 1,
   "createdAt": "2026-11-20T20:45:01.000Z",
-  "updatedAt": "2026-11-21T18:06:13.000Z",
+  "updatedAt": "2026-11-21T23:04:44.000Z",
   "marketId": "R_50",
   "setups": [
     {
@@ -477,7 +477,7 @@
       "setupAtr": 0.3591209383613446,
       "createdAt": "2026-11-21T17:30:00.000Z",
       "baseline": {
-        "status": "pending",
+        "status": "time_exit",
         "entry": 79.7544,
         "entryEpoch": 1795282200,
         "stopLoss": 80.29308140754202,
@@ -486,13 +486,16 @@
         "target": 78.67703718491597,
         "horizonEndEpoch": 1795285800,
         "timeframe": "M15",
-        "direction": "SELL"
+        "direction": "SELL",
+        "r": 1.223171972848555,
+        "barsObserved": 4,
+        "outcomeEpoch": 1795284900
       },
       "m5": {
         "status": "no_trigger"
       },
       "m1": {
-        "status": "pending",
+        "status": "target",
         "entry": 79.8056,
         "entryEpoch": 1795282740,
         "triggerEpoch": 1795282680,
@@ -502,7 +505,52 @@
         "target": 79.44848049435441,
         "horizonEndEpoch": 1795286340,
         "timeframe": "M1",
-        "direction": "SELL"
+        "direction": "SELL",
+        "r": 2,
+        "barsObserved": 35,
+        "outcomeEpoch": 1795284780
+      }
+    },
+    {
+      "setupEpoch": 1795284000,
+      "setupCloseEpoch": 1795284900,
+      "direction": "SELL",
+      "score": 95,
+      "setupAtr": 0.354107143432899,
+      "createdAt": "2026-11-21T18:15:00.000Z",
+      "baseline": {
+        "status": "time_exit",
+        "entry": 79.4421,
+        "entryEpoch": 1795284900,
+        "stopLoss": 79.97326071514935,
+        "riskDistance": 0.5311607151493485,
+        "riskM15Atr": 1.5,
+        "target": 78.3797785697013,
+        "horizonEndEpoch": 1795288500,
+        "timeframe": "M15",
+        "direction": "SELL",
+        "r": 1.1932358360158062,
+        "barsObserved": 4,
+        "outcomeEpoch": 1795287600
+      },
+      "m5": {
+        "status": "no_trigger"
+      },
+      "m1": {
+        "status": "target",
+        "entry": 79.3771,
+        "entryEpoch": 1795285320,
+        "triggerEpoch": 1795285260,
+        "stopLoss": 79.47939347772625,
+        "riskDistance": 0.1022934777262492,
+        "riskM15Atr": 0.2888771933109368,
+        "target": 79.1725130445475,
+        "horizonEndEpoch": 1795288920,
+        "timeframe": "M1",
+        "direction": "SELL",
+        "r": 2,
+        "barsObserved": 6,
+        "outcomeEpoch": 1795285620
       }
     }
   ],
@@ -510,73 +558,73 @@
   "coverage": {
     "M1": {
       "candles": 1800,
-      "start": 1795176360,
-      "end": 1795284300
+      "start": 1795194240,
+      "end": 1795302180
     },
     "M5": {
       "candles": 239,
-      "start": 1795212600,
-      "end": 1795284000
+      "start": 1795230300,
+      "end": 1795301700
     },
     "M15": {
       "candles": 999,
-      "start": 1794384900,
-      "end": 1795283100
+      "start": 1794402900,
+      "end": 1795301100
     }
   },
-  "lastSetupEpoch": 1795283100,
+  "lastSetupEpoch": 1795301100,
   "startedAt": "2026-11-20T20:45:01.000Z",
   "summary": {
     "mode": "forward_shadow_observation_only",
-    "generatedAt": "2026-11-21T18:06:13.000Z",
-    "setups": 13,
+    "generatedAt": "2026-11-21T23:04:44.000Z",
+    "setups": 14,
     "methods": {
       "baseline": {
-        "setups": 13,
-        "resolved": 12,
+        "setups": 14,
+        "resolved": 14,
         "target": 0,
         "stop": 0,
-        "timeExit": 12,
+        "timeExit": 14,
         "ambiguous": 0,
-        "pending": 1,
+        "pending": 0,
         "noTrigger": 0,
         "wideRisk": 0,
         "invalidRisk": 0,
         "censored": 0,
-        "expectancyR": 0.184
+        "expectancyR": 0.33
       },
       "m5": {
-        "setups": 13,
+        "setups": 14,
         "resolved": 5,
         "target": 0,
         "stop": 2,
         "timeExit": 3,
         "ambiguous": 0,
         "pending": 0,
-        "noTrigger": 8,
+        "noTrigger": 9,
         "wideRisk": 0,
         "invalidRisk": 0,
         "censored": 0,
         "expectancyR": -0.543
       },
       "m1": {
-        "setups": 13,
-        "resolved": 4,
-        "target": 0,
+        "setups": 14,
+        "resolved": 6,
+        "target": 2,
         "stop": 4,
         "timeExit": 0,
         "ambiguous": 0,
-        "pending": 1,
+        "pending": 0,
         "noTrigger": 8,
         "wideRisk": 0,
         "invalidRisk": 0,
         "censored": 0,
-        "expectancyR": -1
+        "expectancyR": 0
       }
     },
     "nonOverlapping": {
       "setups": 10,
-      "excluded": 3,
+      "excluded": 4,
       "split": {
         "discovery": 5,
         "validation": 5
@@ -584,17 +632,17 @@
       "methods": {
         "baseline": {
           "setups": 10,
-          "resolved": 9,
+          "resolved": 10,
           "target": 0,
           "stop": 0,
-          "timeExit": 9,
+          "timeExit": 10,
           "ambiguous": 0,
-          "pending": 1,
+          "pending": 0,
           "noTrigger": 0,
           "wideRisk": 0,
           "invalidRisk": 0,
           "censored": 0,
-          "expectancyR": 0.135
+          "expectancyR": 0.243
         },
         "m5": {
           "setups": 10,
@@ -612,17 +660,17 @@
         },
         "m1": {
           "setups": 10,
-          "resolved": 3,
-          "target": 0,
+          "resolved": 4,
+          "target": 1,
           "stop": 3,
           "timeExit": 0,
           "ambiguous": 0,
-          "pending": 1,
+          "pending": 0,
           "noTrigger": 6,
           "wideRisk": 0,
           "invalidRisk": 0,
           "censored": 0,
-          "expectancyR": -1
+          "expectancyR": -0.25
         }
       }
     }
