@@ -14,6 +14,8 @@ function validateMt5Signal(d){
  if(!d||d.event!=="new_signal")return "Only new_signal events can be queued";
  if(!d.signalId||!/^[A-Za-z0-9._:-]{1,120}$/.test(String(d.signalId)))return "Invalid signalId";
  if(!MT5_ALLOWED_MARKETS.has(String(d.marketId||"")))return "Market is not on the synthetic allow-list";
+ const marketId=String(d.marketId||"").trim().toUpperCase();
+ if(marketId==="R_50"&&!(d.source==="LEGACY_15M"&&d.priorityTier==="RESEARCH_PRIORITY"))return "R_50 is restricted to LEGACY_15M RESEARCH_PRIORITY signals";
  if(String(d.market||"").toLowerCase().includes("gold"))return "Gold is excluded";
  const dir=String(d.direction||"").toUpperCase();if(dir!=="BUY"&&dir!=="SELL")return "Invalid direction";
  for(const x of ["entry","livePrice","stopLoss","tp1","tp2"])if(!Number.isFinite(Number(d[x])))return "Invalid numeric field: "+x;
