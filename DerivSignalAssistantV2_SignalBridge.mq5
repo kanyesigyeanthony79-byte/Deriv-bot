@@ -874,7 +874,7 @@ void PollSignalQueue()
    if(WasProcessed(signalId))
    {
       Print("Duplicate signal blocked locally: ",signalId);
-      AcknowledgeSignal(signalId,"accepted");
+      AcknowledgeSignal(signalId,InpObserveOnly ? "observed" : "accepted");
       return;
    }
 
