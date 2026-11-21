@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-21T11:24:41.191Z",
+  "generatedAt": "2026-11-21T18:06:45.894Z",
   "mode": "paired_entry_policy_replay",
   "researchOnly": true,
   "contract": "Shared production MTF completed-candle eligibility and direction; baseline next M5 open versus EXP-01 breakout/retest next M1 open within 15 minutes; shared setup-time M15 ATR risk, 2R target and 60-minute M1 outcome horizon.",
@@ -14,19 +14,231 @@
     "R_10": {
       "status": "replayed",
       "commonWindow": {
-        "startEpoch": 1795188300,
-        "endEpoch": 1795259700,
+        "startEpoch": 1795212600,
+        "endEpoch": 1795284000,
         "hours": 19.833
       },
-      "sharedEligibleEvents": 7,
+      "sharedEligibleEvents": 10,
       "counts": {
         "discovery": {
-          "sharedEligibleEvents": 7,
+          "sharedEligibleEvents": 0,
           "overlapSkipped": {
-            "baseline": 1,
+            "baseline": 0,
             "candidate": 0
           },
-          "purgedAtSplitEnd": 4,
+          "purgedAtSplitEnd": 0,
+          "purgedAfterEntry": {
+            "baseline": 0,
+            "candidate": 0
+          }
+        },
+        "validation": {
+          "sharedEligibleEvents": 5,
+          "overlapSkipped": {
+            "baseline": 2,
+            "candidate": 0
+          },
+          "purgedAtSplitEnd": 2,
+          "purgedAfterEntry": {
+            "baseline": 0,
+            "candidate": 0
+          }
+        }
+      },
+      "discovery": {
+        "sharedEligibleEvents": 0,
+        "baselineEntries": 0,
+        "candidateEntries": 0,
+        "pairedResolved": 0,
+        "meanCandidateMinusBaselineR": null,
+        "medianCandidateMinusBaselineR": null,
+        "pairedDifference95PctIntervalUnclustered": null,
+        "marketClusterCount": 0,
+        "marketClusteredMeanDifferenceR": null,
+        "marketClustered95PctInterval": null,
+        "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
+        "perMarket": {}
+      },
+      "validation": {
+        "sharedEligibleEvents": 5,
+        "baselineEntries": 1,
+        "candidateEntries": 0,
+        "pairedResolved": 0,
+        "meanCandidateMinusBaselineR": null,
+        "medianCandidateMinusBaselineR": null,
+        "pairedDifference95PctIntervalUnclustered": null,
+        "marketClusterCount": 0,
+        "marketClusteredMeanDifferenceR": null,
+        "marketClustered95PctInterval": null,
+        "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
+        "perMarket": {
+          "R_10": {
+            "pairedResolved": 0,
+            "meanDifferenceR": null
+          }
+        }
+      },
+      "discoveryEventAccounting": [],
+      "validationEventAccounting": [
+        {
+          "pairKey": "R_10|1795264200|BUY",
+          "marketId": "R_10",
+          "marketName": "Volatility 10 Index",
+          "setupEpoch": 1795264200,
+          "direction": "BUY",
+          "inputEpochs": {
+            "m5Setup": 1795263900,
+            "m15CompletedThrough": 1795263300
+          },
+          "riskDistance": 4.728216144432062,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "time_exit",
+            "reason": null,
+            "entryEpoch": 1795264200,
+            "entry": 4856.892,
+            "outcome": {
+              "status": "time_exit",
+              "realizedR": 0.6556,
+              "exitEpoch": 1795267800
+            }
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          }
+        },
+        {
+          "pairKey": "R_10|1795265700|BUY",
+          "marketId": "R_10",
+          "marketName": "Volatility 10 Index",
+          "setupEpoch": 1795265700,
+          "direction": "BUY",
+          "inputEpochs": {
+            "m5Setup": 1795265400,
+            "m15CompletedThrough": 1795264200
+          },
+          "riskDistance": 4.741379276972654,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "overlap_skipped",
+            "reason": "prior_position_not_resolved",
+            "entryEpoch": 1795265700,
+            "entry": 4857.005
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          }
+        },
+        {
+          "pairKey": "R_10|1795266000|BUY",
+          "marketId": "R_10",
+          "marketName": "Volatility 10 Index",
+          "setupEpoch": 1795266000,
+          "direction": "BUY",
+          "inputEpochs": {
+            "m5Setup": 1795265700,
+            "m15CompletedThrough": 1795265100
+          },
+          "riskDistance": 4.747352185760293,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "overlap_skipped",
+            "reason": "prior_position_not_resolved",
+            "entryEpoch": 1795266000,
+            "entry": 4858.294
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          }
+        },
+        {
+          "pairKey": "R_10|1795266300|BUY",
+          "marketId": "R_10",
+          "marketName": "Volatility 10 Index",
+          "setupEpoch": 1795266300,
+          "direction": "BUY",
+          "inputEpochs": {
+            "m5Setup": 1795266000,
+            "m15CompletedThrough": 1795265100
+          },
+          "riskDistance": 4.747352185760293,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "entry",
+            "reason": null,
+            "entryEpoch": 1795266300,
+            "entry": 4859.504
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          },
+          "status": "split_purged"
+        },
+        {
+          "pairKey": "R_10|1795267800|BUY",
+          "marketId": "R_10",
+          "marketName": "Volatility 10 Index",
+          "setupEpoch": 1795267800,
+          "direction": "BUY",
+          "inputEpochs": {
+            "m5Setup": 1795267500,
+            "m15CompletedThrough": 1795266900
+          },
+          "riskDistance": 4.71941336425247,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "entry",
+            "reason": null,
+            "entryEpoch": 1795267800,
+            "entry": 4860.081
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          },
+          "status": "split_purged"
+        }
+      ],
+      "holdout": {
+        "status": "sealed_not_evaluated",
+        "reason": "Current historical holdout remains sealed; use a later untouched forward period."
+      }
+    },
+    "R_25": {
+      "status": "replayed",
+      "commonWindow": {
+        "startEpoch": 1795212600,
+        "endEpoch": 1795284000,
+        "hours": 19.833
+      },
+      "sharedEligibleEvents": 6,
+      "counts": {
+        "discovery": {
+          "sharedEligibleEvents": 2,
+          "overlapSkipped": {
+            "baseline": 0,
+            "candidate": 0
+          },
+          "purgedAtSplitEnd": 1,
           "purgedAfterEntry": {
             "baseline": 0,
             "candidate": 0
@@ -46,8 +258,8 @@
         }
       },
       "discovery": {
-        "sharedEligibleEvents": 7,
-        "baselineEntries": 2,
+        "sharedEligibleEvents": 2,
+        "baselineEntries": 1,
         "candidateEntries": 0,
         "pairedResolved": 0,
         "meanCandidateMinusBaselineR": null,
@@ -58,7 +270,7 @@
         "marketClustered95PctInterval": null,
         "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
         "perMarket": {
-          "R_10": {
+          "R_25": {
             "pairedResolved": 0,
             "meanDifferenceR": null
           }
@@ -79,315 +291,6 @@
         "perMarket": {}
       },
       "discoveryEventAccounting": [
-        {
-          "pairKey": "R_10|1795209600|BUY",
-          "marketId": "R_10",
-          "marketName": "Volatility 10 Index",
-          "setupEpoch": 1795209600,
-          "direction": "BUY",
-          "inputEpochs": {
-            "m5Setup": 1795209300,
-            "m15CompletedThrough": 1795208400
-          },
-          "riskDistance": 4.983009723981879,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "stopped",
-            "reason": null,
-            "entryEpoch": 1795209600,
-            "entry": 4856.761,
-            "outcome": {
-              "status": "stopped",
-              "realizedR": -1,
-              "exitEpoch": 1795212780
-            }
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "R_10|1795225800|BUY",
-          "marketId": "R_10",
-          "marketName": "Volatility 10 Index",
-          "setupEpoch": 1795225800,
-          "direction": "BUY",
-          "inputEpochs": {
-            "m5Setup": 1795225500,
-            "m15CompletedThrough": 1795224600
-          },
-          "riskDistance": 4.944628709345373,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "time_exit",
-            "reason": null,
-            "entryEpoch": 1795225800,
-            "entry": 4852.366,
-            "outcome": {
-              "status": "time_exit",
-              "realizedR": 0.4275,
-              "exitEpoch": 1795229400
-            }
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "R_10|1795227300|BUY",
-          "marketId": "R_10",
-          "marketName": "Volatility 10 Index",
-          "setupEpoch": 1795227300,
-          "direction": "BUY",
-          "inputEpochs": {
-            "m5Setup": 1795227000,
-            "m15CompletedThrough": 1795226400
-          },
-          "riskDistance": 4.89010715244567,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "overlap_skipped",
-            "reason": "prior_position_not_resolved",
-            "entryEpoch": 1795227300,
-            "entry": 4852.018
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "R_10|1795227600|BUY",
-          "marketId": "R_10",
-          "marketName": "Volatility 10 Index",
-          "setupEpoch": 1795227600,
-          "direction": "BUY",
-          "inputEpochs": {
-            "m5Setup": 1795227300,
-            "m15CompletedThrough": 1795226400
-          },
-          "riskDistance": 4.89010715244567,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "entry",
-            "reason": null,
-            "entryEpoch": 1795227600,
-            "entry": 4852.902
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          },
-          "status": "split_purged"
-        },
-        {
-          "pairKey": "R_10|1795227900|BUY",
-          "marketId": "R_10",
-          "marketName": "Volatility 10 Index",
-          "setupEpoch": 1795227900,
-          "direction": "BUY",
-          "inputEpochs": {
-            "m5Setup": 1795227600,
-            "m15CompletedThrough": 1795226400
-          },
-          "riskDistance": 4.89010715244567,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "entry",
-            "reason": null,
-            "entryEpoch": 1795227900,
-            "entry": 4854.007
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          },
-          "status": "split_purged"
-        },
-        {
-          "pairKey": "R_10|1795229100|BUY",
-          "marketId": "R_10",
-          "marketName": "Volatility 10 Index",
-          "setupEpoch": 1795229100,
-          "direction": "BUY",
-          "inputEpochs": {
-            "m5Setup": 1795228800,
-            "m15CompletedThrough": 1795228200
-          },
-          "riskDistance": 4.896469942670007,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "entry",
-            "reason": null,
-            "entryEpoch": 1795229100,
-            "entry": 4854.907
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          },
-          "status": "split_purged"
-        },
-        {
-          "pairKey": "R_10|1795229700|BUY",
-          "marketId": "R_10",
-          "marketName": "Volatility 10 Index",
-          "setupEpoch": 1795229700,
-          "direction": "BUY",
-          "inputEpochs": {
-            "m5Setup": 1795229400,
-            "m15CompletedThrough": 1795228200
-          },
-          "riskDistance": 4.896469942670007,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "entry",
-            "reason": null,
-            "entryEpoch": 1795229700,
-            "entry": 4855.472
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          },
-          "status": "split_purged"
-        }
-      ],
-      "validationEventAccounting": [],
-      "holdout": {
-        "status": "sealed_not_evaluated",
-        "reason": "Current historical holdout remains sealed; use a later untouched forward period."
-      }
-    },
-    "R_25": {
-      "status": "replayed",
-      "commonWindow": {
-        "startEpoch": 1795188300,
-        "endEpoch": 1795259700,
-        "hours": 19.833
-      },
-      "sharedEligibleEvents": 3,
-      "counts": {
-        "discovery": {
-          "sharedEligibleEvents": 1,
-          "overlapSkipped": {
-            "baseline": 0,
-            "candidate": 0
-          },
-          "purgedAtSplitEnd": 0,
-          "purgedAfterEntry": {
-            "baseline": 0,
-            "candidate": 0
-          }
-        },
-        "validation": {
-          "sharedEligibleEvents": 1,
-          "overlapSkipped": {
-            "baseline": 0,
-            "candidate": 0
-          },
-          "purgedAtSplitEnd": 0,
-          "purgedAfterEntry": {
-            "baseline": 0,
-            "candidate": 0
-          }
-        }
-      },
-      "discovery": {
-        "sharedEligibleEvents": 1,
-        "baselineEntries": 1,
-        "candidateEntries": 0,
-        "pairedResolved": 0,
-        "meanCandidateMinusBaselineR": null,
-        "medianCandidateMinusBaselineR": null,
-        "pairedDifference95PctIntervalUnclustered": null,
-        "marketClusterCount": 0,
-        "marketClusteredMeanDifferenceR": null,
-        "marketClustered95PctInterval": null,
-        "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
-        "perMarket": {
-          "R_25": {
-            "pairedResolved": 0,
-            "meanDifferenceR": null
-          }
-        }
-      },
-      "validation": {
-        "sharedEligibleEvents": 1,
-        "baselineEntries": 1,
-        "candidateEntries": 0,
-        "pairedResolved": 0,
-        "meanCandidateMinusBaselineR": null,
-        "medianCandidateMinusBaselineR": null,
-        "pairedDifference95PctIntervalUnclustered": null,
-        "marketClusterCount": 0,
-        "marketClusteredMeanDifferenceR": null,
-        "marketClustered95PctInterval": null,
-        "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
-        "perMarket": {
-          "R_25": {
-            "pairedResolved": 0,
-            "meanDifferenceR": null
-          }
-        }
-      },
-      "discoveryEventAccounting": [
-        {
-          "pairKey": "R_25|1795221900|SELL",
-          "marketId": "R_25",
-          "marketName": "Volatility 25 Index",
-          "setupEpoch": 1795221900,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795221600,
-            "m15CompletedThrough": 1795221000
-          },
-          "riskDistance": 6.610248796893608,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "stopped",
-            "reason": null,
-            "entryEpoch": 1795221900,
-            "entry": 2850.124,
-            "outcome": {
-              "status": "stopped",
-              "realizedR": -1,
-              "exitEpoch": 1795223040
-            }
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        }
-      ],
-      "validationEventAccounting": [
         {
           "pairKey": "R_25|1795240500|SELL",
           "marketId": "R_25",
@@ -418,327 +321,25 @@
             "entryEpoch": null,
             "entry": null
           }
-        }
-      ],
-      "holdout": {
-        "status": "sealed_not_evaluated",
-        "reason": "Current historical holdout remains sealed; use a later untouched forward period."
-      }
-    },
-    "R_50": {
-      "status": "replayed",
-      "commonWindow": {
-        "startEpoch": 1795188300,
-        "endEpoch": 1795259700,
-        "hours": 19.833
-      },
-      "sharedEligibleEvents": 9,
-      "counts": {
-        "discovery": {
-          "sharedEligibleEvents": 9,
-          "overlapSkipped": {
-            "baseline": 4,
-            "candidate": 0
-          },
-          "purgedAtSplitEnd": 1,
-          "purgedAfterEntry": {
-            "baseline": 0,
-            "candidate": 0
-          }
-        },
-        "validation": {
-          "sharedEligibleEvents": 0,
-          "overlapSkipped": {
-            "baseline": 0,
-            "candidate": 0
-          },
-          "purgedAtSplitEnd": 0,
-          "purgedAfterEntry": {
-            "baseline": 0,
-            "candidate": 0
-          }
-        }
-      },
-      "discovery": {
-        "sharedEligibleEvents": 9,
-        "baselineEntries": 4,
-        "candidateEntries": 0,
-        "pairedResolved": 0,
-        "meanCandidateMinusBaselineR": null,
-        "medianCandidateMinusBaselineR": null,
-        "pairedDifference95PctIntervalUnclustered": null,
-        "marketClusterCount": 0,
-        "marketClusteredMeanDifferenceR": null,
-        "marketClustered95PctInterval": null,
-        "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
-        "perMarket": {
-          "R_50": {
-            "pairedResolved": 0,
-            "meanDifferenceR": null
-          }
-        }
-      },
-      "validation": {
-        "sharedEligibleEvents": 0,
-        "baselineEntries": 0,
-        "candidateEntries": 0,
-        "pairedResolved": 0,
-        "meanCandidateMinusBaselineR": null,
-        "medianCandidateMinusBaselineR": null,
-        "pairedDifference95PctIntervalUnclustered": null,
-        "marketClusterCount": 0,
-        "marketClusteredMeanDifferenceR": null,
-        "marketClustered95PctInterval": null,
-        "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
-        "perMarket": {}
-      },
-      "discoveryEventAccounting": [
-        {
-          "pairKey": "R_50|1795207800|SELL",
-          "marketId": "R_50",
-          "marketName": "Volatility 50 Index",
-          "setupEpoch": 1795207800,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795207500,
-            "m15CompletedThrough": 1795206600
-          },
-          "riskDistance": 0.4031360038532399,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "time_exit",
-            "reason": null,
-            "entryEpoch": 1795207800,
-            "entry": 81.6446,
-            "outcome": {
-              "status": "time_exit",
-              "realizedR": -0.1464,
-              "exitEpoch": 1795211400
-            }
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
         },
         {
-          "pairKey": "R_50|1795215000|SELL",
-          "marketId": "R_50",
-          "marketName": "Volatility 50 Index",
-          "setupEpoch": 1795215000,
-          "direction": "SELL",
+          "pairKey": "R_25|1795254300|BUY",
+          "marketId": "R_25",
+          "marketName": "Volatility 25 Index",
+          "setupEpoch": 1795254300,
+          "direction": "BUY",
           "inputEpochs": {
-            "m5Setup": 1795214700,
-            "m15CompletedThrough": 1795213800
+            "m5Setup": 1795254000,
+            "m15CompletedThrough": 1795253400
           },
-          "riskDistance": 0.40325001361247176,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "time_exit",
-            "reason": null,
-            "entryEpoch": 1795215000,
-            "entry": 81.4354,
-            "outcome": {
-              "status": "time_exit",
-              "realizedR": 0.3073,
-              "exitEpoch": 1795218600
-            }
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "R_50|1795218000|SELL",
-          "marketId": "R_50",
-          "marketName": "Volatility 50 Index",
-          "setupEpoch": 1795218000,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795217700,
-            "m15CompletedThrough": 1795216500
-          },
-          "riskDistance": 0.40597705171523335,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "overlap_skipped",
-            "reason": "prior_position_not_resolved",
-            "entryEpoch": 1795218000,
-            "entry": 81.32
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "R_50|1795220400|SELL",
-          "marketId": "R_50",
-          "marketName": "Volatility 50 Index",
-          "setupEpoch": 1795220400,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795220100,
-            "m15CompletedThrough": 1795219200
-          },
-          "riskDistance": 0.3884106988405135,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "time_exit",
-            "reason": null,
-            "entryEpoch": 1795220400,
-            "entry": 81.2859,
-            "outcome": {
-              "status": "time_exit",
-              "realizedR": 0.8661,
-              "exitEpoch": 1795224000
-            }
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "R_50|1795223400|SELL",
-          "marketId": "R_50",
-          "marketName": "Volatility 50 Index",
-          "setupEpoch": 1795223400,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795223100,
-            "m15CompletedThrough": 1795221900
-          },
-          "riskDistance": 0.39880719036173584,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "overlap_skipped",
-            "reason": "prior_position_not_resolved",
-            "entryEpoch": 1795223400,
-            "entry": 81.0013
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "R_50|1795223700|SELL",
-          "marketId": "R_50",
-          "marketName": "Volatility 50 Index",
-          "setupEpoch": 1795223700,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795223400,
-            "m15CompletedThrough": 1795222800
-          },
-          "riskDistance": 0.3933656053358975,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "overlap_skipped",
-            "reason": "prior_position_not_resolved",
-            "entryEpoch": 1795223700,
-            "entry": 80.9362
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "R_50|1795227000|SELL",
-          "marketId": "R_50",
-          "marketName": "Volatility 50 Index",
-          "setupEpoch": 1795227000,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795226700,
-            "m15CompletedThrough": 1795225500
-          },
-          "riskDistance": 0.3726472703800903,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "time_exit",
-            "reason": null,
-            "entryEpoch": 1795227000,
-            "entry": 80.9639,
-            "outcome": {
-              "status": "time_exit",
-              "realizedR": 0.2133,
-              "exitEpoch": 1795230600
-            }
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "R_50|1795227300|SELL",
-          "marketId": "R_50",
-          "marketName": "Volatility 50 Index",
-          "setupEpoch": 1795227300,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795227000,
-            "m15CompletedThrough": 1795226400
-          },
-          "riskDistance": 0.37215460821008317,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "overlap_skipped",
-            "reason": "prior_position_not_resolved",
-            "entryEpoch": 1795227300,
-            "entry": 80.8782
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "R_50|1795228500|SELL",
-          "marketId": "R_50",
-          "marketName": "Volatility 50 Index",
-          "setupEpoch": 1795228500,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795228200,
-            "m15CompletedThrough": 1795227300
-          },
-          "riskDistance": 0.36788463619507694,
+          "riskDistance": 6.849570306594161,
           "targetR": 2,
           "horizonSeconds": 3600,
           "baseline": {
             "status": "entry",
             "reason": null,
-            "entryEpoch": 1795228500,
-            "entry": 80.8187
+            "entryEpoch": 1795254300,
+            "entry": 2861.976
           },
           "candidate": {
             "status": "no_entry",
@@ -755,17 +356,17 @@
         "reason": "Current historical holdout remains sealed; use a later untouched forward period."
       }
     },
-    "R_75": {
+    "R_50": {
       "status": "replayed",
       "commonWindow": {
-        "startEpoch": 1795188300,
-        "endEpoch": 1795259700,
+        "startEpoch": 1795212600,
+        "endEpoch": 1795284000,
         "hours": 19.833
       },
-      "sharedEligibleEvents": 5,
+      "sharedEligibleEvents": 9,
       "counts": {
         "discovery": {
-          "sharedEligibleEvents": 1,
+          "sharedEligibleEvents": 0,
           "overlapSkipped": {
             "baseline": 0,
             "candidate": 0
@@ -777,9 +378,222 @@
           }
         },
         "validation": {
-          "sharedEligibleEvents": 2,
+          "sharedEligibleEvents": 5,
           "overlapSkipped": {
             "baseline": 1,
+            "candidate": 0
+          },
+          "purgedAtSplitEnd": 3,
+          "purgedAfterEntry": {
+            "baseline": 0,
+            "candidate": 0
+          }
+        }
+      },
+      "discovery": {
+        "sharedEligibleEvents": 0,
+        "baselineEntries": 0,
+        "candidateEntries": 0,
+        "pairedResolved": 0,
+        "meanCandidateMinusBaselineR": null,
+        "medianCandidateMinusBaselineR": null,
+        "pairedDifference95PctIntervalUnclustered": null,
+        "marketClusterCount": 0,
+        "marketClusteredMeanDifferenceR": null,
+        "marketClustered95PctInterval": null,
+        "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
+        "perMarket": {}
+      },
+      "validation": {
+        "sharedEligibleEvents": 5,
+        "baselineEntries": 1,
+        "candidateEntries": 0,
+        "pairedResolved": 0,
+        "meanCandidateMinusBaselineR": null,
+        "medianCandidateMinusBaselineR": null,
+        "pairedDifference95PctIntervalUnclustered": null,
+        "marketClusterCount": 0,
+        "marketClusteredMeanDifferenceR": null,
+        "marketClustered95PctInterval": null,
+        "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
+        "perMarket": {
+          "R_50": {
+            "pairedResolved": 0,
+            "meanDifferenceR": null
+          }
+        }
+      },
+      "discoveryEventAccounting": [],
+      "validationEventAccounting": [
+        {
+          "pairKey": "R_50|1795265100|SELL",
+          "marketId": "R_50",
+          "marketName": "Volatility 50 Index",
+          "setupEpoch": 1795265100,
+          "direction": "SELL",
+          "inputEpochs": {
+            "m5Setup": 1795264800,
+            "m15CompletedThrough": 1795264200
+          },
+          "riskDistance": 0.44408090203221795,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "time_exit",
+            "reason": null,
+            "entryEpoch": 1795265100,
+            "entry": 80.2209,
+            "outcome": {
+              "status": "time_exit",
+              "realizedR": 0.2319,
+              "exitEpoch": 1795268700
+            }
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          }
+        },
+        {
+          "pairKey": "R_50|1795266000|SELL",
+          "marketId": "R_50",
+          "marketName": "Volatility 50 Index",
+          "setupEpoch": 1795266000,
+          "direction": "SELL",
+          "inputEpochs": {
+            "m5Setup": 1795265700,
+            "m15CompletedThrough": 1795265100
+          },
+          "riskDistance": 0.4298161947442033,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "overlap_skipped",
+            "reason": "prior_position_not_resolved",
+            "entryEpoch": 1795266000,
+            "entry": 80.2318
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          }
+        },
+        {
+          "pairKey": "R_50|1795266900|SELL",
+          "marketId": "R_50",
+          "marketName": "Volatility 50 Index",
+          "setupEpoch": 1795266900,
+          "direction": "SELL",
+          "inputEpochs": {
+            "m5Setup": 1795266600,
+            "m15CompletedThrough": 1795266000
+          },
+          "riskDistance": 0.44320432369104534,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "entry",
+            "reason": null,
+            "entryEpoch": 1795266900,
+            "entry": 80.2979
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          },
+          "status": "split_purged"
+        },
+        {
+          "pairKey": "R_50|1795267200|SELL",
+          "marketId": "R_50",
+          "marketName": "Volatility 50 Index",
+          "setupEpoch": 1795267200,
+          "direction": "SELL",
+          "inputEpochs": {
+            "m5Setup": 1795266900,
+            "m15CompletedThrough": 1795266000
+          },
+          "riskDistance": 0.44320432369104534,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "entry",
+            "reason": null,
+            "entryEpoch": 1795267200,
+            "entry": 80.157
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          },
+          "status": "split_purged"
+        },
+        {
+          "pairKey": "R_50|1795268700|SELL",
+          "marketId": "R_50",
+          "marketName": "Volatility 50 Index",
+          "setupEpoch": 1795268700,
+          "direction": "SELL",
+          "inputEpochs": {
+            "m5Setup": 1795268400,
+            "m15CompletedThrough": 1795267800
+          },
+          "riskDistance": 0.4446289831825846,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "entry",
+            "reason": null,
+            "entryEpoch": 1795268700,
+            "entry": 80.1196
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          },
+          "status": "split_purged"
+        }
+      ],
+      "holdout": {
+        "status": "sealed_not_evaluated",
+        "reason": "Current historical holdout remains sealed; use a later untouched forward period."
+      }
+    },
+    "R_75": {
+      "status": "replayed",
+      "commonWindow": {
+        "startEpoch": 1795212600,
+        "endEpoch": 1795284000,
+        "hours": 19.833
+      },
+      "sharedEligibleEvents": 6,
+      "counts": {
+        "discovery": {
+          "sharedEligibleEvents": 3,
+          "overlapSkipped": {
+            "baseline": 1,
+            "candidate": 0
+          },
+          "purgedAtSplitEnd": 0,
+          "purgedAfterEntry": {
+            "baseline": 0,
+            "candidate": 0
+          }
+        },
+        "validation": {
+          "sharedEligibleEvents": 1,
+          "overlapSkipped": {
+            "baseline": 0,
             "candidate": 0
           },
           "purgedAtSplitEnd": 0,
@@ -790,6 +604,25 @@
         }
       },
       "discovery": {
+        "sharedEligibleEvents": 3,
+        "baselineEntries": 2,
+        "candidateEntries": 0,
+        "pairedResolved": 0,
+        "meanCandidateMinusBaselineR": null,
+        "medianCandidateMinusBaselineR": null,
+        "pairedDifference95PctIntervalUnclustered": null,
+        "marketClusterCount": 0,
+        "marketClusteredMeanDifferenceR": null,
+        "marketClustered95PctInterval": null,
+        "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
+        "perMarket": {
+          "R_75": {
+            "pairedResolved": 0,
+            "meanDifferenceR": null
+          }
+        }
+      },
+      "validation": {
         "sharedEligibleEvents": 1,
         "baselineEntries": 1,
         "candidateEntries": 0,
@@ -808,59 +641,7 @@
           }
         }
       },
-      "validation": {
-        "sharedEligibleEvents": 2,
-        "baselineEntries": 1,
-        "candidateEntries": 0,
-        "pairedResolved": 0,
-        "meanCandidateMinusBaselineR": null,
-        "medianCandidateMinusBaselineR": null,
-        "pairedDifference95PctIntervalUnclustered": null,
-        "marketClusterCount": 0,
-        "marketClusteredMeanDifferenceR": null,
-        "marketClustered95PctInterval": null,
-        "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
-        "perMarket": {
-          "R_75": {
-            "pairedResolved": 0,
-            "meanDifferenceR": null
-          }
-        }
-      },
       "discoveryEventAccounting": [
-        {
-          "pairKey": "R_75|1795225500|BUY",
-          "marketId": "R_75",
-          "marketName": "Volatility 75 Index",
-          "setupEpoch": 1795225500,
-          "direction": "BUY",
-          "inputEpochs": {
-            "m5Setup": 1795225200,
-            "m15CompletedThrough": 1795224600
-          },
-          "riskDistance": 311.6326054341627,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "stopped",
-            "reason": null,
-            "entryEpoch": 1795225500,
-            "entry": 39497.3976,
-            "outcome": {
-              "status": "stopped",
-              "realizedR": -1,
-              "exitEpoch": 1795228440
-            }
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        }
-      ],
-      "validationEventAccounting": [
         {
           "pairKey": "R_75|1795239900|BUY",
           "marketId": "R_75",
@@ -917,6 +698,70 @@
             "entryEpoch": null,
             "entry": null
           }
+        },
+        {
+          "pairKey": "R_75|1795248600|BUY",
+          "marketId": "R_75",
+          "marketName": "Volatility 75 Index",
+          "setupEpoch": 1795248600,
+          "direction": "BUY",
+          "inputEpochs": {
+            "m5Setup": 1795248300,
+            "m15CompletedThrough": 1795247100
+          },
+          "riskDistance": 290.4043321949736,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "stopped",
+            "reason": null,
+            "entryEpoch": 1795248600,
+            "entry": 40205.9645,
+            "outcome": {
+              "status": "stopped",
+              "realizedR": -1,
+              "exitEpoch": 1795249680
+            }
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          }
+        }
+      ],
+      "validationEventAccounting": [
+        {
+          "pairKey": "R_75|1795259400|BUY",
+          "marketId": "R_75",
+          "marketName": "Volatility 75 Index",
+          "setupEpoch": 1795259400,
+          "direction": "BUY",
+          "inputEpochs": {
+            "m5Setup": 1795259100,
+            "m15CompletedThrough": 1795257900
+          },
+          "riskDistance": 337.99769232192665,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "stopped",
+            "reason": null,
+            "entryEpoch": 1795259400,
+            "entry": 39998.2259,
+            "outcome": {
+              "status": "stopped",
+              "realizedR": -1,
+              "exitEpoch": 1795261560
+            }
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          }
         }
       ],
       "holdout": {
@@ -927,16 +772,16 @@
     "JD75": {
       "status": "replayed",
       "commonWindow": {
-        "startEpoch": 1795188300,
-        "endEpoch": 1795259700,
+        "startEpoch": 1795212600,
+        "endEpoch": 1795284000,
         "hours": 19.833
       },
-      "sharedEligibleEvents": 6,
+      "sharedEligibleEvents": 5,
       "counts": {
         "discovery": {
           "sharedEligibleEvents": 3,
           "overlapSkipped": {
-            "baseline": 1,
+            "baseline": 2,
             "candidate": 0
           },
           "purgedAtSplitEnd": 0,
@@ -946,12 +791,12 @@
           }
         },
         "validation": {
-          "sharedEligibleEvents": 2,
+          "sharedEligibleEvents": 0,
           "overlapSkipped": {
             "baseline": 0,
             "candidate": 0
           },
-          "purgedAtSplitEnd": 2,
+          "purgedAtSplitEnd": 0,
           "purgedAfterEntry": {
             "baseline": 0,
             "candidate": 0
@@ -960,8 +805,8 @@
       },
       "discovery": {
         "sharedEligibleEvents": 3,
-        "baselineEntries": 2,
-        "candidateEntries": 0,
+        "baselineEntries": 1,
+        "candidateEntries": 1,
         "pairedResolved": 0,
         "meanCandidateMinusBaselineR": null,
         "medianCandidateMinusBaselineR": null,
@@ -978,7 +823,7 @@
         }
       },
       "validation": {
-        "sharedEligibleEvents": 2,
+        "sharedEligibleEvents": 0,
         "baselineEntries": 0,
         "candidateEntries": 0,
         "pairedResolved": 0,
@@ -989,104 +834,9 @@
         "marketClusteredMeanDifferenceR": null,
         "marketClustered95PctInterval": null,
         "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
-        "perMarket": {
-          "JD75": {
-            "pairedResolved": 0,
-            "meanDifferenceR": null
-          }
-        }
+        "perMarket": {}
       },
       "discoveryEventAccounting": [
-        {
-          "pairKey": "JD75|1795208700|BUY",
-          "marketId": "JD75",
-          "marketName": "Jump 75 Index",
-          "setupEpoch": 1795208700,
-          "direction": "BUY",
-          "inputEpochs": {
-            "m5Setup": 1795208400,
-            "m15CompletedThrough": 1795207500
-          },
-          "riskDistance": 32.321680517113805,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "time_exit",
-            "reason": null,
-            "entryEpoch": 1795208700,
-            "entry": 3674.09,
-            "outcome": {
-              "status": "time_exit",
-              "realizedR": 0.4536,
-              "exitEpoch": 1795212300
-            }
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "JD75|1795209600|BUY",
-          "marketId": "JD75",
-          "marketName": "Jump 75 Index",
-          "setupEpoch": 1795209600,
-          "direction": "BUY",
-          "inputEpochs": {
-            "m5Setup": 1795209300,
-            "m15CompletedThrough": 1795208400
-          },
-          "riskDistance": 32.22548905160569,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "overlap_skipped",
-            "reason": "prior_position_not_resolved",
-            "entryEpoch": 1795209600,
-            "entry": 3686.14
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "JD75|1795218000|BUY",
-          "marketId": "JD75",
-          "marketName": "Jump 75 Index",
-          "setupEpoch": 1795218000,
-          "direction": "BUY",
-          "inputEpochs": {
-            "m5Setup": 1795217700,
-            "m15CompletedThrough": 1795216500
-          },
-          "riskDistance": 35.001888028163144,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "stopped",
-            "reason": null,
-            "entryEpoch": 1795218000,
-            "entry": 3747.14,
-            "outcome": {
-              "status": "stopped",
-              "realizedR": -1,
-              "exitEpoch": 1795218180
-            }
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        }
-      ],
-      "validationEventAccounting": [
         {
           "pairKey": "JD75|1795243800|SELL",
           "marketId": "JD75",
@@ -1101,18 +851,22 @@
           "targetR": 2,
           "horizonSeconds": 3600,
           "baseline": {
-            "status": "entry",
+            "status": "time_exit",
             "reason": null,
             "entryEpoch": 1795243800,
-            "entry": 3606.64
+            "entry": 3606.64,
+            "outcome": {
+              "status": "time_exit",
+              "realizedR": -0.2915,
+              "exitEpoch": 1795247400
+            }
           },
           "candidate": {
             "status": "no_entry",
             "reason": "no_candidate_breakout",
             "entryEpoch": null,
             "entry": null
-          },
-          "status": "split_purged"
+          }
         },
         {
           "pairKey": "JD75|1795244700|SELL",
@@ -1128,8 +882,8 @@
           "targetR": 2,
           "horizonSeconds": 3600,
           "baseline": {
-            "status": "entry",
-            "reason": null,
+            "status": "overlap_skipped",
+            "reason": "prior_position_not_resolved",
             "entryEpoch": 1795244700,
             "entry": 3600.18
           },
@@ -1138,10 +892,41 @@
             "reason": "no_candidate_breakout",
             "entryEpoch": null,
             "entry": null
+          }
+        },
+        {
+          "pairKey": "JD75|1795245900|SELL",
+          "marketId": "JD75",
+          "marketName": "Jump 75 Index",
+          "setupEpoch": 1795245900,
+          "direction": "SELL",
+          "inputEpochs": {
+            "m5Setup": 1795245600,
+            "m15CompletedThrough": 1795244400
           },
-          "status": "split_purged"
+          "riskDistance": 33.31742455733409,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "overlap_skipped",
+            "reason": "prior_position_not_resolved",
+            "entryEpoch": 1795245900,
+            "entry": 3591
+          },
+          "candidate": {
+            "status": "stopped",
+            "reason": null,
+            "entryEpoch": 1795246020,
+            "entry": 3589.78,
+            "outcome": {
+              "status": "stopped",
+              "realizedR": -1,
+              "exitEpoch": 1795247820
+            }
+          }
         }
       ],
+      "validationEventAccounting": [],
       "holdout": {
         "status": "sealed_not_evaluated",
         "reason": "Current historical holdout remains sealed; use a later untouched forward period."
@@ -1150,16 +935,16 @@
     "JD100": {
       "status": "replayed",
       "commonWindow": {
-        "startEpoch": 1795188300,
-        "endEpoch": 1795259700,
+        "startEpoch": 1795212600,
+        "endEpoch": 1795284000,
         "hours": 19.833
       },
-      "sharedEligibleEvents": 10,
+      "sharedEligibleEvents": 7,
       "counts": {
         "discovery": {
-          "sharedEligibleEvents": 4,
+          "sharedEligibleEvents": 6,
           "overlapSkipped": {
-            "baseline": 2,
+            "baseline": 4,
             "candidate": 0
           },
           "purgedAtSplitEnd": 0,
@@ -1169,12 +954,12 @@
           }
         },
         "validation": {
-          "sharedEligibleEvents": 6,
+          "sharedEligibleEvents": 0,
           "overlapSkipped": {
-            "baseline": 4,
+            "baseline": 0,
             "candidate": 0
           },
-          "purgedAtSplitEnd": 1,
+          "purgedAtSplitEnd": 0,
           "purgedAfterEntry": {
             "baseline": 0,
             "candidate": 0
@@ -1182,7 +967,7 @@
         }
       },
       "discovery": {
-        "sharedEligibleEvents": 4,
+        "sharedEligibleEvents": 6,
         "baselineEntries": 2,
         "candidateEntries": 0,
         "pairedResolved": 0,
@@ -1201,8 +986,8 @@
         }
       },
       "validation": {
-        "sharedEligibleEvents": 6,
-        "baselineEntries": 1,
+        "sharedEligibleEvents": 0,
+        "baselineEntries": 0,
         "candidateEntries": 0,
         "pairedResolved": 0,
         "meanCandidateMinusBaselineR": null,
@@ -1212,130 +997,9 @@
         "marketClusteredMeanDifferenceR": null,
         "marketClustered95PctInterval": null,
         "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
-        "perMarket": {
-          "JD100": {
-            "pairedResolved": 0,
-            "meanDifferenceR": null
-          }
-        }
+        "perMarket": {}
       },
       "discoveryEventAccounting": [
-        {
-          "pairKey": "JD100|1795208700|SELL",
-          "marketId": "JD100",
-          "marketName": "Jump 100 Index",
-          "setupEpoch": 1795208700,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795208400,
-            "m15CompletedThrough": 1795207500
-          },
-          "riskDistance": 0.5195995881024236,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "target",
-            "reason": null,
-            "entryEpoch": 1795208700,
-            "entry": 45.97,
-            "outcome": {
-              "status": "target",
-              "realizedR": 2,
-              "exitEpoch": 1795211700
-            }
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "JD100|1795210500|SELL",
-          "marketId": "JD100",
-          "marketName": "Jump 100 Index",
-          "setupEpoch": 1795210500,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795210200,
-            "m15CompletedThrough": 1795209300
-          },
-          "riskDistance": 0.547384338720968,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "overlap_skipped",
-            "reason": "prior_position_not_resolved",
-            "entryEpoch": 1795210500,
-            "entry": 45.61
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "JD100|1795211400|SELL",
-          "marketId": "JD100",
-          "marketName": "Jump 100 Index",
-          "setupEpoch": 1795211400,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795211100,
-            "m15CompletedThrough": 1795210200
-          },
-          "riskDistance": 0.5457854573837562,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "overlap_skipped",
-            "reason": "prior_position_not_resolved",
-            "entryEpoch": 1795211400,
-            "entry": 45.38
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "JD100|1795217100|SELL",
-          "marketId": "JD100",
-          "marketName": "Jump 100 Index",
-          "setupEpoch": 1795217100,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795216800,
-            "m15CompletedThrough": 1795215600
-          },
-          "riskDistance": 0.5269874740978765,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "target",
-            "reason": null,
-            "entryEpoch": 1795217100,
-            "entry": 45.41,
-            "outcome": {
-              "status": "target",
-              "realizedR": 2,
-              "exitEpoch": 1795218780
-            }
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        }
-      ],
-      "validationEventAccounting": [
         {
           "pairKey": "JD100|1795235700|SELL",
           "marketId": "JD100",
@@ -1485,20 +1149,25 @@
           "targetR": 2,
           "horizonSeconds": 3600,
           "baseline": {
-            "status": "entry",
+            "status": "time_exit",
             "reason": null,
             "entryEpoch": 1795244400,
-            "entry": 41.15
+            "entry": 41.15,
+            "outcome": {
+              "status": "time_exit",
+              "realizedR": -0.8704,
+              "exitEpoch": 1795248000
+            }
           },
           "candidate": {
             "status": "no_entry",
             "reason": "no_candidate_breakout",
             "entryEpoch": null,
             "entry": null
-          },
-          "status": "split_purged"
+          }
         }
       ],
+      "validationEventAccounting": [],
       "holdout": {
         "status": "sealed_not_evaluated",
         "reason": "Current historical holdout remains sealed; use a later untouched forward period."
@@ -1507,31 +1176,31 @@
     "CRASH500": {
       "status": "replayed",
       "commonWindow": {
-        "startEpoch": 1795188300,
-        "endEpoch": 1795259700,
+        "startEpoch": 1795212600,
+        "endEpoch": 1795284000,
         "hours": 19.833
       },
-      "sharedEligibleEvents": 15,
+      "sharedEligibleEvents": 19,
       "counts": {
         "discovery": {
-          "sharedEligibleEvents": 0,
+          "sharedEligibleEvents": 13,
           "overlapSkipped": {
-            "baseline": 0,
+            "baseline": 7,
             "candidate": 0
           },
-          "purgedAtSplitEnd": 0,
+          "purgedAtSplitEnd": 3,
           "purgedAfterEntry": {
             "baseline": 0,
             "candidate": 0
           }
         },
         "validation": {
-          "sharedEligibleEvents": 10,
+          "sharedEligibleEvents": 5,
           "overlapSkipped": {
-            "baseline": 4,
+            "baseline": 2,
             "candidate": 0
           },
-          "purgedAtSplitEnd": 4,
+          "purgedAtSplitEnd": 2,
           "purgedAfterEntry": {
             "baseline": 0,
             "candidate": 0
@@ -1539,22 +1208,8 @@
         }
       },
       "discovery": {
-        "sharedEligibleEvents": 0,
-        "baselineEntries": 0,
-        "candidateEntries": 0,
-        "pairedResolved": 0,
-        "meanCandidateMinusBaselineR": null,
-        "medianCandidateMinusBaselineR": null,
-        "pairedDifference95PctIntervalUnclustered": null,
-        "marketClusterCount": 0,
-        "marketClusteredMeanDifferenceR": null,
-        "marketClustered95PctInterval": null,
-        "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
-        "perMarket": {}
-      },
-      "validation": {
-        "sharedEligibleEvents": 10,
-        "baselineEntries": 2,
+        "sharedEligibleEvents": 13,
+        "baselineEntries": 3,
         "candidateEntries": 0,
         "pairedResolved": 0,
         "meanCandidateMinusBaselineR": null,
@@ -1571,8 +1226,26 @@
           }
         }
       },
-      "discoveryEventAccounting": [],
-      "validationEventAccounting": [
+      "validation": {
+        "sharedEligibleEvents": 5,
+        "baselineEntries": 1,
+        "candidateEntries": 0,
+        "pairedResolved": 0,
+        "meanCandidateMinusBaselineR": null,
+        "medianCandidateMinusBaselineR": null,
+        "pairedDifference95PctIntervalUnclustered": null,
+        "marketClusterCount": 0,
+        "marketClusteredMeanDifferenceR": null,
+        "marketClustered95PctInterval": null,
+        "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
+        "perMarket": {
+          "CRASH500": {
+            "pairedResolved": 0,
+            "meanDifferenceR": null
+          }
+        }
+      },
+      "discoveryEventAccounting": [
         {
           "pairKey": "CRASH500|1795235700|BUY",
           "marketId": "CRASH500",
@@ -1753,8 +1426,8 @@
           "targetR": 2,
           "horizonSeconds": 3600,
           "baseline": {
-            "status": "entry",
-            "reason": null,
+            "status": "overlap_skipped",
+            "reason": "prior_position_not_resolved",
             "entryEpoch": 1795242600,
             "entry": 2781.821
           },
@@ -1763,8 +1436,7 @@
             "reason": "no_candidate_breakout",
             "entryEpoch": null,
             "entry": null
-          },
-          "status": "split_purged"
+          }
         },
         {
           "pairKey": "CRASH500|1795242900|BUY",
@@ -1780,8 +1452,8 @@
           "targetR": 2,
           "horizonSeconds": 3600,
           "baseline": {
-            "status": "entry",
-            "reason": null,
+            "status": "overlap_skipped",
+            "reason": "prior_position_not_resolved",
             "entryEpoch": 1795242900,
             "entry": 2783.388
           },
@@ -1790,8 +1462,7 @@
             "reason": "no_candidate_breakout",
             "entryEpoch": null,
             "entry": null
-          },
-          "status": "split_purged"
+          }
         },
         {
           "pairKey": "CRASH500|1795243500|BUY",
@@ -1807,8 +1478,8 @@
           "targetR": 2,
           "horizonSeconds": 3600,
           "baseline": {
-            "status": "entry",
-            "reason": null,
+            "status": "overlap_skipped",
+            "reason": "prior_position_not_resolved",
             "entryEpoch": 1795243500,
             "entry": 2782.965
           },
@@ -1817,8 +1488,7 @@
             "reason": "no_candidate_breakout",
             "entryEpoch": null,
             "entry": null
-          },
-          "status": "split_purged"
+          }
         },
         {
           "pairKey": "CRASH500|1795244400|BUY",
@@ -1834,10 +1504,234 @@
           "targetR": 2,
           "horizonSeconds": 3600,
           "baseline": {
-            "status": "entry",
+            "status": "time_exit",
             "reason": null,
             "entryEpoch": 1795244400,
-            "entry": 2783.192
+            "entry": 2783.192,
+            "outcome": {
+              "status": "time_exit",
+              "realizedR": 1.4884,
+              "exitEpoch": 1795248000
+            }
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          }
+        },
+        {
+          "pairKey": "CRASH500|1795252800|BUY",
+          "marketId": "CRASH500",
+          "marketName": "Crash 500 Index",
+          "setupEpoch": 1795252800,
+          "direction": "BUY",
+          "inputEpochs": {
+            "m5Setup": 1795252500,
+            "m15CompletedThrough": 1795251600
+          },
+          "riskDistance": 6.962040993820108,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "entry",
+            "reason": null,
+            "entryEpoch": 1795252800,
+            "entry": 2801.006
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          },
+          "status": "split_purged"
+        },
+        {
+          "pairKey": "CRASH500|1795253100|BUY",
+          "marketId": "CRASH500",
+          "marketName": "Crash 500 Index",
+          "setupEpoch": 1795253100,
+          "direction": "BUY",
+          "inputEpochs": {
+            "m5Setup": 1795252800,
+            "m15CompletedThrough": 1795251600
+          },
+          "riskDistance": 6.962040993820108,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "entry",
+            "reason": null,
+            "entryEpoch": 1795253100,
+            "entry": 2802.828
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          },
+          "status": "split_purged"
+        },
+        {
+          "pairKey": "CRASH500|1795255200|BUY",
+          "marketId": "CRASH500",
+          "marketName": "Crash 500 Index",
+          "setupEpoch": 1795255200,
+          "direction": "BUY",
+          "inputEpochs": {
+            "m5Setup": 1795254900,
+            "m15CompletedThrough": 1795254300
+          },
+          "riskDistance": 6.799768700226984,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "entry",
+            "reason": null,
+            "entryEpoch": 1795255200,
+            "entry": 2805.605
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          },
+          "status": "split_purged"
+        }
+      ],
+      "validationEventAccounting": [
+        {
+          "pairKey": "CRASH500|1795261800|BUY",
+          "marketId": "CRASH500",
+          "marketName": "Crash 500 Index",
+          "setupEpoch": 1795261800,
+          "direction": "BUY",
+          "inputEpochs": {
+            "m5Setup": 1795261500,
+            "m15CompletedThrough": 1795260600
+          },
+          "riskDistance": 6.757258658800543,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "stopped",
+            "reason": null,
+            "entryEpoch": 1795261800,
+            "entry": 2807.392,
+            "outcome": {
+              "status": "stopped",
+              "realizedR": -1,
+              "exitEpoch": 1795264260
+            }
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          }
+        },
+        {
+          "pairKey": "CRASH500|1795263300|BUY",
+          "marketId": "CRASH500",
+          "marketName": "Crash 500 Index",
+          "setupEpoch": 1795263300,
+          "direction": "BUY",
+          "inputEpochs": {
+            "m5Setup": 1795263000,
+            "m15CompletedThrough": 1795262400
+          },
+          "riskDistance": 6.613305935394353,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "overlap_skipped",
+            "reason": "prior_position_not_resolved",
+            "entryEpoch": 1795263300,
+            "entry": 2808.877
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          }
+        },
+        {
+          "pairKey": "CRASH500|1795263900|BUY",
+          "marketId": "CRASH500",
+          "marketName": "Crash 500 Index",
+          "setupEpoch": 1795263900,
+          "direction": "BUY",
+          "inputEpochs": {
+            "m5Setup": 1795263600,
+            "m15CompletedThrough": 1795262400
+          },
+          "riskDistance": 6.613305935394353,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "overlap_skipped",
+            "reason": "prior_position_not_resolved",
+            "entryEpoch": 1795263900,
+            "entry": 2808.33
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          }
+        },
+        {
+          "pairKey": "CRASH500|1795268100|BUY",
+          "marketId": "CRASH500",
+          "marketName": "Crash 500 Index",
+          "setupEpoch": 1795268100,
+          "direction": "BUY",
+          "inputEpochs": {
+            "m5Setup": 1795267800,
+            "m15CompletedThrough": 1795266900
+          },
+          "riskDistance": 6.702930727655097,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "entry",
+            "reason": null,
+            "entryEpoch": 1795268100,
+            "entry": 2806.086
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          },
+          "status": "split_purged"
+        },
+        {
+          "pairKey": "CRASH500|1795269000|BUY",
+          "marketId": "CRASH500",
+          "marketName": "Crash 500 Index",
+          "setupEpoch": 1795269000,
+          "direction": "BUY",
+          "inputEpochs": {
+            "m5Setup": 1795268700,
+            "m15CompletedThrough": 1795267800
+          },
+          "riskDistance": 6.539685675679744,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "entry",
+            "reason": null,
+            "entryEpoch": 1795269000,
+            "entry": 2806.291
           },
           "candidate": {
             "status": "no_entry",
@@ -1856,25 +1750,13 @@
     "BOOM500": {
       "status": "replayed",
       "commonWindow": {
-        "startEpoch": 1795188300,
-        "endEpoch": 1795259700,
+        "startEpoch": 1795212600,
+        "endEpoch": 1795284000,
         "hours": 19.833
       },
-      "sharedEligibleEvents": 7,
+      "sharedEligibleEvents": 10,
       "counts": {
         "discovery": {
-          "sharedEligibleEvents": 4,
-          "overlapSkipped": {
-            "baseline": 2,
-            "candidate": 0
-          },
-          "purgedAtSplitEnd": 0,
-          "purgedAfterEntry": {
-            "baseline": 0,
-            "candidate": 0
-          }
-        },
-        "validation": {
           "sharedEligibleEvents": 1,
           "overlapSkipped": {
             "baseline": 0,
@@ -1885,28 +1767,21 @@
             "baseline": 0,
             "candidate": 0
           }
-        }
-      },
-      "discovery": {
-        "sharedEligibleEvents": 4,
-        "baselineEntries": 2,
-        "candidateEntries": 0,
-        "pairedResolved": 0,
-        "meanCandidateMinusBaselineR": null,
-        "medianCandidateMinusBaselineR": null,
-        "pairedDifference95PctIntervalUnclustered": null,
-        "marketClusterCount": 0,
-        "marketClusteredMeanDifferenceR": null,
-        "marketClustered95PctInterval": null,
-        "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
-        "perMarket": {
-          "BOOM500": {
-            "pairedResolved": 0,
-            "meanDifferenceR": null
+        },
+        "validation": {
+          "sharedEligibleEvents": 3,
+          "overlapSkipped": {
+            "baseline": 1,
+            "candidate": 0
+          },
+          "purgedAtSplitEnd": 1,
+          "purgedAfterEntry": {
+            "baseline": 0,
+            "candidate": 0
           }
         }
       },
-      "validation": {
+      "discovery": {
         "sharedEligibleEvents": 1,
         "baselineEntries": 1,
         "candidateEntries": 0,
@@ -1925,123 +1800,26 @@
           }
         }
       },
-      "discoveryEventAccounting": [
-        {
-          "pairKey": "BOOM500|1795215600|SELL",
-          "marketId": "BOOM500",
-          "marketName": "Boom 500 Index",
-          "setupEpoch": 1795215600,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795215300,
-            "m15CompletedThrough": 1795214700
-          },
-          "riskDistance": 12.128417995276257,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "stopped",
-            "reason": null,
-            "entryEpoch": 1795215600,
-            "entry": 5648.019,
-            "outcome": {
-              "status": "stopped",
-              "realizedR": -1,
-              "exitEpoch": 1795218000
-            }
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "BOOM500|1795225200|SELL",
-          "marketId": "BOOM500",
-          "marketName": "Boom 500 Index",
-          "setupEpoch": 1795225200,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795224900,
-            "m15CompletedThrough": 1795223700
-          },
-          "riskDistance": 14.474507228298435,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "stopped",
-            "reason": null,
-            "entryEpoch": 1795225200,
-            "entry": 5653.682,
-            "outcome": {
-              "status": "stopped",
-              "realizedR": -1,
-              "exitEpoch": 1795226640
-            }
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "BOOM500|1795226100|SELL",
-          "marketId": "BOOM500",
-          "marketName": "Boom 500 Index",
-          "setupEpoch": 1795226100,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795225800,
-            "m15CompletedThrough": 1795224600
-          },
-          "riskDistance": 14.851060283419937,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "overlap_skipped",
-            "reason": "prior_position_not_resolved",
-            "entryEpoch": 1795226100,
-            "entry": 5658.295
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
-          }
-        },
-        {
-          "pairKey": "BOOM500|1795226400|SELL",
-          "marketId": "BOOM500",
-          "marketName": "Boom 500 Index",
-          "setupEpoch": 1795226400,
-          "direction": "SELL",
-          "inputEpochs": {
-            "m5Setup": 1795226100,
-            "m15CompletedThrough": 1795225500
-          },
-          "riskDistance": 14.644823834604221,
-          "targetR": 2,
-          "horizonSeconds": 3600,
-          "baseline": {
-            "status": "overlap_skipped",
-            "reason": "prior_position_not_resolved",
-            "entryEpoch": 1795226400,
-            "entry": 5654.815
-          },
-          "candidate": {
-            "status": "no_entry",
-            "reason": "no_candidate_breakout",
-            "entryEpoch": null,
-            "entry": null
+      "validation": {
+        "sharedEligibleEvents": 3,
+        "baselineEntries": 1,
+        "candidateEntries": 0,
+        "pairedResolved": 0,
+        "meanCandidateMinusBaselineR": null,
+        "medianCandidateMinusBaselineR": null,
+        "pairedDifference95PctIntervalUnclustered": null,
+        "marketClusterCount": 0,
+        "marketClusteredMeanDifferenceR": null,
+        "marketClustered95PctInterval": null,
+        "pairedClaimStatus": "exploratory_inconclusive_under_50_pairs",
+        "perMarket": {
+          "BOOM500": {
+            "pairedResolved": 0,
+            "meanDifferenceR": null
           }
         }
-      ],
-      "validationEventAccounting": [
+      },
+      "discoveryEventAccounting": [
         {
           "pairKey": "BOOM500|1795234800|SELL",
           "marketId": "BOOM500",
@@ -2072,6 +1850,92 @@
             "entryEpoch": null,
             "entry": null
           }
+        }
+      ],
+      "validationEventAccounting": [
+        {
+          "pairKey": "BOOM500|1795265400|SELL",
+          "marketId": "BOOM500",
+          "marketName": "Boom 500 Index",
+          "setupEpoch": 1795265400,
+          "direction": "SELL",
+          "inputEpochs": {
+            "m5Setup": 1795265100,
+            "m15CompletedThrough": 1795264200
+          },
+          "riskDistance": 13.823564699773097,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "time_exit",
+            "reason": null,
+            "entryEpoch": 1795265400,
+            "entry": 5662.637,
+            "outcome": {
+              "status": "time_exit",
+              "realizedR": -0.3443,
+              "exitEpoch": 1795269000
+            }
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          }
+        },
+        {
+          "pairKey": "BOOM500|1795265700|SELL",
+          "marketId": "BOOM500",
+          "marketName": "Boom 500 Index",
+          "setupEpoch": 1795265700,
+          "direction": "SELL",
+          "inputEpochs": {
+            "m5Setup": 1795265400,
+            "m15CompletedThrough": 1795264200
+          },
+          "riskDistance": 13.823564699773097,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "overlap_skipped",
+            "reason": "prior_position_not_resolved",
+            "entryEpoch": 1795265700,
+            "entry": 5658.95
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          }
+        },
+        {
+          "pairKey": "BOOM500|1795266600|SELL",
+          "marketId": "BOOM500",
+          "marketName": "Boom 500 Index",
+          "setupEpoch": 1795266600,
+          "direction": "SELL",
+          "inputEpochs": {
+            "m5Setup": 1795266300,
+            "m15CompletedThrough": 1795265100
+          },
+          "riskDistance": 13.616613649789302,
+          "targetR": 2,
+          "horizonSeconds": 3600,
+          "baseline": {
+            "status": "entry",
+            "reason": null,
+            "entryEpoch": 1795266600,
+            "entry": 5663.487
+          },
+          "candidate": {
+            "status": "no_entry",
+            "reason": "no_candidate_breakout",
+            "entryEpoch": null,
+            "entry": null
+          },
+          "status": "split_purged"
         }
       ],
       "holdout": {
