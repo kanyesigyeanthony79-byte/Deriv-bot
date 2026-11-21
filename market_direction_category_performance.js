@@ -103,4 +103,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { outcomeOf, deliveryOf, summarize, groupRows, buildReport, main };
+module.exports = { outcomeOf, deliveryOf, summarize, keyOf, groupRows, buildReport, main };
