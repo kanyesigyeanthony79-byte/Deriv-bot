@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-21T23:26:09.860Z",
+  "generatedAt": "2026-11-21T23:40:52.435Z",
   "mode": "offline_research_only",
   "markets": {
     "R_10": {
-      "bars": 1622,
+      "bars": 1623,
       "continuousSegments": 1,
       "qualifiedSegments": 1,
       "minimumBarsRequired": 400,
@@ -7845,7 +7845,7 @@
       "note": "Only continuous segments with at least 400 M15 candles are evaluated. Discovery uses the first 50%; the later 50% is held out for validation. Entry is next candle open. Shared exits: 1.5 ATR stop, TP1=2R, TP2=3R, 96-candle horizon. Same-candle stop/target touches are ambiguous. A candidate is shown in validation only after at least 10 resolved validation signals. Expired trades are reported, not counted as wins or losses. This is exploratory research, not a live strategy."
     },
     "R_25": {
-      "bars": 1622,
+      "bars": 1623,
       "continuousSegments": 1,
       "qualifiedSegments": 1,
       "minimumBarsRequired": 400,
@@ -15686,7 +15686,7 @@
       "note": "Only continuous segments with at least 400 M15 candles are evaluated. Discovery uses the first 50%; the later 50% is held out for validation. Entry is next candle open. Shared exits: 1.5 ATR stop, TP1=2R, TP2=3R, 96-candle horizon. Same-candle stop/target touches are ambiguous. A candidate is shown in validation only after at least 10 resolved validation signals. Expired trades are reported, not counted as wins or losses. This is exploratory research, not a live strategy."
     },
     "R_50": {
-      "bars": 1622,
+      "bars": 1623,
       "continuousSegments": 1,
       "qualifiedSegments": 1,
       "minimumBarsRequired": 400,
@@ -23527,7 +23527,7 @@
       "note": "Only continuous segments with at least 400 M15 candles are evaluated. Discovery uses the first 50%; the later 50% is held out for validation. Entry is next candle open. Shared exits: 1.5 ATR stop, TP1=2R, TP2=3R, 96-candle horizon. Same-candle stop/target touches are ambiguous. A candidate is shown in validation only after at least 10 resolved validation signals. Expired trades are reported, not counted as wins or losses. This is exploratory research, not a live strategy."
     },
     "R_75": {
-      "bars": 1622,
+      "bars": 1623,
       "continuousSegments": 1,
       "qualifiedSegments": 1,
       "minimumBarsRequired": 400,
@@ -31368,7 +31368,7 @@
       "note": "Only continuous segments with at least 400 M15 candles are evaluated. Discovery uses the first 50%; the later 50% is held out for validation. Entry is next candle open. Shared exits: 1.5 ATR stop, TP1=2R, TP2=3R, 96-candle horizon. Same-candle stop/target touches are ambiguous. A candidate is shown in validation only after at least 10 resolved validation signals. Expired trades are reported, not counted as wins or losses. This is exploratory research, not a live strategy."
     },
     "JD100": {
-      "bars": 1622,
+      "bars": 1623,
       "continuousSegments": 1,
       "qualifiedSegments": 1,
       "minimumBarsRequired": 400,
@@ -31384,6 +31384,49 @@
             "maxExtensionAtr": 1,
             "maxRangeAtr": 2.5,
             "id": "RULE_058"
+          },
+          "train": {
+            "signals": 26,
+            "resolved": 26,
+            "tp1Hits": 15,
+            "tp2Hits": 11,
+            "fullStops": 11,
+            "stoppedAfterTp1": 4,
+            "anyStops": 15,
+            "ambiguous": 0,
+            "expired": 0,
+            "winRate": 42.3,
+            "tp1Rate": 57.7,
+            "tp2Rate": 42.3,
+            "stopRate": 42.3,
+            "anyStopRate": 57.7
+          },
+          "validation": {
+            "signals": 31,
+            "resolved": 31,
+            "tp1Hits": 5,
+            "tp2Hits": 4,
+            "fullStops": 26,
+            "stoppedAfterTp1": 1,
+            "anyStops": 27,
+            "ambiguous": 0,
+            "expired": 0,
+            "winRate": 12.9,
+            "tp1Rate": 16.1,
+            "tp2Rate": 12.9,
+            "stopRate": 83.9,
+            "anyStopRate": 87.1
+          }
+        },
+        {
+          "config": {
+            "minSeparationAtr": 0.4,
+            "minSlopeAtr": 0.1,
+            "minDirectionalRsi": 50,
+            "minBodyRatio": 0.5,
+            "maxExtensionAtr": 1,
+            "maxRangeAtr": 2.5,
+            "id": "RULE_076"
           },
           "train": {
             "signals": 26,
@@ -31421,49 +31464,6 @@
         {
           "config": {
             "minSeparationAtr": 0.4,
-            "minSlopeAtr": 0.1,
-            "minDirectionalRsi": 50,
-            "minBodyRatio": 0.5,
-            "maxExtensionAtr": 1,
-            "maxRangeAtr": 2.5,
-            "id": "RULE_076"
-          },
-          "train": {
-            "signals": 26,
-            "resolved": 26,
-            "tp1Hits": 15,
-            "tp2Hits": 11,
-            "fullStops": 11,
-            "stoppedAfterTp1": 4,
-            "anyStops": 15,
-            "ambiguous": 0,
-            "expired": 0,
-            "winRate": 42.3,
-            "tp1Rate": 57.7,
-            "tp2Rate": 42.3,
-            "stopRate": 42.3,
-            "anyStopRate": 57.7
-          },
-          "validation": {
-            "signals": 24,
-            "resolved": 24,
-            "tp1Hits": 5,
-            "tp2Hits": 4,
-            "fullStops": 19,
-            "stoppedAfterTp1": 1,
-            "anyStops": 20,
-            "ambiguous": 0,
-            "expired": 0,
-            "winRate": 16.7,
-            "tp1Rate": 20.8,
-            "tp2Rate": 16.7,
-            "stopRate": 79.2,
-            "anyStopRate": 83.3
-          }
-        },
-        {
-          "config": {
-            "minSeparationAtr": 0.4,
             "minSlopeAtr": 0,
             "minDirectionalRsi": 55,
             "minBodyRatio": 0.5,
@@ -31488,20 +31488,20 @@
             "anyStopRate": 57.9
           },
           "validation": {
-            "signals": 17,
-            "resolved": 17,
+            "signals": 18,
+            "resolved": 18,
             "tp1Hits": 2,
             "tp2Hits": 1,
-            "fullStops": 15,
+            "fullStops": 16,
             "stoppedAfterTp1": 1,
-            "anyStops": 16,
+            "anyStops": 17,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 5.9,
-            "tp1Rate": 11.8,
-            "tp2Rate": 5.9,
-            "stopRate": 88.2,
-            "anyStopRate": 94.1
+            "winRate": 5.6,
+            "tp1Rate": 11.1,
+            "tp2Rate": 5.6,
+            "stopRate": 88.9,
+            "anyStopRate": 94.4
           }
         },
         {
@@ -31531,20 +31531,20 @@
             "anyStopRate": 57.9
           },
           "validation": {
-            "signals": 17,
-            "resolved": 17,
+            "signals": 18,
+            "resolved": 18,
             "tp1Hits": 2,
             "tp2Hits": 1,
-            "fullStops": 15,
+            "fullStops": 16,
             "stoppedAfterTp1": 1,
-            "anyStops": 16,
+            "anyStops": 17,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 5.9,
-            "tp1Rate": 11.8,
-            "tp2Rate": 5.9,
-            "stopRate": 88.2,
-            "anyStopRate": 94.1
+            "winRate": 5.6,
+            "tp1Rate": 11.1,
+            "tp2Rate": 5.6,
+            "stopRate": 88.9,
+            "anyStopRate": 94.4
           }
         },
         {
@@ -31574,20 +31574,20 @@
             "anyStopRate": 59.3
           },
           "validation": {
-            "signals": 25,
-            "resolved": 25,
+            "signals": 28,
+            "resolved": 28,
             "tp1Hits": 6,
             "tp2Hits": 5,
-            "fullStops": 19,
+            "fullStops": 22,
             "stoppedAfterTp1": 1,
-            "anyStops": 20,
+            "anyStops": 23,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 20,
-            "tp1Rate": 24,
-            "tp2Rate": 20,
-            "stopRate": 76,
-            "anyStopRate": 80
+            "winRate": 17.9,
+            "tp1Rate": 21.4,
+            "tp2Rate": 17.9,
+            "stopRate": 78.6,
+            "anyStopRate": 82.1
           }
         },
         {
@@ -31617,20 +31617,20 @@
             "anyStopRate": 60
           },
           "validation": {
-            "signals": 18,
-            "resolved": 18,
+            "signals": 19,
+            "resolved": 19,
             "tp1Hits": 3,
             "tp2Hits": 2,
-            "fullStops": 15,
+            "fullStops": 16,
             "stoppedAfterTp1": 1,
-            "anyStops": 16,
+            "anyStops": 17,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 11.1,
-            "tp1Rate": 16.7,
-            "tp2Rate": 11.1,
-            "stopRate": 83.3,
-            "anyStopRate": 88.9
+            "winRate": 10.5,
+            "tp1Rate": 15.8,
+            "tp2Rate": 10.5,
+            "stopRate": 84.2,
+            "anyStopRate": 89.5
           }
         },
         {
@@ -31660,20 +31660,20 @@
             "anyStopRate": 60
           },
           "validation": {
-            "signals": 18,
-            "resolved": 18,
+            "signals": 19,
+            "resolved": 19,
             "tp1Hits": 3,
             "tp2Hits": 2,
-            "fullStops": 15,
+            "fullStops": 16,
             "stoppedAfterTp1": 1,
-            "anyStops": 16,
+            "anyStops": 17,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 11.1,
-            "tp1Rate": 16.7,
-            "tp2Rate": 11.1,
-            "stopRate": 83.3,
-            "anyStopRate": 88.9
+            "winRate": 10.5,
+            "tp1Rate": 15.8,
+            "tp2Rate": 10.5,
+            "stopRate": 84.2,
+            "anyStopRate": 89.5
           }
         },
         {
@@ -31789,20 +31789,20 @@
             "anyStopRate": 60.7
           },
           "validation": {
-            "signals": 28,
-            "resolved": 28,
+            "signals": 32,
+            "resolved": 32,
             "tp1Hits": 6,
             "tp2Hits": 5,
-            "fullStops": 22,
+            "fullStops": 26,
             "stoppedAfterTp1": 1,
-            "anyStops": 23,
+            "anyStops": 27,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 17.9,
-            "tp1Rate": 21.4,
-            "tp2Rate": 17.9,
-            "stopRate": 78.6,
-            "anyStopRate": 82.1
+            "winRate": 15.6,
+            "tp1Rate": 18.8,
+            "tp2Rate": 15.6,
+            "stopRate": 81.3,
+            "anyStopRate": 84.4
           }
         }
       ],
@@ -32178,20 +32178,20 @@
             "anyStopRate": 60
           },
           "validation": {
-            "signals": 18,
-            "resolved": 18,
+            "signals": 19,
+            "resolved": 19,
             "tp1Hits": 3,
             "tp2Hits": 2,
-            "fullStops": 15,
+            "fullStops": 16,
             "stoppedAfterTp1": 1,
-            "anyStops": 16,
+            "anyStops": 17,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 11.1,
-            "tp1Rate": 16.7,
-            "tp2Rate": 11.1,
-            "stopRate": 83.3,
-            "anyStopRate": 88.9
+            "winRate": 10.5,
+            "tp1Rate": 15.8,
+            "tp2Rate": 10.5,
+            "stopRate": 84.2,
+            "anyStopRate": 89.5
           }
         },
         {
@@ -32221,20 +32221,20 @@
             "anyStopRate": 60
           },
           "validation": {
-            "signals": 18,
-            "resolved": 18,
+            "signals": 19,
+            "resolved": 19,
             "tp1Hits": 3,
             "tp2Hits": 2,
-            "fullStops": 15,
+            "fullStops": 16,
             "stoppedAfterTp1": 1,
-            "anyStops": 16,
+            "anyStops": 17,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 11.1,
-            "tp1Rate": 16.7,
-            "tp2Rate": 11.1,
-            "stopRate": 83.3,
-            "anyStopRate": 88.9
+            "winRate": 10.5,
+            "tp1Rate": 15.8,
+            "tp2Rate": 10.5,
+            "stopRate": 84.2,
+            "anyStopRate": 89.5
           }
         }
       ],
@@ -32248,6 +32248,49 @@
             "maxExtensionAtr": 1,
             "maxRangeAtr": 2.5,
             "id": "RULE_058"
+          },
+          "train": {
+            "signals": 26,
+            "resolved": 26,
+            "tp1Hits": 15,
+            "tp2Hits": 11,
+            "fullStops": 11,
+            "stoppedAfterTp1": 4,
+            "anyStops": 15,
+            "ambiguous": 0,
+            "expired": 0,
+            "winRate": 42.3,
+            "tp1Rate": 57.7,
+            "tp2Rate": 42.3,
+            "stopRate": 42.3,
+            "anyStopRate": 57.7
+          },
+          "validation": {
+            "signals": 31,
+            "resolved": 31,
+            "tp1Hits": 5,
+            "tp2Hits": 4,
+            "fullStops": 26,
+            "stoppedAfterTp1": 1,
+            "anyStops": 27,
+            "ambiguous": 0,
+            "expired": 0,
+            "winRate": 12.9,
+            "tp1Rate": 16.1,
+            "tp2Rate": 12.9,
+            "stopRate": 83.9,
+            "anyStopRate": 87.1
+          }
+        },
+        {
+          "config": {
+            "minSeparationAtr": 0.4,
+            "minSlopeAtr": 0.1,
+            "minDirectionalRsi": 50,
+            "minBodyRatio": 0.5,
+            "maxExtensionAtr": 1,
+            "maxRangeAtr": 2.5,
+            "id": "RULE_076"
           },
           "train": {
             "signals": 26,
@@ -32285,49 +32328,6 @@
         {
           "config": {
             "minSeparationAtr": 0.4,
-            "minSlopeAtr": 0.1,
-            "minDirectionalRsi": 50,
-            "minBodyRatio": 0.5,
-            "maxExtensionAtr": 1,
-            "maxRangeAtr": 2.5,
-            "id": "RULE_076"
-          },
-          "train": {
-            "signals": 26,
-            "resolved": 26,
-            "tp1Hits": 15,
-            "tp2Hits": 11,
-            "fullStops": 11,
-            "stoppedAfterTp1": 4,
-            "anyStops": 15,
-            "ambiguous": 0,
-            "expired": 0,
-            "winRate": 42.3,
-            "tp1Rate": 57.7,
-            "tp2Rate": 42.3,
-            "stopRate": 42.3,
-            "anyStopRate": 57.7
-          },
-          "validation": {
-            "signals": 24,
-            "resolved": 24,
-            "tp1Hits": 5,
-            "tp2Hits": 4,
-            "fullStops": 19,
-            "stoppedAfterTp1": 1,
-            "anyStops": 20,
-            "ambiguous": 0,
-            "expired": 0,
-            "winRate": 16.7,
-            "tp1Rate": 20.8,
-            "tp2Rate": 16.7,
-            "stopRate": 79.2,
-            "anyStopRate": 83.3
-          }
-        },
-        {
-          "config": {
-            "minSeparationAtr": 0.4,
             "minSlopeAtr": 0,
             "minDirectionalRsi": 55,
             "minBodyRatio": 0.5,
@@ -32352,20 +32352,20 @@
             "anyStopRate": 57.9
           },
           "validation": {
-            "signals": 17,
-            "resolved": 17,
+            "signals": 18,
+            "resolved": 18,
             "tp1Hits": 2,
             "tp2Hits": 1,
-            "fullStops": 15,
+            "fullStops": 16,
             "stoppedAfterTp1": 1,
-            "anyStops": 16,
+            "anyStops": 17,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 5.9,
-            "tp1Rate": 11.8,
-            "tp2Rate": 5.9,
-            "stopRate": 88.2,
-            "anyStopRate": 94.1
+            "winRate": 5.6,
+            "tp1Rate": 11.1,
+            "tp2Rate": 5.6,
+            "stopRate": 88.9,
+            "anyStopRate": 94.4
           }
         },
         {
@@ -32395,20 +32395,20 @@
             "anyStopRate": 57.9
           },
           "validation": {
-            "signals": 17,
-            "resolved": 17,
+            "signals": 18,
+            "resolved": 18,
             "tp1Hits": 2,
             "tp2Hits": 1,
-            "fullStops": 15,
+            "fullStops": 16,
             "stoppedAfterTp1": 1,
-            "anyStops": 16,
+            "anyStops": 17,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 5.9,
-            "tp1Rate": 11.8,
-            "tp2Rate": 5.9,
-            "stopRate": 88.2,
-            "anyStopRate": 94.1
+            "winRate": 5.6,
+            "tp1Rate": 11.1,
+            "tp2Rate": 5.6,
+            "stopRate": 88.9,
+            "anyStopRate": 94.4
           }
         },
         {
@@ -32438,20 +32438,20 @@
             "anyStopRate": 59.3
           },
           "validation": {
-            "signals": 25,
-            "resolved": 25,
+            "signals": 28,
+            "resolved": 28,
             "tp1Hits": 6,
             "tp2Hits": 5,
-            "fullStops": 19,
+            "fullStops": 22,
             "stoppedAfterTp1": 1,
-            "anyStops": 20,
+            "anyStops": 23,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 20,
-            "tp1Rate": 24,
-            "tp2Rate": 20,
-            "stopRate": 76,
-            "anyStopRate": 80
+            "winRate": 17.9,
+            "tp1Rate": 21.4,
+            "tp2Rate": 17.9,
+            "stopRate": 78.6,
+            "anyStopRate": 82.1
           }
         },
         {
@@ -32481,20 +32481,20 @@
             "anyStopRate": 60
           },
           "validation": {
-            "signals": 18,
-            "resolved": 18,
+            "signals": 19,
+            "resolved": 19,
             "tp1Hits": 3,
             "tp2Hits": 2,
-            "fullStops": 15,
+            "fullStops": 16,
             "stoppedAfterTp1": 1,
-            "anyStops": 16,
+            "anyStops": 17,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 11.1,
-            "tp1Rate": 16.7,
-            "tp2Rate": 11.1,
-            "stopRate": 83.3,
-            "anyStopRate": 88.9
+            "winRate": 10.5,
+            "tp1Rate": 15.8,
+            "tp2Rate": 10.5,
+            "stopRate": 84.2,
+            "anyStopRate": 89.5
           }
         },
         {
@@ -32524,20 +32524,20 @@
             "anyStopRate": 60
           },
           "validation": {
-            "signals": 18,
-            "resolved": 18,
+            "signals": 19,
+            "resolved": 19,
             "tp1Hits": 3,
             "tp2Hits": 2,
-            "fullStops": 15,
+            "fullStops": 16,
             "stoppedAfterTp1": 1,
-            "anyStops": 16,
+            "anyStops": 17,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 11.1,
-            "tp1Rate": 16.7,
-            "tp2Rate": 11.1,
-            "stopRate": 83.3,
-            "anyStopRate": 88.9
+            "winRate": 10.5,
+            "tp1Rate": 15.8,
+            "tp2Rate": 10.5,
+            "stopRate": 84.2,
+            "anyStopRate": 89.5
           }
         },
         {
@@ -33040,20 +33040,20 @@
             "anyStopRate": 60.7
           },
           "validation": {
-            "signals": 28,
-            "resolved": 28,
+            "signals": 32,
+            "resolved": 32,
             "tp1Hits": 6,
             "tp2Hits": 5,
-            "fullStops": 22,
+            "fullStops": 26,
             "stoppedAfterTp1": 1,
-            "anyStops": 23,
+            "anyStops": 27,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 17.9,
-            "tp1Rate": 21.4,
-            "tp2Rate": 17.9,
-            "stopRate": 78.6,
-            "anyStopRate": 82.1
+            "winRate": 15.6,
+            "tp1Rate": 18.8,
+            "tp2Rate": 15.6,
+            "stopRate": 81.3,
+            "anyStopRate": 84.4
           }
         },
         {
@@ -33685,20 +33685,20 @@
             "anyStopRate": 63
           },
           "validation": {
-            "signals": 20,
-            "resolved": 20,
+            "signals": 21,
+            "resolved": 21,
             "tp1Hits": 3,
             "tp2Hits": 2,
-            "fullStops": 17,
+            "fullStops": 18,
             "stoppedAfterTp1": 1,
-            "anyStops": 18,
+            "anyStops": 19,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 10,
-            "tp1Rate": 15,
-            "tp2Rate": 10,
-            "stopRate": 85,
-            "anyStopRate": 90
+            "winRate": 9.5,
+            "tp1Rate": 14.3,
+            "tp2Rate": 9.5,
+            "stopRate": 85.7,
+            "anyStopRate": 90.5
           }
         },
         {
@@ -33728,20 +33728,20 @@
             "anyStopRate": 63
           },
           "validation": {
-            "signals": 20,
-            "resolved": 20,
+            "signals": 21,
+            "resolved": 21,
             "tp1Hits": 3,
             "tp2Hits": 2,
-            "fullStops": 17,
+            "fullStops": 18,
             "stoppedAfterTp1": 1,
-            "anyStops": 18,
+            "anyStops": 19,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 10,
-            "tp1Rate": 15,
-            "tp2Rate": 10,
-            "stopRate": 85,
-            "anyStopRate": 90
+            "winRate": 9.5,
+            "tp1Rate": 14.3,
+            "tp2Rate": 9.5,
+            "stopRate": 85.7,
+            "anyStopRate": 90.5
           }
         },
         {
@@ -34287,20 +34287,20 @@
             "anyStopRate": 61.5
           },
           "validation": {
-            "signals": 27,
-            "resolved": 27,
+            "signals": 31,
+            "resolved": 31,
             "tp1Hits": 6,
             "tp2Hits": 5,
-            "fullStops": 21,
+            "fullStops": 25,
             "stoppedAfterTp1": 1,
-            "anyStops": 22,
+            "anyStops": 26,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 18.5,
-            "tp1Rate": 22.2,
-            "tp2Rate": 18.5,
-            "stopRate": 77.8,
-            "anyStopRate": 81.5
+            "winRate": 16.1,
+            "tp1Rate": 19.4,
+            "tp2Rate": 16.1,
+            "stopRate": 80.6,
+            "anyStopRate": 83.9
           }
         },
         {
@@ -34312,6 +34312,49 @@
             "maxExtensionAtr": 1.5,
             "maxRangeAtr": 2.5,
             "id": "RULE_059"
+          },
+          "train": {
+            "signals": 37,
+            "resolved": 37,
+            "tp1Hits": 18,
+            "tp2Hits": 14,
+            "fullStops": 19,
+            "stoppedAfterTp1": 4,
+            "anyStops": 23,
+            "ambiguous": 0,
+            "expired": 0,
+            "winRate": 37.8,
+            "tp1Rate": 48.6,
+            "tp2Rate": 37.8,
+            "stopRate": 51.4,
+            "anyStopRate": 62.2
+          },
+          "validation": {
+            "signals": 46,
+            "resolved": 46,
+            "tp1Hits": 12,
+            "tp2Hits": 11,
+            "fullStops": 34,
+            "stoppedAfterTp1": 1,
+            "anyStops": 35,
+            "ambiguous": 0,
+            "expired": 0,
+            "winRate": 23.9,
+            "tp1Rate": 26.1,
+            "tp2Rate": 23.9,
+            "stopRate": 73.9,
+            "anyStopRate": 76.1
+          }
+        },
+        {
+          "config": {
+            "minSeparationAtr": 0.4,
+            "minSlopeAtr": 0.1,
+            "minDirectionalRsi": 50,
+            "minBodyRatio": 0.5,
+            "maxExtensionAtr": 1.5,
+            "maxRangeAtr": 2.5,
+            "id": "RULE_077"
           },
           "train": {
             "signals": 37,
@@ -34349,49 +34392,6 @@
         {
           "config": {
             "minSeparationAtr": 0.4,
-            "minSlopeAtr": 0.1,
-            "minDirectionalRsi": 50,
-            "minBodyRatio": 0.5,
-            "maxExtensionAtr": 1.5,
-            "maxRangeAtr": 2.5,
-            "id": "RULE_077"
-          },
-          "train": {
-            "signals": 37,
-            "resolved": 37,
-            "tp1Hits": 18,
-            "tp2Hits": 14,
-            "fullStops": 19,
-            "stoppedAfterTp1": 4,
-            "anyStops": 23,
-            "ambiguous": 0,
-            "expired": 0,
-            "winRate": 37.8,
-            "tp1Rate": 48.6,
-            "tp2Rate": 37.8,
-            "stopRate": 51.4,
-            "anyStopRate": 62.2
-          },
-          "validation": {
-            "signals": 39,
-            "resolved": 39,
-            "tp1Hits": 12,
-            "tp2Hits": 11,
-            "fullStops": 27,
-            "stoppedAfterTp1": 1,
-            "anyStops": 28,
-            "ambiguous": 0,
-            "expired": 0,
-            "winRate": 28.2,
-            "tp1Rate": 30.8,
-            "tp2Rate": 28.2,
-            "stopRate": 69.2,
-            "anyStopRate": 71.8
-          }
-        },
-        {
-          "config": {
-            "minSeparationAtr": 0.4,
             "minSlopeAtr": 0,
             "minDirectionalRsi": 55,
             "minBodyRatio": 0.5,
@@ -34416,20 +34416,20 @@
             "anyStopRate": 62.5
           },
           "validation": {
-            "signals": 32,
-            "resolved": 32,
+            "signals": 33,
+            "resolved": 33,
             "tp1Hits": 9,
             "tp2Hits": 8,
-            "fullStops": 23,
+            "fullStops": 24,
             "stoppedAfterTp1": 1,
-            "anyStops": 24,
+            "anyStops": 25,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 25,
-            "tp1Rate": 28.1,
-            "tp2Rate": 25,
-            "stopRate": 71.9,
-            "anyStopRate": 75
+            "winRate": 24.2,
+            "tp1Rate": 27.3,
+            "tp2Rate": 24.2,
+            "stopRate": 72.7,
+            "anyStopRate": 75.8
           }
         },
         {
@@ -34459,20 +34459,20 @@
             "anyStopRate": 62.5
           },
           "validation": {
-            "signals": 32,
-            "resolved": 32,
+            "signals": 33,
+            "resolved": 33,
             "tp1Hits": 9,
             "tp2Hits": 8,
-            "fullStops": 23,
+            "fullStops": 24,
             "stoppedAfterTp1": 1,
-            "anyStops": 24,
+            "anyStops": 25,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 25,
-            "tp1Rate": 28.1,
-            "tp2Rate": 25,
-            "stopRate": 71.9,
-            "anyStopRate": 75
+            "winRate": 24.2,
+            "tp1Rate": 27.3,
+            "tp2Rate": 24.2,
+            "stopRate": 72.7,
+            "anyStopRate": 75.8
           }
         },
         {
@@ -34975,20 +34975,20 @@
             "anyStopRate": 62.5
           },
           "validation": {
-            "signals": 30,
-            "resolved": 30,
+            "signals": 34,
+            "resolved": 34,
             "tp1Hits": 6,
             "tp2Hits": 5,
-            "fullStops": 24,
+            "fullStops": 28,
             "stoppedAfterTp1": 1,
-            "anyStops": 25,
+            "anyStops": 29,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 16.7,
-            "tp1Rate": 20,
-            "tp2Rate": 16.7,
-            "stopRate": 80,
-            "anyStopRate": 83.3
+            "winRate": 14.7,
+            "tp1Rate": 17.6,
+            "tp2Rate": 14.7,
+            "stopRate": 82.4,
+            "anyStopRate": 85.3
           }
         },
         {
@@ -35018,20 +35018,20 @@
             "anyStopRate": 63.2
           },
           "validation": {
-            "signals": 41,
-            "resolved": 41,
+            "signals": 44,
+            "resolved": 44,
             "tp1Hits": 12,
             "tp2Hits": 11,
-            "fullStops": 29,
+            "fullStops": 32,
             "stoppedAfterTp1": 1,
-            "anyStops": 30,
+            "anyStops": 33,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 26.8,
-            "tp1Rate": 29.3,
-            "tp2Rate": 26.8,
-            "stopRate": 70.7,
-            "anyStopRate": 73.2
+            "winRate": 25,
+            "tp1Rate": 27.3,
+            "tp2Rate": 25,
+            "stopRate": 72.7,
+            "anyStopRate": 75
           }
         },
         {
@@ -35061,20 +35061,20 @@
             "anyStopRate": 63.6
           },
           "validation": {
-            "signals": 34,
-            "resolved": 34,
+            "signals": 35,
+            "resolved": 35,
             "tp1Hits": 9,
             "tp2Hits": 8,
-            "fullStops": 25,
+            "fullStops": 26,
             "stoppedAfterTp1": 1,
-            "anyStops": 26,
+            "anyStops": 27,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 23.5,
-            "tp1Rate": 26.5,
-            "tp2Rate": 23.5,
-            "stopRate": 73.5,
-            "anyStopRate": 76.5
+            "winRate": 22.9,
+            "tp1Rate": 25.7,
+            "tp2Rate": 22.9,
+            "stopRate": 74.3,
+            "anyStopRate": 77.1
           }
         },
         {
@@ -35147,20 +35147,20 @@
             "anyStopRate": 65.5
           },
           "validation": {
-            "signals": 21,
-            "resolved": 21,
+            "signals": 22,
+            "resolved": 22,
             "tp1Hits": 4,
             "tp2Hits": 3,
-            "fullStops": 17,
+            "fullStops": 18,
             "stoppedAfterTp1": 1,
-            "anyStops": 18,
+            "anyStops": 19,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 14.3,
-            "tp1Rate": 19,
-            "tp2Rate": 14.3,
-            "stopRate": 81,
-            "anyStopRate": 85.7
+            "winRate": 13.6,
+            "tp1Rate": 18.2,
+            "tp2Rate": 13.6,
+            "stopRate": 81.8,
+            "anyStopRate": 86.4
           }
         },
         {
@@ -35190,20 +35190,20 @@
             "anyStopRate": 65.5
           },
           "validation": {
-            "signals": 21,
-            "resolved": 21,
+            "signals": 22,
+            "resolved": 22,
             "tp1Hits": 4,
             "tp2Hits": 3,
-            "fullStops": 17,
+            "fullStops": 18,
             "stoppedAfterTp1": 1,
-            "anyStops": 18,
+            "anyStops": 19,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 14.3,
-            "tp1Rate": 19,
-            "tp2Rate": 14.3,
-            "stopRate": 81,
-            "anyStopRate": 85.7
+            "winRate": 13.6,
+            "tp1Rate": 18.2,
+            "tp2Rate": 13.6,
+            "stopRate": 81.8,
+            "anyStopRate": 86.4
           }
         },
         {
@@ -35534,20 +35534,20 @@
             "anyStopRate": 63.4
           },
           "validation": {
-            "signals": 28,
-            "resolved": 28,
+            "signals": 32,
+            "resolved": 32,
             "tp1Hits": 7,
             "tp2Hits": 6,
-            "fullStops": 21,
+            "fullStops": 25,
             "stoppedAfterTp1": 1,
-            "anyStops": 22,
+            "anyStops": 26,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 21.4,
-            "tp1Rate": 25,
-            "tp2Rate": 21.4,
-            "stopRate": 75,
-            "anyStopRate": 78.6
+            "winRate": 18.8,
+            "tp1Rate": 21.9,
+            "tp2Rate": 18.8,
+            "stopRate": 78.1,
+            "anyStopRate": 81.3
           }
         },
         {
@@ -35620,20 +35620,20 @@
             "anyStopRate": 64.7
           },
           "validation": {
-            "signals": 36,
-            "resolved": 36,
+            "signals": 37,
+            "resolved": 37,
             "tp1Hits": 9,
             "tp2Hits": 8,
-            "fullStops": 27,
+            "fullStops": 28,
             "stoppedAfterTp1": 1,
-            "anyStops": 28,
+            "anyStops": 29,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 22.2,
-            "tp1Rate": 25,
-            "tp2Rate": 22.2,
-            "stopRate": 75,
-            "anyStopRate": 77.8
+            "winRate": 21.6,
+            "tp1Rate": 24.3,
+            "tp2Rate": 21.6,
+            "stopRate": 75.7,
+            "anyStopRate": 78.4
           }
         },
         {
@@ -36050,20 +36050,20 @@
             "anyStopRate": 65.1
           },
           "validation": {
-            "signals": 32,
-            "resolved": 32,
+            "signals": 36,
+            "resolved": 36,
             "tp1Hits": 7,
             "tp2Hits": 6,
-            "fullStops": 25,
+            "fullStops": 29,
             "stoppedAfterTp1": 1,
-            "anyStops": 26,
+            "anyStops": 30,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 18.8,
-            "tp1Rate": 21.9,
-            "tp2Rate": 18.8,
-            "stopRate": 78.1,
-            "anyStopRate": 81.3
+            "winRate": 16.7,
+            "tp1Rate": 19.4,
+            "tp2Rate": 16.7,
+            "stopRate": 80.6,
+            "anyStopRate": 83.3
           }
         },
         {
@@ -36093,20 +36093,20 @@
             "anyStopRate": 65
           },
           "validation": {
-            "signals": 46,
-            "resolved": 46,
+            "signals": 50,
+            "resolved": 50,
             "tp1Hits": 12,
             "tp2Hits": 11,
-            "fullStops": 34,
+            "fullStops": 38,
             "stoppedAfterTp1": 1,
-            "anyStops": 35,
+            "anyStops": 39,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 23.9,
-            "tp1Rate": 26.1,
-            "tp2Rate": 23.9,
-            "stopRate": 73.9,
-            "anyStopRate": 76.1
+            "winRate": 22,
+            "tp1Rate": 24,
+            "tp2Rate": 22,
+            "stopRate": 76,
+            "anyStopRate": 78
           }
         },
         {
@@ -36351,20 +36351,20 @@
             "anyStopRate": 65.5
           },
           "validation": {
-            "signals": 43,
-            "resolved": 43,
+            "signals": 46,
+            "resolved": 46,
             "tp1Hits": 13,
             "tp2Hits": 11,
-            "fullStops": 30,
+            "fullStops": 33,
             "stoppedAfterTp1": 2,
-            "anyStops": 32,
+            "anyStops": 35,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 25.6,
-            "tp1Rate": 30.2,
-            "tp2Rate": 25.6,
-            "stopRate": 69.8,
-            "anyStopRate": 74.4
+            "winRate": 23.9,
+            "tp1Rate": 28.3,
+            "tp2Rate": 23.9,
+            "stopRate": 71.7,
+            "anyStopRate": 76.1
           }
         },
         {
@@ -36394,20 +36394,20 @@
             "anyStopRate": 67.4
           },
           "validation": {
-            "signals": 35,
-            "resolved": 35,
+            "signals": 36,
+            "resolved": 36,
             "tp1Hits": 9,
             "tp2Hits": 8,
-            "fullStops": 26,
+            "fullStops": 27,
             "stoppedAfterTp1": 1,
-            "anyStops": 27,
+            "anyStops": 28,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 22.9,
-            "tp1Rate": 25.7,
-            "tp2Rate": 22.9,
-            "stopRate": 74.3,
-            "anyStopRate": 77.1
+            "winRate": 22.2,
+            "tp1Rate": 25,
+            "tp2Rate": 22.2,
+            "stopRate": 75,
+            "anyStopRate": 77.8
           }
         },
         {
@@ -36437,20 +36437,20 @@
             "anyStopRate": 67.4
           },
           "validation": {
-            "signals": 35,
-            "resolved": 35,
+            "signals": 36,
+            "resolved": 36,
             "tp1Hits": 9,
             "tp2Hits": 8,
-            "fullStops": 26,
+            "fullStops": 27,
             "stoppedAfterTp1": 1,
-            "anyStops": 27,
+            "anyStops": 28,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 22.9,
-            "tp1Rate": 25.7,
-            "tp2Rate": 22.9,
-            "stopRate": 74.3,
-            "anyStopRate": 77.1
+            "winRate": 22.2,
+            "tp1Rate": 25,
+            "tp2Rate": 22.2,
+            "stopRate": 75,
+            "anyStopRate": 77.8
           }
         },
         {
@@ -36609,20 +36609,20 @@
             "anyStopRate": 66.1
           },
           "validation": {
-            "signals": 46,
-            "resolved": 46,
+            "signals": 50,
+            "resolved": 50,
             "tp1Hits": 13,
             "tp2Hits": 11,
-            "fullStops": 33,
+            "fullStops": 37,
             "stoppedAfterTp1": 2,
-            "anyStops": 35,
+            "anyStops": 39,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 23.9,
-            "tp1Rate": 28.3,
-            "tp2Rate": 23.9,
-            "stopRate": 71.7,
-            "anyStopRate": 76.1
+            "winRate": 22,
+            "tp1Rate": 26,
+            "tp2Rate": 22,
+            "stopRate": 74,
+            "anyStopRate": 78
           }
         },
         {
@@ -36781,20 +36781,20 @@
             "anyStopRate": 67.2
           },
           "validation": {
-            "signals": 46,
-            "resolved": 46,
+            "signals": 49,
+            "resolved": 49,
             "tp1Hits": 13,
             "tp2Hits": 11,
-            "fullStops": 33,
+            "fullStops": 36,
             "stoppedAfterTp1": 2,
-            "anyStops": 35,
+            "anyStops": 38,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 23.9,
-            "tp1Rate": 28.3,
-            "tp2Rate": 23.9,
-            "stopRate": 71.7,
-            "anyStopRate": 76.1
+            "winRate": 22.4,
+            "tp1Rate": 26.5,
+            "tp2Rate": 22.4,
+            "stopRate": 73.5,
+            "anyStopRate": 77.6
           }
         },
         {
@@ -36824,20 +36824,20 @@
             "anyStopRate": 69.4
           },
           "validation": {
-            "signals": 38,
-            "resolved": 38,
+            "signals": 39,
+            "resolved": 39,
             "tp1Hits": 9,
             "tp2Hits": 8,
-            "fullStops": 29,
+            "fullStops": 30,
             "stoppedAfterTp1": 1,
-            "anyStops": 30,
+            "anyStops": 31,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 21.1,
-            "tp1Rate": 23.7,
-            "tp2Rate": 21.1,
-            "stopRate": 76.3,
-            "anyStopRate": 78.9
+            "winRate": 20.5,
+            "tp1Rate": 23.1,
+            "tp2Rate": 20.5,
+            "stopRate": 76.9,
+            "anyStopRate": 79.5
           }
         },
         {
@@ -37082,20 +37082,20 @@
             "anyStopRate": 68.3
           },
           "validation": {
-            "signals": 52,
-            "resolved": 52,
+            "signals": 56,
+            "resolved": 56,
             "tp1Hits": 13,
             "tp2Hits": 11,
-            "fullStops": 39,
+            "fullStops": 43,
             "stoppedAfterTp1": 2,
-            "anyStops": 41,
+            "anyStops": 45,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 21.2,
-            "tp1Rate": 25,
-            "tp2Rate": 21.2,
-            "stopRate": 75,
-            "anyStopRate": 78.8
+            "winRate": 19.6,
+            "tp1Rate": 23.2,
+            "tp2Rate": 19.6,
+            "stopRate": 76.8,
+            "anyStopRate": 80.4
           }
         },
         {
@@ -37125,20 +37125,20 @@
             "anyStopRate": 67.3
           },
           "validation": {
-            "signals": 60,
-            "resolved": 60,
+            "signals": 62,
+            "resolved": 62,
             "tp1Hits": 17,
             "tp2Hits": 14,
-            "fullStops": 43,
+            "fullStops": 45,
             "stoppedAfterTp1": 3,
-            "anyStops": 46,
+            "anyStops": 48,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 23.3,
-            "tp1Rate": 28.3,
-            "tp2Rate": 23.3,
-            "stopRate": 71.7,
-            "anyStopRate": 76.7
+            "winRate": 22.6,
+            "tp1Rate": 27.4,
+            "tp2Rate": 22.6,
+            "stopRate": 72.6,
+            "anyStopRate": 77.4
           }
         },
         {
@@ -37168,20 +37168,20 @@
             "anyStopRate": 70
           },
           "validation": {
-            "signals": 40,
-            "resolved": 40,
+            "signals": 41,
+            "resolved": 41,
             "tp1Hits": 9,
             "tp2Hits": 8,
-            "fullStops": 31,
+            "fullStops": 32,
             "stoppedAfterTp1": 1,
-            "anyStops": 32,
+            "anyStops": 33,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 20,
-            "tp1Rate": 22.5,
-            "tp2Rate": 20,
-            "stopRate": 77.5,
-            "anyStopRate": 80
+            "winRate": 19.5,
+            "tp1Rate": 22,
+            "tp2Rate": 19.5,
+            "stopRate": 78,
+            "anyStopRate": 80.5
           }
         },
         {
@@ -37340,20 +37340,20 @@
             "anyStopRate": 67.9
           },
           "validation": {
-            "signals": 63,
-            "resolved": 63,
+            "signals": 66,
+            "resolved": 66,
             "tp1Hits": 17,
             "tp2Hits": 14,
-            "fullStops": 46,
+            "fullStops": 49,
             "stoppedAfterTp1": 3,
-            "anyStops": 49,
+            "anyStops": 52,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 22.2,
-            "tp1Rate": 27,
-            "tp2Rate": 22.2,
-            "stopRate": 73,
-            "anyStopRate": 77.8
+            "winRate": 21.2,
+            "tp1Rate": 25.8,
+            "tp2Rate": 21.2,
+            "stopRate": 74.2,
+            "anyStopRate": 78.8
           }
         },
         {
@@ -37598,20 +37598,20 @@
             "anyStopRate": 67.8
           },
           "validation": {
-            "signals": 64,
-            "resolved": 64,
+            "signals": 66,
+            "resolved": 66,
             "tp1Hits": 19,
             "tp2Hits": 16,
-            "fullStops": 45,
+            "fullStops": 47,
             "stoppedAfterTp1": 3,
-            "anyStops": 48,
+            "anyStops": 50,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 25,
-            "tp1Rate": 29.7,
-            "tp2Rate": 25,
-            "stopRate": 70.3,
-            "anyStopRate": 75
+            "winRate": 24.2,
+            "tp1Rate": 28.8,
+            "tp2Rate": 24.2,
+            "stopRate": 71.2,
+            "anyStopRate": 75.8
           }
         },
         {
@@ -37856,20 +37856,20 @@
             "anyStopRate": 68.3
           },
           "validation": {
-            "signals": 70,
-            "resolved": 70,
+            "signals": 73,
+            "resolved": 73,
             "tp1Hits": 20,
             "tp2Hits": 16,
-            "fullStops": 50,
+            "fullStops": 53,
             "stoppedAfterTp1": 4,
-            "anyStops": 54,
+            "anyStops": 57,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 22.9,
-            "tp1Rate": 28.6,
-            "tp2Rate": 22.9,
-            "stopRate": 71.4,
-            "anyStopRate": 77.1
+            "winRate": 21.9,
+            "tp1Rate": 27.4,
+            "tp2Rate": 21.9,
+            "stopRate": 72.6,
+            "anyStopRate": 78.1
           }
         },
         {
@@ -38759,20 +38759,20 @@
             "anyStopRate": 69.9
           },
           "validation": {
-            "signals": 68,
-            "resolved": 68,
+            "signals": 70,
+            "resolved": 70,
             "tp1Hits": 21,
             "tp2Hits": 16,
-            "fullStops": 47,
+            "fullStops": 49,
             "stoppedAfterTp1": 5,
-            "anyStops": 52,
+            "anyStops": 54,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 23.5,
-            "tp1Rate": 30.9,
-            "tp2Rate": 23.5,
-            "stopRate": 69.1,
-            "anyStopRate": 76.5
+            "winRate": 22.9,
+            "tp1Rate": 30,
+            "tp2Rate": 22.9,
+            "stopRate": 70,
+            "anyStopRate": 77.1
           }
         },
         {
@@ -38931,20 +38931,20 @@
             "anyStopRate": 70.7
           },
           "validation": {
-            "signals": 71,
-            "resolved": 71,
+            "signals": 74,
+            "resolved": 74,
             "tp1Hits": 21,
             "tp2Hits": 16,
-            "fullStops": 50,
+            "fullStops": 53,
             "stoppedAfterTp1": 5,
-            "anyStops": 55,
+            "anyStops": 58,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 22.5,
-            "tp1Rate": 29.6,
-            "tp2Rate": 22.5,
-            "stopRate": 70.4,
-            "anyStopRate": 77.5
+            "winRate": 21.6,
+            "tp1Rate": 28.4,
+            "tp2Rate": 21.6,
+            "stopRate": 71.6,
+            "anyStopRate": 78.4
           }
         },
         {
@@ -39060,20 +39060,20 @@
             "anyStopRate": 70
           },
           "validation": {
-            "signals": 73,
-            "resolved": 73,
+            "signals": 75,
+            "resolved": 75,
             "tp1Hits": 23,
             "tp2Hits": 18,
-            "fullStops": 50,
+            "fullStops": 52,
             "stoppedAfterTp1": 5,
-            "anyStops": 55,
+            "anyStops": 57,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 24.7,
-            "tp1Rate": 31.5,
-            "tp2Rate": 24.7,
-            "stopRate": 68.5,
-            "anyStopRate": 75.3
+            "winRate": 24,
+            "tp1Rate": 30.7,
+            "tp2Rate": 24,
+            "stopRate": 69.3,
+            "anyStopRate": 76
           }
         },
         {
@@ -39189,20 +39189,20 @@
             "anyStopRate": 71.1
           },
           "validation": {
-            "signals": 78,
-            "resolved": 78,
+            "signals": 81,
+            "resolved": 81,
             "tp1Hits": 24,
             "tp2Hits": 18,
-            "fullStops": 54,
+            "fullStops": 57,
             "stoppedAfterTp1": 6,
-            "anyStops": 60,
+            "anyStops": 63,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 23.1,
-            "tp1Rate": 30.8,
-            "tp2Rate": 23.1,
-            "stopRate": 69.2,
-            "anyStopRate": 76.9
+            "winRate": 22.2,
+            "tp1Rate": 29.6,
+            "tp2Rate": 22.2,
+            "stopRate": 70.4,
+            "anyStopRate": 77.8
           }
         }
       ],
@@ -39221,7 +39221,7 @@
       "note": "Only continuous segments with at least 400 M15 candles are evaluated. Discovery uses the first 50%; the later 50% is held out for validation. Entry is next candle open. Shared exits: 1.5 ATR stop, TP1=2R, TP2=3R, 96-candle horizon. Same-candle stop/target touches are ambiguous. A candidate is shown in validation only after at least 10 resolved validation signals. Expired trades are reported, not counted as wins or losses. This is exploratory research, not a live strategy."
     },
     "CRASH500": {
-      "bars": 1622,
+      "bars": 1623,
       "continuousSegments": 1,
       "qualifiedSegments": 1,
       "minimumBarsRequired": 400,
@@ -47062,7 +47062,7 @@
       "note": "Only continuous segments with at least 400 M15 candles are evaluated. Discovery uses the first 50%; the later 50% is held out for validation. Entry is next candle open. Shared exits: 1.5 ATR stop, TP1=2R, TP2=3R, 96-candle horizon. Same-candle stop/target touches are ambiguous. A candidate is shown in validation only after at least 10 resolved validation signals. Expired trades are reported, not counted as wins or losses. This is exploratory research, not a live strategy."
     },
     "BOOM500": {
-      "bars": 1622,
+      "bars": 1623,
       "continuousSegments": 1,
       "qualifiedSegments": 1,
       "minimumBarsRequired": 400,
@@ -54903,7 +54903,7 @@
       "note": "Only continuous segments with at least 400 M15 candles are evaluated. Discovery uses the first 50%; the later 50% is held out for validation. Entry is next candle open. Shared exits: 1.5 ATR stop, TP1=2R, TP2=3R, 96-candle horizon. Same-candle stop/target touches are ambiguous. A candidate is shown in validation only after at least 10 resolved validation signals. Expired trades are reported, not counted as wins or losses. This is exploratory research, not a live strategy."
     },
     "JD75": {
-      "bars": 1423,
+      "bars": 1424,
       "continuousSegments": 1,
       "qualifiedSegments": 1,
       "minimumBarsRequired": 400,
@@ -55109,20 +55109,20 @@
             "anyStopRate": 84.2
           },
           "validation": {
-            "signals": 24,
-            "resolved": 24,
+            "signals": 23,
+            "resolved": 23,
             "tp1Hits": 9,
             "tp2Hits": 9,
-            "fullStops": 15,
+            "fullStops": 14,
             "stoppedAfterTp1": 0,
-            "anyStops": 15,
+            "anyStops": 14,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 37.5,
-            "tp1Rate": 37.5,
-            "tp2Rate": 37.5,
-            "stopRate": 62.5,
-            "anyStopRate": 62.5
+            "winRate": 39.1,
+            "tp1Rate": 39.1,
+            "tp2Rate": 39.1,
+            "stopRate": 60.9,
+            "anyStopRate": 60.9
           }
         },
         {
@@ -55195,20 +55195,20 @@
             "anyStopRate": 88.2
           },
           "validation": {
-            "signals": 25,
-            "resolved": 25,
+            "signals": 24,
+            "resolved": 24,
             "tp1Hits": 10,
             "tp2Hits": 10,
-            "fullStops": 15,
+            "fullStops": 14,
             "stoppedAfterTp1": 0,
-            "anyStops": 15,
+            "anyStops": 14,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 40,
-            "tp1Rate": 40,
-            "tp2Rate": 40,
-            "stopRate": 60,
-            "anyStopRate": 60
+            "winRate": 41.7,
+            "tp1Rate": 41.7,
+            "tp2Rate": 41.7,
+            "stopRate": 58.3,
+            "anyStopRate": 58.3
           }
         },
         {
@@ -55238,20 +55238,20 @@
             "anyStopRate": 88.2
           },
           "validation": {
-            "signals": 24,
-            "resolved": 24,
+            "signals": 23,
+            "resolved": 23,
             "tp1Hits": 9,
             "tp2Hits": 9,
-            "fullStops": 15,
+            "fullStops": 14,
             "stoppedAfterTp1": 0,
-            "anyStops": 15,
+            "anyStops": 14,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 37.5,
-            "tp1Rate": 37.5,
-            "tp2Rate": 37.5,
-            "stopRate": 62.5,
-            "anyStopRate": 62.5
+            "winRate": 39.1,
+            "tp1Rate": 39.1,
+            "tp2Rate": 39.1,
+            "stopRate": 60.9,
+            "anyStopRate": 60.9
           }
         },
         {
@@ -55369,20 +55369,20 @@
             "anyStopRate": 82.6
           },
           "validation": {
-            "signals": 26,
-            "resolved": 26,
+            "signals": 25,
+            "resolved": 25,
             "tp1Hits": 11,
             "tp2Hits": 11,
-            "fullStops": 15,
+            "fullStops": 14,
             "stoppedAfterTp1": 0,
-            "anyStops": 15,
+            "anyStops": 14,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 42.3,
-            "tp1Rate": 42.3,
-            "tp2Rate": 42.3,
-            "stopRate": 57.7,
-            "anyStopRate": 57.7
+            "winRate": 44,
+            "tp1Rate": 44,
+            "tp2Rate": 44,
+            "stopRate": 56,
+            "anyStopRate": 56
           }
         },
         {
@@ -55412,20 +55412,20 @@
             "anyStopRate": 88.2
           },
           "validation": {
-            "signals": 25,
-            "resolved": 25,
+            "signals": 24,
+            "resolved": 24,
             "tp1Hits": 10,
             "tp2Hits": 10,
-            "fullStops": 15,
+            "fullStops": 14,
             "stoppedAfterTp1": 0,
-            "anyStops": 15,
+            "anyStops": 14,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 40,
-            "tp1Rate": 40,
-            "tp2Rate": 40,
-            "stopRate": 60,
-            "anyStopRate": 60
+            "winRate": 41.7,
+            "tp1Rate": 41.7,
+            "tp2Rate": 41.7,
+            "stopRate": 58.3,
+            "anyStopRate": 58.3
           }
         },
         {
@@ -55541,20 +55541,20 @@
             "anyStopRate": 84.2
           },
           "validation": {
-            "signals": 24,
-            "resolved": 24,
+            "signals": 23,
+            "resolved": 23,
             "tp1Hits": 9,
             "tp2Hits": 9,
-            "fullStops": 15,
+            "fullStops": 14,
             "stoppedAfterTp1": 0,
-            "anyStops": 15,
+            "anyStops": 14,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 37.5,
-            "tp1Rate": 37.5,
-            "tp2Rate": 37.5,
-            "stopRate": 62.5,
-            "anyStopRate": 62.5
+            "winRate": 39.1,
+            "tp1Rate": 39.1,
+            "tp2Rate": 39.1,
+            "stopRate": 60.9,
+            "anyStopRate": 60.9
           }
         },
         {
@@ -55584,20 +55584,20 @@
             "anyStopRate": 88.2
           },
           "validation": {
-            "signals": 24,
-            "resolved": 24,
+            "signals": 23,
+            "resolved": 23,
             "tp1Hits": 9,
             "tp2Hits": 9,
-            "fullStops": 15,
+            "fullStops": 14,
             "stoppedAfterTp1": 0,
-            "anyStops": 15,
+            "anyStops": 14,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 37.5,
-            "tp1Rate": 37.5,
-            "tp2Rate": 37.5,
-            "stopRate": 62.5,
-            "anyStopRate": 62.5
+            "winRate": 39.1,
+            "tp1Rate": 39.1,
+            "tp2Rate": 39.1,
+            "stopRate": 60.9,
+            "anyStopRate": 60.9
           }
         },
         {
@@ -58510,20 +58510,20 @@
             "anyStopRate": 84.2
           },
           "validation": {
-            "signals": 24,
-            "resolved": 24,
+            "signals": 23,
+            "resolved": 23,
             "tp1Hits": 9,
             "tp2Hits": 9,
-            "fullStops": 15,
+            "fullStops": 14,
             "stoppedAfterTp1": 0,
-            "anyStops": 15,
+            "anyStops": 14,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 37.5,
-            "tp1Rate": 37.5,
-            "tp2Rate": 37.5,
-            "stopRate": 62.5,
-            "anyStopRate": 62.5
+            "winRate": 39.1,
+            "tp1Rate": 39.1,
+            "tp2Rate": 39.1,
+            "stopRate": 60.9,
+            "anyStopRate": 60.9
           }
         },
         {
@@ -58596,20 +58596,20 @@
             "anyStopRate": 88.2
           },
           "validation": {
-            "signals": 25,
-            "resolved": 25,
+            "signals": 24,
+            "resolved": 24,
             "tp1Hits": 10,
             "tp2Hits": 10,
-            "fullStops": 15,
+            "fullStops": 14,
             "stoppedAfterTp1": 0,
-            "anyStops": 15,
+            "anyStops": 14,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 40,
-            "tp1Rate": 40,
-            "tp2Rate": 40,
-            "stopRate": 60,
-            "anyStopRate": 60
+            "winRate": 41.7,
+            "tp1Rate": 41.7,
+            "tp2Rate": 41.7,
+            "stopRate": 58.3,
+            "anyStopRate": 58.3
           }
         },
         {
@@ -58639,20 +58639,20 @@
             "anyStopRate": 88.2
           },
           "validation": {
-            "signals": 24,
-            "resolved": 24,
+            "signals": 23,
+            "resolved": 23,
             "tp1Hits": 9,
             "tp2Hits": 9,
-            "fullStops": 15,
+            "fullStops": 14,
             "stoppedAfterTp1": 0,
-            "anyStops": 15,
+            "anyStops": 14,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 37.5,
-            "tp1Rate": 37.5,
-            "tp2Rate": 37.5,
-            "stopRate": 62.5,
-            "anyStopRate": 62.5
+            "winRate": 39.1,
+            "tp1Rate": 39.1,
+            "tp2Rate": 39.1,
+            "stopRate": 60.9,
+            "anyStopRate": 60.9
           }
         },
         {
@@ -59112,20 +59112,20 @@
             "anyStopRate": 82.6
           },
           "validation": {
-            "signals": 26,
-            "resolved": 26,
+            "signals": 25,
+            "resolved": 25,
             "tp1Hits": 11,
             "tp2Hits": 11,
-            "fullStops": 15,
+            "fullStops": 14,
             "stoppedAfterTp1": 0,
-            "anyStops": 15,
+            "anyStops": 14,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 42.3,
-            "tp1Rate": 42.3,
-            "tp2Rate": 42.3,
-            "stopRate": 57.7,
-            "anyStopRate": 57.7
+            "winRate": 44,
+            "tp1Rate": 44,
+            "tp2Rate": 44,
+            "stopRate": 56,
+            "anyStopRate": 56
           }
         },
         {
@@ -59456,20 +59456,20 @@
             "anyStopRate": 77.4
           },
           "validation": {
-            "signals": 39,
-            "resolved": 39,
+            "signals": 38,
+            "resolved": 38,
             "tp1Hits": 15,
             "tp2Hits": 15,
-            "fullStops": 24,
+            "fullStops": 23,
             "stoppedAfterTp1": 0,
-            "anyStops": 24,
+            "anyStops": 23,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 38.5,
-            "tp1Rate": 38.5,
-            "tp2Rate": 38.5,
-            "stopRate": 61.5,
-            "anyStopRate": 61.5
+            "winRate": 39.5,
+            "tp1Rate": 39.5,
+            "tp2Rate": 39.5,
+            "stopRate": 60.5,
+            "anyStopRate": 60.5
           }
         },
         {
@@ -59929,20 +59929,20 @@
             "anyStopRate": 88
           },
           "validation": {
-            "signals": 35,
-            "resolved": 35,
+            "signals": 34,
+            "resolved": 34,
             "tp1Hits": 12,
             "tp2Hits": 12,
-            "fullStops": 23,
+            "fullStops": 22,
             "stoppedAfterTp1": 0,
-            "anyStops": 23,
+            "anyStops": 22,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 34.3,
-            "tp1Rate": 34.3,
-            "tp2Rate": 34.3,
-            "stopRate": 65.7,
-            "anyStopRate": 65.7
+            "winRate": 35.3,
+            "tp1Rate": 35.3,
+            "tp2Rate": 35.3,
+            "stopRate": 64.7,
+            "anyStopRate": 64.7
           }
         },
         {
@@ -59972,20 +59972,20 @@
             "anyStopRate": 91.3
           },
           "validation": {
-            "signals": 33,
-            "resolved": 33,
+            "signals": 32,
+            "resolved": 32,
             "tp1Hits": 11,
             "tp2Hits": 11,
-            "fullStops": 22,
+            "fullStops": 21,
             "stoppedAfterTp1": 0,
-            "anyStops": 22,
+            "anyStops": 21,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 33.3,
-            "tp1Rate": 33.3,
-            "tp2Rate": 33.3,
-            "stopRate": 66.7,
-            "anyStopRate": 66.7
+            "winRate": 34.4,
+            "tp1Rate": 34.4,
+            "tp2Rate": 34.4,
+            "stopRate": 65.6,
+            "anyStopRate": 65.6
           }
         },
         {
@@ -60273,20 +60273,20 @@
             "anyStopRate": 91.7
           },
           "validation": {
-            "signals": 35,
-            "resolved": 35,
+            "signals": 34,
+            "resolved": 34,
             "tp1Hits": 13,
             "tp2Hits": 13,
-            "fullStops": 22,
+            "fullStops": 21,
             "stoppedAfterTp1": 0,
-            "anyStops": 22,
+            "anyStops": 21,
             "ambiguous": 0,
             "expired": 0,
-            "winRate": 37.1,
-            "tp1Rate": 37.1,
-            "tp2Rate": 37.1,
-            "stopRate": 62.9,
-            "anyStopRate": 62.9
+            "winRate": 38.2,
+            "tp1Rate": 38.2,
+            "tp2Rate": 38.2,
+            "stopRate": 61.8,
+            "anyStopRate": 61.8
           }
         },
         {
