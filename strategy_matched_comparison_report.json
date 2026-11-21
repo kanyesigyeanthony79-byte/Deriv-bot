@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-21T20:02:24.000Z",
+  "generatedAt": "2026-11-21T20:04:15.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -20,8 +20,8 @@
     "baselineCategory": "SCALP",
     "baselineSignalsAvailable": 351,
     "candidateStrategies": 7,
-    "candidateSignals": 1661,
-    "matchedPairs": 256,
+    "candidateSignals": 1662,
+    "matchedPairs": 257,
     "unmatchedCandidates": 1405,
     "matchWindowSeconds": 900
   },
@@ -2199,17 +2199,18 @@
     {
       "strategyId": "M5_BREAKOUT_M1_RETEST",
       "label": "M5 breakout / M1 retest",
-      "candidateSignals": 351,
+      "candidateSignals": 352,
       "candidateOutcomeCounts": {
         "tp2_hit": 119,
         "stopped": 222,
         "time_exit": 9,
-        "ambiguous": 1
+        "ambiguous": 1,
+        "pending": 1
       },
-      "matchedPairs": 28,
+      "matchedPairs": 29,
       "unmatchedCandidates": 323,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 28,
+      "baselineSignalsUsed": 29,
       "pairedOutcomeCounts": [
         {
           "key": "stopped / expired",
@@ -2222,6 +2223,10 @@
         {
           "key": "stopped / stopped",
           "count": 3
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         },
         {
           "key": "time_exit / expired",
@@ -2245,8 +2250,8 @@
           "unmatched": 44
         },
         "JD75": {
-          "candidates": 57,
-          "matched": 4,
+          "candidates": 58,
+          "matched": 5,
           "unmatched": 53
         },
         "BOOM500": {
@@ -2633,6 +2638,19 @@
           "candidateStatus": "tp2_hit",
           "baselineStatus": "expired",
           "candidateRealizedR": 2,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "JD75",
+          "direction": "BUY",
+          "candidateSignalId": "JD75-BREAKOUT_RETEST-1795291200",
+          "baselineSignalId": "JD75-SCALP-1795290600",
+          "candidateEntryEpoch": 1795291320,
+          "baselineEntryEpoch": 1795290600,
+          "entryTimeDifferenceSeconds": 720,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
           "baselineRealizedR": null
         }
       ]
