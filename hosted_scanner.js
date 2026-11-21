@@ -19,7 +19,6 @@ const MARKETS = [
   ["R_50", "Volatility 50 Index"],
   ["R_75", "Volatility 75 Index"],
   ["JD100", "Jump 100 Index"],
-  ["frxXAUUSD", "Gold/USD"],
   ["CRASH500", "Crash 500 Index"],
   ["BOOM500", "Boom 500 Index"]
 ];
@@ -380,15 +379,23 @@ async function main() {
           .sort((a, b) => a.epoch - b.epoch)
           .filter(x => x.epoch + GRANULARITY <= now);
 
+        const result = evaluate(candles);
+        const hasSignal = result.state === "ok" && result.signal !== "NO TRADE";
+        // Record market-data/evaluation health separately from notification delivery.
+        // A Telegram failure must never turn a successfully scanned market into a scan error.
+        heartbeat.market(name, "success", {
+          candles: candles.length,
+          signalFound: hasSignal,
+          evaluationState: result.state || "unknown",
+          ...(hasSignal ? { direction: result.signal } : {})
+        });
+
         await monitorSignals(id, candles, now);
 
-        const result = evaluate(candles);
-        if (result.state !== "ok" || result.signal === "NO TRADE") {
-          heartbeat.market(name, "success", { candles: candles.length, signalFound: false, evaluationState: result.state || "unknown" });
+        if (!hasSignal) {
           log("no_signal", { market: name, state: result.state || "unknown" });
           continue;
         }
-        heartbeat.market(name, "success", { candles: candles.length, signalFound: true, direction: result.signal });
         heartbeat.signalDetected();
 
         const candleEpoch = result.c.epoch;
@@ -451,10 +458,18 @@ async function main() {
           { signalId, market: name, direction: result.signal, candle_epoch: candleEpoch,
             reason: telegramResult?.reason || null, ...levels });
       } catch (error) {
-        heartbeat.market(name, "error", { error: String(error.message || error).slice(0, 200) });
+        const message = String(error.message || error).slice(0, 200);
+        // Only candle retrieval/evaluation failures count as market scan failures.
+        // Telegram delivery failures are counted by postTelegram() in the Telegram totals.
+        const latestMarket = heartbeat.record.marketResults.find(item => item.market === name);
+        if (!latestMarket || latestMarket.status !== "success") {
+          heartbeat.market(name, "error", { error: message });
+          log("market_scan_error", { market: name, message });
+        } else {
+          log("market_processing_error", { market: name, message });
+        }
         const pending = [...journal.signals].reverse().find(entry => entry.marketId === id && entry.status === "detected");
-        if (pending) journalStatus(pending.signalId, "delivery_failed", error.message);
-        log("market_scan_error", { market: name, message: error.message });
+        if (pending) journalStatus(pending.signalId, "delivery_failed", message);
       }
     }
     await maybeSendDailySummary(now);
