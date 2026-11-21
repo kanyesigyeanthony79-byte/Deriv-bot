@@ -842,7 +842,8 @@ void PollSignalQueue()
 {
    if(!InpObserveOnly && CountOurPositions() > 0) return;
    string response;
-   string url = InpBridgeUrl + "/mt5/next?clientId=" + InpClientId;
+   string pollMode = (InpObserveOnly ? "observe" : "execute");
+   string url = InpBridgeUrl + "/mt5/next?clientId=" + InpClientId + "&mode=" + pollMode;
    int http = HttpGet(url,response);
    if(http != 200)
    {
