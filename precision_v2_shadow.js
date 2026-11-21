@@ -77,7 +77,7 @@ function summarizePrecisionObservations(observations) {
       row.status === "tp2_hit" || row.status === "stopped" ||
       row.status === "stopped_after_tp1" || row.status === "time_exit"
     );
-    const wins = resolved.filter(row => row.status === "tp2_hit" || row.status === "stopped_after_tp1").length;
+    const wins = resolved.filter(row => row.status === "tp2_hit").length;
     const losses = resolved.filter(row => row.status === "stopped").length;
     const rValues = resolved.map(row => row.realizedR).filter(finite);
     const grossProfit = rValues.filter(x => x > 0).reduce((a, b) => a + b, 0);
@@ -87,6 +87,7 @@ function summarizePrecisionObservations(observations) {
       resolved: resolved.length,
       wins,
       losses,
+      partialAfterTp1: resolved.filter(row => row.status === "stopped_after_tp1").length,
       expired: rows.filter(row => row.status === "expired").length,
       pending: rows.filter(row => row.status === "pending").length,
       ambiguous: rows.filter(row => row.status === "ambiguous").length,
