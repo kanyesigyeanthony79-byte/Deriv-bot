@@ -120,22 +120,42 @@ function resolveCommonOutcome({ m1, entryEpoch, entry, direction, riskDistance, 
   const target = direction === "BUY" ? entry + TARGET_R * riskDistance : entry - TARGET_R * riskDistance;
   const bars = m1.filter(c => c.epoch >= entryEpoch && c.epoch < horizonEndEpoch);
   if (!bars.length || bars[0].epoch !== entryEpoch) return { status: "incomplete_data", realizedR: null };
+  let mfeR = 0, maeR = 0, exit = null;
+  const thresholdEpochs = { "0.5R": null, "1R": null, "2R": null };
+  const signed = price => direction === "BUY" ? price - entry : entry - price;
   for (let i = 0; i < bars.length; i++) {
     const c = bars[i];
-    if (i > 0 && c.epoch - bars[i - 1].epoch !== TF.M1) return { status: "data_gap", realizedR: null };
+    if (i > 0 && c.epoch - bars[i - 1].epoch !== TF.M1) return { status: "data_gap", realizedR: null, mfeR, maeR, thresholdEpochs };
+    const favorable = signed(direction === "BUY" ? c.high : c.low) / riskDistance;
+    const adverse = signed(direction === "BUY" ? c.low : c.high) / riskDistance;
+    mfeR = Math.max(mfeR, favorable);
+    maeR = Math.min(maeR, adverse);
+    for (const level of [0.5, 1, 2]) {
+      const key = level + "R";
+      if (thresholdEpochs[key] === null && favorable >= level) thresholdEpochs[key] = c.epoch;
+    }
     const stopTouched = direction === "BUY" ? c.low <= stop : c.high >= stop;
     const targetTouched = direction === "BUY" ? c.high >= target : c.low <= target;
-    if (stopTouched && targetTouched) return { status: "ambiguous", realizedR: null, exitEpoch: c.epoch };
-    if (stopTouched) return { status: "stopped", realizedR: -1, exitEpoch: c.epoch };
-    if (targetTouched) return { status: "target", realizedR: TARGET_R, exitEpoch: c.epoch };
+    if (stopTouched && targetTouched) { exit = { status: "ambiguous", realizedR: null, exitEpoch: c.epoch }; break; }
+    if (stopTouched) { exit = { status: "stopped", realizedR: -1, exitEpoch: c.epoch }; break; }
+    if (targetTouched) { exit = { status: "target", realizedR: TARGET_R, exitEpoch: c.epoch }; break; }
   }
-  if (bars.length * TF.M1 < HORIZON_SECONDS) return { status: "incomplete_data", realizedR: null };
+  const excursion = {
+    mfeR: Number(mfeR.toFixed(4)),
+    maeR: Number(maeR.toFixed(4)),
+    thresholdEpochs,
+    thresholdMinutes: Object.fromEntries(Object.entries(thresholdEpochs).map(([k, epoch]) =>
+      [k, epoch === null ? null : Number(((epoch - entryEpoch) / 60).toFixed(2))]))
+  };
+  if (exit) return { ...exit, ...excursion };
+  if (bars.length * TF.M1 < HORIZON_SECONDS) return { status: "incomplete_data", realizedR: null, ...excursion };
   const last = bars[bars.length - 1];
-  const signedMove = direction === "BUY" ? last.close - entry : entry - last.close;
+  const signedMove = signed(last.close);
   return {
     status: "time_exit",
     realizedR: Number((signedMove / riskDistance).toFixed(4)),
-    exitEpoch: last.epoch + TF.M1
+    exitEpoch: last.epoch + TF.M1,
+    ...excursion
   };
 }
 function splitBounds(startEpoch, endEpoch) {
