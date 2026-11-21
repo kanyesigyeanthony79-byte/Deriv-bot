@@ -18,6 +18,7 @@ const { updateBreakoutRetestJournal } = require("./breakout_retest_shadow");
 const { updateM5PullbackJournal } = require("./m5_ema_pullback_shadow");
 const { updateJournal: updateBreakoutRetestM5M15Journal } = require("./breakout_retest_m5_m15_shadow");
 const { updateR10ForwardShadowJournal } = require("./r10_forward_shadow");
+const { updatePrecisionV2ForwardShadowJournal } = require("./precision_v2_forward_shadow");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 // Jump 75 and Gold are scanned for observation and Telegram alerts only.
@@ -35,6 +36,7 @@ const FRAMES = [
 ];
 const OUTPUT = path.join(DATA_DIR, "multi_timeframe_data.json");
 const JOURNAL = path.join(DATA_DIR, "multi_timeframe_journal.json");
+const PRECISION_V2_FORWARD_SHADOW = path.join(DATA_DIR, "precision_v2_forward_shadow_journal.json");
 const DASHBOARD = path.join(DATA_DIR, "multi_timeframe_dashboard.json");
 const REVIEW_DATA = path.join(DATA_DIR, "signal_review_data.json");
 const PERFORMANCE_REPORT = path.join(DATA_DIR, "strategy_version_performance_report.json");
@@ -283,6 +285,11 @@ async function main() {
 
     const priorJournal = fs.existsSync(JOURNAL) ? JSON.parse(fs.readFileSync(JOURNAL, "utf8")) : { version: 1, signals: [] };
     const journal = updateJournal(priorJournal, output.markets, now, liveQuotes);
+    const priorPrecisionV2Shadow = fs.existsSync(PRECISION_V2_FORWARD_SHADOW)
+      ? JSON.parse(fs.readFileSync(PRECISION_V2_FORWARD_SHADOW, "utf8")) : null;
+    const precisionV2Shadow = updatePrecisionV2ForwardShadowJournal(priorPrecisionV2Shadow, journal, now);
+    fs.writeFileSync(PRECISION_V2_FORWARD_SHADOW, JSON.stringify(precisionV2Shadow, null, 2) + "\n");
+    output.precisionV2ForwardShadow = precisionV2Shadow.summary;
     if (mt5TradeLedger.connected) {
       for (const record of journal.signals) {
         const actualTrade = mt5TradesBySignal.get(record.signalId);
@@ -394,6 +401,7 @@ async function main() {
       mt5TradeReporting: mt5TradeSummary, mt5Trades: mt5TradeLedger.trades,
       strategyComparison: output.strategyComparison, strategyResearch: output.strategyResearch,
       strategyMatchedComparison: output.strategyMatchedComparison,
+      precisionV2ForwardShadow: output.precisionV2ForwardShadow,
       performanceReport: { generatedAt: performanceReport.generatedAt, totals: performanceReport.totals, overall: performanceReport.overall, expiryAnalysis: performanceReport.expiryAnalysis, reviewComparison: performanceReport.reviewComparison, byVersion: performanceReport.byVersion },
       breakoutRetestShadow: output.breakoutRetestShadow,
       m5EmaPullbackShadow: output.m5EmaPullbackShadow,
