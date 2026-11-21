@@ -157,7 +157,7 @@ export class ExecutionQueue{
   }
   if(request.method==="POST"&&u.pathname==="/ack"){
    const b=await request.json(),id=String(b.signalId||""),client=String(b.clientId||""),status=String(b.status||"");
-   if(!id||!/^[A-Za-z0-9._-]{1,80}$/.test(client)||!["accepted","rejected"].includes(status))return Response.json({error:"Invalid acknowledgement"},{status:400});
+   if(!id||!/^[A-Za-z0-9._-]{1,80}$/.test(client)||!["accepted","rejected","observed"].includes(status))return Response.json({error:"Invalid acknowledgement"},{status:400});
    const now=Math.floor(Date.now()/1000);
    const r=await this.ctx.storage.transaction(async t=>{const k="signal:"+id,rec=await t.get(k);if(!rec)return {acknowledged:false,reason:"signal_not_found"};
     if(rec.status!=="pending")return {acknowledged:rec.status===status,status:rec.status,duplicate:true};
@@ -262,7 +262,8 @@ export default {
 
     const url = new URL(request.url);
     if (url.pathname.startsWith("/mt5/")) {
-      if (["/mt5/ingest", "/mt5/next", "/mt5/ack"].includes(url.pathname) && env.MT5_EXECUTION_ENABLED !== "true") {
+      if (["/mt5/ingest", "/mt5/next", "/mt5/ack"].includes(url.pathname) &&
+          env.MT5_EXECUTION_ENABLED !== "true" && env.MT5_OBSERVATION_ENABLED !== "true") {
         return reply({ error: "MT5 execution is disabled; signal-only mode is active." }, 403);
       }
       if (!env.EXECUTION_QUEUE) return reply({ error: "Execution queue binding is missing" }, 503);
