@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-21T15:00:35.000Z",
+  "generatedAt": "2026-11-21T15:07:06.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -18,10 +18,10 @@
   "summary": {
     "baselineVersion": "MTF_BASELINE_V1",
     "baselineCategory": "SCALP",
-    "baselineSignalsAvailable": 326,
+    "baselineSignalsAvailable": 328,
     "candidateStrategies": 7,
-    "candidateSignals": 1607,
-    "matchedPairs": 242,
+    "candidateSignals": 1608,
+    "matchedPairs": 243,
     "unmatchedCandidates": 1365,
     "matchWindowSeconds": 900
   },
@@ -2532,16 +2532,17 @@
     {
       "strategyId": "M15_M5_EMA_PULLBACK",
       "label": "M15 trend / M5 EMA pullback",
-      "candidateSignals": 88,
+      "candidateSignals": 89,
       "candidateOutcomeCounts": {
         "time_exit": 31,
         "stop": 47,
-        "target": 10
+        "target": 10,
+        "pending": 1
       },
-      "matchedPairs": 38,
+      "matchedPairs": 39,
       "unmatchedCandidates": 50,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 38,
+      "baselineSignalsUsed": 39,
       "pairedOutcomeCounts": [
         {
           "key": "stop / expired",
@@ -2558,6 +2559,10 @@
         {
           "key": "target / expired",
           "count": 7
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         }
       ],
       "byMarket": {
@@ -2572,8 +2577,8 @@
           "unmatched": 9
         },
         "R_25": {
-          "candidates": 10,
-          "matched": 4,
+          "candidates": 11,
+          "matched": 5,
           "unmatched": 6
         },
         "R_50": {
@@ -3095,6 +3100,19 @@
           "candidateStatus": "stop",
           "baselineStatus": "expired",
           "candidateRealizedR": -1,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "R_25",
+          "direction": "BUY",
+          "candidateSignalId": "R_25-M15_M5_PULLBACK-1795272900",
+          "baselineSignalId": "R_25-SCALP-1795273200",
+          "candidateEntryEpoch": 1795273200,
+          "baselineEntryEpoch": 1795273200,
+          "entryTimeDifferenceSeconds": 0,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
           "baselineRealizedR": null
         }
       ]
