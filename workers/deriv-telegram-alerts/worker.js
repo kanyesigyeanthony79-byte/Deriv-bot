@@ -268,6 +268,13 @@ export default {
           env.MT5_EXECUTION_ENABLED !== "true" && env.MT5_OBSERVATION_ENABLED !== "true") {
         return reply({ error: "MT5 execution is disabled; signal-only mode is active." }, 403);
       }
+      if (url.pathname === "/mt5/next") {
+        const requestedMode = url.searchParams.get("mode");
+        const modeAllowed = requestedMode === "observe"
+          ? env.MT5_OBSERVATION_ENABLED === "true"
+          : requestedMode === "execute" && env.MT5_EXECUTION_ENABLED === "true";
+        if (!modeAllowed) return reply({ error: "Requested MT5 mode is not enabled on the server." }, 403);
+      }
       if (!env.EXECUTION_QUEUE) return reply({ error: "Execution queue binding is missing" }, 503);
       const q = env.EXECUTION_QUEUE.get(env.EXECUTION_QUEUE.idFromName("global-synthetic-signal-queue"));
       if (url.pathname === "/mt5/ingest" && request.method === "POST") {
