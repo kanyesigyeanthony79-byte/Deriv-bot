@@ -189,6 +189,18 @@ function summarizeTrades(trades, setupCount, overlapSkipped = 0) {
   result.resolved = realized.length;
   result.totalGrossR = Number(realized.reduce((sum, x) => sum + x, 0).toFixed(4));
   result.averageGrossR = realized.length ? Number((realized.reduce((sum, x) => sum + x, 0) / realized.length).toFixed(4)) : null;
+  const measured = trades.map(t => t.outcome).filter(o => Number.isFinite(o.mfeR) && Number.isFinite(o.maeR));
+  const mean = values => values.length ? Number((values.reduce((sum, x) => sum + x, 0) / values.length).toFixed(4)) : null;
+  result.excursions = {
+    measuredTrades: measured.length,
+    averageMfeR: mean(measured.map(o => o.mfeR)),
+    averageMaeR: mean(measured.map(o => o.maeR)),
+    reached: Object.fromEntries(["0.5R", "1R", "2R"].map(level => [level, measured.filter(o => o.thresholdEpochs?.[level] !== null && o.thresholdEpochs?.[level] !== undefined).length])),
+    averageMinutesToThreshold: Object.fromEntries(["0.5R", "1R", "2R"].map(level => {
+      const times = measured.map(o => o.thresholdMinutes?.[level]).filter(Number.isFinite);
+      return [level, mean(times)];
+    }))
+  };
   return result;
 }
 function replayMarket(marketId, market, bounds) {
