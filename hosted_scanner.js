@@ -256,7 +256,7 @@ async function postTelegram(payload) {
     if (heartbeat && (payload.event === "new_signal" || payload.event === "outcome")) heartbeat.telegram(payload.event, true);
     return result;
   } catch (error) {
-    if (heartbeat && (payload.event === "new_signal" || payload.event === "outcome")) heartbeat.telegram(payload.event, false);
+    if (heartbeat && (payload.event === "new_signal" || payload.event === "outcome")) heartbeat.telegram(payload.event, false, { error: String(error.message || error) });
     throw error;
   }
 }
