@@ -11895,7 +11895,7 @@
       "status": "sent",
       "tp1Hit": true,
       "tp2Hit": false,
-      "finalOutcome": null,
+      "finalOutcome": "SL_AFTER_TP1",
       "events": [
         {
           "outcome": "TP1_HIT",
@@ -11906,6 +11906,17 @@
             "high": 40405.0399,
             "low": 40165.3609,
             "close": 40343.6637
+          }
+        },
+        {
+          "outcome": "SL_HIT",
+          "observedAt": "2026-11-21T13:00:12.229Z",
+          "candleEpoch": 1795265100,
+          "candle": {
+            "open": 39445.6629,
+            "high": 39445.6629,
+            "low": 39213.0595,
+            "close": 39382.7366
           }
         }
       ],
@@ -12669,6 +12680,70 @@
       "maxFavourablePoints": 2.656,
       "maxFavourablePct": 0.04695,
       "maxFavourableEpoch": 1795264200
+    },
+    {
+      "signalId": "BOOM500-1795265100",
+      "marketId": "BOOM500",
+      "market": "Boom 500 Index",
+      "direction": "SELL",
+      "localDate": "2026-11-21",
+      "createdAt": "2026-11-21T12:45:00.000Z",
+      "candleEpoch": 1795265100,
+      "score": 72,
+      "entry": 5658.302,
+      "metrics": {
+        "ema20": 5669.81017623892,
+        "ema50": 5672.942063198954,
+        "ema50Previous": 5675.201562188461,
+        "atr": 10.893292056248962,
+        "emaSeparationAtr": 0.2875060123113032,
+        "emaSlopeAtr": 0.20742113383536528,
+        "bodyRatio": 0.9083409715857756,
+        "closeLocation": 0.9083409715857756,
+        "extensionAtr": 1.0564461302878863,
+        "swingAtr": 1.8475590203656458,
+        "candleRange": 8.727999999999156
+      },
+      "checks": [
+        {
+          "passed": true,
+          "reason": "EMA20/EMA50 trend down, gap 0.29 ATR"
+        },
+        {
+          "passed": true,
+          "reason": "Close on the trend side of EMA20"
+        },
+        {
+          "passed": true,
+          "reason": "EMA50 sloping with the trend"
+        },
+        {
+          "passed": true,
+          "reason": "RSI 43.4 inside 32-50"
+        },
+        {
+          "passed": true,
+          "reason": "Bearish candle, body 91% of range"
+        },
+        {
+          "passed": true,
+          "reason": "Lower high formed"
+        },
+        {
+          "passed": true,
+          "reason": "Not extended from EMA20 (1.1 ATR)"
+        },
+        {
+          "passed": true,
+          "reason": "No spike candle"
+        }
+      ],
+      "status": "suppressed",
+      "tp1Hit": false,
+      "tp2Hit": false,
+      "finalOutcome": null,
+      "events": [],
+      "statusReason": "duplicate_or_cooldown"
     }
   ],
   "dailyReports": {
