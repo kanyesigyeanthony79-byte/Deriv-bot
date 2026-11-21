@@ -840,7 +840,7 @@ bool OpenSignalBasket(const string signalId,const string marketId,
 //+------------------------------------------------------------------+
 void PollSignalQueue()
 {
-   if(CountOurPositions() > 0) return;
+   if(!InpObserveOnly && CountOurPositions() > 0) return;
    string response;
    string url = InpBridgeUrl + "/mt5/next?clientId=" + InpClientId;
    int http = HttpGet(url,response);
@@ -989,16 +989,17 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTimer()
 {
+   if(InpObserveOnly)
+   {
+      CheckBridgeHealth();
+      PollSignalQueue();
+      return;
+   }
    SyncOpenTradeBaskets();
    SyncClosedTradeDeals();
    ManageBasket();
    if(CountOurPositions() > 0) return;
    CheckBridgeHealth();
-   if(InpObserveOnly)
-   {
-      PollSignalQueue();
-      return;
-   }
    if(!InpEnableTrading) return;
    if(DailyLossLimitReached())
    {
