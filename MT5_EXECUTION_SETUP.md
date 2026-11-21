@@ -49,3 +49,13 @@ All endpoints require `X-API-Key` using the existing `SIGNAL_API_KEY`. The Teleg
 - Basket target/stop monitoring uses open-position profit plus swap. It does not reconstruct already-realized partial-close commissions; all three entries share the same stop level to reduce that case.
 - The EA records processed signal IDs locally before submitting orders to reduce duplicate execution after restarts.
 - Do not use on a live-money account. The EA refuses non-demo accounts.
+
+
+## Observation-only reception test (EA observation mode)
+
+- Compile the updated `DerivSignalAssistantV2_SignalBridge.mq5` in MetaEditor before attaching it.
+- Keep `InpEnableTrading=false` and `InpObserveOnly=true`. Observation mode polls the queue, validates signal fields and freshness, logs the signal details, and acknowledges it as `observed`. It does not call the order-opening function.
+- Deploy the matching Worker source with `MT5_OBSERVATION_ENABLED=true`. This separate switch permits queue ingestion/polling/acknowledgement for observation tests without enabling the execution switch.
+- Set the GitHub Actions repository variable `MT5_EXECUTION_QUEUE_ENABLED=true` only for a supervised observation test so eligible MTF signals are placed in the queue. Keep the Worker variable `MT5_EXECUTION_ENABLED` unset/false.
+- Confirm Experts logs show `OBSERVATION ONLY: signal received and validated` and that no order/deal appears in the MT5 Trade tab.
+- Do not set `InpObserveOnly=false` or enable trading during this phase. Demo-only testing is required before any later execution test; live accounts are not permitted.
