@@ -61,3 +61,18 @@ test("records a fatal scanner failure and bounds persisted history to 50 runs", 
   assert.equal(fs.existsSync(f.filePath + ".tmp"), false);
   fs.rmSync(f.dir, { recursive: true, force: true });
 });
+
+test("keeps Telegram delivery failures separate from successful market scans and preserves rejection details", () => {
+  const f = fixture();
+  const heartbeat = createHeartbeat({ filePath: f.filePath, markets: ["Volatility 10"] });
+  heartbeat.market("Volatility 10", "success", { candles: 199, signalFound: true });
+  heartbeat.telegram("new_signal", false, { error: "Telegram delivery failed — Telegram HTTP 403: bot is not a member of the channel" });
+  const result = heartbeat.finish("success");
+  assert.equal(result.marketsSucceeded, 1);
+  assert.equal(result.marketsFailed, 0);
+  assert.equal(result.telegram.signalsFailed, 1);
+  assert.match(result.telegram.lastError.message, /403/);
+  const saved = JSON.parse(fs.readFileSync(f.filePath, "utf8"));
+  assert.match(saved.history[0].telegram.lastError.message, /not a member/);
+  fs.rmSync(f.dir, { recursive: true, force: true });
+});
