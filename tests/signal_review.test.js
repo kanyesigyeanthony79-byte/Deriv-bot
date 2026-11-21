@@ -87,3 +87,24 @@ test("does not classify a signal when its validity window is unknown",()=>{
  const r=reviewSignal({...withoutExpiry,entryCandleEpoch:1000},{M1:candles(60,95,89,96)},1000+60*60);
  assert.equal(r.status,"EXPIRY_UNKNOWN");
 });
+test("preserves an original journal TP2 outcome when review candles are unavailable",()=>{
+ const recorded={...signal,status:"tp2_hit",tp1Hit:true,tp1Epoch:1600,tp2Epoch:1660,stopEpoch:null,intendedExpiryEpoch:200000};
+ const r=reviewSignal(recorded,{},300000);
+ assert.equal(r.status,"TP2_LEVEL_TOUCHED");
+ assert.equal(r.sourceJournalStatus,"tp2_hit");
+ assert.equal(r.outcomeSource,"original_mtf_journal");
+ assert.equal(r.tp2Epoch,1660);
+});
+test("preserves an original journal stop outcome instead of downgrading it to expired",()=>{
+ const recorded={...signal,status:"stopped",tp1Hit:false,tp1Epoch:null,tp2Epoch:null,stopEpoch:1700,intendedExpiryEpoch:200000};
+ const r=reviewSignal(recorded,{},300000);
+ assert.equal(r.status,"STOP_LEVEL_TOUCHED");
+ assert.equal(r.sourceJournalStatus,"stopped");
+ assert.equal(r.stopEpoch,1700);
+});
+test("preserves an original journal expiry outcome",()=>{
+ const recorded={...signal,status:"expired",expiredEpoch:200100,intendedExpiryEpoch:200000};
+ const r=reviewSignal(recorded,{},300000);
+ assert.equal(r.status,"EXPIRED");
+ assert.equal(r.sourceJournalStatus,"expired");
+});
