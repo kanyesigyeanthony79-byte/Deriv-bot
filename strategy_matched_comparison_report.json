@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-21T11:17:05.000Z",
+  "generatedAt": "2026-11-21T11:30:38.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -20,9 +20,9 @@
     "baselineCategory": "SCALP",
     "baselineSignalsAvailable": 300,
     "candidateStrategies": 7,
-    "candidateSignals": 1567,
-    "matchedPairs": 231,
-    "unmatchedCandidates": 1336,
+    "candidateSignals": 1571,
+    "matchedPairs": 232,
+    "unmatchedCandidates": 1339,
     "matchWindowSeconds": 900
   },
   "strategies": [
@@ -2076,15 +2076,16 @@
     {
       "strategyId": "M5_BREAKOUT_M1_RETEST",
       "label": "M5 breakout / M1 retest",
-      "candidateSignals": 310,
+      "candidateSignals": 312,
       "candidateOutcomeCounts": {
         "tp2_hit": 104,
         "stopped": 198,
         "time_exit": 7,
-        "ambiguous": 1
+        "ambiguous": 1,
+        "pending": 2
       },
       "matchedPairs": 24,
-      "unmatchedCandidates": 286,
+      "unmatchedCandidates": 288,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
       "baselineSignalsUsed": 24,
       "pairedOutcomeCounts": [
@@ -2103,9 +2104,9 @@
       ],
       "byMarket": {
         "R_50": {
-          "candidates": 41,
+          "candidates": 42,
           "matched": 1,
-          "unmatched": 40
+          "unmatched": 41
         },
         "R_25": {
           "candidates": 46,
@@ -2118,9 +2119,9 @@
           "unmatched": 41
         },
         "JD75": {
-          "candidates": 48,
+          "candidates": 49,
           "matched": 3,
-          "unmatched": 45
+          "unmatched": 46
         },
         "BOOM500": {
           "candidates": 22,
@@ -2461,16 +2462,17 @@
     {
       "strategyId": "M15_M5_EMA_PULLBACK",
       "label": "M15 trend / M5 EMA pullback",
-      "candidateSignals": 85,
+      "candidateSignals": 86,
       "candidateOutcomeCounts": {
         "time_exit": 31,
         "stop": 44,
-        "target": 10
+        "target": 10,
+        "pending": 1
       },
-      "matchedPairs": 35,
+      "matchedPairs": 36,
       "unmatchedCandidates": 50,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 35,
+      "baselineSignalsUsed": 36,
       "pairedOutcomeCounts": [
         {
           "key": "time_exit / expired",
@@ -2487,6 +2489,10 @@
         {
           "key": "target / expired",
           "count": 7
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         }
       ],
       "byMarket": {
@@ -2496,8 +2502,8 @@
           "unmatched": 11
         },
         "R_75": {
-          "candidates": 14,
-          "matched": 5,
+          "candidates": 15,
+          "matched": 6,
           "unmatched": 9
         },
         "R_25": {
@@ -2986,21 +2992,34 @@
           "baselineStatus": "stopped",
           "candidateRealizedR": -1,
           "baselineRealizedR": null
+        },
+        {
+          "marketId": "R_75",
+          "direction": "BUY",
+          "candidateSignalId": "R_75-M15_M5_PULLBACK-1795259700",
+          "baselineSignalId": "R_75-SCALP-1795259100",
+          "candidateEntryEpoch": 1795260000,
+          "baselineEntryEpoch": 1795259100,
+          "entryTimeDifferenceSeconds": 900,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
+          "baselineRealizedR": null
         }
       ]
     },
     {
       "strategyId": "M5_BREAKOUT_M5_RETEST_M15_CONFIRM",
       "label": "M5 breakout / M5 retest / M15 confirmation",
-      "candidateSignals": 131,
+      "candidateSignals": 132,
       "candidateOutcomeCounts": {
         "time_exit": 53,
         "stopped": 63,
         "tp2_hit": 14,
-        "pending": 1
+        "pending": 2
       },
       "matchedPairs": 41,
-      "unmatchedCandidates": 90,
+      "unmatchedCandidates": 91,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
       "baselineSignalsUsed": 41,
       "pairedOutcomeCounts": [
@@ -3023,9 +3042,9 @@
       ],
       "byMarket": {
         "R_50": {
-          "candidates": 23,
+          "candidates": 24,
           "matched": 7,
-          "unmatched": 16
+          "unmatched": 17
         },
         "JD100": {
           "candidates": 14,
