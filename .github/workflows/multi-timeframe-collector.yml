@@ -56,6 +56,7 @@ jobs:
         run: node multi_timeframe_collector.js
         env:
           MTF_TELEGRAM_ALERTS: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
+          MTF_BASELINE_ALERTS_ENABLED: "false" # MTF_BASELINE_V1 remains research-only until promoted
           STRATEGY_COMPARISON_TELEGRAM_ALERTS: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
           TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
           SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}

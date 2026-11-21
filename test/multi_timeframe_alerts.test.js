@@ -72,6 +72,28 @@ test("feature flag off never calls Telegram", async () => {
   assert.equal(calls, 0);
 });
 
+test("baseline strategy remains journaled but is shadow-only for Telegram and MT5", async () => {
+  const baseline = candidate({ strategyVersion: "MTF_BASELINE_V1" });
+  const { markets, journal } = fixture([baseline]);
+  const urls = [];
+  const env = {
+    MTF_TELEGRAM_ALERTS: "true", MT5_EXECUTION_QUEUE_ENABLED: "true",
+    MTF_BASELINE_ALERTS_ENABLED: "false",
+    TELEGRAM_WORKER_URL: "https://worker.example", SIGNAL_API_KEY: "secret"
+  };
+  const result = await sendCandidateAlerts(markets, journal, 1301, env, {
+    liveQuotes: { R_50: { price: 100 } },
+    fetchImpl: async url => { urls.push(url); return { ok: true, json: async () => ({ success: true }) }; }
+  });
+  assert.equal(result.baselineAlertsEnabled, false);
+  assert.equal(result.baselineSuppressed, 1);
+  assert.deepEqual(urls, []);
+  assert.equal(journal.signals[0].telegramStatus, "suppressed");
+  assert.equal(journal.signals[0].telegramStatusReason, "baseline_strategy_shadow_only");
+  assert.equal(journal.signals[0].mt5QueueStatus, "suppressed");
+  assert.equal(journal.signals[0].mt5QueueStatusReason, "baseline_strategy_shadow_only");
+});
+
 test("recent candidate is sent once with its horizon in the market label", async () => {
   const { markets, journal } = fixture([candidate()]);
   const requests = [];

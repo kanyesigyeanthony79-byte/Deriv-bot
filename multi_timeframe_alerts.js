@@ -3,6 +3,7 @@
 const ENTRY_TIMEFRAME_SECONDS = Object.freeze({ M1: 60, M5: 300, H4: 14400 });
 const ALERT_MAX_AGE_SECONDS = Object.freeze({ SCALP: 10 * 60, SHORT_TERM: 30 * 60, POSITION: 4 * 60 * 60 });
 const MAX_ENTRY_DEVIATION_R = 0.2;
+const BASELINE_STRATEGY_VERSION = "MTF_BASELINE_V1";
 // Automated MT5 execution is intentionally restricted to the approved synthetic CFDs.
 const MT5_EXECUTION_MARKETS = new Set(["R_10", "R_25", "R_50", "R_75", "JD100", "CRASH500", "BOOM500"]);
 
@@ -63,7 +64,8 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
   const hasWorkerAuth = Boolean(workerUrl && env.SIGNAL_API_KEY);
   const telegramEnabled = env.MTF_TELEGRAM_ALERTS === "true" && hasWorkerAuth;
   const executionEnabled = env.MT5_EXECUTION_QUEUE_ENABLED === "true" && hasWorkerAuth;
-  const result = { enabled: telegramEnabled, executionEnabled, considered: 0, sent: 0, executionQueued: 0, executionFailed: 0, stale: 0, missed: 0, quoteUnavailable: 0, failed: 0, skipped: 0, suppressed: 0 };
+  const baselineAlertsEnabled = env.MTF_BASELINE_ALERTS_ENABLED === "true";
+  const result = { enabled: telegramEnabled, executionEnabled, baselineAlertsEnabled, considered: 0, sent: 0, executionQueued: 0, executionFailed: 0, stale: 0, missed: 0, quoteUnavailable: 0, failed: 0, skipped: 0, suppressed: 0, baselineSuppressed: 0 };
   if (!telegramEnabled && !executionEnabled) {
     log("mtf_alerts_disabled", { reason: "telegram_and_execution_flags_off_or_worker_secrets_missing" });
     return result;
@@ -78,6 +80,22 @@ async function sendCandidateAlerts(markets, journal, nowEpoch, env, options = {}
     const needQueue = executionEnabled && executionEligible && record.mt5QueueStatus !== "queued" && record.mt5QueueStatus !== "stale";
     const needTelegram = telegramEnabled && !record.telegramStatus;
     if (!needQueue && !needTelegram) { result.skipped++; continue; }
+
+    const strategyVersion = record.strategyVersion || candidate.strategyVersion || null;
+    if (strategyVersion === BASELINE_STRATEGY_VERSION && !baselineAlertsEnabled) {
+      if (needQueue) {
+        record.mt5QueueStatus = "suppressed";
+        record.mt5QueueStatusReason = "baseline_strategy_shadow_only";
+      }
+      if (needTelegram) {
+        record.telegramStatus = "suppressed";
+        record.telegramStatusReason = "baseline_strategy_shadow_only";
+      }
+      result.baselineSuppressed++;
+      persist(journal);
+      log("mtf_baseline_shadow_only", { signalId: candidate.signalId, strategyVersion });
+      continue;
+    }
 
     const freshness = signalFreshness(candidate, nowEpoch);
     if (!freshness.fresh) {
@@ -270,4 +288,4 @@ async function sendOutcomeAlerts(journal, nowEpoch, env, options = {}) {
   return result;
 }
 
-module.exports = { ENTRY_TIMEFRAME_SECONDS, ALERT_MAX_AGE_SECONDS, MAX_ENTRY_DEVIATION_R, signalFreshness, assessEntryPrice, latestCandidates, sendCandidateAlerts, sendOutcomeAlerts, OUTCOME_EVENTS };
+module.exports = { ENTRY_TIMEFRAME_SECONDS, ALERT_MAX_AGE_SECONDS, MAX_ENTRY_DEVIATION_R, BASELINE_STRATEGY_VERSION, signalFreshness, assessEntryPrice, latestCandidates, sendCandidateAlerts, sendOutcomeAlerts, OUTCOME_EVENTS };
