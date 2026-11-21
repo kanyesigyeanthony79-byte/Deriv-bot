@@ -26,7 +26,10 @@ function showDay(day){
  if(!day)return;
  $("report").hidden=false;$("reportTitle").textContent="Performance · "+day.date;
  $("reportMeta").textContent=(day.recordStatus==="verified_daily_report"?"VERIFIED DAILY REPORT":"RECONSTRUCTED FROM JOURNALS")+" · "+day.reportDelivery.replaceAll("_"," ");
- $("metrics").replaceChildren(...[["Legacy generated",day.totals.legacyGenerated],["Legacy sent",day.totals.legacyDelivered],["Legacy missed",day.totals.legacyMissed],["Legacy TP2",day.totals.legacyTp2],["Legacy SL",day.totals.legacyLosses],["MTF observations",day.totals.mtfObservations],["MTF sent",day.totals.mtfDelivered],["MTF missed",day.totals.mtfMissed],["MTF TP2",day.totals.mtfTp2],["MTF SL",day.totals.mtfLosses],["MTF expired",day.totals.mtfExpired]].map(([k,v])=>metric(k,v)));
+ const strategy=(source,key)=>((day[source]&&day[source].byStrategy)||[]).find(row=>row.strategyVersion===key)||{};
+ const baseline=strategy("multiTimeframe","MTF_BASELINE_V1");
+ const unversioned=strategy("multiTimeframe","UNVERSIONED");
+ $("metrics").replaceChildren(...[["Legacy generated",day.totals.legacyGenerated],["Legacy sent",day.totals.legacyDelivered],["Legacy missed",day.totals.legacyMissed],["Legacy TP2",day.totals.legacyTp2],["Legacy SL",day.totals.legacyLosses],["MTF observations",day.totals.mtfObservations],["MTF sent",day.totals.mtfDelivered],["MTF missed",day.totals.mtfMissed],["MTF TP2",day.totals.mtfTp2],["MTF SL",day.totals.mtfLosses],["MTF expired",day.totals.mtfExpired],["Baseline generated",baseline.generated],["Baseline delivered",baseline.delivered],["Baseline resolved win rate",baseline.winRate==null?"N/A":baseline.winRate+"%"],["Baseline expired",baseline.expired],["Unversioned MTF win rate",unversioned.winRate==null?"N/A":unversioned.winRate+"%"]].map(([k,v])=>metric(k,v)));
  $("legacyMeta").textContent=day.legacy.generated+" records · "+day.legacy.delivered+" delivered · "+day.legacy.wins+" TP2 · "+day.legacy.losses+" losses · "+(day.legacy.winRate==null?"N/A":day.legacy.winRate+"% resolved win rate");
  $("mtfMeta").textContent=day.multiTimeframe.generated+" records · "+day.multiTimeframe.delivered+" delivered · "+day.multiTimeframe.wins+" TP2 · "+day.multiTimeframe.losses+" losses · "+(day.multiTimeframe.winRate==null?"N/A":day.multiTimeframe.winRate+"% resolved win rate");
  function rows(target,items,legacy){

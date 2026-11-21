@@ -31,6 +31,21 @@ test("archive reconstructs every recoverable day and separates signal pipelines"
   assert.equal(mtfDate({entryCandleEpoch:Date.parse("2026-11-17T10:00:00Z")/1000}), "2026-11-17");
 });
 
+test("daily summaries expose strategy-version aggregates without combining pipelines", () => {
+  const a = buildDailyPerformanceArchive({ signals: [] }, { signals: [
+    { signalId: "B1", entryCandleEpoch: Date.parse("2026-11-17T10:00:00Z") / 1000, marketId: "R_50", status: "tp2_hit", telegramStatus: "sent", strategyVersion: "MTF_BASELINE_V1" },
+    { signalId: "B2", entryCandleEpoch: Date.parse("2026-11-17T10:15:00Z") / 1000, marketId: "R_50", status: "stopped", telegramStatus: "suppressed", strategyVersion: "MTF_BASELINE_V1" },
+    { signalId: "U1", entryCandleEpoch: Date.parse("2026-11-17T10:30:00Z") / 1000, marketId: "R_50", status: "pending", telegramStatus: "sent" }
+  ]});
+  const day = a.days[0];
+  assert.deepEqual(day.multiTimeframe.byStrategy.map(row => row.strategyVersion), ["MTF_BASELINE_V1", "UNVERSIONED"]);
+  assert.equal(day.multiTimeframe.byStrategy[0].generated, 2);
+  assert.equal(day.multiTimeframe.byStrategy[0].wins, 1);
+  assert.equal(day.multiTimeframe.byStrategy[0].losses, 1);
+  assert.equal(day.multiTimeframe.byStrategy[0].winRate, 50);
+  assert.equal(day.multiTimeframe.byStrategy[1].unresolved, 1);
+});
+
 test("unconfirmed days are reconstructed and missing days are never invented", () => {
   const a = buildDailyPerformanceArchive({signals:[
     {signalId:"A",localDate:"2026-11-13",status:"sent",finalOutcome:"UNVERIFIED"}

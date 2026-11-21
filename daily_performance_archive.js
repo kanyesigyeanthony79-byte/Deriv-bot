@@ -40,7 +40,7 @@ function compact(r, source, day) {
     tp1Hit: Boolean(r.tp1Hit), score: r.score ?? null
   };
 }
-function summarize(records, source) {
+function summarizeRecords(records, source) {
   const status = r => String(r.outcome || "").toLowerCase();
   const count = fn => records.filter(fn).length;
   const wins = count(r => ["tp2", "tp2_hit"].includes(status(r)));
@@ -56,6 +56,20 @@ function summarize(records, source) {
     unresolved: count(r => ["pending", "tp1_hit", "unknown"].includes(status(r))),
     unverified: count(r => ["unverified", "state_missing"].includes(status(r))), signals: records
   };
+}
+function summarize(records, source) {
+  const summary = summarizeRecords(records, source);
+  const strategyKey = r => r.strategyVersion || (source === "legacy_15m" ? "LEGACY_UNVERSIONED" : "UNVERSIONED");
+  const strategies = new Map();
+  for (const record of records) {
+    const key = strategyKey(record);
+    if (!strategies.has(key)) strategies.set(key, []);
+    strategies.get(key).push(record);
+  }
+  summary.byStrategy = [...strategies.entries()]
+    .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+    .map(([strategyVersion, rows]) => ({ strategyVersion, ...summarizeRecords(rows, source) }));
+  return summary;
 }
 function buildDailyPerformanceArchive(legacyJournal, mtfJournal, generatedAt = new Date().toISOString()) {
   const legacy = Array.isArray(legacyJournal?.signals) ? legacyJournal.signals : [];
@@ -110,4 +124,4 @@ function main() {
   return archive;
 }
 if (require.main === module) main();
-module.exports = { dateInUganda, legacyDate, mtfDate, compact, summarize, buildDailyPerformanceArchive, main };
+module.exports = { dateInUganda, legacyDate, mtfDate, compact, summarizeRecords, summarize, buildDailyPerformanceArchive, main };
