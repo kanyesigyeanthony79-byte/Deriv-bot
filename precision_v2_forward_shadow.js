@@ -13,7 +13,7 @@ function updatePrecisionV2ForwardShadowJournal(prior, baselineJournal, nowEpoch)
         Number(signal.createdEpoch) < Number(state.startedEpoch)) continue;
     let row = byId.get(signal.signalId);
     if (!row) {
-      const evaluated = evaluatePrecisionVariants(signal);
+      const evaluated = evaluatePrecisionVariants({ ...signal, state: "signal" });
       if (!evaluated.eligible) continue;
       row = {
         signalId: signal.signalId, marketId: signal.marketId, category: signal.category,
