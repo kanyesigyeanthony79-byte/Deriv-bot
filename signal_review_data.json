@@ -1,9 +1,107 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-21T09:05:45.000Z",
-  "generatedEpoch": 1795251945,
+  "generatedAt": "2026-11-21T09:20:44.000Z",
+  "generatedEpoch": 1795252844,
   "advisoryOnly": true,
   "reviews": [
+    {
+      "signalId": "CRASH500-SCALP-1795252500",
+      "marketId": "CRASH500",
+      "market": "Crash 500 Index",
+      "category": "SCALP",
+      "direction": "BUY",
+      "entry": 2801.002,
+      "stopLoss": 2794.04,
+      "tp1": 2814.926,
+      "tp2": 2821.888,
+      "tp1Hit": false,
+      "tp1Epoch": null,
+      "tp2Epoch": null,
+      "stopEpoch": null,
+      "signalStatus": "pending",
+      "outcome": null,
+      "telegramStatus": "sent",
+      "score": 100,
+      "quality": "STRONG",
+      "riskReward": {
+        "tp1": 2,
+        "tp2": 3
+      },
+      "lastLivePrice": 2801.453,
+      "lastLiveQuoteEpoch": 1795252876,
+      "createdEpoch": 1795252844,
+      "entryTimeframe": "M5",
+      "entryCandleEpoch": 1795252500,
+      "review": {
+        "signalId": "CRASH500-SCALP-1795252500",
+        "status": "INSUFFICIENT_HISTORY",
+        "headline": "REVIEW INCOMPLETE",
+        "currentPrice": 2801.002,
+        "lastCandleEpoch": 1795252500,
+        "expiryEpoch": 1795254300,
+        "reason": "No completed candles after the original signal candle are available.",
+        "recommendationOptions": [
+          {
+            "label": "Wait for fresh completed candles",
+            "detail": "There is not enough current evidence to say the thesis is intact or weakening."
+          },
+          {
+            "label": "Verify the live position independently",
+            "detail": "Check your broker price and risk controls; this snapshot cannot support a hold/exit conclusion."
+          }
+        ],
+        "advisoryOnly": true
+      }
+    },
+    {
+      "signalId": "CRASH500-SHORT_TERM-1795252500",
+      "marketId": "CRASH500",
+      "market": "Crash 500 Index",
+      "category": "SHORT_TERM",
+      "direction": "BUY",
+      "entry": 2801.002,
+      "stopLoss": 2780.982,
+      "tp1": 2841.043,
+      "tp2": 2861.063,
+      "tp1Hit": false,
+      "tp1Epoch": null,
+      "tp2Epoch": null,
+      "stopEpoch": null,
+      "signalStatus": "pending",
+      "outcome": null,
+      "telegramStatus": "sent",
+      "score": 100,
+      "quality": "STRONG",
+      "riskReward": {
+        "tp1": 2,
+        "tp2": 3
+      },
+      "lastLivePrice": 2801.453,
+      "lastLiveQuoteEpoch": 1795252876,
+      "createdEpoch": 1795252844,
+      "entryTimeframe": "M5",
+      "entryCandleEpoch": 1795252500,
+      "review": {
+        "signalId": "CRASH500-SHORT_TERM-1795252500",
+        "status": "INSUFFICIENT_HISTORY",
+        "headline": "REVIEW INCOMPLETE",
+        "currentPrice": 2801.002,
+        "lastCandleEpoch": 1795252500,
+        "expiryEpoch": 1795274100,
+        "reason": "No completed candles after the original signal candle are available.",
+        "recommendationOptions": [
+          {
+            "label": "Wait for fresh completed candles",
+            "detail": "There is not enough current evidence to say the thesis is intact or weakening."
+          },
+          {
+            "label": "Verify the live position independently",
+            "detail": "Check your broker price and risk controls; this snapshot cannot support a hold/exit conclusion."
+          }
+        ],
+        "advisoryOnly": true
+      }
+    },
     {
       "signalId": "R_75-SCALP-1795248300",
       "marketId": "R_75",
@@ -75,8 +173,8 @@
       "tp1Hit": false,
       "tp1Epoch": null,
       "tp2Epoch": null,
-      "stopEpoch": null,
-      "signalStatus": "pending",
+      "stopEpoch": 1795252200,
+      "signalStatus": "stopped",
       "outcome": null,
       "telegramStatus": "sent",
       "score": 86,
@@ -92,32 +190,30 @@
       "entryCandleEpoch": 1795248300,
       "review": {
         "signalId": "R_75-SHORT_TERM-1795248300",
-        "status": "THESIS_WEAKENING",
-        "headline": "THESIS WEAKENING",
-        "currentPrice": 39811.1818,
-        "lastCandleEpoch": 1795251600,
-        "trend": "Aligned",
-        "priceVsEma20": "Lost EMA20 area",
-        "originalEntry": 40210.4578,
-        "originalStopLoss": 39472.5973,
-        "originalTp1": 41686.1788,
-        "originalTp2": 42424.0392,
+        "status": "STOP_LEVEL_TOUCHED",
+        "epoch": 1795252200,
+        "headline": "STOP-LOSS LEVEL TOUCHED",
+        "reason": "A completed candle after the signal crossed the original stop-loss level. Verify the actual broker price and execution; this review does not close a trade.",
+        "currentPrice": 39572.1152,
+        "lastCandleEpoch": 1795252500,
         "tp1Reached": false,
         "tp1Epoch": null,
-        "reason": "Latest completed data no longer confirms the original trend/EMA20 support. Reassess rather than assuming the trade will recover.",
+        "tp2Epoch": null,
+        "stopEpoch": 1795252200,
+        "expiryEpoch": 1795269900,
         "advisoryOnly": true,
         "recommendationOptions": [
           {
-            "label": "Pause adding exposure",
-            "detail": "The latest completed candle no longer supports the original trend/EMA20 structure."
+            "label": "Verify broker execution",
+            "detail": "A candle crossed the original stop level. Check the actual order history and executable price."
           },
           {
-            "label": "Wait for another completed candle",
-            "detail": "Look for the original direction to recover EMA20 support and trend alignment before treating the thesis as restored."
+            "label": "Treat the original thesis as invalidated",
+            "detail": "Do not assume the setup remains valid because price later recovers."
           },
           {
-            "label": "Reassess risk or consider exiting",
-            "detail": "If weakness persists or your predefined invalidation condition is met, compare reducing exposure or exiting with your own risk plan."
+            "label": "Review remaining exposure",
+            "detail": "If any position remains open, assess it against your own risk plan; this review does not close it."
           }
         ]
       }
@@ -196,39 +292,39 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 41.98,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 41.62,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795245029,
       "entryTimeframe": "M5",
       "entryCandleEpoch": 1795244100,
       "review": {
         "signalId": "JD100-SHORT_TERM-1795244100",
-        "status": "THESIS_WEAKENING",
-        "headline": "THESIS WEAKENING",
-        "currentPrice": 42.07,
-        "lastCandleEpoch": 1795251600,
+        "status": "THESIS_INTACT",
+        "headline": "THESIS STILL INTACT",
+        "currentPrice": 41.55,
+        "lastCandleEpoch": 1795252500,
         "trend": "Aligned",
-        "priceVsEma20": "Lost EMA20 area",
+        "priceVsEma20": "Supportive",
         "originalEntry": 41.14,
         "originalStopLoss": 42.6,
         "originalTp1": 38.23,
         "originalTp2": 36.77,
         "tp1Reached": false,
         "tp1Epoch": null,
-        "reason": "Latest completed data no longer confirms the original trend/EMA20 support. Reassess rather than assuming the trade will recover.",
+        "reason": "Latest completed candles and EMA20/EMA50 trend remain aligned with the original signal. This is not a guarantee of safety.",
         "advisoryOnly": true,
         "recommendationOptions": [
           {
-            "label": "Pause adding exposure",
-            "detail": "The latest completed candle no longer supports the original trend/EMA20 structure."
+            "label": "Continue monitoring",
+            "detail": "The current trend and EMA20 position still support the original direction. Keep checking completed candles and the original invalidation level."
           },
           {
-            "label": "Wait for another completed candle",
-            "detail": "Look for the original direction to recover EMA20 support and trend alignment before treating the thesis as restored."
+            "label": "Keep to the original plan",
+            "detail": "Only if the live broker price, position size and risk still match the plan you chose when the signal was issued."
           },
           {
-            "label": "Reassess risk or consider exiting",
-            "detail": "If weakness persists or your predefined invalidation condition is met, compare reducing exposure or exiting with your own risk plan."
+            "label": "Reassess at the next candle close",
+            "detail": "A completed close against EMA20 or an EMA20/EMA50 reversal would weaken this assessment."
           }
         ]
       }
@@ -256,8 +352,8 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 2808.483,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 2801.453,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795245029,
       "entryTimeframe": "M5",
       "entryCandleEpoch": 1795244100,
@@ -265,8 +361,8 @@
         "signalId": "CRASH500-SHORT_TERM-1795244100",
         "status": "THESIS_INTACT",
         "headline": "THESIS STILL INTACT",
-        "currentPrice": 2808.038,
-        "lastCandleEpoch": 1795251600,
+        "currentPrice": 2801.002,
+        "lastCandleEpoch": 1795252500,
         "trend": "Aligned",
         "priceVsEma20": "Supportive",
         "originalEntry": 2783.19,
@@ -469,8 +565,8 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 2808.483,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 2801.453,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795244133,
       "entryTimeframe": "M5",
       "entryCandleEpoch": 1795243200,
@@ -478,8 +574,8 @@
         "signalId": "CRASH500-SHORT_TERM-1795243200",
         "status": "THESIS_INTACT",
         "headline": "THESIS STILL INTACT",
-        "currentPrice": 2808.038,
-        "lastCandleEpoch": 1795251600,
+        "currentPrice": 2801.002,
+        "lastCandleEpoch": 1795252500,
         "trend": "Aligned",
         "priceVsEma20": "Supportive",
         "originalEntry": 2782.959,
@@ -631,8 +727,8 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 2808.483,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 2801.453,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795243228,
       "entryTimeframe": "M5",
       "entryCandleEpoch": 1795242300,
@@ -640,8 +736,8 @@
         "signalId": "CRASH500-SHORT_TERM-1795242300",
         "status": "THESIS_INTACT",
         "headline": "THESIS STILL INTACT",
-        "currentPrice": 2808.038,
-        "lastCandleEpoch": 1795251600,
+        "currentPrice": 2801.002,
+        "lastCandleEpoch": 1795252500,
         "trend": "Aligned",
         "priceVsEma20": "Supportive",
         "originalEntry": 2781.815,
@@ -691,8 +787,8 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 2808.483,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 2801.453,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795243228,
       "entryTimeframe": "M5",
       "entryCandleEpoch": 1795242600,
@@ -700,8 +796,8 @@
         "signalId": "CRASH500-SHORT_TERM-1795242600",
         "status": "THESIS_INTACT",
         "headline": "THESIS STILL INTACT",
-        "currentPrice": 2808.038,
-        "lastCandleEpoch": 1795251600,
+        "currentPrice": 2801.002,
+        "lastCandleEpoch": 1795252500,
         "trend": "Aligned",
         "priceVsEma20": "Supportive",
         "originalEntry": 2783.384,
@@ -853,8 +949,8 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 2808.483,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 2801.453,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795241430,
       "entryTimeframe": "M5",
       "entryCandleEpoch": 1795240800,
@@ -862,8 +958,8 @@
         "signalId": "CRASH500-SHORT_TERM-1795240800",
         "status": "THESIS_INTACT",
         "headline": "THESIS STILL INTACT",
-        "currentPrice": 2808.038,
-        "lastCandleEpoch": 1795251600,
+        "currentPrice": 2801.002,
+        "lastCandleEpoch": 1795252500,
         "trend": "Aligned",
         "priceVsEma20": "Supportive",
         "originalEntry": 2782.876,
@@ -1026,8 +1122,8 @@
         "epoch": 1795248000,
         "headline": "STOP-LOSS LEVEL TOUCHED",
         "reason": "A completed candle after the signal crossed the original stop-loss level. Verify the actual broker price and execution; this review does not close a trade.",
-        "currentPrice": 2860.695,
-        "lastCandleEpoch": 1795251600,
+        "currentPrice": 2858.298,
+        "lastCandleEpoch": 1795252500,
         "tp1Reached": false,
         "tp1Epoch": null,
         "tp2Epoch": null,
@@ -1124,8 +1220,8 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 2808.483,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 2801.453,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795240531,
       "entryTimeframe": "M5",
       "entryCandleEpoch": 1795240200,
@@ -1133,8 +1229,8 @@
         "signalId": "CRASH500-SHORT_TERM-1795240200",
         "status": "THESIS_INTACT",
         "headline": "THESIS STILL INTACT",
-        "currentPrice": 2808.038,
-        "lastCandleEpoch": 1795251600,
+        "currentPrice": 2801.002,
+        "lastCandleEpoch": 1795252500,
         "trend": "Aligned",
         "priceVsEma20": "Supportive",
         "originalEntry": 2780.653,
@@ -1184,8 +1280,8 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 2808.483,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 2801.453,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795240531,
       "entryTimeframe": "M5",
       "entryCandleEpoch": 1795239900,
@@ -1193,8 +1289,8 @@
         "signalId": "CRASH500-SHORT_TERM-1795239900",
         "status": "THESIS_INTACT",
         "headline": "THESIS STILL INTACT",
-        "currentPrice": 2808.038,
-        "lastCandleEpoch": 1795251600,
+        "currentPrice": 2801.002,
+        "lastCandleEpoch": 1795252500,
         "trend": "Aligned",
         "priceVsEma20": "Supportive",
         "originalEntry": 2779.455,
@@ -1346,8 +1442,8 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 39728.9074,
-      "lastLiveQuoteEpoch": 1795251974,
+      "lastLivePrice": 39576.3032,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795240531,
       "entryTimeframe": "M5",
       "entryCandleEpoch": 1795239600,
@@ -1355,8 +1451,8 @@
         "signalId": "R_75-SHORT_TERM-1795239600",
         "status": "THESIS_WEAKENING",
         "headline": "THESIS WEAKENING",
-        "currentPrice": 39811.1818,
-        "lastCandleEpoch": 1795251600,
+        "currentPrice": 39572.1152,
+        "lastCandleEpoch": 1795252500,
         "trend": "Aligned",
         "priceVsEma20": "Lost EMA20 area",
         "originalEntry": 39435.6303,
@@ -1406,8 +1502,8 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 39728.9074,
-      "lastLiveQuoteEpoch": 1795251974,
+      "lastLivePrice": 39576.3032,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795240531,
       "entryTimeframe": "M5",
       "entryCandleEpoch": 1795239900,
@@ -1415,8 +1511,8 @@
         "signalId": "R_75-SHORT_TERM-1795239900",
         "status": "THESIS_WEAKENING",
         "headline": "THESIS WEAKENING",
-        "currentPrice": 39811.1818,
-        "lastCandleEpoch": 1795251600,
+        "currentPrice": 39572.1152,
+        "lastCandleEpoch": 1795252500,
         "trend": "Aligned",
         "priceVsEma20": "Lost EMA20 area",
         "originalEntry": 39489.5434,
@@ -1568,39 +1664,39 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 41.98,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 41.62,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795238727,
       "entryTimeframe": "M5",
       "entryCandleEpoch": 1795237800,
       "review": {
         "signalId": "JD100-SHORT_TERM-1795237800",
-        "status": "THESIS_WEAKENING",
-        "headline": "THESIS WEAKENING",
-        "currentPrice": 42.07,
-        "lastCandleEpoch": 1795251600,
+        "status": "THESIS_INTACT",
+        "headline": "THESIS STILL INTACT",
+        "currentPrice": 41.55,
+        "lastCandleEpoch": 1795252500,
         "trend": "Aligned",
-        "priceVsEma20": "Lost EMA20 area",
+        "priceVsEma20": "Supportive",
         "originalEntry": 42.29,
         "originalStopLoss": 43.73,
         "originalTp1": 39.4,
         "originalTp2": 37.96,
         "tp1Reached": false,
         "tp1Epoch": null,
-        "reason": "Latest completed data no longer confirms the original trend/EMA20 support. Reassess rather than assuming the trade will recover.",
+        "reason": "Latest completed candles and EMA20/EMA50 trend remain aligned with the original signal. This is not a guarantee of safety.",
         "advisoryOnly": true,
         "recommendationOptions": [
           {
-            "label": "Pause adding exposure",
-            "detail": "The latest completed candle no longer supports the original trend/EMA20 structure."
+            "label": "Continue monitoring",
+            "detail": "The current trend and EMA20 position still support the original direction. Keep checking completed candles and the original invalidation level."
           },
           {
-            "label": "Wait for another completed candle",
-            "detail": "Look for the original direction to recover EMA20 support and trend alignment before treating the thesis as restored."
+            "label": "Keep to the original plan",
+            "detail": "Only if the live broker price, position size and risk still match the plan you chose when the signal was issued."
           },
           {
-            "label": "Reassess risk or consider exiting",
-            "detail": "If weakness persists or your predefined invalidation condition is met, compare reducing exposure or exiting with your own risk plan."
+            "label": "Reassess at the next candle close",
+            "detail": "A completed close against EMA20 or an EMA20/EMA50 reversal would weaken this assessment."
           }
         ]
       }
@@ -1679,39 +1775,39 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 41.98,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 41.62,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795237839,
       "entryTimeframe": "M5",
       "entryCandleEpoch": 1795236900,
       "review": {
         "signalId": "JD100-SHORT_TERM-1795236900",
-        "status": "THESIS_WEAKENING",
-        "headline": "THESIS WEAKENING",
-        "currentPrice": 42.07,
-        "lastCandleEpoch": 1795251600,
+        "status": "THESIS_INTACT",
+        "headline": "THESIS STILL INTACT",
+        "currentPrice": 41.55,
+        "lastCandleEpoch": 1795252500,
         "trend": "Aligned",
-        "priceVsEma20": "Lost EMA20 area",
+        "priceVsEma20": "Supportive",
         "originalEntry": 42.61,
         "originalStopLoss": 44.05,
         "originalTp1": 39.72,
         "originalTp2": 38.28,
         "tp1Reached": false,
         "tp1Epoch": null,
-        "reason": "Latest completed data no longer confirms the original trend/EMA20 support. Reassess rather than assuming the trade will recover.",
+        "reason": "Latest completed candles and EMA20/EMA50 trend remain aligned with the original signal. This is not a guarantee of safety.",
         "advisoryOnly": true,
         "recommendationOptions": [
           {
-            "label": "Pause adding exposure",
-            "detail": "The latest completed candle no longer supports the original trend/EMA20 structure."
+            "label": "Continue monitoring",
+            "detail": "The current trend and EMA20 position still support the original direction. Keep checking completed candles and the original invalidation level."
           },
           {
-            "label": "Wait for another completed candle",
-            "detail": "Look for the original direction to recover EMA20 support and trend alignment before treating the thesis as restored."
+            "label": "Keep to the original plan",
+            "detail": "Only if the live broker price, position size and risk still match the plan you chose when the signal was issued."
           },
           {
-            "label": "Reassess risk or consider exiting",
-            "detail": "If weakness persists or your predefined invalidation condition is met, compare reducing exposure or exiting with your own risk plan."
+            "label": "Reassess at the next candle close",
+            "detail": "A completed close against EMA20 or an EMA20/EMA50 reversal would weaken this assessment."
           }
         ]
       }
@@ -1739,39 +1835,39 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 41.98,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 41.62,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795237839,
       "entryTimeframe": "M5",
       "entryCandleEpoch": 1795237200,
       "review": {
         "signalId": "JD100-SHORT_TERM-1795237200",
-        "status": "THESIS_WEAKENING",
-        "headline": "THESIS WEAKENING",
-        "currentPrice": 42.07,
-        "lastCandleEpoch": 1795251600,
+        "status": "THESIS_INTACT",
+        "headline": "THESIS STILL INTACT",
+        "currentPrice": 41.55,
+        "lastCandleEpoch": 1795252500,
         "trend": "Aligned",
-        "priceVsEma20": "Lost EMA20 area",
+        "priceVsEma20": "Supportive",
         "originalEntry": 42.48,
         "originalStopLoss": 43.92,
         "originalTp1": 39.59,
         "originalTp2": 38.15,
         "tp1Reached": false,
         "tp1Epoch": null,
-        "reason": "Latest completed data no longer confirms the original trend/EMA20 support. Reassess rather than assuming the trade will recover.",
+        "reason": "Latest completed candles and EMA20/EMA50 trend remain aligned with the original signal. This is not a guarantee of safety.",
         "advisoryOnly": true,
         "recommendationOptions": [
           {
-            "label": "Pause adding exposure",
-            "detail": "The latest completed candle no longer supports the original trend/EMA20 structure."
+            "label": "Continue monitoring",
+            "detail": "The current trend and EMA20 position still support the original direction. Keep checking completed candles and the original invalidation level."
           },
           {
-            "label": "Wait for another completed candle",
-            "detail": "Look for the original direction to recover EMA20 support and trend alignment before treating the thesis as restored."
+            "label": "Keep to the original plan",
+            "detail": "Only if the live broker price, position size and risk still match the plan you chose when the signal was issued."
           },
           {
-            "label": "Reassess risk or consider exiting",
-            "detail": "If weakness persists or your predefined invalidation condition is met, compare reducing exposure or exiting with your own risk plan."
+            "label": "Reassess at the next candle close",
+            "detail": "A completed close against EMA20 or an EMA20/EMA50 reversal would weaken this assessment."
           }
         ]
       }
@@ -1908,39 +2004,39 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 41.98,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 41.62,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795236933,
       "entryTimeframe": "M5",
       "entryCandleEpoch": 1795236300,
       "review": {
         "signalId": "JD100-SHORT_TERM-1795236300",
-        "status": "THESIS_WEAKENING",
-        "headline": "THESIS WEAKENING",
-        "currentPrice": 42.07,
-        "lastCandleEpoch": 1795251600,
+        "status": "THESIS_INTACT",
+        "headline": "THESIS STILL INTACT",
+        "currentPrice": 41.55,
+        "lastCandleEpoch": 1795252500,
         "trend": "Aligned",
-        "priceVsEma20": "Lost EMA20 area",
+        "priceVsEma20": "Supportive",
         "originalEntry": 42.48,
         "originalStopLoss": 43.95,
         "originalTp1": 39.53,
         "originalTp2": 38.06,
         "tp1Reached": false,
         "tp1Epoch": null,
-        "reason": "Latest completed data no longer confirms the original trend/EMA20 support. Reassess rather than assuming the trade will recover.",
+        "reason": "Latest completed candles and EMA20/EMA50 trend remain aligned with the original signal. This is not a guarantee of safety.",
         "advisoryOnly": true,
         "recommendationOptions": [
           {
-            "label": "Pause adding exposure",
-            "detail": "The latest completed candle no longer supports the original trend/EMA20 structure."
+            "label": "Continue monitoring",
+            "detail": "The current trend and EMA20 position still support the original direction. Keep checking completed candles and the original invalidation level."
           },
           {
-            "label": "Wait for another completed candle",
-            "detail": "Look for the original direction to recover EMA20 support and trend alignment before treating the thesis as restored."
+            "label": "Keep to the original plan",
+            "detail": "Only if the live broker price, position size and risk still match the plan you chose when the signal was issued."
           },
           {
-            "label": "Reassess risk or consider exiting",
-            "detail": "If weakness persists or your predefined invalidation condition is met, compare reducing exposure or exiting with your own risk plan."
+            "label": "Reassess at the next candle close",
+            "detail": "A completed close against EMA20 or an EMA20/EMA50 reversal would weaken this assessment."
           }
         ]
       }
@@ -2070,39 +2166,39 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 41.98,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 41.62,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795236037,
       "entryTimeframe": "M5",
       "entryCandleEpoch": 1795235400,
       "review": {
         "signalId": "JD100-SHORT_TERM-1795235400",
-        "status": "THESIS_WEAKENING",
-        "headline": "THESIS WEAKENING",
-        "currentPrice": 42.07,
-        "lastCandleEpoch": 1795251600,
+        "status": "THESIS_INTACT",
+        "headline": "THESIS STILL INTACT",
+        "currentPrice": 41.55,
+        "lastCandleEpoch": 1795252500,
         "trend": "Aligned",
-        "priceVsEma20": "Lost EMA20 area",
+        "priceVsEma20": "Supportive",
         "originalEntry": 42.67,
         "originalStopLoss": 44.14,
         "originalTp1": 39.72,
         "originalTp2": 38.25,
         "tp1Reached": false,
         "tp1Epoch": null,
-        "reason": "Latest completed data no longer confirms the original trend/EMA20 support. Reassess rather than assuming the trade will recover.",
+        "reason": "Latest completed candles and EMA20/EMA50 trend remain aligned with the original signal. This is not a guarantee of safety.",
         "advisoryOnly": true,
         "recommendationOptions": [
           {
-            "label": "Pause adding exposure",
-            "detail": "The latest completed candle no longer supports the original trend/EMA20 structure."
+            "label": "Continue monitoring",
+            "detail": "The current trend and EMA20 position still support the original direction. Keep checking completed candles and the original invalidation level."
           },
           {
-            "label": "Wait for another completed candle",
-            "detail": "Look for the original direction to recover EMA20 support and trend alignment before treating the thesis as restored."
+            "label": "Keep to the original plan",
+            "detail": "Only if the live broker price, position size and risk still match the plan you chose when the signal was issued."
           },
           {
-            "label": "Reassess risk or consider exiting",
-            "detail": "If weakness persists or your predefined invalidation condition is met, compare reducing exposure or exiting with your own risk plan."
+            "label": "Reassess at the next candle close",
+            "detail": "A completed close against EMA20 or an EMA20/EMA50 reversal would weaken this assessment."
           }
         ]
       }
@@ -2243,8 +2339,8 @@
         "epoch": 1795243200,
         "headline": "STOP-LOSS LEVEL TOUCHED",
         "reason": "A completed candle after the signal crossed the original stop-loss level. Verify the actual broker price and execution; this review does not close a trade.",
-        "currentPrice": 5688.595,
-        "lastCandleEpoch": 1795251600,
+        "currentPrice": 5689.252,
+        "lastCandleEpoch": 1795252500,
         "tp1Reached": false,
         "tp1Epoch": null,
         "tp2Epoch": null,
@@ -2403,8 +2499,8 @@
         "epoch": 1795243200,
         "headline": "STOP-LOSS LEVEL TOUCHED",
         "reason": "A completed candle after the signal crossed the original stop-loss level. Verify the actual broker price and execution; this review does not close a trade.",
-        "currentPrice": 5688.595,
-        "lastCandleEpoch": 1795251600,
+        "currentPrice": 5689.252,
+        "lastCandleEpoch": 1795252500,
         "tp1Reached": false,
         "tp1Epoch": null,
         "tp2Epoch": null,
@@ -2512,8 +2608,8 @@
         "epoch": 1795243200,
         "headline": "STOP-LOSS LEVEL TOUCHED",
         "reason": "A completed candle after the signal crossed the original stop-loss level. Verify the actual broker price and execution; this review does not close a trade.",
-        "currentPrice": 5688.595,
-        "lastCandleEpoch": 1795251600,
+        "currentPrice": 5689.252,
+        "lastCandleEpoch": 1795252500,
         "tp1Reached": false,
         "tp1Epoch": null,
         "tp2Epoch": null,
@@ -6307,108 +6403,6 @@
       }
     },
     {
-      "signalId": "JD100-SCALP-1795203600",
-      "marketId": "JD100",
-      "market": "Jump 100 Index",
-      "category": "SCALP",
-      "direction": "SELL",
-      "entry": 46.15,
-      "stopLoss": 46.68,
-      "tp1": 45.09,
-      "tp2": 44.57,
-      "tp1Hit": false,
-      "tp1Epoch": null,
-      "tp2Epoch": null,
-      "stopEpoch": null,
-      "signalStatus": "expired",
-      "outcome": null,
-      "telegramStatus": "missed",
-      "score": 95,
-      "quality": "STRONG",
-      "riskReward": {
-        "tp1": 2,
-        "tp2": 3
-      },
-      "lastLivePrice": 45.98,
-      "lastLiveQuoteEpoch": 1795204644,
-      "createdEpoch": 1795204416,
-      "entryTimeframe": "M5",
-      "entryCandleEpoch": 1795203600,
-      "review": {
-        "signalId": "JD100-SCALP-1795203600",
-        "status": "EXPIRED",
-        "headline": "SIGNAL EXPIRED",
-        "currentPrice": 45.97,
-        "lastCandleEpoch": 1795205100,
-        "tp1Reached": false,
-        "tp1Epoch": null,
-        "expiryEpoch": 1795205400,
-        "reason": "No target or stop was reached before the intended validity window ended.",
-        "advisoryOnly": true,
-        "recommendationOptions": [
-          {
-            "label": "Verify current market data",
-            "detail": "No reliable recommendation can be made from the available review snapshot."
-          },
-          {
-            "label": "Check the broker position independently",
-            "detail": "This is an advisory evidence snapshot, not a trade-management instruction."
-          }
-        ]
-      }
-    },
-    {
-      "signalId": "frxXAUUSD-SCALP-1795202700",
-      "marketId": "frxXAUUSD",
-      "market": "Gold (XAUUSD)",
-      "category": "SCALP",
-      "direction": "SELL",
-      "entry": 3512.9,
-      "stopLoss": 3532.97,
-      "tp1": 3472.77,
-      "tp2": 3452.7,
-      "tp1Hit": false,
-      "tp1Epoch": null,
-      "tp2Epoch": null,
-      "stopEpoch": null,
-      "signalStatus": "expired",
-      "outcome": null,
-      "telegramStatus": "stale",
-      "score": 94,
-      "quality": "STRONG",
-      "riskReward": {
-        "tp1": 2,
-        "tp2": 3
-      },
-      "lastLivePrice": 3520.17,
-      "lastLiveQuoteEpoch": 1795204438,
-      "createdEpoch": 1795203634,
-      "entryTimeframe": "M5",
-      "entryCandleEpoch": 1795202700,
-      "review": {
-        "signalId": "frxXAUUSD-SCALP-1795202700",
-        "status": "EXPIRED",
-        "headline": "SIGNAL EXPIRED",
-        "currentPrice": 3519.43,
-        "lastCandleEpoch": 1795204200,
-        "tp1Reached": false,
-        "tp1Epoch": null,
-        "expiryEpoch": 1795204500,
-        "reason": "No target or stop was reached before the intended validity window ended.",
-        "advisoryOnly": true,
-        "recommendationOptions": [
-          {
-            "label": "Verify current market data",
-            "detail": "No reliable recommendation can be made from the available review snapshot."
-          },
-          {
-            "label": "Check the broker position independently",
-            "detail": "This is an advisory evidence snapshot, not a trade-management instruction."
-          }
-        ]
-      }
-    },
-    {
       "signalId": "R_50-SCALP-1795199400",
       "marketId": "R_50",
       "market": "Volatility 50 Index",
@@ -7618,8 +7612,8 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 3621.11,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 3612.16,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795191044,
       "entryTimeframe": "H4",
       "entryCandleEpoch": 1795176000,
@@ -8328,8 +8322,8 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 4852.685,
-      "lastLiveQuoteEpoch": 1795251974,
+      "lastLivePrice": 4847.628,
+      "lastLiveQuoteEpoch": 1795252874,
       "createdEpoch": 1795176333,
       "entryTimeframe": "H4",
       "entryCandleEpoch": 1795161600,
@@ -9031,7 +9025,7 @@
       "review": {
         "signalId": "BOOM500-SHORT_TERM-1795165200",
         "status": "STOP_LEVEL_TOUCHED",
-        "epoch": 1795180500,
+        "epoch": 1795181100,
         "headline": "STOP-LOSS LEVEL TOUCHED",
         "reason": "A completed candle after the signal crossed the original stop-loss level. Verify the actual broker price and execution; this review does not close a trade.",
         "currentPrice": 5734.67,
@@ -9039,7 +9033,7 @@
         "tp1Reached": false,
         "tp1Epoch": null,
         "tp2Epoch": null,
-        "stopEpoch": 1795180500,
+        "stopEpoch": 1795181100,
         "expiryEpoch": 1795186800,
         "advisoryOnly": true,
         "recommendationOptions": [
@@ -10802,8 +10796,8 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 3621.11,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 3612.16,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795147328,
       "entryTimeframe": "H4",
       "entryCandleEpoch": 1795132800,
@@ -12590,8 +12584,8 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 3621.11,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 3612.16,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1795118526,
       "entryTimeframe": "H4",
       "entryCandleEpoch": 1795104000,
@@ -20987,8 +20981,8 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 3621.11,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 3612.16,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1794933295,
       "entryTimeframe": "H4",
       "entryCandleEpoch": 1794916800,
@@ -22457,8 +22451,8 @@
         "tp1": 2,
         "tp2": 3
       },
-      "lastLivePrice": 41.98,
-      "lastLiveQuoteEpoch": 1795251975,
+      "lastLivePrice": 41.62,
+      "lastLiveQuoteEpoch": 1795252876,
       "createdEpoch": 1794791186,
       "entryTimeframe": "H4",
       "entryCandleEpoch": 1794772800,
