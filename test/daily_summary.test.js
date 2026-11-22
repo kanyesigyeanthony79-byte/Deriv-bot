@@ -141,6 +141,24 @@ test("daily MTF delivery breakdown separates unavailable quotes from untracked r
   assert.match(buildDailySummaryMessage(summary), /quote unavailable 1/);
 });
 
+test("daily MTF cohort view separates generated volume from delivered-only outcomes", () => {
+  const epoch = Date.parse("2026-11-13T10:00:00Z") / 1000;
+  const summary = dailySummary([], "2026-11-13", markets, [
+    { signalId: "win", marketId: "JD100", direction: "SELL", category: "SHORT_TERM", entryCandleEpoch: epoch, status: "tp2_hit", telegramStatus: "sent" },
+    { signalId: "loss", marketId: "JD100", direction: "SELL", category: "SHORT_TERM", entryCandleEpoch: epoch, status: "stopped", telegramStatus: "sent" },
+    { signalId: "untracked", marketId: "JD100", direction: "SELL", category: "SHORT_TERM", entryCandleEpoch: epoch, status: "stopped", telegramStatus: "delivery_failed" }
+  ]);
+  const cohort = summary.multiTimeframe.byCohort[0];
+  assert.equal(cohort.key, "JD100 / SELL / SHORT_TERM");
+  assert.equal(cohort.generated, 3);
+  assert.equal(cohort.delivered, 2);
+  assert.equal(cohort.deliveredResolved, 2);
+  assert.equal(cohort.deliveredWinRate, 50);
+  assert.equal(cohort.deliveryFailed, 1);
+  assert.match(buildDailySummaryMessage(summary), /DELIVERED MTF COHORTS/);
+  assert.match(buildDailySummaryMessage(summary), /JD100 \/ SELL \/ SHORT_TERM: 2 delivered/);
+});
+
 test("daily report labels the demo snapshot as point-in-time, not daily profit/loss", () => {
   const summary = dailySummary(signals, "2026-11-13", markets);
   const snapshot = {

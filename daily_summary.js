@@ -12,6 +12,32 @@ function countByMarket(rows, markets, outcomeFn) {
   });
 }
 
+function summarizeMtfCohorts(rows) {
+  const groups = new Map();
+  const keyOf = signal => [signal.marketId || signal.market || "unknown", signal.direction || "unknown", signal.category || "unknown"].join(" / ");
+  for (const signal of rows) {
+    const key = keyOf(signal);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(signal);
+  }
+  return [...groups.entries()].map(([key, cohort]) => {
+    const delivered = cohort.filter(signal => signal.telegramStatus === "sent");
+    const wins = delivered.filter(signal => signal.status === "tp2_hit").length;
+    const losses = delivered.filter(signal => ["stopped", "stopped_after_tp1"].includes(signal.status)).length;
+    const resolved = wins + losses;
+    return {
+      key, generated: cohort.length, delivered: delivered.length,
+      deliveredWins: wins, deliveredLosses: losses, deliveredResolved: resolved,
+      deliveredWinRate: resolved ? Number((wins / resolved * 100).toFixed(1)) : null,
+      deliveredExpired: delivered.filter(signal => signal.status === "expired").length,
+      priceOutOfRange: cohort.filter(signal => signal.telegramStatus === "missed" && signal.telegramStatusReason === "live_price_too_far_from_entry").length,
+      stale: cohort.filter(signal => signal.telegramStatus === "stale").length,
+      deliveryFailed: cohort.filter(signal => ["failed", "delivery_failed"].includes(signal.telegramStatus)).length,
+      untracked: cohort.filter(signal => !signal.telegramStatus).length
+    };
+  }).sort((a, b) => b.deliveredResolved - a.deliveredResolved || b.generated - a.generated || a.key.localeCompare(b.key));
+}
+
 function dailySummary(signals, day, markets, mtfSignals = []) {
   // The legacy scanner and multi-timeframe observer are separate signal pipelines.
   // Keep their counts separate so a multi-timeframe MFE record cannot appear to be
@@ -90,6 +116,7 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
   deliveryBreakdown.untracked = mtfDeliveryUntracked;
   const mtfResolved = mtfWins + mtfLosses;
   const mtfWinRate = mtfResolved ? Number((mtfWins / mtfResolved * 100).toFixed(1)) : null;
+  const mtfByCohort = summarizeMtfCohorts(mtfRows);
 
   const legacyMfe = rows.filter(signal => Number(signal.maxFavourablePoints) > 0).map(signal => ({
     market: signal.market || ((markets || []).find(([id]) => id === signal.marketId) || [null, signal.marketId])[1],
@@ -130,7 +157,7 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
       wins: mtfWins, losses: mtfLosses, resolved: mtfResolved, winRate: mtfWinRate,
       netSignalOutcomes: mtfWins - mtfLosses, expired: mtfExpired,
       ambiguous: mtfAmbiguous, unverified: mtfUnverified, unresolved: mtfUnresolved,
-      byMarket: mtfByMarket, mfeCount: mtfMfe.length
+      byMarket: mtfByMarket, byCohort: mtfByCohort, mfeCount: mtfMfe.length
     },
     mfeBySource: { legacy: legacyMfe.length, multiTimeframe: mtfMfe.length }
   };
@@ -181,6 +208,14 @@ function buildDailySummaryMessage(summary, accountSnapshot = null) {
     "\nTP1 reached: " + mtf.tp1 + "\nExpired: " + mtf.expired +
     "\nAmbiguous: " + mtf.ambiguous + "\nUnverified: " + mtf.unverified +
     "\nStill open/unresolved: " + mtf.unresolved +
+    (mtf.byCohort?.filter(row => row.delivered > 0).length ?
+      "\n\nDELIVERED MTF COHORTS (market / direction / category)\n" +
+      mtf.byCohort.filter(row => row.delivered > 0).slice(0, 12).map(row =>
+        row.key + ": " + row.delivered + " delivered, " + row.deliveredWins + " wins / " + row.deliveredLosses +
+        " losses, resolved win rate " + (row.deliveredWinRate === null ? "N/A" : row.deliveredWinRate + "%") +
+        ", " + row.deliveredExpired + " expired, " + row.deliveryFailed + " delivery failures"
+      ).join("\n") +
+      (mtf.byCohort.filter(row => row.delivered > 0).length > 12 ? "\n(Top 12 by resolved delivered sample; full cohort data is in the summary object.)" : "") : "") +
     "\n\nMAX FAVOURABLE MOVEMENT (MFE)" +
     "\nLegacy positive-movement records: " + legacyMfeCount +
     "\nMulti-timeframe positive-movement records: " + mtfMfeCount +
@@ -219,4 +254,4 @@ function previousUgandaDay(epochSeconds) {
   return new Date(Date.parse(today + "T00:00:00Z") - 86400000).toISOString().slice(0, 10);
 }
 
-module.exports = { dailySummary, buildDailySummaryMessage, deliverDailyReport, previousUgandaDay };
+module.exports = { dailySummary, summarizeMtfCohorts, buildDailySummaryMessage, deliverDailyReport, previousUgandaDay };
