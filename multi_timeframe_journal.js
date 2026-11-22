@@ -4,6 +4,7 @@ const TERMINAL = new Set(["tp2_hit", "stopped", "stopped_after_tp1", "ambiguous"
 const ENTRY_TIMEFRAME_SECONDS = Object.freeze({ M1: 60, M5: 300, H1: 3600, H4: 14400 });
 const DEFAULT_MAX_AGE_SECONDS = Object.freeze({ SCALP: 1800, SHORT_TERM: 21600, SWING: 604800, POSITION: 2592000 });
 const { evaluateBuyConfirmationShadow } = require("./buy_confirmation_shadow");
+const { classifyMarketCategoryFilterShadow } = require("./market_category_filter_forward_shadow");
 // Bump only when approved production signal logic/configuration changes.
 const STRATEGY_VERSION = "MTF_BASELINE_V1";
 
@@ -90,10 +91,12 @@ function updateJournal(journal, markets, nowEpoch, liveQuotes = {}) {
     for (const candidate of candidates) {
       const existing = byId.get(candidate.signalId);
       const buyShadow = evaluateBuyConfirmationShadow(candidate);
+      const marketCategoryShadow = classifyMarketCategoryFilterShadow(candidate);
       if (existing) {
         // Shadow annotations are additive and never participate in routing,
         // outcome evaluation, or the production strategy version.
         if (buyShadow.scoped && !existing.buyConfirmationShadow) existing.buyConfirmationShadow = buyShadow;
+        if (marketCategoryShadow.scoped && !existing.marketCategoryFilterShadow) existing.marketCategoryFilterShadow = marketCategoryShadow;
       } else {
         const maxAgeSeconds = Number(candidate.maxAgeSeconds) || DEFAULT_MAX_AGE_SECONDS[candidate.category] || 1800;
         const entryEpoch = Number(candidate.entryCandleEpoch);
@@ -108,7 +111,8 @@ function updateJournal(journal, markets, nowEpoch, liveQuotes = {}) {
           status: "pending", createdEpoch: nowEpoch,
           tp1Hit: false, tp1Epoch: null, tp2Epoch: null, stopEpoch: null,
           lastProcessedEpoch: candidate.entryCandleEpoch, outcomeCandles: 0,
-          ...(buyShadow.scoped ? { buyConfirmationShadow: buyShadow } : {})
+          ...(buyShadow.scoped ? { buyConfirmationShadow: buyShadow } : {}),
+          ...(marketCategoryShadow.scoped ? { marketCategoryFilterShadow: marketCategoryShadow } : {})
         };
         state.signals.push(record);
         byId.set(record.signalId, record);
