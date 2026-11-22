@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-22T18:15:36.000Z",
+  "generatedAt": "2026-11-22T18:30:33.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -20,8 +20,8 @@
     "baselineCategory": "SCALP",
     "baselineSignalsAvailable": 457,
     "candidateStrategies": 7,
-    "candidateSignals": 1921,
-    "matchedPairs": 322,
+    "candidateSignals": 1922,
+    "matchedPairs": 323,
     "unmatchedCandidates": 1599,
     "matchWindowSeconds": 900
   },
@@ -3974,16 +3974,17 @@
     {
       "strategyId": "M5_BREAKOUT_M5_RETEST_M15_CONFIRM",
       "label": "M5 breakout / M5 retest / M15 confirmation",
-      "candidateSignals": 179,
+      "candidateSignals": 180,
       "candidateOutcomeCounts": {
         "time_exit": 72,
         "stopped": 85,
-        "tp2_hit": 22
+        "tp2_hit": 22,
+        "pending": 1
       },
-      "matchedPairs": 57,
+      "matchedPairs": 58,
       "unmatchedCandidates": 122,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 57,
+      "baselineSignalsUsed": 58,
       "pairedOutcomeCounts": [
         {
           "key": "stopped / expired",
@@ -4000,6 +4001,10 @@
         {
           "key": "stopped / stopped",
           "count": 8
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         }
       ],
       "byMarket": {
@@ -4019,8 +4024,8 @@
           "unmatched": 16
         },
         "R_10": {
-          "candidates": 20,
-          "matched": 9,
+          "candidates": 21,
+          "matched": 10,
           "unmatched": 11
         },
         "R_75": {
@@ -4784,6 +4789,19 @@
           "candidateStatus": "tp2_hit",
           "baselineStatus": "expired",
           "candidateRealizedR": 2,
+          "baselineRealizedR": null
+        },
+        {
+          "marketId": "R_10",
+          "direction": "BUY",
+          "candidateSignalId": "R_10-BREAKOUT_RETEST_M5_M15-1795370400",
+          "baselineSignalId": "R_10-SCALP-1795371000",
+          "candidateEntryEpoch": 1795371900,
+          "baselineEntryEpoch": 1795371000,
+          "entryTimeDifferenceSeconds": 900,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
           "baselineRealizedR": null
         }
       ]
