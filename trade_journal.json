@@ -15365,8 +15365,8 @@
       ],
       "status": "sent",
       "tp1Hit": true,
-      "tp2Hit": false,
-      "finalOutcome": null,
+      "tp2Hit": true,
+      "finalOutcome": "TP2",
       "events": [
         {
           "outcome": "TP1_HIT",
@@ -15378,12 +15378,23 @@
             "low": 44.04,
             "close": 44.4
           }
+        },
+        {
+          "outcome": "TP2_HIT",
+          "observedAt": "2026-11-22T07:30:11.222Z",
+          "candleEpoch": 1795331700,
+          "candle": {
+            "open": 44.5,
+            "high": 45.02,
+            "low": 44.48,
+            "close": 44.88
+          }
         }
       ],
-      "maxFavourablePrice": 44.67,
-      "maxFavourablePoints": 1.79,
-      "maxFavourablePct": 4.17444,
-      "maxFavourableEpoch": 1795330800
+      "maxFavourablePrice": 45.02,
+      "maxFavourablePoints": 2.14,
+      "maxFavourablePct": 4.99067,
+      "maxFavourableEpoch": 1795331700
     },
     {
       "signalId": "R_50-1795320900",
@@ -15996,6 +16007,69 @@
       "finalOutcome": null,
       "events": [],
       "statusReason": "duplicate_or_cooldown"
+    },
+    {
+      "signalId": "R_75-1795331700",
+      "marketId": "R_75",
+      "market": "Volatility 75 Index",
+      "direction": "BUY",
+      "localDate": "2026-11-22",
+      "createdAt": "2026-11-22T07:15:00.000Z",
+      "candleEpoch": 1795331700,
+      "score": 72,
+      "entry": 39827.3359,
+      "metrics": {
+        "ema20": 39686.49239581963,
+        "ema50": 39583.4075703771,
+        "ema50Previous": 39524.62907888883,
+        "atr": 253.85192257612428,
+        "emaSeparationAtr": 0.406082508245004,
+        "emaSlopeAtr": 0.23154637117489613,
+        "bodyRatio": 0.7236407953015959,
+        "closeLocation": 0.7275658342452072,
+        "extensionAtr": 0.5548254381966796,
+        "swingAtr": 0.47634462947091016,
+        "candleRange": 285.22009999999864
+      },
+      "checks": [
+        {
+          "passed": true,
+          "reason": "EMA20/EMA50 trend up, gap 0.41 ATR"
+        },
+        {
+          "passed": true,
+          "reason": "Close on the trend side of EMA20"
+        },
+        {
+          "passed": true,
+          "reason": "EMA50 sloping with the trend"
+        },
+        {
+          "passed": true,
+          "reason": "RSI 54.6 inside 50-68"
+        },
+        {
+          "passed": true,
+          "reason": "Bullish candle, body 72% of range"
+        },
+        {
+          "passed": true,
+          "reason": "Higher low formed"
+        },
+        {
+          "passed": true,
+          "reason": "Not extended from EMA20 (0.6 ATR)"
+        },
+        {
+          "passed": true,
+          "reason": "No spike candle"
+        }
+      ],
+      "status": "sent",
+      "tp1Hit": false,
+      "tp2Hit": false,
+      "finalOutcome": null,
+      "events": []
     }
   ],
   "dailyReports": {
