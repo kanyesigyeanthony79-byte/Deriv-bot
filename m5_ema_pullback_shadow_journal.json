@@ -1,72 +1,66 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-22T03:30:40.000Z",
+  "updatedAt": "2026-11-22T03:45:34.000Z",
   "markets": {
     "R_10": {
-      "lastM15Epoch": 1795317300,
-      "lastM5Epoch": 1795317900,
+      "lastM15Epoch": 1795318200,
+      "lastM5Epoch": 1795318800,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 22,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "R_25": {
-      "lastM15Epoch": 1795317300,
-      "lastM5Epoch": 1795317900,
+      "lastM15Epoch": 1795318200,
+      "lastM5Epoch": 1795318800,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 13,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "R_50": {
-      "lastM15Epoch": 1795317300,
-      "lastM5Epoch": 1795317900,
+      "lastM15Epoch": 1795318200,
+      "lastM5Epoch": 1795318800,
       "initializedAt": "2026-11-17T14:27:52.000Z",
-      "signals": 26,
-      "pendingSetups": [
-        {
-          "setupCloseEpoch": 1795318200,
-          "direction": "SELL",
-          "expiresEpoch": 1795321800
-        }
-      ],
+      "signals": 27,
+      "pendingSetups": [],
       "dataQuality": "ok"
     },
     "R_75": {
-      "lastM15Epoch": 1795317300,
-      "lastM5Epoch": 1795317900,
+      "lastM15Epoch": 1795318200,
+      "lastM5Epoch": 1795318800,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 17,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "JD75": {
-      "lastM15Epoch": 1795317300,
-      "lastM5Epoch": 1795317900,
+      "lastM15Epoch": 1795318200,
+      "lastM5Epoch": 1795318800,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 9,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "JD100": {
-      "lastM15Epoch": 1795317300,
-      "lastM5Epoch": 1795317900,
+      "lastM15Epoch": 1795318200,
+      "lastM5Epoch": 1795318800,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 9,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "CRASH500": {
-      "lastM15Epoch": 1795317300,
-      "lastM5Epoch": 1795317900,
+      "lastM15Epoch": 1795318200,
+      "lastM5Epoch": 1795318800,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 5,
       "pendingSetups": [],
       "dataQuality": "ok"
     },
     "BOOM500": {
-      "lastM15Epoch": 1795317300,
-      "lastM5Epoch": 1795317900,
+      "lastM15Epoch": 1795318200,
+      "lastM5Epoch": 1795318800,
       "initializedAt": "2026-11-17T14:27:52.000Z",
       "signals": 8,
       "pendingSetups": [
@@ -80,6 +74,29 @@
     }
   },
   "signals": [
+    {
+      "signalId": "R_50-M15_M5_PULLBACK-1795318500",
+      "strategyId": "M15_M5_EMA_PULLBACK",
+      "strategyLabel": "M15 trend + M5 EMA9/21 pullback",
+      "marketId": "R_50",
+      "market": "Volatility 50 Index",
+      "direction": "SELL",
+      "setupTimeframe": "M15",
+      "entryTimeframe": "M5",
+      "entryCandleEpoch": 1795318800,
+      "triggerEpoch": 1795318500,
+      "entry": 78.6764,
+      "stopLoss": 79.03490683680616,
+      "tp2": 77.95938632638769,
+      "riskDistance": 0.358506836806157,
+      "riskAtr": 1.8763275179632102,
+      "targetR": 2,
+      "status": "pending",
+      "evaluationSource": "forward_shadow",
+      "outcomeBars": 0,
+      "lastProcessedEpoch": 1795318500,
+      "realizedR": null
+    },
     {
       "signalId": "R_10-M15_M5_PULLBACK-1795317600",
       "strategyId": "M15_M5_EMA_PULLBACK",
@@ -99,8 +116,8 @@
       "targetR": 2,
       "status": "pending",
       "evaluationSource": "forward_shadow",
-      "outcomeBars": 0,
-      "lastProcessedEpoch": 1795317600,
+      "outcomeBars": 4,
+      "lastProcessedEpoch": 1795318800,
       "realizedR": null
     },
     {
@@ -120,11 +137,11 @@
       "riskDistance": 6.750176040903625,
       "riskAtr": 2.0506279929653095,
       "targetR": 2,
-      "status": "pending",
+      "status": "time_exit",
       "evaluationSource": "forward_shadow",
-      "outcomeBars": 9,
-      "lastProcessedEpoch": 1795317900,
-      "realizedR": null
+      "outcomeBars": 12,
+      "lastProcessedEpoch": 1795318800,
+      "realizedR": 0.8381
     },
     {
       "signalId": "R_50-M15_M5_PULLBACK-1795314900",
@@ -2591,13 +2608,13 @@
   "summary": {
     "mode": "forward_shadow_observation_only",
     "strategy": "M15 EMA20/50 signal; M5 EMA9/21 alignment and EMA9 pullback/reclaim; next-M5-open entry; 2R target; 1-hour horizon",
-    "signalsGenerated": 109,
-    "resolvedSignals": 107,
+    "signalsGenerated": 110,
+    "resolvedSignals": 108,
     "pendingSignals": 2,
     "targetBeforeStop": 16,
     "stopBeforeTarget": 55,
     "targetRatePct": 22.5,
-    "averageRealizedR": -0.104,
+    "averageRealizedR": -0.095,
     "markets": {
       "R_10": {
         "signals": 22,
@@ -2610,17 +2627,17 @@
       },
       "R_25": {
         "signals": 13,
-        "resolved": 12,
-        "pending": 1,
+        "resolved": 13,
+        "pending": 0,
         "targetBeforeStop": 4,
         "stopBeforeTarget": 5,
         "targetRatePct": 44.4,
-        "averageRealizedR": 0.261
+        "averageRealizedR": 0.305
       },
       "R_50": {
-        "signals": 26,
+        "signals": 27,
         "resolved": 26,
-        "pending": 0,
+        "pending": 1,
         "targetBeforeStop": 5,
         "stopBeforeTarget": 11,
         "targetRatePct": 31.3,
