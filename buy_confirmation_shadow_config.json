@@ -1,0 +1,61 @@
+{
+  "version": "BUY_CONFIRMATION_SHADOW_V1",
+  "enabled": false,
+  "mode": "shadow_only",
+  "purpose": "Evaluate stricter BUY-side confirmation without changing Telegram delivery, MT5 queueing, or SELL signals.",
+  "scope": {
+    "directions": ["BUY"],
+    "marketCategoryCohorts": [
+      "JD100 / SCALP",
+      "JD100 / SHORT_TERM",
+      "R_10 / SCALP",
+      "R_10 / SHORT_TERM",
+      "R_75 / SCALP",
+      "R_75 / SHORT_TERM",
+      "CRASH500 / SCALP",
+      "CRASH500 / SHORT_TERM"
+    ],
+    "unscopedBehavior": "No change; SELL signals and other BUY cohorts use the current rules."
+  },
+  "rules": {
+    "minimumScore": 85,
+    "requiredQuality": "STRONG",
+    "confirmation": {
+      "requiredDirection": "BUY",
+      "minimumSeparationAtr": 0.25,
+      "minimumSlopeAtr": 0.05
+    },
+    "context": {
+      "requiredDirection": "BUY",
+      "minimumSeparationAtr": 0.15,
+      "minimumSlopeAtr": 0.02
+    },
+    "entryCandle": {
+      "minimumBodyRatio": 0.55,
+      "minimumCloseLocation": 0.65,
+      "maximumExtensionAtr": 1.0
+    }
+  },
+  "shadowRecord": {
+    "preserveOriginalSignal": true,
+    "recordPassFailReasons": true,
+    "recordNearMisses": true,
+    "continueOutcomeTracking": true,
+    "continueCurrentTelegramRouting": true,
+    "continueCurrentMt5Routing": true
+  },
+  "evaluationPlan": {
+    "minimumForwardDays": 7,
+    "minimumOriginalBuySignals": 50,
+    "minimumShadowAcceptedSignals": 25,
+    "minimumShadowResolvedOutcomes": 20,
+    "primaryMetrics": [
+      "resolvedWinRate",
+      "resolvedOutcomeCount",
+      "expiredRate",
+      "acceptedSignalRate",
+      "deliveredSignalRate"
+    ],
+    "decisionRule": "Do not activate unless the shadow cohort has at least 20 resolved outcomes and improves resolved win rate without removing more than 40 percent of eligible BUY observations."
+  }
+}
