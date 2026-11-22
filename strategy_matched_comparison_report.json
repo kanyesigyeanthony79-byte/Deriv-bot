@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-22T21:50:28.000Z",
+  "generatedAt": "2026-11-22T22:05:30.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -20,9 +20,9 @@
     "baselineCategory": "SCALP",
     "baselineSignalsAvailable": 454,
     "candidateStrategies": 7,
-    "candidateSignals": 1957,
+    "candidateSignals": 1959,
     "matchedPairs": 306,
-    "unmatchedCandidates": 1651,
+    "unmatchedCandidates": 1653,
     "matchWindowSeconds": 900
   },
   "strategies": [
@@ -31,12 +31,12 @@
       "label": "EMA20_50",
       "candidateSignals": 382,
       "candidateOutcomeCounts": {
-        "stopped": 225,
-        "tp2_hit": 122,
+        "stopped": 226,
+        "tp2_hit": 123,
         "stopped_after_tp1": 25,
         "expired": 4,
         "tp1_hit": 2,
-        "pending": 4
+        "pending": 2
       },
       "matchedPairs": 79,
       "unmatchedCandidates": 303,
@@ -60,12 +60,16 @@
           "count": 3
         },
         {
-          "key": "pending / expired",
+          "key": "stopped / stopped",
           "count": 2
         },
         {
-          "key": "stopped / stopped",
-          "count": 2
+          "key": "pending / expired",
+          "count": 1
+        },
+        {
+          "key": "tp1_hit / expired",
+          "count": 1
         },
         {
           "key": "tp2_hit / stopped",
@@ -1129,7 +1133,7 @@
           "candidateEntryEpoch": 1795374900,
           "baselineEntryEpoch": 1795374000,
           "entryTimeDifferenceSeconds": 900,
-          "candidateStatus": "pending",
+          "candidateStatus": "tp1_hit",
           "baselineStatus": "expired",
           "candidateRealizedR": null,
           "baselineRealizedR": null
@@ -1746,12 +1750,11 @@
       "label": "EMA20_50_PULLBACK",
       "candidateSignals": 246,
       "candidateOutcomeCounts": {
-        "stopped": 143,
-        "tp2_hit": 81,
+        "stopped": 144,
+        "tp2_hit": 82,
         "stopped_after_tp1": 17,
         "expired": 2,
-        "tp1_hit": 2,
-        "pending": 1
+        "tp1_hit": 1
       },
       "matchedPairs": 33,
       "unmatchedCandidates": 213,
@@ -2265,16 +2268,16 @@
     {
       "strategyId": "M5_BREAKOUT_M1_RETEST",
       "label": "M5 breakout / M1 retest",
-      "candidateSignals": 477,
+      "candidateSignals": 479,
       "candidateOutcomeCounts": {
-        "tp2_hit": 173,
+        "tp2_hit": 175,
         "stopped": 291,
         "time_exit": 10,
         "ambiguous": 1,
         "pending": 2
       },
       "matchedPairs": 40,
-      "unmatchedCandidates": 437,
+      "unmatchedCandidates": 439,
       "candidatesWithOppositeDirectionBaselineNearby": 1,
       "baselineSignalsUsed": 40,
       "pairedOutcomeCounts": [
@@ -2297,9 +2300,9 @@
       ],
       "byMarket": {
         "R_50": {
-          "candidates": 58,
+          "candidates": 59,
           "matched": 1,
-          "unmatched": 57
+          "unmatched": 58
         },
         "R_25": {
           "candidates": 71,
@@ -2307,9 +2310,9 @@
           "unmatched": 65
         },
         "JD100": {
-          "candidates": 61,
+          "candidates": 62,
           "matched": 4,
-          "unmatched": 57
+          "unmatched": 58
         },
         "JD75": {
           "candidates": 81,
@@ -2867,8 +2870,7 @@
       "candidateOutcomeCounts": {
         "time_exit": 46,
         "stop": 68,
-        "target": 19,
-        "pending": 1
+        "target": 20
       },
       "matchedPairs": 60,
       "unmatchedCandidates": 74,
@@ -3722,10 +3724,10 @@
       "label": "M5 breakout / M5 retest / M15 confirmation",
       "candidateSignals": 185,
       "candidateOutcomeCounts": {
-        "time_exit": 73,
+        "time_exit": 74,
         "stopped": 87,
         "tp2_hit": 22,
-        "pending": 3
+        "pending": 2
       },
       "matchedPairs": 60,
       "unmatchedCandidates": 125,
@@ -3738,7 +3740,7 @@
         },
         {
           "key": "time_exit / expired",
-          "count": 21
+          "count": 22
         },
         {
           "key": "tp2_hit / expired",
@@ -3747,10 +3749,6 @@
         {
           "key": "stopped / stopped",
           "count": 7
-        },
-        {
-          "key": "pending / expired",
-          "count": 1
         }
       ],
       "byMarket": {
@@ -4571,9 +4569,9 @@
           "candidateEntryEpoch": 1795381200,
           "baselineEntryEpoch": 1795380300,
           "entryTimeDifferenceSeconds": 900,
-          "candidateStatus": "pending",
+          "candidateStatus": "time_exit",
           "baselineStatus": "expired",
-          "candidateRealizedR": null,
+          "candidateRealizedR": -0.1992,
           "baselineRealizedR": null
         }
       ]
