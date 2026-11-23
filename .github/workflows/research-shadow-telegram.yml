@@ -1,0 +1,63 @@
+name: Independent Research Shadow Telegram Collector
+run-name: "[research-shadow] ${{ github.event_name }}"
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deriv-independent-shadow-telegram
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate shadow notification secrets
+        env:
+          TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
+          SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
+        run: |
+          test -n "$TELEGRAM_WORKER_URL" || { echo "Missing TELEGRAM_WORKER_URL secret (must end with /shadow/research)"; exit 1; }
+          test -n "$SIGNAL_API_KEY" || { echo "Missing SIGNAL_API_KEY secret"; exit 1; }
+          case "$TELEGRAM_WORKER_URL" in */shadow/research) ;; *) echo "TELEGRAM_WORKER_URL must point to /shadow/research"; exit 1 ;; esac
+
+      - name: Collect three non-R10 shadow strategies and deliver new entries only
+        run: node research_shadow_telegram_collector.js
+        env:
+          TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
+          SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
+          MT5_EXECUTION_ENABLED: "false"
+          MT5_OBSERVATION_ENABLED: "false"
+
+      - name: Persist shadow journals and delivery deduplication state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add breakout_retest_shadow_journal.json m5_ema_pullback_shadow_journal.json breakout_retest_m5_m15_shadow_journal.json shadow_telegram_delivery_journal.json research_shadow_collection.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update independent research shadow observations"
+            for attempt in 1 2 3; do
+              git fetch origin main
+              git rebase origin/main
+              if git push origin HEAD:main; then exit 0; fi
+              sleep 2
+            done
+            exit 1
+          fi
