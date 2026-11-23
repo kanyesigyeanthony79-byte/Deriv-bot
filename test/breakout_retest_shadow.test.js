@@ -3,8 +3,13 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   detectBreakout, findRetestConfirmation, updateSignalOutcome,
-  updateBreakoutRetestJournal, summarizeBreakoutRetestJournal, TERMINAL
+  updateBreakoutRetestJournal, summarizeBreakoutRetestJournal, SYNTHETIC_MARKETS, TERMINAL
 } = require("../breakout_retest_shadow");
+
+test("breakout shadow strategy includes both official 1-second Deriv symbols", () => {
+  assert.ok(SYNTHETIC_MARKETS.includes("1HZ10V"));
+  assert.ok(SYNTHETIC_MARKETS.includes("1HZ75V"));
+});
 
 function candles(count, step, start = 1_700_000_000, price = 100) {
   return Array.from({ length: count }, (_, i) => ({
