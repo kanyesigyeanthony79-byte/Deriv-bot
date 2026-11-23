@@ -276,6 +276,138 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const fmt = v => Number.isFinite(Number(v)) ? Number(v).toFixed(2) : "—";
   const time = s => { const d=new Date(s); return Number.isNaN(d.getTime())? "—" : d.toLocaleString(); };
+
+  const PROMOTED_STATE_URL = "./signal_state.json";
+  const PROMOTED_JOURNAL_URL = "./trade_journal.json";
+  const PROMOTED_HEARTBEAT_URL = "./scanner_heartbeat.json";
+  const PROMOTED_FRESH_SECONDS = 15 * 60;
+  let promotedRecords = [];
+  let promotedFilter = "active";
+
+  function setPromotedSignalFilter(filter) {
+    promotedFilter = ["active", "valid", "strong"].includes(filter) ? filter : "active";
+    document.querySelectorAll("[data-signal-filter]").forEach(button =>
+      button.setAttribute("aria-pressed", String(button.dataset.signalFilter === promotedFilter)));
+    renderPromotedSignals();
+  }
+
+  function renderPromotedSignals() {
+    const list = $("promotedSignals");
+    if (!list) return;
+    const visible = promotedRecords.filter(item => {
+      if (promotedFilter === "strong") return item.score >= 80;
+      if (promotedFilter === "valid") return item.score >= 65 && item.score < 80;
+      return item.score >= 65;
+    });
+    list.innerHTML = visible.length ? visible.map(item => {
+      const cls = item.direction === "BUY" ? "buy" : "sell";
+      const quality = item.score >= 80 ? "STRONG" : "VALID";
+      const progress = item.tp1Hit ? "TP1 TOUCHED · RUNNER OPEN" : "PENDING";
+      return '<article class="signal-item"><div class="signal-item-head"><span>' +
+        esc(item.market) + '</span><span class="mtf-tag">' + quality + ' · ' +
+        esc(item.score) + '/100</span></div><div class="signal ' + cls + '">' +
+        esc(item.direction) + '</div><div class="detail">Entry: ' + fmt(item.entry) +
+        '<br>Stop: ' + fmt(item.stopLoss) + '<br>TP1: ' + fmt(item.tp1) +
+        '<br>TP2: ' + fmt(item.tp2) + '<br>State: ' + progress +
+        '<br>Last price check: ' + esc(time(new Date(item.lastCheckedEpoch * 1000).toISOString())) +
+        '</div></article>';
+    }).join("") : '<div class="signal-empty">No fresh ' +
+      (promotedFilter === "active" ? "active VALID or STRONG" : promotedFilter.toUpperCase()) +
+      ' production signals right now.</div>';
+  }
+
+  async function refreshPromotedSystem() {
+    const status = $("promotedStatus");
+    const refreshTime = $("promotedRefreshTime");
+    const metrics = $("promotedMetrics");
+    if (status) status.textContent = "Loading production state, signal journal and scanner heartbeat…";
+    try {
+      const fetchJson = async url => {
+        const response = await fetch(url + "?v=" + Date.now(), { cache: "no-store" });
+        if (!response.ok) throw new Error(url + " returned HTTP " + response.status);
+        return response.json();
+      };
+      const [state, journal, heartbeat] = await Promise.all([
+        fetchJson(PROMOTED_STATE_URL),
+        fetchJson(PROMOTED_JOURNAL_URL),
+        fetchJson(PROMOTED_HEARTBEAT_URL).catch(() => null)
+      ]);
+      if (!Array.isArray(state.activeSignals) || !Array.isArray(journal.signals)) {
+        throw new Error("Production state or journal has an unexpected format");
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      const byId = new Map(journal.signals.map(signal => [signal.signalId, signal]));
+      const terminal = new Set(["TP2_HIT", "SL_HIT", "EXPIRED", "AMBIGUOUS"]);
+      const fresh = [];
+      for (const active of state.activeSignals) {
+        const record = byId.get(active.signalId);
+        const checked = Number(active.lastCheckedEpoch);
+        const age = now - checked;
+        const score = Number(record && record.score);
+        const hasTerminalOutcome = Boolean(record && record.finalOutcome) ||
+          Boolean(record && Array.isArray(record.events) &&
+            record.events.some(event => terminal.has(event.outcome)));
+        if (active.closed || !record || record.status !== "sent" || hasTerminalOutcome) continue;
+        if (!Number.isFinite(score) || score < 65) continue;
+        if (!Number.isFinite(checked) || age < -60 || age > PROMOTED_FRESH_SECONDS) continue;
+        fresh.push({ ...active, score });
+      }
+      promotedRecords = fresh.sort((a, b) => b.createdEpoch - a.createdEpoch);
+      const activeCount = promotedRecords.length;
+      const strongCount = promotedRecords.filter(item => item.score >= 80).length;
+      const validCount = promotedRecords.filter(item => item.score >= 65 && item.score < 80).length;
+
+      const heartbeatTime = heartbeat && Date.parse(heartbeat.completedAt || "");
+      const heartbeatAge = Number.isFinite(heartbeatTime) ? (Date.now() - heartbeatTime) / 1000 : Infinity;
+      let healthText = "Scanner health unavailable";
+      let healthLabel = "HEALTH UNKNOWN";
+      if (heartbeat && Number.isFinite(heartbeatTime)) {
+        const last = time(heartbeat.completedAt);
+        if (heartbeatAge >= -60 && heartbeatAge <= PROMOTED_FRESH_SECONDS && heartbeat.status === "success") {
+          healthText = "Scanner online · last successful run " + last;
+          healthLabel = "SCANNER ONLINE";
+        } else if (heartbeatAge >= -60 && heartbeatAge <= PROMOTED_FRESH_SECONDS) {
+          healthText = "Scanner recently ran · status " + String(heartbeat.status || "unknown").toUpperCase() + " · " + last;
+          healthLabel = "SCANNER " + String(heartbeat.status || "UNKNOWN").toUpperCase();
+        } else {
+          healthText = "Scanner heartbeat stale · last run " + last;
+          healthLabel = "SCANNER STALE";
+        }
+      }
+      metrics.innerHTML = [
+        ["SYSTEM STATUS", healthLabel],
+        ["ACTIVE VALID SIGNALS", activeCount],
+        ["STRONG SIGNALS", strongCount],
+        ["VALID SIGNALS", validCount]
+      ].map(([label, value], index) =>
+        '<div class="card"><div class="detail">' + esc(label) +
+        '</div><div class="signal' + (index === 0 ? " none" : "") + '">' +
+        esc(value) + '</div></div>').join("");
+
+      status.textContent = healthText + " · " + activeCount +
+        " fresh production signals · prices older than 15 minutes are excluded.";
+      renderPromotedSignals();
+      $("activeTabCount").textContent = activeCount;
+      $("validTabCount").textContent = validCount;
+      $("strongTabCount").textContent = strongCount;
+      if (refreshTime) refreshTime.textContent = "Updated " + new Date().toLocaleTimeString();
+    } catch (error) {
+      promotedRecords = [];
+      metrics.innerHTML = [
+        ["SYSTEM STATUS", "DATA ERROR"],
+        ["ACTIVE VALID SIGNALS", "—"],
+        ["STRONG SIGNALS", "—"],
+        ["VALID SIGNALS", "—"]
+      ].map(([label, value]) =>
+        '<div class="card"><div class="detail">' + esc(label) +
+        '</div><div class="signal">' + esc(value) + '</div></div>').join("");
+      status.textContent = "Production dashboard data unavailable: " + error.message +
+        ". Scanner health is not inferred from this dashboard error.";
+      renderPromotedSignals();
+      if (refreshTime) refreshTime.textContent = "Refresh failed · " + new Date().toLocaleTimeString();
+    }
+  }
   function outcomeLabel(s) {
     if (s.finalOutcome === "UNVERIFIED" || s.status === "state_missing") return "UNVERIFIED · STATE MISSING";
     if (s.finalOutcome) return s.finalOutcome.replaceAll("_"," ");
@@ -388,6 +520,9 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       status.textContent="R10 provider verified · "+signals.length+" paper signals · evaluations: "+(diagnostics.evaluations??"—")+" · last decision: "+(diagnostics.last?.reason||"not recorded")+" · last health: "+(latest?time(latest.at)+" · "+latest.status:"no health record")+" · refreshed "+new Date().toLocaleTimeString();
     }catch(error){status.textContent="R10 data unavailable: "+error.message+" · Scanner status is not assumed healthy.";}
   }
+  $("promotedRefresh").addEventListener("click", refreshPromotedSystem);
+  refreshPromotedSystem();
+  setInterval(refreshPromotedSystem, 60000);
   $("r10Refresh").addEventListener("click",refreshR10);
   refreshR10(); setInterval(refreshR10,60000);
 
