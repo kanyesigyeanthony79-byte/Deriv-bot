@@ -139,6 +139,8 @@ test("provider exclusivity gates legacy Volatility 10 producers and paper notifi
   assert.match(worker,/env\.R10_EMERGENCY_KILL_SWITCH === "false"/);
   assert.match(hosted,/id === "R_10" && process\.env\.R10_LEGACY_ROLLBACK_ENABLED !== "true"/);
   assert.match(collector,/marketId === "R_10" && process\.env\.R10_LEGACY_ROLLBACK_ENABLED !== "true"/);
+  assert.match(collector,/const legacyProviderMarkets = process\.env\.R10_LEGACY_ROLLBACK_ENABLED === "true"/);
+  assert.match(collector,/updateJournal\(priorJournal, legacyProviderMarkets/);
   assert.match(alerts,/new Set\(\["R_25", "R_50", "R_75", "JD100", "CRASH500", "BOOM500"\]\)/);
 });
 
