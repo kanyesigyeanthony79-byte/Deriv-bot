@@ -111,15 +111,20 @@ function createSignalRecord(direction, last, nextCandle, ind, i) {
   };
 }
 function evaluateSignal(completedCandles, nextCandle, options = {}) {
-  if (!Array.isArray(completedCandles) || completedCandles.length < ATR_MEDIAN_BARS + ATR_PERIOD + SLOPE_LOOKBACK + 1) {
+  if (!Array.isArray(completedCandles) || !completedCandles.length) {
     return { signal: null, reason: "warming_up" };
   }
   if (!completedCandles.every(validateCandle) || !validateCandle(nextCandle)) {
     return { signal: null, reason: "invalid_candles" };
   }
-  const bars = completedCandles.slice().sort((a, b) => a.epoch - b.epoch);
-  for (let i = 1; i < bars.length; i++) {
-    if (bars[i].epoch - bars[i - 1].epoch !== BAR_SECONDS) return { signal: null, reason: "candle_gap" };
+  const sorted = completedCandles.slice().sort((a, b) => a.epoch - b.epoch);
+  let lastGap = 0;
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i].epoch - sorted[i - 1].epoch !== BAR_SECONDS) lastGap = i;
+  }
+  const bars = sorted.slice(lastGap);
+  if (bars.length < ATR_MEDIAN_BARS + ATR_PERIOD + SLOPE_LOOKBACK + 1) {
+    return { signal: null, reason: "warming_up_after_gap" };
   }
   const last = bars[bars.length - 1];
   if (Number(nextCandle.epoch) !== Number(last.epoch) + BAR_SECONDS) return { signal: null, reason: "next_candle_not_aligned" };
