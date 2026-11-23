@@ -9,7 +9,7 @@ on:
   schedule:
     - cron: "3-59/5 * * * *"
   workflow_run:
-    workflows: ["Multi-Timeframe Data Collector", "Deriv Market Monitor"]
+    workflows: ["Deriv Market Monitor", "Volatility 10 M1 Paper Scanner"]
     types: [completed]
   workflow_dispatch:
 
@@ -31,14 +31,11 @@ jobs:
         with:
           script: |
             const workflows = [
-              { id: 417618869, name: "Multi-Timeframe Data Collector" },
               { id: 417087054, name: "Deriv Market Monitor" },
-              // GitHub accepts the workflow filename as workflow_id. Keep a
-              // longer stale threshold than its 15-minute schedule to avoid
-              // dispatching a duplicate just before the next scheduled run.
-              // Research collection must be judged by native schedule events only.
-              // Do not auto-dispatch it: a manual recovery can hide a broken schedule.
-              { id: "research-candle-collector.yml", name: "Research Candle Collector (No Alerts)", staleAfterMs: 25 * 60 * 1000, autoRecover: false }
+              // R10 is dispatched only by Cloudflare, which supplies current
+              // paper-provider and emergency-stop gates. Never bypass those gates
+              // with a generic watchdog dispatch.
+              { id: "volatility10-paper.yml", name: "Volatility 10 M1 Paper Scanner", staleAfterMs: 3 * 60 * 1000, autoRecover: false }
             ];
             const branch = "main";
             const defaultStaleAfterMs = 10 * 60 * 1000;
@@ -139,11 +136,8 @@ jobs:
             const fs = require("fs");
             const path = require("path");
             const targets = [
-              { id: 417618869, name: "Multi-Timeframe Data Collector", event: "workflow_dispatch", label: "[cloudflare_scheduler]", gapThresholdMinutes: 7 },
               { id: 417087054, name: "Deriv Market Monitor", event: "workflow_dispatch", label: "[cloudflare_scheduler]", gapThresholdMinutes: 7 },
-              // This workflow uses GitHub's native 15-minute schedule, not the
-              // Cloudflare external-dispatch mechanism used by the two scanners.
-              { id: "research-candle-collector.yml", name: "Research Candle Collector (No Alerts)", event: "schedule", gapThresholdMinutes: 22 }
+              { id: "volatility10-paper.yml", name: "Volatility 10 M1 Paper Scanner", event: "workflow_dispatch", label: "cloudflare_r10_scheduler", gapThresholdMinutes: 2 }
             ];
             const reports = [];
             for (const target of targets) {
