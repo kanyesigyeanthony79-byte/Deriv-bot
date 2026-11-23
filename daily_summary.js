@@ -59,6 +59,14 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
   const resolved = wins + losses;
   const winRate = resolved ? Number((wins / resolved * 100).toFixed(1)) : null;
   const netSignalOutcomes = wins - losses;
+  const legacyDeliveryBreakdown = {
+    sent,
+    duplicateCooldown: rows.filter(signal => signal.status === "suppressed" && signal.statusReason === "duplicate_or_cooldown").length,
+    stale: rows.filter(signal => signal.status === "stale").length,
+    deliveryFailed: rows.filter(signal => signal.status === "delivery_failed").length,
+    otherSuppressed: rows.filter(signal => signal.status === "suppressed" && signal.statusReason !== "duplicate_or_cooldown").length,
+    untracked: rows.filter(signal => !signal.status || !["sent", "suppressed", "stale", "delivery_failed"].includes(String(signal.status).toLowerCase())).length
+  };
   const priorityRows = rows.filter(signal => signal.priorityTier === "RESEARCH_PRIORITY");
   const priorityWins = priorityRows.filter(signal => signal.finalOutcome === "TP2").length;
   const priorityLosses = priorityRows.filter(signal => ["SL", "SL_AFTER_TP1"].includes(signal.finalOutcome)).length;
@@ -106,6 +114,8 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
     quote_unavailable: mtfRows.filter(signal => signal.telegramStatus === "quote_unavailable").length,
     delivery_failed: mtfDeliveryFailed,
     suppressed: mtfRows.filter(signal => ["suppressed", "not_sent"].includes(signal.telegramStatus)).length,
+    baselineShadowOnly: mtfRows.filter(signal => ["suppressed", "not_sent"].includes(signal.telegramStatus) && signal.telegramStatusReason === "baseline_strategy_shadow_only").length,
+    otherSuppressed: mtfRows.filter(signal => ["suppressed", "not_sent"].includes(signal.telegramStatus) && signal.telegramStatusReason !== "baseline_strategy_shadow_only").length,
     untracked: 0
   };
   const knownDeliveryStatuses = new Set([
@@ -144,7 +154,7 @@ function dailySummary(signals, day, markets, mtfSignals = []) {
   }));
 
   return {
-    day, generated: rows.length, sent, missed, tp1, tp2, wins, losses, resolved, winRate,
+    day, generated: rows.length, sent, missed, legacyDeliveryBreakdown, tp1, tp2, wins, losses, resolved, winRate,
     netSignalOutcomes, expired, ambiguous, unverified, unresolved, byMarket: legacyByMarket,
     priorityPairs: priority,
     mfeCount: movementRows.length, mfeTop: movementRows.slice(0, 12),
@@ -176,6 +186,11 @@ function buildDailySummaryMessage(summary, accountSnapshot = null) {
     "LEGACY 15-MINUTE SIGNALS\n" +
     "Generated: " + summary.generated + "\nSent to Telegram: " + summary.sent +
     "\nMissed / not sent: " + summary.missed +
+    "\nLegacy delivery breakdown: duplicate/cooldown " + (summary.legacyDeliveryBreakdown?.duplicateCooldown ?? 0) +
+    ", stale " + (summary.legacyDeliveryBreakdown?.stale ?? 0) +
+    ", delivery failures " + (summary.legacyDeliveryBreakdown?.deliveryFailed ?? 0) +
+    ", other suppressed " + (summary.legacyDeliveryBreakdown?.otherSuppressed ?? 0) +
+    ", untracked " + (summary.legacyDeliveryBreakdown?.untracked ?? 0) +
     "\nWins (TP2): " + summary.wins + "\nLosses (SL): " + summary.losses +
     "\nWin rate (resolved wins/losses): " + (summary.winRate === null ? "N/A" : summary.winRate + "%") +
     "\nNet signal outcomes (wins - losses): " + (summary.netSignalOutcomes > 0 ? "+" : "") + summary.netSignalOutcomes +
@@ -202,6 +217,8 @@ function buildDailySummaryMessage(summary, accountSnapshot = null) {
     ", stale " + (mtf.deliveryBreakdown?.stale ?? 0) +
     ", quote unavailable " + (mtf.deliveryBreakdown?.quote_unavailable ?? 0) +
     ", suppressed " + (mtf.deliveryBreakdown?.suppressed ?? 0) +
+    " (baseline shadow-only " + (mtf.deliveryBreakdown?.baselineShadowOnly ?? 0) +
+    ", other " + (mtf.deliveryBreakdown?.otherSuppressed ?? 0) + ")" +
     "\nWins (TP2): " + mtf.wins + "\nLosses (SL): " + mtf.losses +
     "\nWin rate (resolved wins/losses): " + (mtf.winRate === null ? "N/A" : mtf.winRate + "%") +
     "\nNet signal outcomes (wins - losses): " + (mtf.netSignalOutcomes > 0 ? "+" : "") + mtf.netSignalOutcomes +
