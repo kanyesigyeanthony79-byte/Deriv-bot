@@ -3,8 +3,13 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   detectBreakout, m15ContextAt, findM5RetestConfirmation,
-  updateSignalOutcome, updateJournal, summarizeJournal, TERMINAL
+  updateSignalOutcome, updateJournal, summarizeJournal, SYNTHETIC_MARKETS, TERMINAL
 } = require("../breakout_retest_m5_m15_shadow");
+
+test("M5/M15 shadow strategy includes both official 1-second Deriv symbols", () => {
+  assert.ok(SYNTHETIC_MARKETS.includes("1HZ10V"));
+  assert.ok(SYNTHETIC_MARKETS.includes("1HZ75V"));
+});
 
 const START = Math.floor(1_700_000_000 / 900) * 900;
 
