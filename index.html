@@ -123,32 +123,15 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   </section>
 
   <section id="multi-timeframe" class="system-view" data-system-view="promoted">
-    <h2>Multi-timeframe signals · 4 horizons</h2>
-    <p class="muted"><a href="./performance-report.html">Open version-aware performance report →</a> · <a href="./daily-performance-archive.html">Open daily performance archive →</a></p>
-    <div class="muted">Separate analysis for Scalping, Short-term, Swing and Position. All eight synthetic markets are assessed independently. Gold is excluded.</div>
-    <div class="filters">
-      <select id="mtfCategory" aria-label="Filter signal category">
-        <option value="ALL">All categories</option><option value="SCALP">Scalping · M5</option>
-        <option value="SHORT_TERM">Short-term · M5</option><option value="SWING">Swing · H1</option>
-        <option value="POSITION">Position · H4</option>
-      </select>
-      <select id="mtfMarket" aria-label="Filter market">
-        <option value="ALL">All markets</option>
-        <option value="R_10">Volatility 10</option><option value="R_25">Volatility 25</option>
-        <option value="R_50">Volatility 50</option><option value="R_75">Volatility 75</option><option value="frxXAUUSD">Gold (XAUUSD)</option>
-        <option value="JD75">Jump 75</option><option value="JD100">Jump 100</option>
-        <option value="CRASH500">Crash 500</option><option value="BOOM500">Boom 500</option>
-      </select>
-      <button class="btn smallbtn" id="mtfRefresh">Refresh horizons</button>
-    </div>
-    <div class="status" id="mtfStatus">Loading multi-timeframe analysis…</div>
-    <div class="grid" id="mtfSummary"></div>
-    <div class="mtf-grid" id="mtfSignals"><div class="card">Waiting for multi-timeframe data…</div></div>
-    <h2 style="margin-top:18px">Signal observations and MT5 trade journal</h2>
-    <div class="card mtf-table-wrap">
-      <table><thead><tr><th>Time</th><th>Market</th><th>Category</th><th>Direction</th><th>Entry</th><th>SL</th><th>TP1 / TP2</th><th>Signal observation</th><th>MT5 trade status</th><th>MT5 entry details</th><th>Realized net P/L</th><th>Review</th></tr></thead>
-      <tbody id="mtfJournal"><tr><td colspan="12" class="muted">No multi-timeframe observations recorded yet.</td></tr></tbody></table>
-    </div>
+    <h2>Volatility 10 · exclusive M1 paper system</h2>
+    <p class="muted">Dedicated to provider <code>volatility10_ema_atr_slope20_v1</code>. This view reads the scanner's own M1 paper journal and is independent of the retired multi-timeframe collector. Paper observation only — no orders are placed.</p>
+    <p class="muted"><a href="./daily-performance-archive.html">Open daily performance archive →</a></p>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn smallbtn" id="r10Refresh">Refresh R10</button><span class="status" id="r10Status">Loading Volatility 10 paper journal…</span></div>
+    <div class="grid" id="r10Metrics"><div class="card"><div class="detail">PROVIDER</div><div class="signal">R10 · M1</div></div><div class="card"><div class="detail">PAPER SIGNALS</div><div class="signal">—</div></div><div class="card"><div class="detail">ACTIVE PAPER POSITION</div><div class="signal">—</div></div><div class="card"><div class="detail">CLOSED POSITIONS</div><div class="signal">—</div></div></div>
+    <h3>Volatility 10 paper signal journal</h3><div class="card mtf-table-wrap"><table><thead><tr><th>Signal time</th><th>Direction</th><th>Entry reference</th><th>Stop loss</th><th>Take profit</th><th>Provider</th><th>Telegram delivery</th></tr></thead><tbody id="r10Signals"><tr><td colspan="7" class="muted">Waiting for R10 paper journal…</td></tr></tbody></table></div>
+    <h3 style="margin-top:16px">Paper position outcomes</h3><div class="card mtf-table-wrap"><table><thead><tr><th>Direction</th><th>Entry time</th><th>Entry</th><th>Exit time</th><th>Exit</th><th>Outcome</th><th>Exit reason</th></tr></thead><tbody id="r10Positions"><tr><td colspan="7" class="muted">No closed R10 paper positions loaded.</td></tr></tbody></table></div>
+    <h3 style="margin-top:16px">Scanner health</h3><div class="card mtf-table-wrap"><table><thead><tr><th>Time</th><th>Status</th><th>Completed M1 candles</th><th>Active position</th><th>Gap seconds</th></tr></thead><tbody id="r10Health"><tr><td colspan="5" class="muted">Waiting for scanner health records…</td></tr></tbody></table></div>
+    <div class="muted" style="margin-top:10px">A blank or stale journal means fresh scanner evidence is unavailable; it does not mean there were no market opportunities. Telegram delivery is shown from the scanner journal, not inferred from signal generation.</div>
   </section>
 
   <section id="strategy-comparison">
@@ -388,227 +371,23 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     $("status").textContent="CSV export prepared · "+latestSignals.length+" records";
   }
 
-  const MTF_URL="./multi_timeframe_dashboard.json";
-  const MTF_JOURNAL_URL="./multi_timeframe_journal.json";
-  let mtfSnapshot=null, mtfJournal=[], mtfReviews={};
-  const categoryNames={SCALP:"Scalping",SHORT_TERM:"Short-term",SWING:"Swing",POSITION:"Position"};
-  const fmtTime=epoch=>epoch?new Date(epoch*1000).toLocaleString():"—";
-  let promotedSignalFilter="active";
-  let promotedSignalCache={all:[],fresh:false};
-  function setPromotedSignalFilter(filter){
-    promotedSignalFilter=filter;
-    document.querySelectorAll("[data-signal-filter]").forEach(btn=>btn.setAttribute("aria-pressed",String(btn.dataset.signalFilter===filter)));
-    renderPromotedSignalList();
-  }
-  function renderPromotedSignalList(){
-    const {all,fresh}=promotedSignalCache;
-    const selected=promotedSignalFilter==="strong"?all.filter(s=>s.quality==="STRONG"):promotedSignalFilter==="valid"?all.filter(s=>s.quality==="VALID"):all;
-    const label=promotedSignalFilter==="strong"?"STRONG":promotedSignalFilter==="valid"?"VALID":"ACTIVE";
-    $("promotedSignals").innerHTML=selected.length?selected.slice().sort((a,b)=>(b.createdEpoch||b.candleEpoch||0)-(a.createdEpoch||a.candleEpoch||0)).map(s=>{
-      const directionClass=s.direction==="BUY"?"buy":"sell";
-      const status=s.status==="tp1_hit"?"TP1 level touched · runner remains":"Pending · monitoring";
-      return '<a class="signal-card-link" aria-label="Open full signal review" href="./signal-review.html?signalId='+encodeURIComponent(s.signalId)+'"><article class="signal-item"><div class="signal-item-head"><span>'+esc(s.marketName||s.marketId)+'</span><span class="mtf-tag">'+esc(s.quality)+' · '+esc(s.score??"—")+'</span></div><div class="signal '+directionClass+'">'+esc(s.direction||"—")+'</div><div class="detail">'+esc(categoryNames[s.category]||s.category||"—")+' · '+esc(status)+'<br>Entry: '+fmt(s.entry)+' · SL: '+fmt(s.stopLoss)+'<br>TP1: '+fmt(s.tp1)+' · TP2: '+fmt(s.tp2)+'<br>Updated quote: '+esc(fmtTime(s.quoteEpoch))+'<br><strong>Tap to open full signal status &amp; review →</strong></div></article></a>';
-    }).join(""):'<div class="signal-empty">'+(fresh?"No "+label+" signals currently match this view. The scanner continues monitoring.":"Signals are hidden because the collector snapshot or quotes are stale.")+'</div>';
-    document.querySelectorAll("[data-signal-filter]").forEach(btn=>btn.setAttribute("aria-pressed",String(btn.dataset.signalFilter===promotedSignalFilter)));
-  }
-  function renderPromotedSystem(){
-    if(!mtfSnapshot)return;
-    const generated=Date.parse(mtfSnapshot.generatedAt||"");
-    const age=(Date.now()-generated)/1000;
-    const fresh=Number.isFinite(age)&&age>=-60&&age<=600;
-    const now=Math.floor(Date.now()/1000);
-    const all=fresh?(mtfSnapshot.markets||[]).flatMap(m=>(m.signals||[]).map(s=>({...s,marketId:m.marketId,marketName:m.marketName}))).filter(s=>
-      Number(s.createdEpoch||s.candleEpoch||0)>=DASHBOARD_RESET_EPOCH &&
-      Number.isFinite(Number(s.quoteEpoch)) && now-Number(s.quoteEpoch)>=-60 && now-Number(s.quoteEpoch)<=300 &&
-      s.state==="signal" && ["pending","tp1_hit"].includes(s.status) && ["STRONG","VALID"].includes(s.quality)
-    ):[];
-    const strong=all.filter(s=>s.quality==="STRONG").length;
-    const valid=all.filter(s=>s.quality==="VALID").length;
-    promotedSignalCache={all,fresh};
-    $("promotedMetrics").innerHTML=[
-      ["SYSTEM STATUS",fresh?"COLLECTOR FRESH":"STALE · CHECK COLLECTOR"],
-      ["ACTIVE SIGNALS",all.length],
-      ["STRONG SIGNALS",strong],
-      ["VALID SIGNALS",valid]
-    ].map(([label,value],i)=>'<button type="button" class="card metric-click" data-metric-filter="'+(["","active","strong","valid"][i])+'" '+(i===0?'disabled':'')+'><span class="detail">'+esc(label)+'</span><span class="signal '+(fresh?"buy":"none")+'">'+esc(value)+'</span></button>').join("");
-    $("activeTabCount").textContent="("+all.length+")";
-    $("strongTabCount").textContent="("+strong+")";
-    $("validTabCount").textContent="("+valid+")";
-    $("promotedStatus").textContent=(fresh?"Last snapshot: "+time(mtfSnapshot.generatedAt)+" · quote-verified active signals only":"Last snapshot: "+time(mtfSnapshot.generatedAt)+" · stale snapshots are not treated as active")+
-      " · "+(mtfSnapshot.markets?.length||0)+" markets scanned in this production snapshot.";
-    renderPromotedSignalList();
-  }
-
-  function renderMtf(){
-    if(!mtfSnapshot)return;
-    const cat=$("mtfCategory").value, market=$("mtfMarket").value;
-    const collectorAgeSeconds=(Date.now()-Date.parse(mtfSnapshot.generatedAt))/1000;
-    const collectorFresh=Number.isFinite(collectorAgeSeconds)&&collectorAgeSeconds>=-60&&collectorAgeSeconds<=600;
-    const pageNowEpoch=Math.floor(Date.now()/1000);
-    const all=collectorFresh?(mtfSnapshot.markets||[]).flatMap(m=>(m.signals||[]).map(s=>({...s,marketId:m.marketId,marketName:m.marketName}))).filter(s=>Number(s.createdEpoch||s.candleEpoch||0)>=DASHBOARD_RESET_EPOCH&&Number.isFinite(Number(s.quoteEpoch))&&pageNowEpoch-Number(s.quoteEpoch)>=-60&&pageNowEpoch-Number(s.quoteEpoch)<=300):[];
-    const filtered=all.filter(s=>(cat==="ALL"||s.category===cat)&&(market==="ALL"||s.marketId===market));
-    // Show only actionable MTF signals. Markets with no signal in the selected horizon(s) stay hidden.
-    const ordered=filtered.filter(s=>s.state==="signal"&&["pending","tp1_hit"].includes(s.status)).sort((a,b)=>(a.marketName||"").localeCompare(b.marketName||"")||["SCALP","SHORT_TERM","SWING","POSITION"].indexOf(a.category)-["SCALP","SHORT_TERM","SWING","POSITION"].indexOf(b.category));
-    $("mtfSignals").innerHTML=ordered.map(s=>{
-      const cls=s.direction==="BUY"?"buy":"sell";
-      const signalState=s.tp1Hit||s.status==="tp1_hit"?"PRICE OBSERVATION: TP1 LEVEL TOUCHED":"PRICE OBSERVATION: SIGNAL PENDING";
-      const trade=s.mt5Trade;
-      const tradeState=trade?String(trade.status||"UNKNOWN").replaceAll("_"," ")+" · "+String(trade.closedEntries||0)+"/3 closed":"NOT REPORTED · NOT ASSUMED EXECUTED";
-      const tradePnl=trade?" · Realized net P/L: $"+Number(trade.realizedProfit||0).toFixed(2):"";
-      const entryDetails=trade&&Array.isArray(trade.positions)?trade.positions.map((p,i)=>"Entry "+(i+1)+" · "+p.targetLeg+" · "+String(p.status||"UNKNOWN").replaceAll("_"," ")+(p.closePrice?" · close "+fmt(p.closePrice):"")+(p.status==="OPEN"?"":" · net $"+Number(p.realizedProfit||0).toFixed(2))).join(" | "):"";
-      const levels='<br>Entry: '+fmt(s.entry)+' · Live: '+fmt(s.currentPrice)+'<br>SL: '+fmt(s.stopLoss)+' · TP1: '+fmt(s.tp1)+' · TP2: '+fmt(s.tp2)+'<br>Score: '+esc(s.score??"—");
-      return '<div class="mtf-card"><div class="mtf-head"><span>'+esc(s.marketName)+'</span><span class="mtf-tag">'+esc(categoryNames[s.category]||s.category)+'</span></div><div class="mtf-state '+cls+'">'+esc(signalState)+'</div><div class="detail">MT5 execution: '+esc(tradeState+tradePnl)+'<br>'+esc(entryDetails)+'<br>Entry '+esc(s.entryTimeframe||"—")+' · Confirm '+esc(s.confirmationTimeframe||"—")+' · Context '+esc(s.contextTimeframe||"—")+levels+'</div><a class="btn smallbtn" href="./signal-review.html?signalId='+encodeURIComponent(s.signalId)+'">REVIEW</a></div>';
-    }).join("")||'<div class="card muted">No active signals for the selected horizon/market. Markets without a signal are hidden; scanning and data collection continue normally.</div>';
-    const ledger=mtfSnapshot.mt5TradeReporting||{};
-    const ledgerText=!ledger.enabled?"MT5 trade ledger disabled":!ledger.connected?"MT5 trade ledger unavailable":("MT5 ledger: "+(ledger.tradeBaskets||0)+" baskets · "+(ledger.openBaskets||0)+" open · "+(ledger.closedBaskets||0)+" closed · net $"+Number(ledger.realizedNetProfit||0).toFixed(2));
-    $("mtfStatus").textContent=(collectorFresh?"Showing "+ordered.length+" price-verified active signal(s) · Updated "+time(mtfSnapshot.generatedAt):"MONITORING STALE · Last collector update "+time(mtfSnapshot.generatedAt)+" · Active signals hidden until fresh data returns.")+" · "+ledgerText;
-    const counts={...(mtfSnapshot.summary?.signalCounts||{}),signal:all.filter(s=>s.state==="signal").length};
-    $("mtfSummary").innerHTML=['signal','timeframe_conflict','warming','no_signal'].map(k=>'<div class="card"><div class="detail">'+esc(k.replaceAll("_"," ").toUpperCase())+'</div><div class="signal">'+esc(counts[k]??0)+'</div></div>').join("");
-    const journalEligible=mtfJournal.filter(s=>Number(s.createdEpoch||s.entryCandleEpoch||0)>=DASHBOARD_RESET_EPOCH);
-    const deliveredUnresolved=journalEligible.filter(s=>s.telegramStatus==="sent");
-    const rowMap=new Map([...deliveredUnresolved,...journalEligible.slice().sort((a,b)=>(b.entryCandleEpoch||0)-(a.entryCandleEpoch||0)).slice(0,40)].map(s=>[s.signalId,s]));
-    const rows=[...rowMap.values()].sort((a,b)=>(b.entryCandleEpoch||0)-(a.entryCandleEpoch||0));
-    $("mtfJournal").innerHTML=rows.map(s=>{const review=mtfReviews[s.signalId];const link=review?'<a class="btn smallbtn" href="./signal-review.html?signalId='+encodeURIComponent(s.signalId)+'">REVIEW</a>':'<span class="muted">—</span>';const trade=s.mt5Trade;const tradeStatus=trade?String(trade.status||"UNKNOWN").replaceAll("_"," ").toUpperCase()+" ("+String(trade.closedEntries||0)+"/3)": "NOT REPORTED";const entryDetails=trade&&Array.isArray(trade.positions)?trade.positions.map((p,i)=>"Entry "+(i+1)+" "+p.targetLeg+" "+String(p.status||"UNKNOWN").replaceAll("_"," ")+(p.closePrice?" @ "+fmt(p.closePrice):"")+(p.status==="OPEN"?"":" · $"+Number(p.realizedProfit||0).toFixed(2))).join(" | "):"—";const pnl=trade?"$"+Number(trade.realizedProfit||0).toFixed(2):"—";return '<tr><td>'+esc(fmtTime(s.entryCandleEpoch))+'</td><td>'+esc(s.market||s.marketId)+'</td><td>'+esc(categoryNames[s.category]||s.category)+'</td><td class="'+(s.direction==="BUY"?"buy":"sell")+'">'+esc(s.direction)+'</td><td>'+fmt(s.entry)+'</td><td>'+fmt(s.stopLoss)+'</td><td>'+fmt(s.tp1)+' / '+fmt(s.tp2)+'</td><td>'+esc(String(s.status||"pending").replaceAll("_"," ").toUpperCase())+'</td><td>'+esc(tradeStatus)+'</td><td>'+esc(entryDetails)+'</td><td>'+esc(pnl)+'</td><td>'+link+'</td></tr>';}).join("")||'<tr><td colspan="12" class="muted">No qualifying signals recorded yet.</td></tr>';
-  }
-  function renderStrategyComparison(){
-    const comparison=mtfSnapshot?.strategyComparison;
-    if(!comparison?.totals){
-      $("strategyTotals").innerHTML='<tr><td colspan="10" class="muted">Shadow comparison data is not available yet.</td></tr>';
-      $("strategyMarkets").innerHTML='<tr><td colspan="10" class="muted">No market comparison data yet.</td></tr>';
-      $("strategyStatus").textContent="Waiting for the observation collector to publish the strategy journal.";
-      return;
-    }
-    const ids=["EMA20_50","EMA20_50_PULLBACK"];
-    const pct=v=>v===null||v===undefined?"—":Number(v).toFixed(1)+"%";
-    const num=v=>v===null||v===undefined?"—":Number(v).toFixed(2);
-    $("strategyTotals").innerHTML=ids.map(id=>{
-      const s=comparison.totals[id]||{};
-      return '<tr><td>'+esc(s.label||id)+'</td><td>'+esc(s.forwardShadowSignals??0)+'</td><td>'+esc(s.forwardResolvedSignals??0)+'</td><td>'+esc(s.forwardPendingSignals??0)+'</td><td>'+pct(s.forwardTp2HitRate)+'</td><td>'+pct(s.forwardTp1HitRate)+'</td><td>'+pct(s.forwardStopLossRate)+'</td><td>'+pct(s.forwardStoppedAfterTP1Rate)+'</td><td>'+num(s.forwardAverageRealizedR)+'</td><td>'+esc(s.historicalBackfillSignals??0)+'</td></tr>';
-    }).join("");
-    const marketRows=[];
-    for(const [marketId,strategies] of Object.entries(comparison.markets||{})){
-      for(const id of ids){
-        const s=strategies[id]||{};
-        marketRows.push('<tr><td>'+esc(marketId)+'</td><td>'+esc(s.label||id)+'</td><td>'+esc(s.forwardShadowSignals??0)+'</td><td>'+esc(s.forwardResolvedSignals??0)+'</td><td>'+pct(s.forwardTp2HitRate)+'</td><td>'+pct(s.forwardTp1HitRate)+'</td><td>'+pct(s.forwardStopLossRate)+'</td><td>'+pct(s.forwardStoppedAfterTP1Rate)+'</td><td>'+pct(s.forwardExpiredRate)+'</td><td>'+num(s.forwardAverageRealizedR)+'</td></tr>');
-      }
-    }
-    $("strategyMarkets").innerHTML=marketRows.join("")||'<tr><td colspan="10" class="muted">No market comparison data yet.</td></tr>';
-    const totals=Object.values(comparison.totals);
-    const historical=totals.reduce((n,s)=>n+(s.historicalBackfillSignals||0),0);
-    const forward=totals.reduce((n,s)=>n+(s.forwardShadowSignals||0),0);
-    const resolved=totals.reduce((n,s)=>n+(s.forwardResolvedSignals||0),0);
-    $("strategyStatus").textContent="M15 · "+historical+" historical backfill signals archived separately · "+forward+" forward signals · "+resolved+" forward resolved · "+esc(comparison.sourceNote||"No order execution");
-  }
-
-  function renderBreakoutRetestShadow(){
-    const shadow=mtfSnapshot?.breakoutRetestShadow;
-    if(!shadow){
-      $("breakoutRetestTotals").innerHTML='<tr><td colspan="8" class="muted">Forward-shadow data is not available yet.</td></tr>';
-      $("breakoutRetestMarkets").innerHTML='<tr><td colspan="8" class="muted">No market results yet.</td></tr>';
-      $("breakoutRetestStatus").textContent="Waiting for the collector to publish the breakout–retest journal.";
-      return;
-    }
-    const pct=v=>v===null||v===undefined?"—":Number(v).toFixed(1)+"%";
-    const num=v=>v===null||v===undefined?"—":Number(v).toFixed(2);
-    $("breakoutRetestTotals").innerHTML='<tr><td>'+esc(shadow.signalsGenerated??0)+'</td><td>'+esc(shadow.resolvedSignals??0)+'</td><td>'+esc(shadow.pendingSignals??0)+'</td><td>'+esc(shadow.targetBeforeStop??0)+'</td><td>'+esc(shadow.stopBeforeTarget??0)+'</td><td>'+esc(shadow.timeExit??0)+'</td><td>'+esc(shadow.ambiguous??0)+'</td><td>'+num(shadow.averageRealizedR)+'</td></tr>';
-    const rows=Object.entries(shadow.markets||{}).map(([id,s])=>'<tr><td>'+esc(id)+'</td><td>'+esc(s.signals??0)+'</td><td>'+esc(s.resolved??0)+'</td><td>'+esc(s.pending??0)+'</td><td>'+pct(s.targetRatePct)+'</td><td>'+num(s.averageRealizedR)+'</td><td>'+esc(s.riskRejected??0)+'</td><td>'+esc(s.overlapSuppressed??0)+'</td></tr>');
-    $("breakoutRetestMarkets").innerHTML=rows.join("")||'<tr><td colspan="8" class="muted">No market results yet.</td></tr>';
-    const h=shadow.historicalHoldout||{};
-    $("breakoutRetestStatus").textContent="Forward-only · "+esc(shadow.mode||"shadow_observation_only")+" · Historical holdout: "+(h.targetBeforeStop??0)+"/"+(h.trades??0)+" ("+pct(h.targetRatePct)+") · historical expectancy "+num(h.expectancyR)+"R before costs · "+esc(shadow.note||"No production alerts or execution.");
-  }
-
-  function renderM5PullbackShadow(){
-    const shadow=mtfSnapshot?.m5EmaPullbackShadow;
-    if(!shadow){
-      $("m5PullbackTotals").innerHTML='<tr><td colspan="7" class="muted">M5 pullback shadow data is not available yet.</td></tr>';
-      $("m5PullbackMarkets").innerHTML='<tr><td colspan="6" class="muted">No market results yet.</td></tr>';
-      $("m5PullbackStatus").textContent="Waiting for the collector to publish the M15/M5 pullback journal.";
-      return;
-    }
-    $("m5PullbackTotals").innerHTML='<tr><td>'+esc(shadow.signalsGenerated??0)+'</td><td>'+esc(shadow.resolvedSignals??0)+'</td><td>'+esc(shadow.pendingSignals??0)+'</td><td>'+esc(shadow.targetBeforeStop??0)+'</td><td>'+esc(shadow.stopBeforeTarget??0)+'</td><td>'+pct(shadow.targetRatePct)+'</td><td>'+num(shadow.averageRealizedR)+'</td></tr>';
-    const rows=Object.entries(shadow.markets||{}).map(([id,v])=>'<tr><td>'+esc(id)+'</td><td>'+esc(v.signals??0)+'</td><td>'+esc(v.resolved??0)+'</td><td>'+esc(v.pending??0)+'</td><td>'+pct(v.targetRatePct)+'</td><td>'+num(v.averageRealizedR)+'</td></tr>');
-    $("m5PullbackMarkets").innerHTML=rows.join("")||'<tr><td colspan="6" class="muted">No market results yet.</td></tr>';
-    $("m5PullbackStatus").textContent="Forward-only · "+esc(shadow.mode||"forward_shadow_observation_only")+" · "+esc(shadow.strategy||"M15 confirmation / M5 pullback")+". Historical backfill is disabled; percentages appear only after outcomes resolve.";
-  }
-  function renderBreakoutRetestM5M15Shadow(){
-    const shadow=mtfSnapshot?.breakoutRetestM5M15Shadow;
-    const pct=v=>v===null||v===undefined?"—":Number(v).toFixed(1)+"%";
-    const num=v=>v===null||v===undefined?"—":Number(v).toFixed(2);
-    if(!shadow){
-      $("breakoutRetestM5M15Totals").innerHTML='<tr><td colspan="10" class="muted">M5/M15 breakout shadow data is not available yet.</td></tr>';
-      $("breakoutRetestProductionTotals").innerHTML='<tr><td colspan="9" class="muted">No TP1/TP2 simulation yet.</td></tr>';
-      $("breakoutRetestM5M15Markets").innerHTML='<tr><td colspan="12" class="muted">No M5 breakout market results yet.</td></tr>';
-      $("breakoutRetestM5M15Status").textContent="Waiting for the collector to publish the M5 breakout/retest journal.";
-      return;
-    }
-    const rows=Object.entries(shadow.markets||{}).map(([id,s])=>'<tr><td>'+esc(id)+'</td><td>'+esc(s.dataQuality||"warming")+'</td><td>'+esc(s.setupsDetected??0)+'</td><td>'+esc(s.m15Confirmed??0)+'</td><td>'+esc(s.m15Rejected??0)+'</td><td>'+esc(s.m15ReconfirmRejected??0)+'</td><td>'+esc(s.signals??0)+'</td><td>'+esc(s.resolved??0)+'</td><td>'+esc(s.pending??0)+'</td><td>'+pct(s.targetRatePct)+'</td><td>'+num(s.averageRealizedR)+'</td><td>'+esc(s.riskRejected??0)+'</td></tr>');
-    $("breakoutRetestM5M15Markets").innerHTML=rows.join("")||'<tr><td colspan="12" class="muted">No M5 breakout market results yet.</td></tr>';
-    const markets=Object.values(shadow.markets||{});
-    const sum=k=>markets.reduce((n,s)=>n+(s[k]||0),0);
-    $("breakoutRetestM5M15Totals").innerHTML='<tr><td>'+sum("setupsDetected")+'</td><td>'+sum("m15Confirmed")+'</td><td>'+sum("m15Rejected")+'</td><td>'+esc(shadow.m15ReconfirmRejected??0)+'</td><td>'+esc(shadow.signalsGenerated??0)+'</td><td>'+esc(shadow.resolvedSignals??0)+'</td><td>'+esc(shadow.pendingSignals??0)+'</td><td>'+esc(shadow.targetBeforeStop??0)+'</td><td>'+esc(shadow.stopBeforeTarget??0)+'</td><td>'+num(shadow.averageRealizedR)+'</td></tr>';
-    const pm=shadow.productionManagementSimulation||{};
-    $("breakoutRetestProductionTotals").innerHTML='<tr><td>'+esc(pm.tp1Hits??0)+'</td><td>'+esc(pm.tp2Hits??0)+'</td><td>'+esc(pm.stoppedBeforeTp1??0)+'</td><td>'+esc(pm.stoppedAfterTp1??0)+'</td><td>'+esc(pm.ambiguous??0)+'</td><td>'+esc(pm.timeExit??0)+'</td><td>'+esc(pm.resolvedSignals??0)+'</td><td>'+esc(pm.pendingSignals??0)+'</td><td>'+num(pm.averageRealizedR)+'</td></tr>';
-    $("breakoutRetestProductionStatus").textContent="Simulation only · three equal-sized entries · two close at +1.5R; runner closes at +3R or stop · no actual positions opened.";
-    $("breakoutRetestM5M15Status").textContent="Forward-only · normalized 2R / one-hour comparison · "+esc(shadow.note||"No Telegram or MT5 execution.");
-  }
-
-  function renderBreakoutRetestComparison(){
-    const m1=mtfSnapshot?.breakoutRetestShadow;
-    const pullback=mtfSnapshot?.m5EmaPullbackShadow;
-    const breakout=mtfSnapshot?.breakoutRetestM5M15Shadow;
-    const pct=v=>v===null||v===undefined?"—":Number(v).toFixed(1)+"%";
-    const num=v=>v===null||v===undefined?"—":Number(v).toFixed(2);
-    const row=(name,entry,confirmation,s)=>'<tr><td>'+name+'</td><td>'+entry+'</td><td>'+confirmation+'</td><td>'+esc(s?.signalsGenerated??0)+'</td><td>'+esc(s?.resolvedSignals??0)+'</td><td>'+esc(s?.pendingSignals??0)+'</td><td>'+pct(s?.targetRatePct)+'</td><td>'+num(s?.averageRealizedR)+'</td></tr>';
-    $("breakoutRetestComparison").innerHTML=[
-      row("M5 breakout / M1 retest","M1","M1",m1),
-      row("M15 trend / M5 EMA pullback","M5","M15",pullback),
-      row("M5 breakout / M5 retest","M5","M15",breakout)
-    ].join("");
-  }
-
-  function renderStrategyResearch(){
-    const research=mtfSnapshot?.strategyResearch;
-    if(!research?.markets){
-      $("researchStatus").textContent="Research archive has not been published yet.";
-      return;
-    }
-    const entries=Object.entries(research.markets);
-    const ready=entries.filter(([,v])=>v.qualifiedSegments>0).length;
-    $("researchStatus").textContent=ready
-      ? "Offline research active on "+ready+" market(s) · "+(research.pooled?.configsTested||0)+" rule combinations · no execution"
-      : "Collecting history · each market needs at least 400 continuous M15 candles before reliable rule screening.";
-    $("researchMarkets").innerHTML=entries.map(([id,v])=>'<tr><td>'+esc(id)+'</td><td>'+esc(v.bars??0)+'</td><td>'+esc((v.qualifiedSegments??0)+' / '+(v.continuousSegments??0))+'</td><td>'+esc(String(v.status||"waiting").replaceAll("_"," "))+'</td></tr>').join("")||'<tr><td colspan="4" class="muted">No market history available.</td></tr>';
-    const pool=research.pooled||{}, candidates=pool.discoveryCandidates||[], validation=pool.heldOutValidation||[];
-    const validated=new Map(validation.map(x=>[x.config.id,x]));
-    const pct=v=>v===null||v===undefined?"—":Number(v).toFixed(1)+"%";
-    $("researchCandidates").innerHTML=candidates.map(x=>{
-      const v=validated.get(x.config.id);
-      return '<tr><td>'+esc(x.config.id)+'</td><td>'+esc(x.marketsSeen??0)+'</td><td>'+esc(x.train?.resolved??0)+'</td><td>'+pct(x.train?.winRate)+'</td><td>'+pct(x.train?.stopRate)+'</td><td>'+esc(v?.validation?.resolved??0)+'</td><td>'+pct(v?.validation?.winRate)+'</td><td>'+pct(v?.validation?.stopRate)+'</td></tr>';
-    }).join("")||'<tr><td colspan="8" class="muted">No candidates yet. The research engine is waiting for enough continuous history and resolved samples.</td></tr>';
-    $("researchCaution").textContent=research.caution||"Exploratory results only. Do not promote a rule without independent validation and forward-shadow confirmation.";
-  }
-
-  async function refreshMtf(){
-    $("mtfStatus").textContent="Refreshing multi-timeframe snapshot…";
+  async function refreshR10(){
+    const status=$("r10Status"); status.textContent="Refreshing independent R10 M1 paper records…";
     try{
-      const [a,b,r]=await Promise.all([fetch(MTF_URL+"?v="+Date.now(),{cache:"no-store"}),fetch(MTF_JOURNAL_URL+"?v="+Date.now(),{cache:"no-store"}),fetch("./signal_review_data.json?v="+Date.now(),{cache:"no-store"})]);
-      if(!a.ok)throw new Error("Snapshot HTTP "+a.status);
-      mtfSnapshot=await a.json(); renderPromotedSystem(); mtfJournal=b.ok?(await b.json()).signals||[]:[]; const reviewData=r.ok?await r.json():{reviews:[]}; mtfReviews=Object.fromEntries((reviewData.reviews||[]).map(x=>[x.signalId,x]));
-      renderMtf();
-      renderStrategyComparison();
-      renderBreakoutRetestShadow();
-      renderM5PullbackShadow();
-      renderBreakoutRetestM5M15Shadow();
-      renderBreakoutRetestComparison();
-      renderStrategyResearch();
-      $("mtfStatus").textContent="Observation-only · "+esc(mtfSnapshot.markets?.length||0)+" markets · Updated "+esc(time(mtfSnapshot.generatedAt));
-    }catch(e){$("mtfStatus").textContent="Multi-timeframe data not published yet: "+e.message;}
+      const [jr,sr]=await Promise.all([fetch("./volatility10_paper_journal.json?v="+Date.now(),{cache:"no-store"}),fetch("./volatility10_paper_state.json?v="+Date.now(),{cache:"no-store"})]);
+      if(!jr.ok)throw new Error("R10 journal HTTP "+jr.status); if(!sr.ok)throw new Error("R10 state HTTP "+sr.status);
+      const [journal,state]=await Promise.all([jr.json(),sr.json()]);
+      if(journal.providerId!=="volatility10_ema_atr_slope20_v1"||state.providerId!=="volatility10_ema_atr_slope20_v1")throw new Error("R10 provider identity mismatch");
+      const signals=Array.isArray(journal.signals)?journal.signals:[], closed=Array.isArray(state.closedPositions)?state.closedPositions:[], health=Array.isArray(journal.health)?journal.health:[], active=state.activePosition||null;
+      $("r10Metrics").innerHTML=[["PROVIDER","R10 · M1"],["PAPER SIGNALS",signals.length],["ACTIVE PAPER POSITION",active?active.direction:"NONE"],["CLOSED POSITIONS",closed.length]].map(([label,value])=>'<div class="card"><div class="detail">'+esc(label)+'</div><div class="signal">'+esc(value)+'</div></div>').join("");
+      $("r10Signals").innerHTML=signals.slice().reverse().slice(0,100).map(s=>'<tr><td>'+esc(time(s.signalTimestamp))+'</td><td class="'+(s.direction==="LONG"?"buy":"sell")+'">'+esc(s.direction)+'</td><td>'+fmt(s.referenceEntryPrice)+'</td><td>'+fmt(s.stopLoss)+'</td><td>'+fmt(s.takeProfit)+'</td><td>'+esc(s.providerId)+'</td><td>'+esc(s.telegram?.sent===true?"SENT":s.telegram?.reason||"NOT RECORDED")+'</td></tr>').join("")||'<tr><td colspan="7" class="muted">No R10 paper signals recorded yet.</td></tr>';
+      $("r10Positions").innerHTML=closed.slice().reverse().slice(0,100).map(p=>'<tr><td>'+esc(p.direction)+'</td><td>'+esc(time(p.entryEpoch?new Date(p.entryEpoch*1000).toISOString():p.entryTimestamp))+'</td><td>'+fmt(p.entryPrice)+'</td><td>'+esc(time(p.exitEpoch?new Date(p.exitEpoch*1000).toISOString():p.closedAt))+'</td><td>'+fmt(p.exitPrice)+'</td><td>'+esc(p.outcome||p.exitReason||"CLOSED")+'</td><td>'+esc(p.exitReason||"—")+'</td></tr>').join("")||'<tr><td colspan="7" class="muted">No closed R10 paper positions recorded yet.</td></tr>';
+      $("r10Health").innerHTML=health.slice().reverse().slice(0,50).map(h=>'<tr><td>'+esc(time(h.at))+'</td><td>'+esc(h.status)+'</td><td>'+esc(h.completedCandles??"—")+'</td><td>'+esc(h.activePosition===undefined?"—":h.activePosition?"YES":"NO")+'</td><td>'+esc(h.gapSeconds??"—")+'</td></tr>').join("")||'<tr><td colspan="5" class="muted">No scanner health observations recorded yet.</td></tr>';
+      const latest=health.at(-1); status.textContent="R10 provider verified · "+signals.length+" paper signals · last health: "+(latest?time(latest.at)+" · "+latest.status:"no health record")+" · refreshed "+new Date().toLocaleTimeString();
+    }catch(error){status.textContent="R10 data unavailable: "+error.message+" · Scanner status is not assumed healthy.";}
   }
-  $("mtfCategory").addEventListener("change",renderMtf);
-  $("mtfMarket").addEventListener("change",renderMtf);
-  $("mtfRefresh").addEventListener("click",refreshMtf);
-  $("promotedRefresh").addEventListener("click",async()=>{const button=$("promotedRefresh");button.disabled=true;button.textContent="Refreshing…";await refreshMtf();$("promotedRefreshTime").textContent="Last refreshed "+new Date().toLocaleTimeString();button.disabled=false;button.textContent="Refresh active signals & reviews";});
-  refreshMtf(); setInterval(refreshMtf,60000);
+  $("r10Refresh").addEventListener("click",refreshR10);
+  refreshR10(); setInterval(refreshR10,60000);
 
   $("export").addEventListener("click",exportCsv);
   $("refresh").addEventListener("click",refresh);
