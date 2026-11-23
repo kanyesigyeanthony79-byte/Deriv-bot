@@ -5,7 +5,7 @@ const ALERT_MAX_AGE_SECONDS = Object.freeze({ SCALP: 10 * 60, SHORT_TERM: 30 * 6
 const MAX_ENTRY_DEVIATION_R = 0.2;
 const BASELINE_STRATEGY_VERSION = "MTF_BASELINE_V1";
 // Automated MT5 execution is intentionally restricted to the approved synthetic CFDs.
-const MT5_EXECUTION_MARKETS = new Set(["R_10", "R_25", "R_50", "R_75", "JD100", "CRASH500", "BOOM500"]);
+const MT5_EXECUTION_MARKETS = new Set(["R_25", "R_50", "R_75", "JD100", "CRASH500", "BOOM500"]);
 
 function signalFreshness(candidate, nowEpoch) {
   const timeframeSeconds = ENTRY_TIMEFRAME_SECONDS[candidate.entryTimeframe];
