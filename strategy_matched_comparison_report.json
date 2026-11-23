@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-23T05:25:41.000Z",
+  "generatedAt": "2026-11-23T05:40:33.000Z",
   "mode": "read_only_forward_shadow_contemporaneous_match",
   "methodology": {
     "candidatePopulation": "Forward-shadow candidate records only; historical backfill is excluded.",
@@ -20,9 +20,9 @@
     "baselineCategory": "SCALP",
     "baselineSignalsAvailable": 445,
     "candidateStrategies": 7,
-    "candidateSignals": 2039,
-    "matchedPairs": 289,
-    "unmatchedCandidates": 1750,
+    "candidateSignals": 2042,
+    "matchedPairs": 290,
+    "unmatchedCandidates": 1752,
     "matchWindowSeconds": 900
   },
   "strategies": [
@@ -2079,16 +2079,16 @@
     {
       "strategyId": "M5_BREAKOUT_M1_RETEST",
       "label": "M5 breakout / M1 retest",
-      "candidateSignals": 522,
+      "candidateSignals": 523,
       "candidateOutcomeCounts": {
         "tp2_hit": 188,
-        "stopped": 317,
+        "stopped": 318,
         "time_exit": 11,
         "ambiguous": 2,
         "pending": 4
       },
       "matchedPairs": 39,
-      "unmatchedCandidates": 483,
+      "unmatchedCandidates": 484,
       "candidatesWithOppositeDirectionBaselineNearby": 1,
       "baselineSignalsUsed": 39,
       "pairedOutcomeCounts": [
@@ -2111,9 +2111,9 @@
       ],
       "byMarket": {
         "R_50": {
-          "candidates": 67,
+          "candidates": 68,
           "matched": 1,
-          "unmatched": 66
+          "unmatched": 67
         },
         "R_25": {
           "candidates": 76,
@@ -2664,16 +2664,17 @@
     {
       "strategyId": "M15_M5_EMA_PULLBACK",
       "label": "M15 trend / M5 EMA pullback",
-      "candidateSignals": 139,
+      "candidateSignals": 140,
       "candidateOutcomeCounts": {
         "time_exit": 48,
         "stop": 70,
-        "target": 21
+        "target": 21,
+        "pending": 1
       },
-      "matchedPairs": 57,
+      "matchedPairs": 58,
       "unmatchedCandidates": 82,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
-      "baselineSignalsUsed": 57,
+      "baselineSignalsUsed": 58,
       "pairedOutcomeCounts": [
         {
           "key": "stop / expired",
@@ -2690,6 +2691,10 @@
         {
           "key": "stop / stopped",
           "count": 3
+        },
+        {
+          "key": "pending / pending",
+          "count": 1
         }
       ],
       "byMarket": {
@@ -2729,8 +2734,8 @@
           "unmatched": 8
         },
         "CRASH500": {
-          "candidates": 6,
-          "matched": 4,
+          "candidates": 7,
+          "matched": 5,
           "unmatched": 2
         }
       },
@@ -3475,20 +3480,34 @@
           "baselineStatus": "expired",
           "candidateRealizedR": -1,
           "baselineRealizedR": null
+        },
+        {
+          "marketId": "CRASH500",
+          "direction": "SELL",
+          "candidateSignalId": "CRASH500-M15_M5_PULLBACK-1795411200",
+          "baselineSignalId": "CRASH500-SCALP-1795411200",
+          "candidateEntryEpoch": 1795411500,
+          "baselineEntryEpoch": 1795411200,
+          "entryTimeDifferenceSeconds": 300,
+          "candidateStatus": "pending",
+          "baselineStatus": "pending",
+          "candidateRealizedR": null,
+          "baselineRealizedR": null
         }
       ]
     },
     {
       "strategyId": "M5_BREAKOUT_M5_RETEST_M15_CONFIRM",
       "label": "M5 breakout / M5 retest / M15 confirmation",
-      "candidateSignals": 202,
+      "candidateSignals": 203,
       "candidateOutcomeCounts": {
         "time_exit": 84,
         "stopped": 93,
-        "tp2_hit": 25
+        "tp2_hit": 25,
+        "pending": 1
       },
       "matchedPairs": 61,
-      "unmatchedCandidates": 141,
+      "unmatchedCandidates": 142,
       "candidatesWithOppositeDirectionBaselineNearby": 0,
       "baselineSignalsUsed": 61,
       "pairedOutcomeCounts": [
@@ -3531,9 +3550,9 @@
           "unmatched": 13
         },
         "R_75": {
-          "candidates": 28,
+          "candidates": 29,
           "matched": 6,
-          "unmatched": 22
+          "unmatched": 23
         },
         "R_25": {
           "candidates": 26,
