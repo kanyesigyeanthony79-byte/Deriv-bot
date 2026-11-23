@@ -64,7 +64,7 @@ test("short stop-first exit ordering applies when a candle touches both barriers
 
 test("opposite EMA cross cannot exit before three bars", () => {
   const position = {direction:"LONG", stopLoss:90, takeProfit:110, entryIndex:0};
-  const indicators = {ema12:[2, 1, 1], ema26:[1, 2, 2]};
+  const indicators = {ema12:[2, 3, 1], ema26:[1, 2, 2]};
   const candle = {epoch:1700000000, open:100, high:101, low:99, close:100};
   assert.equal(strategy.evaluateExit(position, candle, indicators, 1), null);
   assert.deepEqual(strategy.evaluateExit(position, candle, indicators, 2),
