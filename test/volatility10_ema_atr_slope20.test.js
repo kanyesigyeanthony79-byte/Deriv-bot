@@ -307,7 +307,7 @@ test("R10 scheduler passes paper safety gates to the workflow", () => {
   assert.ok(workflow.includes("inputs.provider_enabled"));
   assert.ok(workflow.includes("inputs.emergency_kill_switch"));
   assert.ok(workflow.includes("inputs.telegram_enabled"));
-  assert.ok(workflow.includes('R10_PAPER_RUN_SECONDS: "45"'));
+  assert.ok(workflow.includes('R10_PAPER_RUN_SECONDS: "30"'));
 });
 
 test("R10 scheduler persists its last tick and dispatch result for health diagnosis", () => {
