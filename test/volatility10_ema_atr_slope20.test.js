@@ -261,3 +261,15 @@ test("paper scanner invalidates an open position when outage exceeds fetched his
   assert.equal(state.closedPositions[0].gapSeconds,1200*60);
   assert.ok(journal.health.some(x=>x.status==="data_gap_reset" && x.invalidatedActivePosition));
 });
+
+
+test("paper scanner anchors exit indicators to the latest contiguous segment before its cursor", () => {
+  const {indicatorSegmentStartBeforeCursor} = require("../volatility10_paper_scanner");
+  const candles = [1000,1060,1120,1240,1300,1360,1480,1540].map(epoch => ({
+    epoch, open:100, high:101, low:99, close:100
+  }));
+  // The cursor is after the first gap but before the second one.
+  assert.equal(indicatorSegmentStartBeforeCursor(candles,1300),3);
+  // A later gap will be handled as it is encountered by the processing loop.
+  assert.equal(indicatorSegmentStartBeforeCursor(candles,1120),0);
+});
