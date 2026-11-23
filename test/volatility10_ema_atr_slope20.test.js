@@ -324,3 +324,12 @@ test("R10 journal persistence rebases and retries concurrent main updates", () =
   assert.ok(workflow.includes("git push origin HEAD:main"));
   assert.ok(workflow.includes("for attempt in 1 2 3"));
 });
+
+test("R10 workflow exposes its trigger source for watchdog cadence accounting", () => {
+  const workflow = fs.readFileSync(path.join(__dirname,"../.github/workflows/volatility10-paper.yml"),"utf8");
+  const watchdog = fs.readFileSync(path.join(__dirname,"../.github/workflows/scanner-watchdog.yml"),"utf8");
+  assert.ok(workflow.includes("run-name:"));
+  assert.ok(workflow.includes("inputs.trigger_source"));
+  assert.ok(watchdog.includes('recoveryLabel: "watchdog_recovery"'));
+  assert.ok(watchdog.includes('String(run.display_title || "").includes(workflow.recoveryLabel)'));
+});
