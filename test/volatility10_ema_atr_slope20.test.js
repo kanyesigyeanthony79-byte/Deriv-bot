@@ -1,6 +1,8 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const strategy = require("../volatility10_ema_atr_slope20");
 
 test("canonicalizes all requested Volatility 10 aliases only", () => {
@@ -28,6 +30,11 @@ test("provider configuration is fail-closed, paper-only and rollback-ready", () 
   assert.equal(config.flags.liveExecutionEnabled, false);
   assert.equal(config.flags.emergencyKillSwitch, true);
   assert.equal(config.rollback.restoreLegacyProviders, "R10_LEGACY_ROLLBACK_ENABLED=true");
+  assert.equal(config.emergencyKilled({}), true);
+  assert.equal(config.emergencyKilled({R10_EMERGENCY_KILL_SWITCH:"false"}), false);
+  assert.equal(config.paperProviderEnabled({R10_PAPER_PROVIDER_ENABLED:"true"}), true);
+  assert.equal(config.paperRouteEnabled({R10_PAPER_ROUTE_ENABLED:"true"}), true);
+  assert.equal(config.legacyRollbackEnabled({R10_LEGACY_ROLLBACK_ENABLED:"true"}), true);
 });
 
 test("insufficient history cannot emit a signal", () => {
@@ -118,4 +125,35 @@ test("reference entry uses only the next candle open, not its high, low or close
   assert.equal(a.referenceEntryPrice, b.referenceEntryPrice);
   assert.equal(a.stopLoss, b.stopLoss);
   assert.equal(a.takeProfit, b.takeProfit);
+});
+
+test("provider exclusivity gates legacy Volatility 10 producers and paper notification route", () => {
+  const worker = fs.readFileSync(path.join(__dirname,"../workers/deriv-telegram-alerts/worker.js"),"utf8");
+  const hosted = fs.readFileSync(path.join(__dirname,"../hosted_scanner.js"),"utf8");
+  const collector = fs.readFileSync(path.join(__dirname,"../multi_timeframe_collector.js"),"utf8");
+  const alerts = fs.readFileSync(path.join(__dirname,"../multi_timeframe_alerts.js"),"utf8");
+  assert.match(worker,/function isVolatility10Alert/);
+  assert.match(worker,/data\.providerId === "volatility10_ema_atr_slope20_v1"/);
+  assert.match(worker,/env\.R10_PAPER_ROUTE_ENABLED === "true"/);
+  assert.match(worker,/env\.R10_EMERGENCY_KILL_SWITCH === "false"/);
+  assert.match(hosted,/id === "R_10" && process\.env\.R10_LEGACY_ROLLBACK_ENABLED !== "true"/);
+  assert.match(collector,/marketId === "R_10" && process\.env\.R10_LEGACY_ROLLBACK_ENABLED !== "true"/);
+  assert.match(alerts,/new Set\(\["R_25", "R_50", "R_75", "JD100", "CRASH500", "BOOM500"\]\)/);
+});
+
+test("other instrument scanner registrations remain present", () => {
+  const hosted = fs.readFileSync(path.join(__dirname,"../hosted_scanner.js"),"utf8");
+  const collector = fs.readFileSync(path.join(__dirname,"../multi_timeframe_collector.js"),"utf8");
+  for (const id of ["R_25","R_50","R_75","JD100","CRASH500","BOOM500"]) {
+    assert.ok(hosted.includes('"'+id+'"'),"hosted scanner retains "+id);
+    assert.ok(collector.includes('"'+id+'"'),"MTF collector retains "+id);
+  }
+});
+
+test("emergency kill switch and paper route defaults are fail-closed", () => {
+  const config = require("../volatility10_provider_config");
+  assert.equal(config.emergencyKilled({}), true);
+  assert.equal(config.paperRouteEnabled({}), false);
+  assert.equal(config.paperProviderEnabled({}), false);
+  assert.equal(config.flags.liveExecutionEnabled, false);
 });
