@@ -91,9 +91,31 @@ function processNewCandles(state, journal, completed, nextCandle, nowEpoch) {
     return;
   }
   const ind = indicators(completed);
+  let previousEpoch = Number(state.lastProcessedEpoch);
   for (let i=0;i<completed.length;i++) {
     const candle = completed[i];
     if (candle.epoch <= state.lastProcessedEpoch) continue;
+    if (Number.isFinite(previousEpoch) && previousEpoch > 0 && candle.epoch - previousEpoch > 60) {
+      const gapSeconds = candle.epoch - previousEpoch - 60;
+      const invalidatedPosition = state.activePosition;
+      if (invalidatedPosition) {
+        state.closedPositions ||= [];
+        state.closedPositions.push({
+          ...invalidatedPosition, exitReason:"DATA_GAP", outcome:"UNRESOLVED",
+          unresolved:true, exitPrice:null, exitEpoch:candle.epoch,
+          gapStartEpoch:previousEpoch + 60, gapEndEpoch:candle.epoch - 60,
+          gapSeconds, paper:true, live:false
+        });
+        state.activePosition = null;
+      }
+      journal.health ||= [];
+      journal.health.push({
+        at:new Date(candle.epoch*1000).toISOString(), status:"data_gap_reset",
+        previousCompletedEpoch:previousEpoch, nextCompletedEpoch:candle.epoch,
+        gapSeconds, invalidatedActivePosition:Boolean(invalidatedPosition)
+      });
+    }
+    previousEpoch = candle.epoch;
     if (state.activePosition && candle.epoch >= state.activePosition.entryEpoch &&
         candle.epoch > state.activePosition.lastEvaluatedEpoch) {
       const position = state.activePosition;
