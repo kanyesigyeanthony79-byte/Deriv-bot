@@ -288,3 +288,10 @@ test("R10 scheduler passes paper safety gates to the workflow", () => {
   assert.ok(workflow.includes("inputs.telegram_enabled"));
   assert.ok(workflow.includes('R10_PAPER_RUN_SECONDS: "45"'));
 });
+
+test("R10 scheduler persists its last tick and dispatch result for health diagnosis", () => {
+  const scheduler = fs.readFileSync(path.join(__dirname,"../cloudflare/deriv-mtf-watchdog.js"),"utf8");
+  assert.ok(scheduler.includes('const tick = { at: now.toISOString(), cron: controller.cron || null, r10: null, legacy: null }'));
+  assert.ok(scheduler.includes('env.STATE.put("scheduler_last_tick"'));
+  assert.ok(scheduler.includes('tick.r10 = { status: "error", reason: String(error) }'));
+});
