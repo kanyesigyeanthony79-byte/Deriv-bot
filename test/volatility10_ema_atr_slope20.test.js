@@ -203,3 +203,61 @@ test("only completed candles are used; the next candle is exposed for its open",
   assert.equal(afterClose.completed[0].epoch,1000);
   assert.equal(afterClose.nextCandle.epoch,1060);
 });
+
+
+test("paper scanner invalidates an open position at a candle gap inside fetched history", () => {
+  const {processNewCandles} = require("../volatility10_paper_scanner");
+  const start = 1700000000;
+  const completed = Array.from({length:1200}, (_, i) => ({
+    epoch:start + i*60 + (i >= 601 ? 60 : 0),
+    open:100, high:100.5, low:99.5, close:100
+  }));
+  const state = {
+    lastProcessedEpoch:completed[0].epoch,
+    lastCompletedEpoch:completed[0].epoch,
+    lastSignalEpoch:null,
+    activePosition:{
+      direction:"LONG", entryPrice:100, entryEpoch:completed[1].epoch,
+      stopLoss:90, takeProfit:110, barsHeld:0,
+      lastEvaluatedEpoch:completed[0].epoch, signalEpoch:completed[1].epoch
+    },
+    closedPositions:[]
+  };
+  const journal = {signals:[],health:[]};
+  processNewCandles(state,journal,completed,null,completed.at(-1).epoch+30);
+  assert.equal(state.activePosition,null);
+  assert.equal(state.closedPositions.length,1);
+  assert.equal(state.closedPositions[0].exitReason,"DATA_GAP");
+  assert.equal(state.closedPositions[0].outcome,"UNRESOLVED");
+  assert.equal(state.closedPositions[0].unresolved,true);
+  assert.equal(state.closedPositions[0].exitPrice,null);
+  assert.ok(journal.health.some(x=>x.status==="data_gap_reset" && x.invalidatedActivePosition));
+});
+
+test("paper scanner invalidates an open position when outage exceeds fetched history window", () => {
+  const {processNewCandles} = require("../volatility10_paper_scanner");
+  const start = 1701000000;
+  const completed = Array.from({length:1200}, (_, i) => ({
+    epoch:start + i*60, open:100, high:100.5, low:99.5, close:100
+  }));
+  const lastProcessedEpoch = start - 1201*60;
+  const state = {
+    lastProcessedEpoch,
+    lastCompletedEpoch:lastProcessedEpoch,
+    lastSignalEpoch:null,
+    activePosition:{
+      direction:"SHORT", entryPrice:100, entryEpoch:lastProcessedEpoch+60,
+      stopLoss:110, takeProfit:90, barsHeld:0,
+      lastEvaluatedEpoch:lastProcessedEpoch, signalEpoch:lastProcessedEpoch+60
+    },
+    closedPositions:[]
+  };
+  const journal = {signals:[],health:[]};
+  processNewCandles(state,journal,completed,null,completed.at(-1).epoch+30);
+  assert.equal(state.activePosition,null);
+  assert.equal(state.closedPositions.length,1);
+  assert.equal(state.closedPositions[0].exitReason,"DATA_GAP");
+  assert.equal(state.closedPositions[0].outcome,"UNRESOLVED");
+  assert.equal(state.closedPositions[0].gapSeconds,1200*60);
+  assert.ok(journal.health.some(x=>x.status==="data_gap_reset" && x.invalidatedActivePosition));
+});
