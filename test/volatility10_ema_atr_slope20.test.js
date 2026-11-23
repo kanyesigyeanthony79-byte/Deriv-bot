@@ -179,3 +179,24 @@ test("only completed candles are used; the next candle is exposed for its open",
   assert.equal(afterClose.completed[0].epoch,1000);
   assert.equal(afterClose.nextCandle.epoch,1060);
 });
+
+test("duplicate signal candle and existing position are gated", () => {
+  assert.equal(strategy.signalGate(1700000060,{lastSignalEpoch:1700000060}),"duplicate_candle");
+  assert.equal(strategy.signalGate(1700000120,{activePosition:{direction:"LONG"}}),"position_already_open");
+  assert.equal(strategy.signalGate(1700000180,{}),null);
+});
+
+test("only completed candles are used; the next candle is exposed for its open", () => {
+  const {splitCandleHistory} = require("../volatility10_paper_scanner");
+  const rows = [
+    {epoch:1000,open:10,high:11,low:9,close:10.5},
+    {epoch:1060,open:10.5,high:11.5,low:10,close:11}
+  ];
+  const split = splitCandleHistory(rows,1050);
+  assert.equal(split.completed.length,0);
+  assert.equal(split.nextCandle.epoch,1000);
+  const afterClose = splitCandleHistory(rows,1060);
+  assert.equal(afterClose.completed.length,1);
+  assert.equal(afterClose.completed[0].epoch,1000);
+  assert.equal(afterClose.nextCandle.epoch,1060);
+});
