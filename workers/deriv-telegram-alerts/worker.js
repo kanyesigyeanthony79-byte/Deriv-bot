@@ -1,7 +1,7 @@
 function isVolatility10Alert(data = {}) {
   const marketId = String(data.marketId || "").trim().toUpperCase();
-  const normalized = String(data.market || data.instrument || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-  return ["R_10", "R10", "VOLATILITY 10 INDEX", "VOLATILITY10INDEX"].includes(marketId) ||
+  const normalized = [data.marketId, data.market, data.instrument].map(value => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "")).join("|");
+  return ["R_10", "R10"].includes(marketId) ||
     ["volatility10", "volatility10index", "volatility10indexm1"].some(alias => normalized.includes(alias));
 }
 
@@ -165,6 +165,7 @@ export class ExecutionQueue{
    const r=await this.ctx.storage.transaction(async t=>{
     const ids=(await t.get("queue_ids"))||[];
     for(const id of ids){const k="signal:"+id,rec=await t.get(k);if(!rec||rec.status!=="pending")continue;
+     if(["R_10","R10"].includes(String(rec.payload.marketId||"").trim().toUpperCase())){rec.status="rejected";rec.ackAt=now;rec.result="volatility10_paper_only";await t.put(k,rec);continue;}
      const max=MT5_MAX_AGE[String(rec.payload.category||"").toUpperCase()]||0,age=Number(rec.payload.signalAgeSeconds||0)+Math.max(0,now-rec.queuedAt);
      if(!max||age>max){rec.status="expired";rec.ackAt=now;rec.result="expired_before_execution";await t.put(k,rec);continue;}
      if(rec.leaseUntil>now&&rec.leaseClient!==client)return {signal:null,reason:"leased_to_another_client"};
