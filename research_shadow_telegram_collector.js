@@ -227,7 +227,8 @@ async function main(env = process.env, options = {}) {
     };
     writeJson("research_shadow_collection.json", output);
     console.log(JSON.stringify({ event: "research_shadow_collection_complete", summary: output.summary, errors: output.errors }));
-    if (output.errors.length === MARKETS.length) process.exitCode = 1;
+    if (output.errors.length === MARKETS.length && ownsClient) process.exitCode = 1;
+    return output;
   } finally {
     if (ownsClient) client.close();
   }
