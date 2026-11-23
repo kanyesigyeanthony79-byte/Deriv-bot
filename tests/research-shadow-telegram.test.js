@@ -3,11 +3,31 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const collector = require("../research_shadow_telegram_collector");
 
-test("shadow collector excludes Volatility 10 while including Gold in its market universe", () => {
+test("shadow collector excludes standard Volatility 10 and includes both distinct 1-second products", () => {
   assert.equal(collector.MARKETS.some(([id]) => id === "R_10"), false);
   assert.deepEqual(collector.MARKETS.map(([id]) => id), [
-    "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "frxXAUUSD"
+    "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "frxXAUUSD",
+    "R_10_1S", "R_75_1S"
   ]);
+  assert.equal(collector.MARKETS.find(([id]) => id === "R_10_1S")[1], "Volatility 10 (1s) Index");
+  assert.equal(collector.MARKETS.find(([id]) => id === "R_75_1S")[1], "Volatility 75 (1s) Index");
+});
+
+test("both 1-second volatility products can produce research-only Telegram alerts", () => {
+  for (const [marketId, market] of [
+    ["R_10_1S", "Volatility 10 (1s) Index"],
+    ["R_75_1S", "Volatility 75 (1s) Index"]
+  ]) {
+    const alert = collector.toAlert({
+      signalId: marketId + "-example-123", marketId, market,
+      direction: "BUY", entry: 100, stopLoss: 95, tp2: 110
+    }, "M5_BREAKOUT_M1_RETEST");
+    assert.equal(alert.marketId, marketId);
+    assert.equal(alert.source, "RESEARCH_SHADOW");
+    assert.equal(alert.paper, true);
+    assert.equal(alert.live, false);
+    assert.equal(alert.status, "SHADOW");
+  }
 });
 
 test("shadow alerts contain demo-only routing fields and calculated TP1", () => {
