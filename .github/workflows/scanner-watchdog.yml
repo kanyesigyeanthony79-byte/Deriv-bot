@@ -35,7 +35,7 @@ jobs:
               // R10 is dispatched only by Cloudflare, which supplies current
               // paper-provider and emergency-stop gates. Never bypass those gates
               // with a generic watchdog dispatch.
-              { id: "volatility10-paper.yml", name: "Volatility 10 M1 Paper Scanner", staleAfterMs: 3 * 60 * 1000, autoRecover: false }
+              { id: "volatility10-paper.yml", name: "Volatility 10 M1 Paper Scanner", staleAfterMs: 3 * 60 * 1000, autoRecover: false, recoveryLabel: "watchdog_recovery" }
             ];
             const branch = "main";
             const defaultStaleAfterMs = 10 * 60 * 1000;
@@ -96,6 +96,7 @@ jobs:
 
               const recentRecovery = runs.find(run =>
                 run.event === "workflow_dispatch" &&
+                (!workflow.recoveryLabel || String(run.display_title || "").includes(workflow.recoveryLabel)) &&
                 Number.isFinite(Date.parse(run.created_at)) &&
                 now - Date.parse(run.created_at) < recoveryCooldownMs
               );
