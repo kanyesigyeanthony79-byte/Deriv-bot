@@ -18089,8 +18089,8 @@
       ],
       "status": "sent",
       "tp1Hit": true,
-      "tp2Hit": false,
-      "finalOutcome": null,
+      "tp2Hit": true,
+      "finalOutcome": "TP2",
       "events": [
         {
           "outcome": "TP1_HIT",
@@ -18102,12 +18102,23 @@
             "low": 50.52,
             "close": 51.01
           }
+        },
+        {
+          "outcome": "TP2_HIT",
+          "observedAt": "2026-11-23T11:34:51.632Z",
+          "candleEpoch": 1795432500,
+          "candle": {
+            "open": 51.16,
+            "high": 51.82,
+            "low": 51.12,
+            "close": 51.79
+          }
         }
       ],
-      "maxFavourablePrice": 51.31,
-      "maxFavourablePoints": 2.16,
-      "maxFavourablePct": 4.39471,
-      "maxFavourableEpoch": 1795396500
+      "maxFavourablePrice": 51.82,
+      "maxFavourablePoints": 2.67,
+      "maxFavourablePct": 5.43235,
+      "maxFavourableEpoch": 1795432500
     },
     {
       "signalId": "JD100-1795389300",
@@ -18684,14 +18695,26 @@
         }
       ],
       "status": "sent",
-      "tp1Hit": false,
+      "tp1Hit": true,
       "tp2Hit": false,
       "finalOutcome": null,
-      "events": [],
-      "maxFavourablePrice": 51.22,
-      "maxFavourablePoints": 1,
-      "maxFavourablePct": 1.99124,
-      "maxFavourableEpoch": 1795431600
+      "events": [
+        {
+          "outcome": "TP1_HIT",
+          "observedAt": "2026-11-23T11:34:51.891Z",
+          "candleEpoch": 1795432500,
+          "candle": {
+            "open": 51.16,
+            "high": 51.82,
+            "low": 51.12,
+            "close": 51.79
+          }
+        }
+      ],
+      "maxFavourablePrice": 51.82,
+      "maxFavourablePoints": 1.6,
+      "maxFavourablePct": 3.18598,
+      "maxFavourableEpoch": 1795432500
     },
     {
       "signalId": "R_25-1795428900",
@@ -18820,8 +18843,20 @@
       "status": "sent",
       "tp1Hit": false,
       "tp2Hit": false,
-      "finalOutcome": null,
-      "events": []
+      "finalOutcome": "SL",
+      "events": [
+        {
+          "outcome": "SL_HIT",
+          "observedAt": "2026-11-23T11:34:52.326Z",
+          "candleEpoch": 1795432500,
+          "candle": {
+            "open": 2752.224,
+            "high": 2754.393,
+            "low": 2751.723,
+            "close": 2753.931
+          }
+        }
+      ]
     },
     {
       "signalId": "R_50-1795429800",
@@ -18965,6 +19000,69 @@
       "finalOutcome": null,
       "events": [],
       "statusReason": "duplicate_or_cooldown"
+    },
+    {
+      "signalId": "R_25-1795432500",
+      "marketId": "R_25",
+      "market": "Volatility 25 Index",
+      "direction": "BUY",
+      "localDate": "2026-11-23",
+      "createdAt": "2026-11-23T11:15:00.000Z",
+      "candleEpoch": 1795432500,
+      "score": 63,
+      "entry": 2936.035,
+      "metrics": {
+        "ema20": 2932.883426420232,
+        "ema50": 2931.27964368015,
+        "ema50Previous": 2930.293652433527,
+        "atr": 5.910476075030379,
+        "emaSeparationAtr": 0.27134577988688563,
+        "emaSlopeAtr": 0.16682095217145018,
+        "bodyRatio": 0.4154827486227788,
+        "closeLocation": 0.5701652652942757,
+        "extensionAtr": 0.5332182280683297,
+        "swingAtr": 0.977417034882482,
+        "candleRange": 6.898000000000138
+      },
+      "checks": [
+        {
+          "passed": true,
+          "reason": "EMA20/EMA50 trend up, gap 0.27 ATR"
+        },
+        {
+          "passed": true,
+          "reason": "Close on the trend side of EMA20"
+        },
+        {
+          "passed": true,
+          "reason": "EMA50 sloping with the trend"
+        },
+        {
+          "passed": true,
+          "reason": "RSI 54.8 inside 50-68"
+        },
+        {
+          "passed": true,
+          "reason": "Bullish candle, body 42% of range"
+        },
+        {
+          "passed": true,
+          "reason": "Higher low formed"
+        },
+        {
+          "passed": true,
+          "reason": "Not extended from EMA20 (0.5 ATR)"
+        },
+        {
+          "passed": true,
+          "reason": "No spike candle"
+        }
+      ],
+      "status": "sent",
+      "tp1Hit": false,
+      "tp2Hit": false,
+      "finalOutcome": null,
+      "events": []
     }
   ],
   "dailyReports": {
