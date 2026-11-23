@@ -60,5 +60,19 @@ jobs:
           git add volatility10_paper_state.json volatility10_paper_journal.json
           if ! git diff --cached --quiet; then
             git commit -m "Update Volatility 10 paper journal"
-            git push
+            pushed=false
+            for attempt in 1 2 3; do
+              git fetch origin main
+              git rebase origin/main
+              if git push origin HEAD:main; then
+                pushed=true
+                break
+              fi
+              echo "Journal push raced with another main update (attempt $attempt); retrying."
+              sleep $((attempt * 2))
+            done
+            if [ "$pushed" != "true" ]; then
+              echo "Unable to persist R10 paper journal after three attempts."
+              exit 1
+            fi
           fi
