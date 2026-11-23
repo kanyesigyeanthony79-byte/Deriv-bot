@@ -15,8 +15,8 @@ test("shadow collector excludes standard Volatility 10 and includes both distinc
 
 test("both 1-second volatility products can produce research-only Telegram alerts", () => {
   for (const [marketId, market] of [
-    ["R_10_1S", "Volatility 10 (1s) Index"],
-    ["R_75_1S", "Volatility 75 (1s) Index"]
+    ["1HZ10V", "Volatility 10 (1s) Index"],
+    ["1HZ75V", "Volatility 75 (1s) Index"]
   ]) {
     const alert = collector.toAlert({
       signalId: marketId + "-example-123", marketId, market,
