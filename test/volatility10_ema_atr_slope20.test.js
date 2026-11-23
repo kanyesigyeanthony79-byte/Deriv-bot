@@ -27,7 +27,7 @@ test("provider configuration is fail-closed, paper-only and rollback-ready", () 
   assert.equal(config.flags.paperRouteEnabled, false);
   assert.equal(config.flags.liveExecutionEnabled, false);
   assert.equal(config.flags.emergencyKillSwitch, true);
-  assert.equal(config.rollback.restoreLegacyProviders, true);
+  assert.equal(config.rollback.restoreLegacyProviders, "R10_LEGACY_ROLLBACK_ENABLED=true");
 });
 
 test("insufficient history cannot emit a signal", () => {
