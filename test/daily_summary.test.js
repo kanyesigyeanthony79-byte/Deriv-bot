@@ -194,3 +194,37 @@ test("failed Telegram relay rejects delivery so the scanner can retry", async ()
     /relay unavailable/
   );
 });
+
+test("daily report distinguishes legacy duplicate cooldown from actual delivery failures", () => {
+  const rows = [
+    { localDate:"2026-11-13", marketId:"R_50", status:"sent", finalOutcome:"TP2" },
+    { localDate:"2026-11-13", marketId:"R_50", status:"suppressed", statusReason:"duplicate_or_cooldown" },
+    { localDate:"2026-11-13", marketId:"R_50", status:"suppressed", statusReason:"other_filter" },
+    { localDate:"2026-11-13", marketId:"R_50", status:"stale" },
+    { localDate:"2026-11-13", marketId:"R_50", status:"delivery_failed" },
+    { localDate:"2026-11-13", marketId:"R_50" }
+  ];
+  const summary = dailySummary(rows, "2026-11-13", markets);
+  assert.deepEqual(summary.legacyDeliveryBreakdown, {
+    sent: 1, duplicateCooldown: 1, stale: 1, deliveryFailed: 1, otherSuppressed: 1, untracked: 1
+  });
+  const message = buildDailySummaryMessage(summary);
+  assert.match(message, /duplicate\/cooldown 1/);
+  assert.match(message, /delivery failures 1/);
+  assert.match(message, /untracked 1/);
+});
+
+test("daily MTF report identifies baseline shadow-only suppression separately", () => {
+  const epoch = Date.parse("2026-11-13T10:00:00Z") / 1000;
+  const summary = dailySummary([], "2026-11-13", markets, [
+    { signalId:"baseline-a", marketId:"R_50", entryCandleEpoch:epoch, status:"stopped", telegramStatus:"suppressed", telegramStatusReason:"baseline_strategy_shadow_only" },
+    { signalId:"baseline-b", marketId:"R_50", entryCandleEpoch:epoch, status:"expired", telegramStatus:"suppressed", telegramStatusReason:"baseline_strategy_shadow_only" },
+    { signalId:"other", marketId:"R_50", entryCandleEpoch:epoch, status:"pending", telegramStatus:"suppressed", telegramStatusReason:"other_filter" },
+    { signalId:"untracked", marketId:"R_50", entryCandleEpoch:epoch, status:"pending" }
+  ]);
+  assert.equal(summary.multiTimeframe.deliveryBreakdown.suppressed, 3);
+  assert.equal(summary.multiTimeframe.deliveryBreakdown.baselineShadowOnly, 2);
+  assert.equal(summary.multiTimeframe.deliveryBreakdown.otherSuppressed, 1);
+  assert.equal(summary.multiTimeframe.deliveryUntracked, 1);
+  assert.match(buildDailySummaryMessage(summary), /baseline shadow-only 2, other 1/);
+});
