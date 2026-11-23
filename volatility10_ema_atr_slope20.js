@@ -94,6 +94,11 @@ function qualifyDirection(bars, ind, i) {
   if (crossDown && bars[i].close < ind.ema100[i] && shortSlope && atrPass) return "SHORT";
   return null;
 }
+function signalGate(signalEpoch, options = {}) {
+  if (options.lastSignalEpoch === signalEpoch) return "duplicate_candle";
+  if (options.activePosition) return "position_already_open";
+  return null;
+}
 function createSignalRecord(direction, last, nextCandle, ind, i) {
   const entry = Number(nextCandle.open);
   const risk = STOP_ATR_MULTIPLE * ind.atr14[i];
@@ -139,8 +144,8 @@ function evaluateSignal(completedCandles, nextCandle, options = {}) {
   if (!direction) return { signal: null, reason: "conditions_not_met" };
   const signalEpoch = Number(last.epoch) + BAR_SECONDS;
   const signal = createSignalRecord(direction, last, nextCandle, ind, i);
-  if (options.lastSignalEpoch === signalEpoch) return { signal: null, reason: "duplicate_candle" };
-  if (options.activePosition) return { signal: null, reason: "position_already_open" };
+  const gateReason = signalGate(signalEpoch, options);
+  if (gateReason) return { signal: null, reason: gateReason };
   return { signal, reason: "signal" };
 }
 function evaluateExit(position, completedCandle, completedIndicators, candleIndex) {
@@ -169,5 +174,5 @@ module.exports = {
   PROVIDER_ID, STRATEGY_VERSION, CANONICAL_MARKET_ID, TIMEFRAME, BAR_SECONDS,
   ATR_MEDIAN_BARS, SLOPE_LOOKBACK, STOP_ATR_MULTIPLE, TARGET_ATR_MULTIPLE,
   MIN_OPPOSITE_CROSS_HOLD_BARS, normalizeAlias, isVolatility10, canonicalMarketId,
-  ema, atrWilder, median, indicators, qualifyDirection, createSignalRecord, evaluateSignal, evaluateExit
+  ema, atrWilder, median, indicators, qualifyDirection, signalGate, createSignalRecord, evaluateSignal, evaluateExit
 };
