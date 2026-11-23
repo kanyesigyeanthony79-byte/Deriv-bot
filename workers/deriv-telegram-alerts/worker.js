@@ -1,4 +1,4 @@
-function shouldDeliverTelegramAlert(data = {}) {
+function shouldDeliverTelegramAlert(data = {}, env = {}) {
   if (data.event === "daily_summary") return true;
   const marketId = String(data.marketId || "").trim().toUpperCase();
   const market = String(data.market || "");
@@ -333,11 +333,11 @@ export default {
       const data = await request.json();
       // R_50 Telegram is reserved for tagged Original M15 Priority Pair alerts.
       // This filter affects notification delivery only, not scanning or MT5 routes.
-      if (!shouldDeliverTelegramAlert(data)) {
+      if (!shouldDeliverTelegramAlert(data, env)) {
         const reason = isVolatility10Alert(data) ? "R10_EXCLUSIVE_PROVIDER_PAPER_ONLY" : "R_50_PRIORITY_PAIR_ONLY";
         return reply({ success: true, suppressed: true, reason });
       }
-      if (isVolatility10Alert(data)) {
+      if (isVolatility10Alert(data) && env.R10_LEGACY_ROLLBACK_ENABLED !== "true") {
         const required = ["instrument", "timeframe", "direction", "signalTimestamp", "strategyVersion",
           "ema12", "ema26", "ema100", "atr14", "referenceEntryPrice", "stopLoss", "takeProfit", "providerId"];
         for (const field of required) {
