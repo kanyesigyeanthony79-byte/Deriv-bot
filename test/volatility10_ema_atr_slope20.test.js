@@ -277,6 +277,27 @@ test("paper scanner anchors exit indicators to the latest contiguous segment bef
 });
 
 
+
+test("paper scanner records signal evaluation reasons without changing strategy decisions", () => {
+  const {processNewCandles} = require("../volatility10_paper_scanner");
+  const start = 1702000000;
+  const completed = Array.from({length:1200}, (_, i) => ({
+    epoch:start + i*60, open:100, high:100.5, low:99.5, close:100
+  }));
+  const state = {
+    lastProcessedEpoch:completed[completed.length-2].epoch,
+    lastCompletedEpoch:completed[completed.length-2].epoch,
+    lastSignalEpoch:null, activePosition:null, closedPositions:[]
+  };
+  const journal = {signals:[],health:[]};
+  processNewCandles(state,journal,completed,{epoch:completed.at(-1).epoch+60,open:100,high:100.5,low:99.5,close:100},completed.at(-1).epoch+30);
+  assert.equal(journal.signalDiagnostics.evaluations,1);
+  assert.equal(journal.signalDiagnostics.last.evaluatedCandleEpoch,completed.at(-1).epoch);
+  assert.equal(journal.signalDiagnostics.last.reason,"conditions_not_met");
+  assert.equal(journal.signals.length,0);
+  assert.equal(state.activePosition,null);
+});
+
 test("R10 scheduler passes paper safety gates to the workflow", () => {
   const workflow = fs.readFileSync(path.join(__dirname,"../.github/workflows/volatility10-paper.yml"),"utf8");
   const scheduler = fs.readFileSync(path.join(__dirname,"../cloudflare/deriv-mtf-watchdog.js"),"utf8");

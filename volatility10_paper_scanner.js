@@ -93,6 +93,7 @@ function indicatorSegmentStartBeforeCursor(completed, lastProcessedEpoch) {
 }
 function processNewCandles(state, journal, completed, nextCandle, nowEpoch) {
   if (!completed.length) return;
+  journal.signalDiagnostics ||= {evaluations:0,byReason:{},last:null};
   const latest = completed[completed.length - 1];
   if (state.lastProcessedEpoch === null || state.lastProcessedEpoch === undefined) {
     // Warm-up is not backtested into the forward journal. Start observing from now.
@@ -156,6 +157,16 @@ function processNewCandles(state, journal, completed, nextCandle, nowEpoch) {
       if (!next) continue;
       const history = completed.slice(0,i+1);
       const result = evaluateSignal(history,next,{lastSignalEpoch:state.lastSignalEpoch});
+      const diagnostics = journal.signalDiagnostics;
+      diagnostics.evaluations += 1;
+      diagnostics.byReason[result.reason] = (diagnostics.byReason[result.reason] || 0) + 1;
+      diagnostics.last = {
+        at: new Date(Number(nowEpoch) * 1000).toISOString(),
+        evaluatedCandleEpoch: candle.epoch,
+        signalEpoch: Number(candle.epoch) + 60,
+        reason: result.reason,
+        direction: result.signal?.direction || null
+      };
       if (!result.signal) continue;
       const signal = result.signal;
       state.lastSignalEpoch = signal.signalEpoch;
@@ -208,7 +219,13 @@ async function main() {
           journal.health.push({at:new Date().toISOString(),status:"missed_completed_candle",gapSeconds:latest.epoch-state.lastCompletedEpoch});
         }
         processNewCandles(state,journal,snapshot.completed,snapshot.nextCandle,snapshot.now);
-        journal.health.push({at:new Date().toISOString(),status:"healthy",latestCompletedEpoch:latest.epoch,completedCandles:snapshot.completed.length,activePosition:Boolean(state.activePosition)});
+        journal.health.push({
+          at:new Date().toISOString(),status:"healthy",latestCompletedEpoch:latest.epoch,
+          completedCandles:snapshot.completed.length,activePosition:Boolean(state.activePosition),
+          evaluations:journal.signalDiagnostics?.evaluations || 0,
+          lastEvaluationReason:journal.signalDiagnostics?.last?.reason || "not_evaluated",
+          lastEvaluationAt:journal.signalDiagnostics?.last?.at || null
+        });
       }
       journal.health = journal.health.slice(-500);
       journal.signals = journal.signals.slice(-1000);
