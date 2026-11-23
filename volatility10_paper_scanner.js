@@ -90,9 +90,15 @@ function processNewCandles(state, journal, completed, nextCandle, nowEpoch) {
     state.lastCompletedEpoch = latest.epoch;
     return;
   }
-  let indicatorSegmentStart = 0;
-  let segmentIndicators = indicators(completed);
   let previousEpoch = Number(state.lastProcessedEpoch);
+  const firstNewIndex = completed.findIndex(candle => candle.epoch > state.lastProcessedEpoch);
+  let indicatorSegmentStart = 0;
+  if (firstNewIndex > 0) {
+    for (let j=1;j<=firstNewIndex;j++) {
+      if (completed[j].epoch - completed[j-1].epoch !== 60) indicatorSegmentStart = j;
+    }
+  }
+  let segmentIndicators = indicators(completed.slice(indicatorSegmentStart));
   for (let i=0;i<completed.length;i++) {
     const candle = completed[i];
     if (candle.epoch <= state.lastProcessedEpoch) continue;
