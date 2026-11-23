@@ -90,13 +90,18 @@ function processNewCandles(state, journal, completed, nextCandle, nowEpoch) {
     state.lastCompletedEpoch = latest.epoch;
     return;
   }
-  const ind = indicators(completed);
+  let indicatorSegmentStart = 0;
+  let segmentIndicators = indicators(completed);
   let previousEpoch = Number(state.lastProcessedEpoch);
   for (let i=0;i<completed.length;i++) {
     const candle = completed[i];
     if (candle.epoch <= state.lastProcessedEpoch) continue;
     if (Number.isFinite(previousEpoch) && previousEpoch > 0 && candle.epoch - previousEpoch > 60) {
       const gapSeconds = candle.epoch - previousEpoch - 60;
+      // Indicators must restart after a gap too; never use EMA/ATR values
+      // calculated across missing candles for an exit decision.
+      indicatorSegmentStart = i;
+      segmentIndicators = indicators(completed.slice(indicatorSegmentStart));
       const invalidatedPosition = state.activePosition;
       if (invalidatedPosition) {
         state.closedPositions ||= [];
@@ -120,11 +125,12 @@ function processNewCandles(state, journal, completed, nextCandle, nowEpoch) {
         candle.epoch > state.activePosition.lastEvaluatedEpoch) {
       const position = state.activePosition;
       position.barsHeld += 1;
-      const entryIndex = i - position.barsHeld + 1;
+      const segmentIndex = i - indicatorSegmentStart;
+      const entryIndex = segmentIndex - position.barsHeld + 1;
       const exit = evaluateExit({
         direction:position.direction, stopLoss:position.stopLoss,
         takeProfit:position.takeProfit, entryIndex
-      }, candle, ind, i);
+      }, candle, segmentIndicators, segmentIndex);
       position.lastEvaluatedEpoch = candle.epoch;
       if (exit) {
         state.closedPositions.push({
