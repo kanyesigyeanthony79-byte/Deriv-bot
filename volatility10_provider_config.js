@@ -1,7 +1,7 @@
 "use strict";
 
 // Rollout defaults are intentionally fail-closed. No provider or paper route is
-// activated until a dedicated M1 scheduler and forward-paper checks are deployed.
+// activated until the M1 scheduler is enabled and forward-paper checks pass.
 const config = Object.freeze({
   instrument: "R_10",
   aliases: Object.freeze(["R_10", "Volatility 10 Index", "Volatility10Index", "Volatility 10", "Volatility 10 Index_M1"]),
