@@ -3,7 +3,7 @@
 // Observation only: no production signals, Telegram delivery, or order execution.
 
 const SYNTHETIC_MARKETS = Object.freeze([
-  "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500"
+  "R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500"
 ]);
 const M1_SECONDS = 60;
 const M5_SECONDS = 300;
