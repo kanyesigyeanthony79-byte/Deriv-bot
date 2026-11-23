@@ -27,7 +27,7 @@ test("promoted production panel loads real state and reports scanner health", ()
   for (const source of ["signal_state.json", "trade_journal.json", "scanner_heartbeat.json"]) {
     assert.ok(html.includes(source), "promoted panel must read " + source);
   }
-  assert.ok(html.includes("function refreshPromotedSystem()"), "promoted panel refresh function must exist");
+  assert.ok(html.includes("async function refreshPromotedSystem()"), "promoted panel refresh function must exist");
   assert.ok(html.includes("setInterval(refreshPromotedSystem, 60000)"), "promoted panel must auto-refresh");
   assert.ok(html.includes("setPromotedSignalFilter"), "promoted signal filters must be wired");
   assert.ok(html.includes("PROMOTED_FRESH_SECONDS"), "stale active quotes must be excluded");
