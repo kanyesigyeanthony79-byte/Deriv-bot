@@ -70,3 +70,52 @@ test("opposite EMA cross cannot exit before three bars", () => {
   assert.deepEqual(strategy.evaluateExit(position, candle, indicators, 2),
     {reason:"OPPOSITE_CROSS", exitPrice:100});
 });
+
+test("long and short signals contain the complete paper schema and symmetric 3 ATR exits", () => {
+  const last = {epoch: 1700000000, open: 100, high: 101, low: 99, close: 100};
+  const next = {epoch: 1700000060, open: 102, high: 103, low: 101, close: 102};
+  const ind = {ema12:[null, 101], ema26:[null, 100], ema100:[null, 99], atr14:[null, 2], atrMedian1000:[null, 1]};
+  const long = strategy.createSignalRecord("LONG", last, next, ind, 1);
+  assert.equal(long.direction, "LONG");
+  assert.equal(long.referenceEntryPrice, 102);
+  assert.equal(long.stopLoss, 96);
+  assert.equal(long.takeProfit, 108);
+  assert.equal(long.providerId, strategy.PROVIDER_ID);
+  assert.equal(long.timeframe, "M1");
+  assert.equal(long.status, "PAPER");
+  assert.equal(long.live, false);
+  const short = strategy.createSignalRecord("SHORT", last, next, ind, 1);
+  assert.equal(short.stopLoss, 108);
+  assert.equal(short.takeProfit, 96);
+});
+
+test("EMA slope, crossover, close location and ATR median are all mandatory", () => {
+  const bars = Array.from({length: 21}, (_, i) => ({close: 105}));
+  const ind = {
+    ema12: Array(21).fill(1), ema26: Array(21).fill(2), ema100: Array(21).fill(3),
+    atr14: Array(21).fill(2), atrMedian1000: Array(21).fill(1)
+  };
+  ind.ema12[19] = 2; ind.ema26[19] = 2;
+  ind.ema12[20] = 3; ind.ema26[20] = 2.5; ind.ema100[20] = 4;
+  ind.ema12[0] = 1; ind.ema26[0] = 1; ind.ema100[0] = 2;
+  assert.equal(strategy.qualifyDirection(bars, ind, 20), "LONG");
+  ind.ema100[20] = 2; // Close is above EMA100, but EMA100 slope is not rising.
+  assert.equal(strategy.qualifyDirection(bars, ind, 20), null);
+  ind.ema100[20] = 4; ind.atr14[20] = 0.5;
+  assert.equal(strategy.qualifyDirection(bars, ind, 20), null);
+  ind.atr14[20] = 2; ind.ema12[20] = 1; ind.ema26[20] = 2;
+  ind.ema12[19] = 2; ind.ema26[19] = 2;
+  ind.ema12[0] = 3; ind.ema26[0] = 3; ind.ema100[0] = 5;
+  ind.ema100[20] = 2; bars[20].close = 1;
+  assert.equal(strategy.qualifyDirection(bars, ind, 20), "SHORT");
+});
+
+test("reference entry uses only the next candle open, not its high, low or close", () => {
+  const last = {epoch: 1700000000, open: 100, high: 101, low: 99, close: 100};
+  const ind = {ema12:[null, 101], ema26:[null, 100], ema100:[null, 99], atr14:[null, 2], atrMedian1000:[null, 1]};
+  const a = strategy.createSignalRecord("LONG", last, {epoch:1700000060,open:102,high:999,low:1,close:500}, ind, 1);
+  const b = strategy.createSignalRecord("LONG", last, {epoch:1700000060,open:102,high:103,low:101,close:102}, ind, 1);
+  assert.equal(a.referenceEntryPrice, b.referenceEntryPrice);
+  assert.equal(a.stopLoss, b.stopLoss);
+  assert.equal(a.takeProfit, b.takeProfit);
+});
