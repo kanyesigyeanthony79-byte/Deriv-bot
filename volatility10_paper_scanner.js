@@ -152,7 +152,7 @@ async function main() {
     console.log(JSON.stringify({event:"r10_paper_scanner_disabled",providerId:PROVIDER_ID,enabled,killed,liveExecution:false}));
     return;
   }
-  const state = readJson(STATE_PATH,{version:1,providerId:PROVIDER_ID,lastSignalEpoch:null,activePosition:null,closedPositions:[],lastCompletedEpoch:null});
+  const state = readJson(STATE_PATH,{version:1,providerId:PROVIDER_ID,lastSignalEpoch:null,activePosition:null,closedPositions:[],lastCompletedEpoch:null,lastProcessedEpoch:null});
   const journal = readJson(JOURNAL_PATH,{version:1,providerId:PROVIDER_ID,signals:[],health:[]});
   const started = Date.now();
   const client = await connect();
@@ -166,31 +166,7 @@ async function main() {
         if (state.lastCompletedEpoch && latest.epoch-state.lastCompletedEpoch > 60) {
           journal.health.push({at:new Date().toISOString(),status:"missed_completed_candle",gapSeconds:latest.epoch-state.lastCompletedEpoch});
         }
-        const positionChanged = updatePosition(state,snapshot.completed);
-        if (!state.activePosition && !positionChanged) {
-          const result = evaluateSignal(snapshot.completed,snapshot.nextCandle,{
-            lastSignalEpoch:state.lastSignalEpoch,activePosition:state.activePosition
-          });
-          if (result.signal) {
-            const signal = result.signal;
-            state.lastSignalEpoch = signal.signalEpoch;
-            state.activePosition = {
-              direction:signal.direction, entryPrice:signal.referenceEntryPrice,
-              entryEpoch:Math.floor(new Date(signal.entryTimestamp).getTime()/1000),
-              stopLoss:signal.stopLoss,takeProfit:signal.takeProfit,barsHeld:0,
-              lastEvaluatedEpoch:signal.signalEpoch-60, signalEpoch:signal.signalEpoch
-            };
-            journal.signals.push({...signal,telegram:null});
-            try {
-              const delivered = await deliverPaperSignal(signal);
-              journal.signals[journal.signals.length-1].telegram=delivered;
-            } catch(error) {
-              journal.signals[journal.signals.length-1].telegram={sent:false,reason:String(error.message||error)};
-            }
-            console.log(JSON.stringify({event:"r10_paper_signal",providerId:PROVIDER_ID,direction:signal.direction,signalTimestamp:signal.signalTimestamp}));
-          }
-        }
-        state.lastCompletedEpoch = latest.epoch;
+        processNewCandles(state,journal,snapshot.completed,snapshot.nextCandle,snapshot.now);
         journal.health.push({at:new Date().toISOString(),status:"healthy",latestCompletedEpoch:latest.epoch,completedCandles:snapshot.completed.length,activePosition:Boolean(state.activePosition)});
       }
       journal.health = journal.health.slice(-500);
