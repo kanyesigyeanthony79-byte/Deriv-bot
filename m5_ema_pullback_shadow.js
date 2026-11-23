@@ -2,7 +2,7 @@
 // Forward-only M15 trend candidate with M5 EMA9/21 pullback-reclaim entry.
 // Research journal only: no Telegram alerts, production signals, or MT5 execution.
 const { evaluate, DEF } = require("./engine");
-const MARKETS = Object.freeze(["R_10","R_25","R_50","R_75","JD75","JD100","CRASH500","BOOM500"]);
+const MARKETS = Object.freeze(["R_25","R_50","R_75","JD75","JD100","CRASH500","BOOM500"]);
 const M5 = 300, M15 = 900, STOP_LOOKBACK = 5, STOP_BUFFER_ATR = 0.10, SETUP_MAX_AGE = 12 * M5;
 const MIN_RISK_ATR = 0.50, MAX_RISK_ATR = 3.0, TARGET_R = 2, HORIZON_BARS = 12;
 const TERMINAL = new Set(["target","stop","time_exit","ambiguous"]);
