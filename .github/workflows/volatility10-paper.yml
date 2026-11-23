@@ -1,0 +1,49 @@
+name: Volatility 10 M1 Paper Scanner
+
+on:
+  workflow_dispatch:
+    inputs:
+      trigger_source:
+        description: "Dispatch source label"
+        required: false
+        default: "manual"
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: volatility10-m1-paper-scanner
+  cancel-in-progress: false
+
+jobs:
+  paper-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run Volatility 10 strategy tests
+        run: node --test test/volatility10_ema_atr_slope20.test.js
+      - name: Run paper-only M1 scanner window
+        run: node volatility10_paper_scanner.js
+        env:
+          R10_PAPER_RUN_SECONDS: "45"
+          R10_PAPER_PROVIDER_ENABLED: ${{ vars.R10_PAPER_PROVIDER_ENABLED || 'false' }}
+          R10_PAPER_ROUTE_ENABLED: ${{ vars.R10_PAPER_ROUTE_ENABLED || 'false' }}
+          R10_EMERGENCY_KILL_SWITCH: ${{ vars.R10_EMERGENCY_KILL_SWITCH || 'true' }}
+          R10_PAPER_TELEGRAM_ENABLED: ${{ vars.R10_PAPER_TELEGRAM_ENABLED || 'false' }}
+          TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
+          SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
+      - name: Persist paper journal
+        if: always()
+        run: |
+          git config user.name "Volatility 10 Paper Scanner"
+          git config user.email "actions@users.noreply.github.com"
+          git add volatility10_paper_state.json volatility10_paper_journal.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update Volatility 10 paper journal"
+            git push
+          fi

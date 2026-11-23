@@ -1,5 +1,21 @@
-function shouldDeliverTelegramAlert(data = {}) {
+function isVolatility10Alert(data = {}) {
+  const marketId = String(data.marketId || "").trim().toUpperCase();
+  const normalized = [data.marketId, data.market, data.instrument].map(value => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "")).join("|");
+  return ["R_10", "R10"].includes(marketId) ||
+    ["volatility10", "volatility10index", "volatility10indexm1"].some(alias => normalized.includes(alias));
+}
+
+function shouldDeliverTelegramAlert(data = {}, env = {}) {
   if (data.event === "daily_summary") return true;
+  if (isVolatility10Alert(data)) {
+    if (env.R10_LEGACY_ROLLBACK_ENABLED === "true") return true;
+    return env.R10_PAPER_ROUTE_ENABLED === "true" &&
+      env.R10_EMERGENCY_KILL_SWITCH === "false" &&
+      data.providerId === "volatility10_ema_atr_slope20_v1" &&
+      data.strategyVersion === "volatility10_ema_atr_slope20_v1" &&
+      data.timeframe === "M1" &&
+      (data.status === "PAPER" || data.paper === true) && data.live !== true;
+  }
   const marketId = String(data.marketId || "").trim().toUpperCase();
   const market = String(data.market || "");
   const isR50 = marketId === "R_50" || /\bvolatility\s*50(?:\s+index)?\b/i.test(market);
@@ -7,8 +23,7 @@ function shouldDeliverTelegramAlert(data = {}) {
   return data.source === "LEGACY_15M" && data.priorityTier === "RESEARCH_PRIORITY";
 }
 
-
-const MT5_ALLOWED_MARKETS=new Set(["R_10","R_25","R_50","R_75","JD100","CRASH500","BOOM500"]);
+const MT5_ALLOWED_MARKETS=new Set(["R_25","R_50","R_75","JD100","CRASH500","BOOM500"]);
 const MT5_MAX_AGE={SCALP:600,SHORT_TERM:1800,POSITION:14400};
 function validateMt5Signal(d){
  if(!d||d.event!=="new_signal")return "Only new_signal events can be queued";
@@ -150,6 +165,7 @@ export class ExecutionQueue{
    const r=await this.ctx.storage.transaction(async t=>{
     const ids=(await t.get("queue_ids"))||[];
     for(const id of ids){const k="signal:"+id,rec=await t.get(k);if(!rec||rec.status!=="pending")continue;
+     if(isVolatility10Alert(rec.payload)){rec.status="rejected";rec.ackAt=now;rec.result="volatility10_paper_only";await t.put(k,rec);continue;}
      const max=MT5_MAX_AGE[String(rec.payload.category||"").toUpperCase()]||0,age=Number(rec.payload.signalAgeSeconds||0)+Math.max(0,now-rec.queuedAt);
      if(!max||age>max){rec.status="expired";rec.ackAt=now;rec.result="expired_before_execution";await t.put(k,rec);continue;}
      if(rec.leaseUntil>now&&rec.leaseClient!==client)return {signal:null,reason:"leased_to_another_client"};
@@ -333,8 +349,48 @@ export default {
       const data = await request.json();
       // R_50 Telegram is reserved for tagged Original M15 Priority Pair alerts.
       // This filter affects notification delivery only, not scanning or MT5 routes.
-      if (!shouldDeliverTelegramAlert(data)) {
-        return reply({ success: true, suppressed: true, reason: "R_50_PRIORITY_PAIR_ONLY" });
+      if (!shouldDeliverTelegramAlert(data, env)) {
+        const reason = isVolatility10Alert(data) ? "R10_EXCLUSIVE_PROVIDER_PAPER_ONLY" : "R_50_PRIORITY_PAIR_ONLY";
+        return reply({ success: true, suppressed: true, reason });
+      }
+      if (isVolatility10Alert(data) && env.R10_LEGACY_ROLLBACK_ENABLED !== "true") {
+        const required = ["instrument", "timeframe", "direction", "signalTimestamp", "strategyVersion",
+          "ema12", "ema26", "ema100", "atr14", "referenceEntryPrice", "stopLoss", "takeProfit", "providerId"];
+        for (const field of required) {
+          if (data[field] === undefined || data[field] === null || data[field] === "") {
+            return reply({ error: "Missing Volatility 10 field: " + field }, 400);
+          }
+        }
+        if (data.status !== "PAPER" || data.paper !== true || data.live === true) {
+          return reply({ error: "Volatility 10 route accepts paper signals only" }, 403);
+        }
+        const message = [
+          "DERIV SIGNAL ASSISTANT — VOLATILITY 10",
+          "PAPER SIGNAL — NO LIVE EXECUTION",
+          "━━━━━━━━━━━━━━━━",
+          "Instrument: " + data.instrument,
+          "Timeframe: " + data.timeframe,
+          "Direction: " + data.direction,
+          "Signal time: " + data.signalTimestamp,
+          "Strategy: " + data.strategyVersion,
+          "EMA 12 / 26 / 100: " + [data.ema12, data.ema26, data.ema100].join(" / "),
+          "ATR 14: " + data.atr14,
+          "Reference entry: " + data.referenceEntryPrice,
+          "Stop loss: " + data.stopLoss,
+          "Take profit: " + data.takeProfit,
+          "Provider: " + data.providerId,
+          "Status: PAPER",
+          "━━━━━━━━━━━━━━━━",
+          "Observation only. No order has been placed."
+        ].join("\n");
+        const telegramURL = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+        const telegramResponse = await fetch(telegramURL, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text: message })
+        });
+        const result = await telegramResponse.json();
+        if (!telegramResponse.ok || !result.ok) return reply({ error: "Telegram delivery failed" }, 502);
+        return reply({ success: true, message: "Volatility 10 paper alert delivered" });
       }
       let message;
 
