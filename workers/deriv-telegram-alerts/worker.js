@@ -382,7 +382,7 @@ export default {
           "Status: PAPER",
           "━━━━━━━━━━━━━━━━",
           "Observation only. No order has been placed."
-        ].join("\\n");
+        ].join("\n");
         const telegramURL = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
         const telegramResponse = await fetch(telegramURL, {
           method: "POST", headers: { "Content-Type": "application/json" },
