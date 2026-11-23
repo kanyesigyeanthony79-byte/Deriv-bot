@@ -78,33 +78,72 @@ async function deliverPaperSignal(signal) {
   if (!response.ok || body.success !== true) throw new Error(body.error || "Paper Telegram route failed");
   return {sent:true};
 }
-function updatePosition(state, completed) {
-  const position = state.activePosition;
-  if (!position) return false;
+function processNewCandles(state, journal, completed, nextCandle, nowEpoch) {
+  if (!completed.length) return;
+  const latest = completed[completed.length - 1];
+  if (state.lastProcessedEpoch === null || state.lastProcessedEpoch === undefined) {
+    // Warm-up is not backtested into the forward journal. Start observing from now.
+    state.lastProcessedEpoch = latest.epoch;
+    state.lastCompletedEpoch = latest.epoch;
+    return;
+  }
   const ind = indicators(completed);
-  let changed = false;
   for (let i=0;i<completed.length;i++) {
     const candle = completed[i];
-    if (candle.epoch < position.entryEpoch || candle.epoch <= position.lastEvaluatedEpoch) continue;
-    position.barsHeld += 1;
-    const entryIndex = i - position.barsHeld + 1;
-    const exit = evaluateExit({
-      direction:position.direction, stopLoss:position.stopLoss,
-      takeProfit:position.takeProfit, entryIndex
-    }, candle, ind, i);
-    position.lastEvaluatedEpoch = candle.epoch;
-    changed = true;
-    if (exit) {
-      state.closedPositions.push({
-        ...position, exitReason:exit.reason, exitPrice:exit.exitPrice,
-        exitEpoch:candle.epoch, closedAt:new Date(candle.epoch*1000).toISOString(),
-        paper:true, live:false
-      });
-      state.activePosition = null;
-      break;
+    if (candle.epoch <= state.lastProcessedEpoch) continue;
+    if (state.activePosition && candle.epoch >= state.activePosition.entryEpoch &&
+        candle.epoch > state.activePosition.lastEvaluatedEpoch) {
+      const position = state.activePosition;
+      position.barsHeld += 1;
+      const entryIndex = i - position.barsHeld + 1;
+      const exit = evaluateExit({
+        direction:position.direction, stopLoss:position.stopLoss,
+        takeProfit:position.takeProfit, entryIndex
+      }, candle, ind, i);
+      position.lastEvaluatedEpoch = candle.epoch;
+      if (exit) {
+        state.closedPositions.push({
+          ...position, exitReason:exit.reason, exitPrice:exit.exitPrice,
+          exitEpoch:candle.epoch, closedAt:new Date(candle.epoch*1000).toISOString(),
+          paper:true, live:false
+        });
+        state.activePosition = null;
+      }
+    }
+    if (!state.activePosition) {
+      const next = completed[i+1] || (candle.epoch === latest.epoch ? nextCandle : null);
+      if (!next) continue;
+      const history = completed.slice(0,i+1);
+      const result = evaluateSignal(history,next,{lastSignalEpoch:state.lastSignalEpoch});
+      if (!result.signal) continue;
+      const signal = result.signal;
+      state.lastSignalEpoch = signal.signalEpoch;
+      state.activePosition = {
+        direction:signal.direction, entryPrice:signal.referenceEntryPrice,
+        entryEpoch:Math.floor(new Date(signal.entryTimestamp).getTime()/1000),
+        stopLoss:signal.stopLoss,takeProfit:signal.takeProfit,barsHeld:0,
+        lastEvaluatedEpoch:candle.epoch,signalEpoch:signal.signalEpoch
+      };
+      const signalRecord = {...signal,telegram:null};
+      journal.signals.push(signalRecord);
+      const signalAge = Number(nowEpoch) - signal.signalEpoch;
+      if (signalAge <= 60 && signalAge >= 0) {
+        // The worker independently enforces provider identity, paper status and kill switch.
+        deliverPaperSignal(signal).then(result => {
+          signalRecord.telegram = result;
+          writeJson(JOURNAL_PATH,journal);
+        }).catch(error => {
+          signalRecord.telegram = {sent:false,reason:String(error.message||error)};
+          writeJson(JOURNAL_PATH,journal);
+        });
+      } else {
+        signalRecord.telegram = {sent:false,reason:"historical_catchup_not_delivered"};
+      }
+      console.log(JSON.stringify({event:"r10_paper_signal",providerId:PROVIDER_ID,direction:signal.direction,signalTimestamp:signal.signalTimestamp,delayed:signalAge>60}));
     }
   }
-  return changed;
+  state.lastProcessedEpoch = latest.epoch;
+  state.lastCompletedEpoch = latest.epoch;
 }
 async function main() {
   const enabled = process.env.R10_PAPER_PROVIDER_ENABLED === "true";
@@ -167,4 +206,4 @@ async function main() {
   console.log(JSON.stringify({event:"r10_paper_scanner_window_complete",providerId:PROVIDER_ID,liveExecution:false}));
 }
 if (require.main === module) main().catch(error=>{console.error(JSON.stringify({event:"r10_paper_scanner_failed",message:error.message}));process.exitCode=1;});
-module.exports={collect,updatePosition};
+module.exports={collect,processNewCandles};
