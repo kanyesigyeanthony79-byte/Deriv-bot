@@ -93,6 +93,7 @@ function newSignals(before, after) {
   return (after || []).filter(s => s.signalId && !oldIds.has(s.signalId));
 }
 function toAlert(signal, strategy) {
+  if (!signal || signal.marketId === "R_10" || !MARKETS.some(([id]) => id === signal.marketId)) return null;
   const entry = Number(signal.entry);
   const stopLoss = Number(signal.stopLoss);
   const risk = Math.abs(entry - stopLoss);
