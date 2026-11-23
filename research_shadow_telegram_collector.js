@@ -1,5 +1,5 @@
 "use strict";
-// Research/forward-shadow cycle shared by the hosted scanner. Volatility 10 and retired MTF are excluded.
+// Research/forward-shadow cycle shared by the hosted scanner. Standard Volatility 10 and retired MTF are excluded; 1-second products are separate markets.
 // Observation/Telegram only; never imports production routing or MT5 execution modules.
 const fs = require("node:fs");
 const path = require("node:path");
@@ -13,7 +13,9 @@ const MARKETS = Object.freeze([
   ["R_25", "Volatility 25 Index"], ["R_50", "Volatility 50 Index"],
   ["R_75", "Volatility 75 Index"], ["JD75", "Jump 75 Index"],
   ["JD100", "Jump 100 Index"], ["CRASH500", "Crash 500 Index"],
-  ["BOOM500", "Boom 500 Index"], ["frxXAUUSD", "Gold (XAUUSD)"]
+  ["BOOM500", "Boom 500 Index"], ["frxXAUUSD", "Gold (XAUUSD)"],
+  ["R_10_1S", "Volatility 10 (1s) Index"],
+  ["R_75_1S", "Volatility 75 (1s) Index"]
 ]);
 const FRAMES = [["M1", 60, 300], ["M5", 300, 120], ["M15", 900, 120]];
 const JOURNALS = {
