@@ -10,6 +10,7 @@ const { dailySummary, deliverDailyReport, previousUgandaDay } = require("./daily
 const { createDerivDemoReadOnlySnapshot } = require("./scripts/demo_readonly_account_snapshot");
 const { priorityForMarket } = require("./priority_pairs");
 const { createHeartbeat } = require("./scanner_heartbeat");
+const { cleanupUnmonitoredSignals } = require("./stale_signal_cleanup");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const GRANULARITY = 900;
@@ -59,6 +60,20 @@ try {
 } catch {}
 const saveJournal = () => fs.writeFileSync(JOURNAL_FILE, JSON.stringify(journal, null, 2) + "\n");
 if (reconcileJournalState(journal, state, log) > 0) saveJournal();
+const unmonitoredExpired = cleanupUnmonitoredSignals({
+  state, journal,
+  nowEpoch: Math.floor(Date.now() / 1000),
+  monitoredMarketIds: MARKETS.map(([id]) => id),
+  excludedMarketIds: ["R_10"],
+  maxAgeSeconds: MAX_MONITOR_AGE,
+  markExpired,
+  log
+});
+if (unmonitoredExpired > 0) {
+  saveState();
+  saveJournal();
+  log("unmonitored_signal_cleanup_completed", { expired: unmonitoredExpired });
+}
 const localDate = epoch => new Intl.DateTimeFormat("en-CA", {timeZone:"Africa/Kampala",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(epoch * 1000));
 const findJournalSignal = id => journal.signals.find(s => s.signalId === id);
 
