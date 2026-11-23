@@ -58,7 +58,7 @@ async function dispatchR10(env, now) {
   const lock = await env.STATE.get(lockKey);
   if (lock) return { status: "skipped_dispatch_lock", lock: JSON.parse(lock) };
   const lockValue = { providerId: R10_PROVIDER_ID, at: now.toISOString(), ttlSeconds: 55 };
-  await env.STATE.put(lockKey, JSON.stringify(lockValue), { expirationTtl: 55 });
+  await env.STATE.put(lockKey, JSON.stringify(lockValue), { expirationTtl: 60 });
   try {
     await github(env, `/repos/${REPO}/actions/workflows/${workflow.id}/dispatches`, {
       method: "POST", headers: { "Content-Type": "application/json" },
