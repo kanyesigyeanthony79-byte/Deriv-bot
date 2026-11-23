@@ -1,6 +1,7 @@
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict");
-const {ema,m15Bias,m5Trigger,makeSignal,updateOutcome,updateM5PullbackJournal}=require("../m5_ema_pullback_shadow");
+const {MARKETS,ema,m15Bias,m5Trigger,makeSignal,updateOutcome,updateM5PullbackJournal}=require("../m5_ema_pullback_shadow");
+test("EMA pullback shadow strategy includes both official 1-second Deriv symbols",()=>{assert.ok(MARKETS.includes("1HZ10V"));assert.ok(MARKETS.includes("1HZ75V"));});
 const base=Math.floor(1_700_000_000/900)*900;
 function frame(n,step,price=100){return Array.from({length:n},(_,i)=>({epoch:base+i*step,open:price,high:price+0.2,low:price-0.2,close:price}));}
 test("M15 bias only returns a direction from completed valid engine signals",()=>{assert.equal(m15Bias(frame(64,900)),null);});
