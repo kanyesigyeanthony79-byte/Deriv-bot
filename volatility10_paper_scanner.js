@@ -42,10 +42,10 @@ function connect() {
       if (!item) return;
       pending.delete(data.req_id);
       clearTimeout(item.timer);
-      if (data.error) item.rej(new Error(data.error.message || "Deriv API error"));
+      if (data.error) item.rej(new Error("Deriv API " + (data.error.code || "unknown") + " for " + Object.keys(payload).filter(key => key !== "req_id").join(",") + ": " + (data.error.message || "request failed")));
       else item.res(data);
     });
-    ws.addEventListener("error", () => reject(new Error("Deriv WebSocket connection failed")), {once:true});
+    ws.addEventListener("error", event => reject(new Error("Deriv WebSocket connection failed: " + String(event?.message || event?.error?.message || "no WebSocket error detail"))), {once:true});
   });
 }
 function splitCandleHistory(rows, now) {
