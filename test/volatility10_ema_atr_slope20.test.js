@@ -295,3 +295,9 @@ test("R10 scheduler persists its last tick and dispatch result for health diagno
   assert.ok(scheduler.includes('env.STATE.put("scheduler_last_tick"'));
   assert.ok(scheduler.includes('tick.r10 = { status: "error", reason: String(error) }'));
 });
+
+test("R10 scheduler lock uses Cloudflare KV's minimum supported TTL", () => {
+  const scheduler = fs.readFileSync(path.join(__dirname,"../cloudflare/deriv-mtf-watchdog.js"),"utf8");
+  assert.ok(scheduler.includes('env.STATE.put(lockKey, JSON.stringify(lockValue), { expirationTtl: 60 })'));
+  assert.ok(!scheduler.includes('{ expirationTtl: 55 }'));
+});
