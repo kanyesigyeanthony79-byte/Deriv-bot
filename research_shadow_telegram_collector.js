@@ -151,27 +151,49 @@ async function main(env = process.env) {
     const nextA = updateBreakoutRetestJournal(priorA, output.markets, now);
     const nextB = updateM5PullbackJournal(priorB, output.markets, now);
     const nextC = updateBreakoutM5M15Journal(priorC, output.markets, now);
+    const delivery = readJson(JOURNALS.delivery, { version: 1, updatedAt: null, signals: {} });
+    delivery.signals ||= {};
+    const allCurrent = [
+      ...nextA.signals.map(s => toAlert(s, "M5_BREAKOUT_M1_RETEST")),
+      ...nextB.signals.map(s => toAlert(s, "M15_M5_EMA_PULLBACK")),
+      ...nextC.signals.map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM"))
+    ].filter(Boolean);
+    const fresh = [
+      ...newSignals(priorA.signals, nextA.signals).map(s => toAlert(s, "M5_BREAKOUT_M1_RETEST")),
+      ...newSignals(priorB.signals, nextB.signals).map(s => toAlert(s, "M15_M5_EMA_PULLBACK")),
+      ...newSignals(priorC.signals, nextC.signals).map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM"))
+    ].filter(Boolean);
+    // Failed or interrupted deliveries are retried by stable ID; old journal entries
+    // without a delivery record are never backfilled into Telegram.
+    const retryIds = new Set(Object.entries(delivery.signals)
+      .filter(([, record]) => record && ["failed", "pending"].includes(record.status))
+      .map(([id]) => id));
+    const byId = new Map([...fresh, ...allCurrent.filter(s => retryIds.has(s.signalId))]
+      .filter(s => s.marketId !== "R_10" && MARKETS.some(([id]) => id === s.marketId))
+      .map(s => [s.signalId, s]));
+    const candidates = [...byId.values()];
+    for (const alert of candidates) {
+      delivery.signals[alert.signalId] ||= {
+        signalId: alert.signalId, strategyId: alert.strategyId, marketId: alert.marketId,
+        firstSeenAt: new Date(now * 1000).toISOString(), attempts: 0
+      };
+      delivery.signals[alert.signalId].status = "pending";
+    }
+    // Persist delivery intent before journals/network calls so a process interruption
+    // cannot strand a newly created signal without a retryable delivery record.
+    delivery.updatedAt = new Date(now * 1000).toISOString();
+    writeJson(JOURNALS.delivery, delivery);
     writeJson(JOURNALS.breakoutM1, nextA);
     writeJson(JOURNALS.emaPullback, nextB);
     writeJson(JOURNALS.breakoutM5M15, nextC);
 
-    const candidates = [
-      ...newSignals(priorA.signals, nextA.signals).map(s => toAlert(s, "M5_BREAKOUT_M1_RETEST")),
-      ...newSignals(priorB.signals, nextB.signals).map(s => toAlert(s, "M15_M5_EMA_PULLBACK")),
-      ...newSignals(priorC.signals, nextC.signals).map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM"))
-    ].filter(Boolean).filter(s => s.marketId !== "R_10" && MARKETS.some(([id]) => id === s.marketId));
-    const delivery = readJson(JOURNALS.delivery, { version: 1, updatedAt: null, signals: {} });
-    delivery.signals ||= {};
     let sent = 0, failed = 0;
     for (const alert of candidates) {
-      const previous = delivery.signals[alert.signalId];
-      if (previous && previous.status === "sent") continue;
-      const record = delivery.signals[alert.signalId] ||= {
-        signalId: alert.signalId, strategyId: alert.strategyId, marketId: alert.marketId,
-        firstSeenAt: new Date(now * 1000).toISOString(), attempts: 0
-      };
+      const record = delivery.signals[alert.signalId];
+      if (record.status === "sent") continue;
       record.attempts += 1;
       record.lastAttemptAt = new Date(now * 1000).toISOString();
+      writeJson(JOURNALS.delivery, delivery);
       try {
         await deliver(alert, env);
         record.status = "sent";
@@ -183,9 +205,9 @@ async function main(env = process.env) {
         record.lastError = error.message;
         failed += 1;
       }
+      delivery.updatedAt = new Date().toISOString();
+      writeJson(JOURNALS.delivery, delivery);
     }
-    delivery.updatedAt = new Date(now * 1000).toISOString();
-    writeJson(JOURNALS.delivery, delivery);
     output.summary = {
       markets: Object.keys(output.markets).length,
       newCandidates: candidates.length, telegramSent: sent, telegramFailed: failed,
