@@ -79,6 +79,37 @@ function validateCandle(c) {
     Number(c.low) <= Math.min(Number(c.open), Number(c.close)) &&
     Number(c.high) >= Math.max(Number(c.open), Number(c.close));
 }
+function qualifyDirection(bars, ind, i) {
+  const p = i - 1, s = i - SLOPE_LOOKBACK;
+  const required = [ind.ema12[i], ind.ema26[i], ind.ema100[i], ind.ema12[p],
+    ind.ema26[p], ind.ema12[s], ind.ema26[s], ind.ema100[s],
+    ind.atr14[i], ind.atrMedian1000[i]];
+  if (!required.every(Number.isFinite)) return null;
+  const crossUp = ind.ema12[i] > ind.ema26[i] && ind.ema12[p] <= ind.ema26[p];
+  const crossDown = ind.ema12[i] < ind.ema26[i] && ind.ema12[p] >= ind.ema26[p];
+  const atrPass = ind.atr14[i] >= ind.atrMedian1000[i];
+  const longSlope = ind.ema12[i] > ind.ema12[s] && ind.ema26[i] > ind.ema26[s] && ind.ema100[i] > ind.ema100[s];
+  const shortSlope = ind.ema12[i] < ind.ema12[s] && ind.ema26[i] < ind.ema26[s] && ind.ema100[i] < ind.ema100[s];
+  if (crossUp && bars[i].close > ind.ema100[i] && longSlope && atrPass) return "LONG";
+  if (crossDown && bars[i].close < ind.ema100[i] && shortSlope && atrPass) return "SHORT";
+  return null;
+}
+function createSignalRecord(direction, last, nextCandle, ind, i) {
+  const entry = Number(nextCandle.open);
+  const risk = STOP_ATR_MULTIPLE * ind.atr14[i];
+  const signalEpoch = Number(last.epoch) + BAR_SECONDS;
+  return {
+    instrument: "Volatility 10 Index", marketId: CANONICAL_MARKET_ID, timeframe: TIMEFRAME, direction,
+    signalTimestamp: new Date(signalEpoch * 1000).toISOString(), signalEpoch,
+    strategyVersion: STRATEGY_VERSION, providerId: PROVIDER_ID,
+    ema12: ind.ema12[i], ema26: ind.ema26[i], ema100: ind.ema100[i],
+    atr14: ind.atr14[i], atrMedian1000: ind.atrMedian1000[i],
+    referenceEntryPrice: entry, entryTimestamp: new Date(Number(nextCandle.epoch) * 1000).toISOString(),
+    stopLoss: direction === "LONG" ? entry - risk : entry + risk,
+    takeProfit: direction === "LONG" ? entry + risk : entry - risk,
+    status: "PAPER", paper: true, live: false
+  };
+}
 function evaluateSignal(completedCandles, nextCandle, options = {}) {
   if (!Array.isArray(completedCandles) || completedCandles.length < ATR_MEDIAN_BARS + ATR_PERIOD + SLOPE_LOOKBACK + 1) {
     return { signal: null, reason: "warming_up" };
@@ -99,41 +130,10 @@ function evaluateSignal(completedCandles, nextCandle, options = {}) {
   const values = [ind.ema12[i], ind.ema26[i], ind.ema100[i], ind.ema12[p], ind.ema26[p],
     ind.ema12[s], ind.ema26[s], ind.ema100[s], ind.atr14[i], ind.atrMedian1000[i]];
   if (!values.every(Number.isFinite)) return { signal: null, reason: "indicator_warmup" };
-  const crossUp = ind.ema12[i] > ind.ema26[i] && ind.ema12[p] <= ind.ema26[p];
-  const crossDown = ind.ema12[i] < ind.ema26[i] && ind.ema12[p] >= ind.ema26[p];
-  const atrPass = ind.atr14[i] >= ind.atrMedian1000[i];
-  const longSlope = ind.ema12[i] > ind.ema12[s] && ind.ema26[i] > ind.ema26[s] && ind.ema100[i] > ind.ema100[s];
-  const shortSlope = ind.ema12[i] < ind.ema12[s] && ind.ema26[i] < ind.ema26[s] && ind.ema100[i] < ind.ema100[s];
-  const direction = crossUp && bars[i].close > ind.ema100[i] && longSlope && atrPass ? "LONG"
-    : crossDown && bars[i].close < ind.ema100[i] && shortSlope && atrPass ? "SHORT" : null;
+  const direction = qualifyDirection(bars, ind, i);
   if (!direction) return { signal: null, reason: "conditions_not_met" };
-  const entry = Number(nextCandle.open);
-  const risk = STOP_ATR_MULTIPLE * ind.atr14[i];
-  const stopLoss = direction === "LONG" ? entry - risk : entry + risk;
-  const takeProfit = direction === "LONG" ? entry + risk : entry - risk;
   const signalEpoch = Number(last.epoch) + BAR_SECONDS;
-  const signal = {
-    instrument: "Volatility 10 Index",
-    marketId: CANONICAL_MARKET_ID,
-    timeframe: TIMEFRAME,
-    direction,
-    signalTimestamp: new Date(signalEpoch * 1000).toISOString(),
-    signalEpoch,
-    strategyVersion: STRATEGY_VERSION,
-    providerId: PROVIDER_ID,
-    ema12: ind.ema12[i],
-    ema26: ind.ema26[i],
-    ema100: ind.ema100[i],
-    atr14: ind.atr14[i],
-    atrMedian1000: ind.atrMedian1000[i],
-    referenceEntryPrice: entry,
-    entryTimestamp: new Date(Number(nextCandle.epoch) * 1000).toISOString(),
-    stopLoss,
-    takeProfit,
-    status: "PAPER",
-    paper: true,
-    live: false
-  };
+  const signal = createSignalRecord(direction, last, nextCandle, ind, i);
   if (options.lastSignalEpoch === signalEpoch) return { signal: null, reason: "duplicate_candle" };
   if (options.activePosition) return { signal: null, reason: "position_already_open" };
   return { signal, reason: "signal" };
@@ -164,5 +164,5 @@ module.exports = {
   PROVIDER_ID, STRATEGY_VERSION, CANONICAL_MARKET_ID, TIMEFRAME, BAR_SECONDS,
   ATR_MEDIAN_BARS, SLOPE_LOOKBACK, STOP_ATR_MULTIPLE, TARGET_ATR_MULTIPLE,
   MIN_OPPOSITE_CROSS_HOLD_BARS, normalizeAlias, isVolatility10, canonicalMarketId,
-  ema, atrWilder, median, indicators, evaluateSignal, evaluateExit
+  ema, atrWilder, median, indicators, qualifyDirection, createSignalRecord, evaluateSignal, evaluateExit
 };
