@@ -8,6 +8,21 @@ on:
         required: false
         default: "manual"
         type: string
+      provider_enabled:
+        description: "Paper provider gate supplied by the Cloudflare scheduler"
+        required: false
+        default: "false"
+        type: string
+      emergency_kill_switch:
+        description: "Emergency stop supplied by the Cloudflare scheduler"
+        required: false
+        default: "true"
+        type: string
+      telegram_enabled:
+        description: "Paper Telegram route gate supplied by the Cloudflare scheduler"
+        required: false
+        default: "false"
+        type: string
 
 permissions:
   contents: write
@@ -31,10 +46,10 @@ jobs:
         run: node volatility10_paper_scanner.js
         env:
           R10_PAPER_RUN_SECONDS: "45"
-          R10_PAPER_PROVIDER_ENABLED: ${{ vars.R10_PAPER_PROVIDER_ENABLED || 'false' }}
+          R10_PAPER_PROVIDER_ENABLED: ${{ inputs.provider_enabled || 'false' }}
           R10_PAPER_ROUTE_ENABLED: "true"
-          R10_EMERGENCY_KILL_SWITCH: ${{ vars.R10_EMERGENCY_KILL_SWITCH || 'true' }}
-          R10_PAPER_TELEGRAM_ENABLED: "true"
+          R10_EMERGENCY_KILL_SWITCH: ${{ inputs.emergency_kill_switch || 'true' }}
+          R10_PAPER_TELEGRAM_ENABLED: ${{ inputs.telegram_enabled || 'false' }}
           TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
           SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
       - name: Persist paper journal
