@@ -3,7 +3,7 @@
 // Isolated from production signals, Telegram delivery and all MT5 execution.
 
 const SYNTHETIC_MARKETS = Object.freeze([
-  "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500"
+  "R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500"
 ]);
 const M5_SECONDS = 300;
 const M15_SECONDS = 900;
