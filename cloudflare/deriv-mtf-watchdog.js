@@ -121,17 +121,25 @@ async function status(env) {
 export default {
   async scheduled(controller, env) {
     const now = new Date(controller.scheduledTime || Date.now());
+    const tick = { at: now.toISOString(), cron: controller.cron || null, r10: null, legacy: null };
     try {
-      const r10 = await dispatchR10(env, now);
-      console.log("R10_PAPER_SCHEDULER_TICK", JSON.stringify({ cron: controller.cron, r10 }));
+      tick.r10 = await dispatchR10(env, now);
+      console.log("R10_PAPER_SCHEDULER_TICK", JSON.stringify({ cron: controller.cron, r10: tick.r10 }));
     } catch (error) {
+      tick.r10 = { status: "error", reason: String(error) };
       console.error("R10_PAPER_SCHEDULER_ERROR", String(error));
     }
     try {
-      const legacy = await dispatchLegacyDue(env, now);
-      console.log("LEGACY_EXTERNAL_SCHEDULER_TICK", JSON.stringify({ cron: controller.cron, legacy }));
+      tick.legacy = await dispatchLegacyDue(env, now);
+      console.log("LEGACY_EXTERNAL_SCHEDULER_TICK", JSON.stringify({ cron: controller.cron, legacy: tick.legacy }));
     } catch (error) {
+      tick.legacy = { status: "error", reason: String(error) };
       console.error("LEGACY_EXTERNAL_SCHEDULER_ERROR", String(error));
+    }
+    try {
+      await env.STATE.put("scheduler_last_tick", JSON.stringify(tick), { expirationTtl: 86400 });
+    } catch (error) {
+      console.error("SCHEDULER_DIAGNOSTIC_PERSIST_ERROR", String(error));
     }
   },
   async fetch(request, env) {
