@@ -11,6 +11,7 @@ const { createDerivDemoReadOnlySnapshot } = require("./scripts/demo_readonly_acc
 const { priorityForMarket } = require("./priority_pairs");
 const { createHeartbeat } = require("./scanner_heartbeat");
 const { cleanupUnmonitoredSignals } = require("./stale_signal_cleanup");
+const { main: runResearchShadowCycle, MARKETS: RESEARCH_MARKETS } = require("./research_shadow_telegram_collector");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const GRANULARITY = 900;
@@ -203,14 +204,15 @@ async function resolveSymbols(client) {
     const reply = await client.ask({ active_symbols: mode });
     if (reply.error) throw new Error("active_symbols: " + reply.error.message);
     const list = reply.active_symbols || [];
-    for (const [fallback, name] of MARKETS) {
+    const allMarkets = [...MARKETS, ...RESEARCH_MARKETS];
+    for (const [fallback, name] of allMarkets) {
       if (found[fallback]) continue;
       const match = list.find(x => norm(symbolName(x)) === norm(name)) || list.find(x => symbolCode(x) === fallback);
       if (match && symbolCode(match)) found[fallback] = symbolCode(match);
     }
-    if (Object.keys(found).length === MARKETS.length) break;
+    if (allMarkets.every(([id]) => found[id])) break;
   }
-  for (const [id, name] of MARKETS) if (!found[id]) log("symbol_not_confirmed", { market: name });
+  for (const [id, name] of [...MARKETS, ...RESEARCH_MARKETS]) if (!found[id]) log("symbol_not_confirmed", { market: name });
   return found;
 }
 
@@ -498,6 +500,15 @@ async function main() {
         const pending = [...journal.signals].reverse().find(entry => entry.marketId === id && entry.status === "detected");
         if (pending) journalStatus(pending.signalId, "delivery_failed", message);
       }
+    }
+    // Run the three approved non-R10 research strategies on this same Deriv WebSocket
+    // and resolved-symbol map. Research has its own journals and shadow-only Worker route.
+    try {
+      const researchWorkerUrl = new URL("/shadow/research", WORKER_URL).toString();
+      const researchResult = await runResearchShadowCycle({ ...process.env, TELEGRAM_WORKER_URL: researchWorkerUrl }, { client, symbols, now });
+      log("research_shadow_cycle_completed", { sharedDerivConnection: true, r10Excluded: true, mtfEnabled: false, mt5ExecutionEnabled: false, summary: researchResult?.summary || null });
+    } catch (error) {
+      log("research_shadow_cycle_failed", { message: String(error.message || error).slice(0, 200) });
     }
     await maybeSendDailySummary(now);
     saveState();
