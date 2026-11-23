@@ -257,9 +257,6 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 
   systemTabs.forEach(btn=>btn.addEventListener("click",()=>showSystem(btn.dataset.systemTab)));
   showSystem("promoted");
-  $("promotedRefresh").addEventListener("click", refreshPromotedSystem);
-  refreshPromotedSystem();
-  setInterval(refreshPromotedSystem, 60000);
   document.addEventListener("click",event=>{
     const filterButton=event.target.closest("[data-signal-filter]");
     const metricButton=event.target.closest("[data-metric-filter]");
@@ -523,6 +520,9 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       status.textContent="R10 provider verified · "+signals.length+" paper signals · evaluations: "+(diagnostics.evaluations??"—")+" · last decision: "+(diagnostics.last?.reason||"not recorded")+" · last health: "+(latest?time(latest.at)+" · "+latest.status:"no health record")+" · refreshed "+new Date().toLocaleTimeString();
     }catch(error){status.textContent="R10 data unavailable: "+error.message+" · Scanner status is not assumed healthy.";}
   }
+  $("promotedRefresh").addEventListener("click", refreshPromotedSystem);
+  refreshPromotedSystem();
+  setInterval(refreshPromotedSystem, 60000);
   $("r10Refresh").addEventListener("click",refreshR10);
   refreshR10(); setInterval(refreshR10,60000);
 
