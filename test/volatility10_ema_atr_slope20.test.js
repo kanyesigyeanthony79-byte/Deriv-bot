@@ -275,3 +275,16 @@ test("paper scanner anchors exit indicators to the latest contiguous segment bef
   // If the first unprocessed candle follows a gap, start its segment there.
   assert.equal(indicatorSegmentStartBeforeCursor(candles,1120),3);
 });
+
+
+test("R10 scheduler passes paper safety gates to the workflow", () => {
+  const workflow = fs.readFileSync(path.join(__dirname,"../.github/workflows/volatility10-paper.yml"),"utf8");
+  const scheduler = fs.readFileSync(path.join(__dirname,"../cloudflare/deriv-mtf-watchdog.js"),"utf8");
+  assert.ok(scheduler.includes('provider_enabled: "true"'));
+  assert.ok(scheduler.includes('emergency_kill_switch: "false"'));
+  assert.ok(scheduler.includes('telegram_enabled: "true"'));
+  assert.ok(workflow.includes("inputs.provider_enabled"));
+  assert.ok(workflow.includes("inputs.emergency_kill_switch"));
+  assert.ok(workflow.includes("inputs.telegram_enabled"));
+  assert.ok(workflow.includes('R10_PAPER_RUN_SECONDS: "45"'));
+});
