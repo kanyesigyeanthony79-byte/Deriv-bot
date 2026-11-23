@@ -29,7 +29,7 @@ After PR review and merge, set GitHub repository Actions variables:
 1. `R10_PAPER_PROVIDER_ENABLED=true`
 2. Keep `R10_EMERGENCY_KILL_SWITCH=true` while validating collection without alerts.
 
-The scanner warms up on 1,050+ completed M1 candles and then records each newly completed bar it can recover. The GitHub Actions schedule is every five minutes with a short polling loop; it is not a hard real-time scheduler. Late-recovered signals are journaled but not sent as alerts. Do not treat this as a production-grade one-minute delivery SLA.
+The scanner warms up on 1,050+ completed M1 candles and then records each newly completed bar it can recover. The GitHub Actions schedule is every five minutes with a short polling loop; it is not a hard real-time scheduler. Late-recovered signals are journaled but not sent as alerts. This means the current scheduler cannot reliably deliver every M1 signal in real time. Keep the Telegram paper route disabled until a true one-minute scheduler is implemented and verified; do not treat this as a production-grade one-minute delivery SLA.
 
 ## Enable paper Telegram alerts
 
