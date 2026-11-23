@@ -308,3 +308,11 @@ test("R10 scanner includes the failing Deriv request name and API error code in 
   assert.ok(scanner.includes('Object.keys(payload).filter(key => key !== "req_id")'));
   assert.ok(scanner.includes('event?.message || event?.error?.message'));
 });
+
+test("R10 scheduler logically expires its 55-second lease despite KV's 60-second minimum TTL", () => {
+  const scheduler = fs.readFileSync(path.join(__dirname,"../cloudflare/deriv-mtf-watchdog.js"),"utf8");
+  assert.ok(scheduler.includes("const logicalTtlSeconds = Number(priorLock?.ttlSeconds) || 55"));
+  assert.ok(scheduler.includes("if (lockAgeSeconds < logicalTtlSeconds)"));
+  assert.ok(scheduler.includes("await env.STATE.delete(lockKey)"));
+  assert.ok(scheduler.includes("{ expirationTtl: 60 }"));
+});
