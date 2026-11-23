@@ -50,7 +50,7 @@ test("signal evaluation rejects a non-adjacent next candle and candle gaps", () 
   assert.equal(strategy.evaluateSignal(base, next).reason, "next_candle_not_aligned");
   const gap = base.slice();
   gap[900] = {...gap[900], epoch: gap[900].epoch + 60};
-  assert.equal(strategy.evaluateSignal(gap, {...next, epoch: gap.at(-1).epoch + 60}).reason, "candle_gap");
+  assert.equal(strategy.evaluateSignal(gap, {...next, epoch: gap.at(-1).epoch + 60}).reason, "warming_up_after_gap");
 });
 
 test("stop-first exit ordering applies when a candle touches both barriers", () => {
