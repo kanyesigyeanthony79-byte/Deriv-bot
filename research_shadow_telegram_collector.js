@@ -102,7 +102,10 @@ function toAlert(signal, strategy) {
   const tp2 = Number(signal.tp2);
   const target = Number.isFinite(tp2) ? tp2 : Number(signal.target);
   if (!signal.signalId || !["BUY", "SELL"].includes(direction) ||
-      ![entry, stopLoss, risk, target].every(Number.isFinite) || entry <= 0 || stopLoss <= 0 || risk <= 0 || target <= 0) return null;
+      ![entry, stopLoss, risk, target].every(Number.isFinite) ||
+      entry <= 0 || stopLoss <= 0 || risk <= 0 || target <= 0 ||
+      (direction === "BUY" && !(stopLoss < entry && target > entry)) ||
+      (direction === "SELL" && !(stopLoss > entry && target < entry))) return null;
   const tp1 = entry + sign * 1.5 * risk;
   return {
     event: "new_signal", source: "RESEARCH_SHADOW", paper: true, live: false,
