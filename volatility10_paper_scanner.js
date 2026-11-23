@@ -48,6 +48,11 @@ function connect() {
     ws.addEventListener("error", () => reject(new Error("Deriv WebSocket connection failed")), {once:true});
   });
 }
+function splitCandleHistory(rows, now) {
+  const completed = rows.filter(c => c.epoch + 60 <= now);
+  const nextCandle = rows.find(c => c.epoch + 60 > now) || null;
+  return {completed,nextCandle};
+}
 async function collect(client) {
   const timeReply = await client.ask({time:1});
   const now = Number(timeReply.time) || Math.floor(Date.now()/1000);
@@ -59,9 +64,7 @@ async function collect(client) {
     epoch:Number(c.epoch), open:Number(c.open), high:Number(c.high), low:Number(c.low), close:Number(c.close)
   })).filter(c => [c.epoch,c.open,c.high,c.low,c.close].every(Number.isFinite))
     .sort((a,b)=>a.epoch-b.epoch);
-  const completed = rows.filter(c => c.epoch + 60 <= now);
-  const nextCandle = rows.find(c => c.epoch + 60 > now) || null;
-  return {now, completed, nextCandle};
+  return {now, ...splitCandleHistory(rows,now)};
 }
 async function deliverPaperSignal(signal) {
   if (process.env.R10_PAPER_TELEGRAM_ENABLED !== "true") return {sent:false,reason:"telegram_flag_off"};
@@ -182,4 +185,4 @@ async function main() {
   console.log(JSON.stringify({event:"r10_paper_scanner_window_complete",providerId:PROVIDER_ID,liveExecution:false}));
 }
 if (require.main === module) main().catch(error=>{console.error(JSON.stringify({event:"r10_paper_scanner_failed",message:error.message}));process.exitCode=1;});
-module.exports={collect,processNewCandles};
+module.exports={collect,splitCandleHistory,processNewCandles};
