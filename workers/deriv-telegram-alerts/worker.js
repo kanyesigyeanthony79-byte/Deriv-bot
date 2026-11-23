@@ -1,6 +1,8 @@
 function isVolatility10Alert(data = {}) {
   const marketId = String(data.marketId || "").trim().toUpperCase();
   const normalized = [data.marketId, data.market, data.instrument].map(value => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "")).join("|");
+  // Keep the distinct Volatility 10 (1s) product out of the exclusive R_10 route.
+  if (marketId === "R_10_1S" || normalized.includes("1hz10v") || normalized.includes("volatility101s")) return false;
   return ["R_10", "R10"].includes(marketId) ||
     ["volatility10", "volatility10index", "volatility10indexm1"].some(alias => normalized.includes(alias));
 }
@@ -284,7 +286,7 @@ export default {
     if (url.pathname === "/shadow/research" && request.method === "POST") {
       let d;
       try { d = await request.json(); } catch { return reply({ error: "Invalid JSON" }, 400); }
-      const allowedMarkets = new Set(["R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "frxXAUUSD"]);
+      const allowedMarkets = new Set(["R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "frxXAUUSD", "R_10_1S", "R_75_1S"]);
       const allowedStrategies = new Set([
         "M15_M5_EMA_PULLBACK",
         "M5_BREAKOUT_M1_RETEST",
