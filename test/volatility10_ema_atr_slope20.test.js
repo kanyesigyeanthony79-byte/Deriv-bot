@@ -134,6 +134,7 @@ test("provider exclusivity gates legacy Volatility 10 producers and paper notifi
   const alerts = fs.readFileSync(path.join(__dirname,"../multi_timeframe_alerts.js"),"utf8");
   assert.match(worker,/function isVolatility10Alert/);
   assert.match(worker,/volatility10_paper_only/);
+  assert.match(worker,/if\(isVolatility10Alert\(rec\.payload\)\)/);
   assert.match(worker,/data\.providerId === "volatility10_ema_atr_slope20_v1"/);
   assert.match(worker,/env\.R10_PAPER_ROUTE_ENABLED === "true"/);
   assert.match(worker,/env\.R10_EMERGENCY_KILL_SWITCH === "false"/);
