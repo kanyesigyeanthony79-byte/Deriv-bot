@@ -46,6 +46,6 @@ jobs:
         with:
           node-version: "22"
       - name: Check syntax
-        run: node --check hosted_scanner.js && node --check signal_journal.js && node --check daily_summary.js && node --check priority_pairs.js && node --check workers/deriv-telegram-alerts/worker.js && node --check cloudflare/deriv-telegram-alerts.js && node --check volatility10_ema_atr_slope20.js && node --check volatility10_provider_config.js && node --check volatility10_paper_scanner.js
+        run: node --check hosted_scanner.js && node --check signal_journal.js && node --check daily_summary.js && node --check priority_pairs.js && node --check workers/deriv-telegram-alerts/worker.js && node --check cloudflare/deriv-telegram-alerts.js && node --check volatility10_ema_atr_slope20.js && node --check volatility10_provider_config.js && node --check volatility10_paper_scanner.js && node --check cloudflare/deriv-mtf-watchdog.js
       - name: Run journal tests
         run: node --test test/signal_journal.test.js test/daily_summary.test.js test/priority_pairs.test.js test/volatility10_ema_atr_slope20.test.js
