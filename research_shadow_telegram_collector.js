@@ -177,7 +177,9 @@ async function main(env = process.env) {
         signalId: alert.signalId, strategyId: alert.strategyId, marketId: alert.marketId,
         firstSeenAt: new Date(now * 1000).toISOString(), attempts: 0
       };
-      delivery.signals[alert.signalId].status = "pending";
+      if (delivery.signals[alert.signalId].status !== "sent") {
+        delivery.signals[alert.signalId].status = "pending";
+      }
     }
     // Persist delivery intent before journals/network calls so a process interruption
     // cannot strand a newly created signal without a retryable delivery record.
