@@ -19,3 +19,16 @@ test("dashboard inline JavaScript parses", () => {
   assert.ok(scripts.length > 0, "no inline dashboard script found");
   for (const match of scripts) assert.doesNotThrow(() => new Function(match[1]));
 });
+
+test("promoted production panel loads real state and reports scanner health", () => {
+  for (const id of ["promotedMetrics", "promotedStatus", "promotedRefresh", "promotedRefreshTime", "promotedSignals", "activeTabCount", "validTabCount", "strongTabCount"]) {
+    assert.ok(html.includes('id="' + id + '"'), "missing promoted panel element: " + id);
+  }
+  for (const source of ["signal_state.json", "trade_journal.json", "scanner_heartbeat.json"]) {
+    assert.ok(html.includes(source), "promoted panel must read " + source);
+  }
+  assert.ok(html.includes("function refreshPromotedSystem()"), "promoted panel refresh function must exist");
+  assert.ok(html.includes("setInterval(refreshPromotedSystem, 60000)"), "promoted panel must auto-refresh");
+  assert.ok(html.includes("setPromotedSignalFilter"), "promoted signal filters must be wired");
+  assert.ok(html.includes("PROMOTED_FRESH_SECONDS"), "stale active quotes must be excluded");
+});
