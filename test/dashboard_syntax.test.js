@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const html = fs.readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
 
 test("dashboard replaces the retired MTF page with the exclusive R10 paper view", () => {
-  for (const id of ["multi-timeframe", "r10Refresh", "r10Status", "r10Metrics", "r10Signals", "r10Positions", "r10Health"]) {
+  for (const id of ["r10-paper-system", "r10Refresh", "r10Status", "r10Metrics", "r10Signals", "r10Positions", "r10Health"]) {
     assert.ok(html.includes('id="' + id + '"'), "missing dashboard element: " + id);
   }
   assert.ok(html.includes("volatility10_ema_atr_slope20_v1"), "R10 provider identity must be visible and validated");
