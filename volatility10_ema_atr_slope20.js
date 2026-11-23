@@ -154,7 +154,7 @@ function evaluateExit(position, completedCandle, completedIndicators, candleInde
   if (position.direction === "LONG") {
     if (completedCandle.low <= position.stopLoss) return { reason: "STOP_LOSS", exitPrice: position.stopLoss };
     if (completedCandle.high >= position.takeProfit) return { reason: "TAKE_PROFIT", exitPrice: position.takeProfit };
-    if (heldBars >= MIN_OPPOSITE_CROSS_HOLD &&
+    if (heldBars >= MIN_OPPOSITE_CROSS_HOLD_BARS &&
         completedIndicators.ema12[candleIndex] < completedIndicators.ema26[candleIndex] &&
         completedIndicators.ema12[candleIndex - 1] >= completedIndicators.ema26[candleIndex - 1]) {
       return { reason: "OPPOSITE_CROSS", exitPrice: completedCandle.close };
@@ -162,7 +162,7 @@ function evaluateExit(position, completedCandle, completedIndicators, candleInde
   } else if (position.direction === "SHORT") {
     if (completedCandle.high >= position.stopLoss) return { reason: "STOP_LOSS", exitPrice: position.stopLoss };
     if (completedCandle.low <= position.takeProfit) return { reason: "TAKE_PROFIT", exitPrice: position.takeProfit };
-    if (heldBars >= MIN_OPPOSITE_CROSS_HOLD &&
+    if (heldBars >= MIN_OPPOSITE_CROSS_HOLD_BARS &&
         completedIndicators.ema12[candleIndex] > completedIndicators.ema26[candleIndex] &&
         completedIndicators.ema12[candleIndex - 1] <= completedIndicators.ema26[candleIndex - 1]) {
       return { reason: "OPPOSITE_CROSS", exitPrice: completedCandle.close };
