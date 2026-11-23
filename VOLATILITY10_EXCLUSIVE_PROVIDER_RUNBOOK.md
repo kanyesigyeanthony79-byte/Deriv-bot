@@ -34,7 +34,7 @@ After PR review and merge:
 
 The scheduler checks for an already queued/running R10 job before dispatching another, and the scanner polls for 45 seconds per run. GitHub runner startup and queue latency are asynchronous, so this is a one-minute dispatch attempt, not a hard real-time M1 delivery SLA. Late-recovered signals are journaled but not sent as alerts. Keep Telegram paper routing disabled until cadence and forward-paper health are reviewed.
 
-**Additional pre-activation blocker — outage recovery:** the scanner currently does not explicitly invalidate an open paper position when the first candle in the fetched 1,200-candle history is more than 60 seconds after the persisted `lastProcessedEpoch`. A long outage can therefore make an old position appear to continue across missing M1 candles. Before enabling `R10_PAPER_PROVIDER_ENABLED`, fix this path so the position is recorded as unresolved (`DATA_GAP`), indicator warm-up restarts, and automated tests cover both gaps inside the fetched history and gaps longer than the 1,200-candle window.
+**Outage recovery safeguard now implemented in the PR:** the scanner detects gaps between the persisted cursor and each newly processed candle. Any active paper position crossing a gap is recorded as unresolved (`DATA_GAP`) rather than assigned a fabricated exit, and the strategy's gap-aware warm-up prevents signals from being evaluated across an in-window gap. Tests cover both an in-window gap and an outage longer than the 1,200-candle fetch window. The latest code revision passed 40/40 Hosted Scanner Journal Tests. Forward paper collection must still verify these behaviors against live candle cadence.
 
 ## Enable paper Telegram alerts
 
