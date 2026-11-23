@@ -370,6 +370,10 @@ async function main() {
     const symbols = await resolveSymbols(client);
 
     for (const [id, name] of MARKETS) {
+      if (id === "R_10" && process.env.R10_LEGACY_ROLLBACK_ENABLED !== "true") {
+        heartbeat.market(name, "skipped", { reason: "volatility10_exclusive_provider_gate" });
+        continue;
+      }
       const symbol = symbols[id];
       if (!symbol) {
         heartbeat.market(name, "unavailable", { reason: "symbol_not_confirmed" });
