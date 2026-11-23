@@ -1,5 +1,5 @@
 const REPO = "kanyesigyeanthony79-byte/Deriv-bot";
-const BRANCH = "feature/r10-ema-atr-slope20-paper-only";
+const BRANCH = "main";
 const LEGACY_WORKFLOWS = [
   { id: 417618869, key: "collector", name: "Multi-Timeframe Data Collector", minuteOffset: 1 },
   { id: 417087054, key: "market-monitor", name: "Deriv Market Monitor", minuteOffset: 4 }
