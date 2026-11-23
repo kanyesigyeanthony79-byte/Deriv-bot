@@ -289,8 +289,11 @@ async function main() {
     const mt5TradeLedger = await fetchMt5TradeLedger(process.env, log);
     const mt5TradesBySignal = new Map(mt5TradeLedger.trades.map(t => [t.signalId, t]));
 
+    const legacyProviderMarkets = process.env.R10_LEGACY_ROLLBACK_ENABLED === "true"
+      ? output.markets
+      : Object.fromEntries(Object.entries(output.markets).filter(([marketId]) => marketId !== "R_10"));
     const priorJournal = fs.existsSync(JOURNAL) ? JSON.parse(fs.readFileSync(JOURNAL, "utf8")) : { version: 1, signals: [] };
-    const journal = updateJournal(priorJournal, output.markets, now, liveQuotes);
+    const journal = updateJournal(priorJournal, legacyProviderMarkets, now, liveQuotes);
     if (mt5TradeLedger.connected) {
       for (const record of journal.signals) {
         const actualTrade = mt5TradesBySignal.get(record.signalId);
@@ -302,7 +305,7 @@ async function main() {
     const priorStrategyJournal = fs.existsSync(strategyJournalPath)
       ? JSON.parse(fs.readFileSync(strategyJournalPath, "utf8"))
       : { version: 1, updatedAt: null, markets: {}, signals: [] };
-    const strategyJournal = updateStrategyJournal(priorStrategyJournal, output.markets, now);
+    const strategyJournal = updateStrategyJournal(priorStrategyJournal, legacyProviderMarkets, now);
     const persistStrategyJournal = current =>
       fs.writeFileSync(strategyJournalPath, JSON.stringify(current, null, 2) + "\n");
     const strategyShadowTelegram = await sendStrategyComparisonAlerts(
@@ -316,21 +319,21 @@ async function main() {
     const priorBreakoutRetestJournal = fs.existsSync(BREAKOUT_RETEST_JOURNAL)
       ? JSON.parse(fs.readFileSync(BREAKOUT_RETEST_JOURNAL, "utf8"))
       : { version: 1, updatedAt: null, markets: {}, signals: [] };
-    const breakoutRetestJournal = updateBreakoutRetestJournal(priorBreakoutRetestJournal, output.markets, now);
+    const breakoutRetestJournal = updateBreakoutRetestJournal(priorBreakoutRetestJournal, legacyProviderMarkets, now);
     fs.writeFileSync(BREAKOUT_RETEST_JOURNAL, JSON.stringify(breakoutRetestJournal, null, 2) + "\n");
     output.breakoutRetestShadow = breakoutRetestJournal.summary;
     const m5PullbackJournalPath = path.join(DATA_DIR, "m5_ema_pullback_shadow_journal.json");
     const priorM5PullbackJournal = fs.existsSync(m5PullbackJournalPath)
       ? JSON.parse(fs.readFileSync(m5PullbackJournalPath, "utf8"))
       : { version: 1, updatedAt: null, markets: {}, signals: [] };
-    const m5PullbackJournal = updateM5PullbackJournal(priorM5PullbackJournal, output.markets, now);
+    const m5PullbackJournal = updateM5PullbackJournal(priorM5PullbackJournal, legacyProviderMarkets, now);
     fs.writeFileSync(m5PullbackJournalPath, JSON.stringify(m5PullbackJournal, null, 2) + "\n");
     output.m5EmaPullbackShadow = m5PullbackJournal.summary;
     const priorBreakoutRetestM5M15Journal = fs.existsSync(BREAKOUT_RETEST_M5_M15_JOURNAL)
       ? JSON.parse(fs.readFileSync(BREAKOUT_RETEST_M5_M15_JOURNAL, "utf8"))
       : { version: 1, updatedAt: null, markets: {}, signals: [] };
     const breakoutRetestM5M15Journal = updateBreakoutRetestM5M15Journal(
-      priorBreakoutRetestM5M15Journal, output.markets, now
+      priorBreakoutRetestM5M15Journal, legacyProviderMarkets, now
     );
     fs.writeFileSync(BREAKOUT_RETEST_M5_M15_JOURNAL, JSON.stringify(breakoutRetestM5M15Journal, null, 2) + "\n");
     output.breakoutRetestM5M15Shadow = breakoutRetestM5M15Journal.summary;
