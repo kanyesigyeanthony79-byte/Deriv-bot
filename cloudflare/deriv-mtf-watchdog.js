@@ -56,7 +56,19 @@ async function dispatchR10(env, now) {
   }
   const lockKey = "r10_paper_dispatch_lock";
   const lock = await env.STATE.get(lockKey);
-  if (lock) return { status: "skipped_dispatch_lock", lock: JSON.parse(lock) };
+  if (lock) {
+    let priorLock = null;
+    try { priorLock = JSON.parse(lock); } catch {}
+    const lockAt = Date.parse(priorLock?.at || "");
+    const logicalTtlSeconds = Number(priorLock?.ttlSeconds) || 55;
+    const lockAgeSeconds = Number.isFinite(lockAt) ? (now.getTime() - lockAt) / 1000 : 0;
+    if (lockAgeSeconds < logicalTtlSeconds) {
+      return { status: "skipped_dispatch_lock", lock: priorLock, lockAgeSeconds };
+    }
+    // KV requires a minimum 60-second TTL. The logical 55-second lease lets
+    // the next minute's cron tick clear an expired key even at the TTL boundary.
+    await env.STATE.delete(lockKey);
+  }
   const lockValue = { providerId: R10_PROVIDER_ID, at: now.toISOString(), ttlSeconds: 55 };
   await env.STATE.put(lockKey, JSON.stringify(lockValue), { expirationTtl: 60 });
   try {
