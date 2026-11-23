@@ -268,8 +268,10 @@ test("paper scanner anchors exit indicators to the latest contiguous segment bef
   const candles = [1000,1060,1120,1240,1300,1360,1480,1540].map(epoch => ({
     epoch, open:100, high:101, low:99, close:100
   }));
-  // The cursor is after the first gap but before the second one.
+  // Cursor after the first gap but before the second one.
   assert.equal(indicatorSegmentStartBeforeCursor(candles,1300),3);
-  // A later gap will be handled as it is encountered by the processing loop.
-  assert.equal(indicatorSegmentStartBeforeCursor(candles,1120),0);
+  // Cursor after the second gap: use only the final contiguous segment.
+  assert.equal(indicatorSegmentStartBeforeCursor(candles,1480),6);
+  // If the first unprocessed candle follows a gap, start its segment there.
+  assert.equal(indicatorSegmentStartBeforeCursor(candles,1120),3);
 });
