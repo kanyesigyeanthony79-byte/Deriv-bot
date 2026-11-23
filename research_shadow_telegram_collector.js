@@ -1,6 +1,6 @@
 "use strict";
-// Independent shadow collector: deliberately excludes Volatility 10 and the retired MTF pipeline.
-// Observation/Telegram only. This file never imports production routing or MT5 modules.
+// Research/forward-shadow cycle shared by the hosted scanner. Volatility 10 and retired MTF are excluded.
+// Observation/Telegram only; never imports production routing or MT5 execution modules.
 const fs = require("node:fs");
 const path = require("node:path");
 const { getDataDir } = require("./scanner_data_dir");
@@ -133,15 +133,17 @@ async function deliver(alert, env) {
   }
   return result;
 }
-async function main(env = process.env) {
-  const now = Math.floor(Date.now() / 1000);
-  const client = await connect();
+async function main(env = process.env, options = {}) {
+  const now = Number(options.now) || Math.floor(Date.now() / 1000);
+  const ownsClient = !options.client;
+  const client = options.client || await connect();
+  const symbols = options.symbols || {};
   try {
     const output = { version: 1, generatedAt: new Date(now * 1000).toISOString(), markets: {}, errors: [] };
     for (const [marketId, marketName] of MARKETS) {
       const market = { marketId, marketName, timeframes: {}, errors: [] };
       for (const [tf, seconds, count] of FRAMES) {
-        try { market.timeframes[tf] = await fetchCandles(client, marketId, seconds, count, now); }
+        try { market.timeframes[tf] = await fetchCandles(client, symbols[marketId] || marketId, seconds, count, now); }
         catch (error) { market.errors.push({ timeframe: tf, message: error.message }); }
       }
       output.markets[marketId] = market;
@@ -227,7 +229,7 @@ async function main(env = process.env) {
     console.log(JSON.stringify({ event: "research_shadow_collection_complete", summary: output.summary, errors: output.errors }));
     if (output.errors.length === MARKETS.length) process.exitCode = 1;
   } finally {
-    client.close();
+    if (ownsClient) client.close();
   }
 }
 if (require.main === module) main().catch(error => { console.error(JSON.stringify({ event: "research_shadow_collector_failed", message: error.message })); process.exitCode = 1; });
