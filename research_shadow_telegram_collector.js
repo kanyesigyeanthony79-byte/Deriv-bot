@@ -9,6 +9,7 @@ const { updateM5PullbackJournal } = require("./m5_ema_pullback_shadow");
 const { updateJournal: updateBreakoutM5M15Journal } = require("./breakout_retest_m5_m15_shadow");
 
 const DATA_DIR = getDataDir();
+// 1-second products use their canonical Deriv API symbol codes (not standard R_* aliases).
 const MARKETS = Object.freeze([
   ["R_25", "Volatility 25 Index"], ["R_50", "Volatility 50 Index"],
   ["R_75", "Volatility 75 Index"], ["JD75", "Jump 75 Index"],
