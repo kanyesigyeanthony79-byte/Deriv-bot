@@ -31,17 +31,17 @@ jobs:
 
       - name: Validate shadow notification secrets
         env:
-          TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
+          RESEARCH_SHADOW_WORKER_URL: ${{ secrets.RESEARCH_SHADOW_WORKER_URL }}
           SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
         run: |
-          test -n "$TELEGRAM_WORKER_URL" || { echo "Missing TELEGRAM_WORKER_URL secret (must end with /shadow/research)"; exit 1; }
+          test -n "$RESEARCH_SHADOW_WORKER_URL" || { echo "Missing RESEARCH_SHADOW_WORKER_URL secret (must end with /shadow/research)"; exit 1; }
           test -n "$SIGNAL_API_KEY" || { echo "Missing SIGNAL_API_KEY secret"; exit 1; }
-          case "$TELEGRAM_WORKER_URL" in */shadow/research) ;; *) echo "TELEGRAM_WORKER_URL must point to /shadow/research"; exit 1 ;; esac
+          case "$RESEARCH_SHADOW_WORKER_URL" in */shadow/research) ;; *) echo "RESEARCH_SHADOW_WORKER_URL must point to /shadow/research"; exit 1 ;; esac
 
       - name: Collect three non-R10 shadow strategies and deliver new entries only
         run: node research_shadow_telegram_collector.js
         env:
-          TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
+          RESEARCH_SHADOW_WORKER_URL: ${{ secrets.RESEARCH_SHADOW_WORKER_URL }}
           SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
           MT5_EXECUTION_ENABLED: "false"
           MT5_OBSERVATION_ENABLED: "false"
