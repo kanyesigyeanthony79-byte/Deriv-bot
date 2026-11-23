@@ -301,3 +301,10 @@ test("R10 scheduler lock uses Cloudflare KV's minimum supported TTL", () => {
   assert.ok(scheduler.includes('env.STATE.put(lockKey, JSON.stringify(lockValue), { expirationTtl: 60 })'));
   assert.ok(!scheduler.includes('{ expirationTtl: 55 }'));
 });
+
+test("R10 scanner includes the failing Deriv request name and API error code in diagnostics", () => {
+  const scanner = fs.readFileSync(path.join(__dirname,"../volatility10_paper_scanner.js"),"utf8");
+  assert.ok(scanner.includes('data.error.code || "unknown"'));
+  assert.ok(scanner.includes('Object.keys(payload).filter(key => key !== "req_id")'));
+  assert.ok(scanner.includes('event?.message || event?.error?.message'));
+});
