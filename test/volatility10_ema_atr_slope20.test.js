@@ -316,3 +316,11 @@ test("R10 scheduler logically expires its 55-second lease despite KV's 60-second
   assert.ok(scheduler.includes("await env.STATE.delete(lockKey)"));
   assert.ok(scheduler.includes("{ expirationTtl: 60 }"));
 });
+
+test("R10 journal persistence rebases and retries concurrent main updates", () => {
+  const workflow = fs.readFileSync(path.join(__dirname,"../.github/workflows/volatility10-paper.yml"),"utf8");
+  assert.ok(workflow.includes("git fetch origin main"));
+  assert.ok(workflow.includes("git rebase origin/main"));
+  assert.ok(workflow.includes("git push origin HEAD:main"));
+  assert.ok(workflow.includes("for attempt in 1 2 3"));
+});
