@@ -1,21 +1,25 @@
 name: Volatility 10 M1 Paper Scanner
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
   workflow_dispatch:
+    inputs:
+      trigger_source:
+        description: "Dispatch source label"
+        required: false
+        default: "manual"
+        type: string
 
 permissions:
   contents: write
 
 concurrency:
   group: volatility10-m1-paper-scanner
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   paper-scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,6 +30,7 @@ jobs:
       - name: Run paper-only M1 scanner window
         run: node volatility10_paper_scanner.js
         env:
+          R10_PAPER_RUN_SECONDS: "45"
           R10_PAPER_PROVIDER_ENABLED: ${{ vars.R10_PAPER_PROVIDER_ENABLED || 'false' }}
           R10_PAPER_ROUTE_ENABLED: ${{ vars.R10_PAPER_ROUTE_ENABLED || 'false' }}
           R10_EMERGENCY_KILL_SWITCH: ${{ vars.R10_EMERGENCY_KILL_SWITCH || 'true' }}
