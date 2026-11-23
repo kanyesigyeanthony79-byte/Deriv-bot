@@ -7,6 +7,10 @@ on:
       - main
     paths:
       - "hosted_scanner.js"
+      - "research_shadow_telegram_collector.js"
+      - "breakout_retest_shadow.js"
+      - "m5_ema_pullback_shadow.js"
+      - "breakout_retest_m5_m15_shadow.js"
       - "scanner_heartbeat.js"
       - "signal_journal.js"
       - "daily_summary.js"
@@ -56,7 +60,9 @@ jobs:
         run: |
           git config user.name "Deriv Scanner"
           git config user.email "actions@users.noreply.github.com"
-          git add signal_state.json trade_journal.json scanner_heartbeat.json
+          git add signal_state.json trade_journal.json scanner_heartbeat.json \
+            breakout_retest_shadow_journal.json m5_ema_pullback_shadow_journal.json \
+            breakout_retest_m5_m15_shadow_journal.json shadow_telegram_delivery_journal.json research_shadow_collection.json
           if ! git diff --cached --quiet; then
             git commit -m "Update Deriv signal history"
             for attempt in 1 2 3; do
