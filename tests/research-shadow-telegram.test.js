@@ -3,10 +3,10 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const collector = require("../research_shadow_telegram_collector");
 
-test("shadow collector excludes Volatility 10 from its market universe", () => {
+test("shadow collector excludes Volatility 10 while including Gold in its market universe", () => {
   assert.equal(collector.MARKETS.some(([id]) => id === "R_10"), false);
   assert.deepEqual(collector.MARKETS.map(([id]) => id), [
-    "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500"
+    "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "frxXAUUSD"
   ]);
 });
 
