@@ -361,8 +361,25 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       const strongCount = promotedRecords.filter(item => item.score >= 80).length;
       const validCount = promotedRecords.filter(item => item.score >= 65 && item.score < 80).length;
 
+      const heartbeatTime = heartbeat && Date.parse(heartbeat.completedAt || "");
+      const heartbeatAge = Number.isFinite(heartbeatTime) ? (Date.now() - heartbeatTime) / 1000 : Infinity;
+      let healthText = "Scanner health unavailable";
+      let healthLabel = "HEALTH UNKNOWN";
+      if (heartbeat && Number.isFinite(heartbeatTime)) {
+        const last = time(heartbeat.completedAt);
+        if (heartbeatAge >= -60 && heartbeatAge <= PROMOTED_FRESH_SECONDS && heartbeat.status === "success") {
+          healthText = "Scanner online · last successful run " + last;
+          healthLabel = "SCANNER ONLINE";
+        } else if (heartbeatAge >= -60 && heartbeatAge <= PROMOTED_FRESH_SECONDS) {
+          healthText = "Scanner recently ran · status " + String(heartbeat.status || "unknown").toUpperCase() + " · " + last;
+          healthLabel = "SCANNER " + String(heartbeat.status || "UNKNOWN").toUpperCase();
+        } else {
+          healthText = "Scanner heartbeat stale · last run " + last;
+          healthLabel = "SCANNER STALE";
+        }
+      }
       metrics.innerHTML = [
-        ["SYSTEM STATUS", "DATA CONNECTED"],
+        ["SYSTEM STATUS", healthLabel],
         ["ACTIVE VALID SIGNALS", activeCount],
         ["STRONG SIGNALS", strongCount],
         ["VALID SIGNALS", validCount]
@@ -371,19 +388,6 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
         '</div><div class="signal' + (index === 0 ? " none" : "") + '">' +
         esc(value) + '</div></div>').join("");
 
-      const heartbeatTime = heartbeat && Date.parse(heartbeat.completedAt || "");
-      const heartbeatAge = Number.isFinite(heartbeatTime) ? (Date.now() - heartbeatTime) / 1000 : Infinity;
-      let healthText = "Scanner health unavailable";
-      if (heartbeat && Number.isFinite(heartbeatTime)) {
-        const last = time(heartbeat.completedAt);
-        if (heartbeatAge <= PROMOTED_FRESH_SECONDS && heartbeat.status === "success") {
-          healthText = "Scanner online · last successful run " + last;
-        } else if (heartbeatAge <= PROMOTED_FRESH_SECONDS) {
-          healthText = "Scanner recently ran · status " + String(heartbeat.status || "unknown").toUpperCase() + " · " + last;
-        } else {
-          healthText = "Scanner heartbeat stale · last run " + last;
-        }
-      }
       status.textContent = healthText + " · " + activeCount +
         " fresh production signals · prices older than 15 minutes are excluded.";
       renderPromotedSignals();
