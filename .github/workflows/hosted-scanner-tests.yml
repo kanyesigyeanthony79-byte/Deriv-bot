@@ -13,6 +13,10 @@ on:
       - "priority_pairs.js"
       - "test/priority_pairs.test.js"
       - "workers/deriv-telegram-alerts/worker.js"
+      - "research_shadow_telegram_collector.js"
+      - "market_discovery.js"
+      - "tests/research-shadow-telegram.test.js"
+      - "test/research_shadow_gold.test.js"
       - "cloudflare/deriv-telegram-alerts.js"
       - "volatility10_ema_atr_slope20.js"
       - "volatility10_provider_config.js"
@@ -48,4 +52,4 @@ jobs:
       - name: Check syntax
         run: node --check hosted_scanner.js && node --check signal_journal.js && node --check daily_summary.js && node --check priority_pairs.js && node --check workers/deriv-telegram-alerts/worker.js && node --check cloudflare/deriv-telegram-alerts.js && node --check volatility10_ema_atr_slope20.js && node --check volatility10_provider_config.js && node --check volatility10_paper_scanner.js && node --input-type=module --check < cloudflare/deriv-mtf-watchdog.js
       - name: Run journal tests
-        run: node --test test/signal_journal.test.js test/daily_summary.test.js test/priority_pairs.test.js test/volatility10_ema_atr_slope20.test.js
+        run: node --test test/signal_journal.test.js test/daily_summary.test.js test/priority_pairs.test.js test/volatility10_ema_atr_slope20.test.js tests/research-shadow-telegram.test.js test/research_shadow_gold.test.js
