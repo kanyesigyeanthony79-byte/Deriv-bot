@@ -24,21 +24,21 @@ The Cloudflare Worker must be deployed separately. Until its variables are expli
 
 ## Enable paper collection only
 
-After PR review and merge, set GitHub repository Actions variables:
+After PR review and merge:
 
-1. `R10_PAPER_PROVIDER_ENABLED=true`
-2. Keep `R10_EMERGENCY_KILL_SWITCH=true` while validating collection without alerts.
+1. Deploy `cloudflare/deriv-mtf-watchdog.js` to the existing `deriv-mtf-watchdog` Worker, preserving its existing `GITHUB_TOKEN`, `STATE` KV binding and `EXTERNAL_SCHEDULER_ENABLED` setting. Its existing `* * * * *` Cron Trigger should remain unchanged.
+2. Set these variables on the **Cloudflare `deriv-mtf-watchdog` Worker**: `R10_PAPER_SCHEDULER_ENABLED=true`, `R10_PAPER_PROVIDER_ENABLED=true`, and `R10_EMERGENCY_KILL_SWITCH=false`. The first enables dispatch; the second and third are independent scheduler safety gates.
+3. Set these GitHub repository Actions variables: `R10_PAPER_PROVIDER_ENABLED=true` and `R10_EMERGENCY_KILL_SWITCH=false`. These are checked again by the scanner workflow itself.
+4. Keep `R10_PAPER_ROUTE_ENABLED=false` and `R10_EMERGENCY_KILL_SWITCH=true` on the **Cloudflare `deriv-telegram-alerts` Worker** so the notification gateway stays blocked. Keep GitHub `R10_PAPER_TELEGRAM_ENABLED=false`.
 
-The repository now includes `cloudflare/deriv-mtf-watchdog.js`, the source-controlled update for the existing Cloudflare watchdog. That watchdog already has a `* * * * *` Cron Trigger and uses GitHub Actions workflow dispatch. After this PR is merged, upload the updated watchdog source to the existing `deriv-mtf-watchdog` Worker and configure `R10_PAPER_SCHEDULER_ENABLED=true`. Keep `R10_PAPER_ROUTE_ENABLED=false` and `R10_PAPER_TELEGRAM_ENABLED=false` during collection. Set `R10_PAPER_PROVIDER_ENABLED=true` and `R10_EMERGENCY_KILL_SWITCH=false` only when intentionally starting paper collection; the kill switch still blocks notifications independently at the Telegram Worker. The scheduler checks for an already queued/running R10 job before dispatching another, and the scanner polls for 45 seconds per run. GitHub runner startup and queue latency are asynchronous, so this is a one-minute dispatch attempt, not a hard real-time M1 delivery SLA. Late-recovered signals are journaled but not sent as alerts. Keep Telegram paper routing disabled until cadence and forward-paper health are reviewed.
+The scheduler checks for an already queued/running R10 job before dispatching another, and the scanner polls for 45 seconds per run. GitHub runner startup and queue latency are asynchronous, so this is a one-minute dispatch attempt, not a hard real-time M1 delivery SLA. Late-recovered signals are journaled but not sent as alerts. Keep Telegram paper routing disabled until cadence and forward-paper health are reviewed.
 
 ## Enable paper Telegram alerts
 
 Only after the scanner's candle cadence, paper journal, exits, and health have been reviewed:
 
-1. Set the Cloudflare Worker variable `R10_PAPER_ROUTE_ENABLED=true`.
-2. Set the Cloudflare Worker variable `R10_EMERGENCY_KILL_SWITCH=false`.
-3. Set the GitHub Actions variable `R10_EMERGENCY_KILL_SWITCH=false`.
-4. Set `R10_PAPER_TELEGRAM_ENABLED=true` only if Telegram paper alerts are desired.
+1. On the `deriv-telegram-alerts` Worker, set `R10_PAPER_ROUTE_ENABLED=true` and `R10_EMERGENCY_KILL_SWITCH=false`.
+2. On GitHub Actions, set `R10_PAPER_TELEGRAM_ENABLED=true` only if Telegram paper alerts are desired. Keep `R10_PAPER_PROVIDER_ENABLED=true` and the GitHub `R10_EMERGENCY_KILL_SWITCH=false`.
 
 The Worker accepts an R10 alert only if its provider ID and strategy version match, timeframe is M1, status is PAPER, and `live !== true`. All other R10 signals and outcomes are suppressed.
 
@@ -46,11 +46,7 @@ Keep `MT5_EXECUTION_ENABLED=false`. Do not enable any live order execution.
 
 ## Emergency kill switch
 
-Immediately set both:
-- Cloudflare Worker variable `R10_EMERGENCY_KILL_SWITCH=true`
-- GitHub Actions variable `R10_EMERGENCY_KILL_SWITCH=true`
-
-Also set `R10_PAPER_PROVIDER_ENABLED=false` to stop the scanner at its next start. The Worker blocks the R10 notification route independently of the scanner.
+Immediately set `R10_EMERGENCY_KILL_SWITCH=true` on both Cloudflare Workers (`deriv-mtf-watchdog` and `deriv-telegram-alerts`) and in GitHub Actions. Also set `R10_PAPER_PROVIDER_ENABLED=false` in both the watchdog Worker and GitHub Actions, and set `R10_PAPER_SCHEDULER_ENABLED=false` on the watchdog. The Telegram Worker blocks R10 notifications independently of the scanner.
 
 ## Roll back to the previous R10 signal providers
 
