@@ -1,7 +1,6 @@
 const REPO = "kanyesigyeanthony79-byte/Deriv-bot";
 const BRANCH = "main";
 const LEGACY_WORKFLOWS = [
-  { id: 417618869, key: "collector", name: "Multi-Timeframe Data Collector", minuteOffset: 1 },
   { id: 417087054, key: "market-monitor", name: "Deriv Market Monitor", minuteOffset: 4 }
 ];
 const R10_WORKFLOW_PATH = ".github/workflows/volatility10-paper.yml";
