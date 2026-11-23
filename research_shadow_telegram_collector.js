@@ -86,6 +86,7 @@ async function fetchCandles(client, symbol, granularity, count, nowEpoch) {
     ticks_history: symbol, adjust_start_time: 1, count,
     end: "latest", granularity, style: "candles"
   });
+  if (response.error) throw new Error(response.error.message || "Deriv candle request failed");
   return normalizeCandles(response.candles, granularity, nowEpoch).slice(-count);
 }
 function newSignals(before, after) {
