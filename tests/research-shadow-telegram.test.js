@@ -7,16 +7,16 @@ test("shadow collector excludes standard Volatility 10 and includes both distinc
   assert.equal(collector.MARKETS.some(([id]) => id === "R_10"), false);
   assert.deepEqual(collector.MARKETS.map(([id]) => id), [
     "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "frxXAUUSD",
-    "R_10_1S", "R_75_1S"
+    "1HZ10V", "1HZ75V"
   ]);
-  assert.equal(collector.MARKETS.find(([id]) => id === "R_10_1S")[1], "Volatility 10 (1s) Index");
-  assert.equal(collector.MARKETS.find(([id]) => id === "R_75_1S")[1], "Volatility 75 (1s) Index");
+  assert.equal(collector.MARKETS.find(([id]) => id === "1HZ10V")[1], "Volatility 10 (1s) Index");
+  assert.equal(collector.MARKETS.find(([id]) => id === "1HZ75V")[1], "Volatility 75 (1s) Index");
 });
 
 test("both 1-second volatility products can produce research-only Telegram alerts", () => {
   for (const [marketId, market] of [
-    ["R_10_1S", "Volatility 10 (1s) Index"],
-    ["R_75_1S", "Volatility 75 (1s) Index"]
+    ["1HZ10V", "Volatility 10 (1s) Index"],
+    ["1HZ75V", "Volatility 75 (1s) Index"]
   ]) {
     const alert = collector.toAlert({
       signalId: marketId + "-example-123", marketId, market,

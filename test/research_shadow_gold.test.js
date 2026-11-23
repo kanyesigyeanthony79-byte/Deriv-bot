@@ -33,7 +33,7 @@ test("the Telegram research-shadow endpoint explicitly permits Gold and both 1-s
   const workerPath = path.join(__dirname, "..", "workers", "deriv-telegram-alerts", "worker.js");
   const worker = fs.readFileSync(workerPath, "utf8");
   assert.match(worker, /allowedMarkets\s*=\s*new Set\(\[[^\]]*"frxXAUUSD"/);
-  assert.match(worker, /"R_10_1S"/);
-  assert.match(worker, /"R_75_1S"/);
+  assert.match(worker, /"1HZ10V"/);
+  assert.match(worker, /"1HZ75V"/);
   assert.match(worker, /normalized\.includes\("1hz10v"\).*normalized\.includes\("volatility101s"/);
 });
