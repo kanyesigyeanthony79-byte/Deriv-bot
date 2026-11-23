@@ -55,7 +55,7 @@ jobs:
       - name: Collect candles and route recent candidates to Telegram
         run: node multi_timeframe_collector.js
         env:
-          R10_LEGACY_ROLLBACK_ENABLED: ${{ vars.R10_LEGACY_ROLLBACK_ENABLED || "false" }}
+          R10_LEGACY_ROLLBACK_ENABLED: ${{ vars.R10_LEGACY_ROLLBACK_ENABLED || 'false' }}
           MTF_TELEGRAM_ALERTS: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
           MTF_BASELINE_ALERTS_ENABLED: "false" # MTF_BASELINE_V1 remains research-only until promoted
           STRATEGY_COMPARISON_TELEGRAM_ALERTS: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
