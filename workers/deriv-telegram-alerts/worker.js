@@ -279,6 +279,70 @@ export default {
     if (request.headers.get("X-API-Key") !== env.SIGNAL_API_KEY) return reply({ error: "Unauthorized" }, 401);
 
     const url = new URL(request.url);
+    // Separate research-shadow notification path. It cannot authorize R10, production,
+    // MT5, or ordinary signal events and does not alter the production R10 provider gate.
+    if (url.pathname === "/shadow/research" && request.method === "POST") {
+      let d;
+      try { d = await request.json(); } catch { return reply({ error: "Invalid JSON" }, 400); }
+      const allowedMarkets = new Set(["R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500"]);
+      const allowedStrategies = new Set([
+        "M15_M5_EMA_PULLBACK",
+        "M5_BREAKOUT_M1_RETEST",
+        "M5_BREAKOUT_M5_RETEST_M15_CONFIRM"
+      ]);
+      if (d.source !== "RESEARCH_SHADOW" || d.event !== "new_signal" ||
+          d.paper !== true || d.live !== false || d.status !== "SHADOW") {
+        return reply({ error: "Research shadow route accepts shadow-only demo events" }, 403);
+      }
+      if (!allowedMarkets.has(String(d.marketId || "")) || isVolatility10Alert(d)) {
+        return reply({ error: "Market is not allowed on the research shadow route" }, 403);
+      }
+      if (!allowedStrategies.has(String(d.strategyId || ""))) {
+        return reply({ error: "Unapproved research strategy" }, 403);
+      }
+      if (!d.signalId || !/^[A-Za-z0-9._:-]{1,120}$/.test(String(d.signalId))) {
+        return reply({ error: "Invalid signalId" }, 400);
+      }
+      if (!["BUY", "SELL"].includes(String(d.direction || ""))) return reply({ error: "Invalid direction" }, 400);
+      for (const field of ["entry", "stopLoss", "tp1", "tp2"]) {
+        if (!Number.isFinite(Number(d[field])) || Number(d[field]) <= 0) {
+          return reply({ error: "Invalid price: " + field }, 400);
+        }
+      }
+      const entry = Number(d.entry), stop = Number(d.stopLoss), tp1 = Number(d.tp1), tp2 = Number(d.tp2);
+      if (d.direction === "BUY" ? !(stop < entry && tp1 > entry && tp2 >= tp1) :
+          !(stop > entry && tp1 < entry && tp2 <= tp1)) {
+        return reply({ error: "Shadow price levels are inconsistent" }, 400);
+      }
+      if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
+        return reply({ error: "Telegram secrets are not configured" }, 500);
+      }
+      const message = [
+        "🧪 DERIV SIGNAL ASSISTANT — RESEARCH / SHADOW",
+        "DEMO ONLY — OBSERVATION SIGNAL, NO TRADE EXECUTED",
+        "━━━━━━━━━━━━━━━━",
+        "Strategy: " + String(d.strategyLabel || d.strategyId).slice(0, 100),
+        "Market: " + String(d.market).slice(0, 80),
+        "Direction: " + d.direction,
+        "Entry: " + entry,
+        "Stop Loss: " + stop,
+        "Take Profit 1: " + tp1,
+        "Take Profit 2: " + tp2,
+        "Timeframes: " + String(d.entryTimeframe || "?") + " entry / " +
+          String(d.setupTimeframe || "?") + " setup / " + String(d.confirmationTimeframe || "?") + " confirmation",
+        "Signal: " + String(d.signalId).slice(0, 100),
+        "━━━━━━━━━━━━━━━━",
+        "Research alert only. No MT5 order or live trade has been placed."
+      ].join("\n");
+      const telegramResponse = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text: message })
+      });
+      let telegramResult = {};
+      try { telegramResult = await telegramResponse.json(); } catch {}
+      if (!telegramResponse.ok || !telegramResult.ok) return reply({ error: "Telegram delivery failed" }, 502);
+      return reply({ success: true, message: "Research shadow alert delivered" });
+    }
     if (url.pathname.startsWith("/mt5/")) {
       if (["/mt5/ingest", "/mt5/next", "/mt5/ack"].includes(url.pathname) &&
           env.MT5_EXECUTION_ENABLED !== "true" && env.MT5_OBSERVATION_ENABLED !== "true") {
