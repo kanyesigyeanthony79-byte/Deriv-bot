@@ -303,13 +303,15 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       const cls = item.direction === "BUY" ? "buy" : "sell";
       const quality = item.score >= 80 ? "STRONG" : "VALID";
       const progress = item.tp1Hit ? "TP1 TOUCHED · RUNNER OPEN" : "PENDING";
+      const priceState = item.priceFresh ? "PRICE CHECK FRESH" : "PRICE CHECK STALE";
       return '<article class="signal-item"><div class="signal-item-head"><span>' +
         esc(item.market) + '</span><span class="mtf-tag">' + quality + ' · ' +
         esc(item.score) + '/100</span></div><div class="signal ' + cls + '">' +
         esc(item.direction) + '</div><div class="detail">Entry: ' + fmt(item.entry) +
         '<br>Stop: ' + fmt(item.stopLoss) + '<br>TP1: ' + fmt(item.tp1) +
         '<br>TP2: ' + fmt(item.tp2) + '<br>State: ' + progress +
-        '<br>Last price check: ' + esc(time(new Date(item.lastCheckedEpoch * 1000).toISOString())) +
+        '<br>' + priceState + ' · Last check: ' +
+        esc(item.lastCheckedEpoch ? time(new Date(item.lastCheckedEpoch * 1000).toISOString()) : "—") +
         '</div></article>';
     }).join("") : '<div class="signal-empty">No fresh ' +
       (promotedFilter === "active" ? "active VALID or STRONG" : promotedFilter.toUpperCase()) +
@@ -350,8 +352,8 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
             record.events.some(event => terminal.has(event.outcome)));
         if (active.closed || !record || record.status !== "sent" || hasTerminalOutcome) continue;
         if (!Number.isFinite(score) || score < 65) continue;
-        if (!Number.isFinite(checked) || age < -60 || age > PROMOTED_FRESH_SECONDS) continue;
-        fresh.push({ ...active, score });
+        fresh.push({ ...active, score, priceFresh: Number.isFinite(checked) &&
+          age >= -60 && age <= PROMOTED_FRESH_SECONDS });
       }
       promotedRecords = fresh.sort((a, b) => b.createdEpoch - a.createdEpoch);
       const activeCount = promotedRecords.length;
@@ -386,7 +388,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
         esc(value) + '</div></div>').join("");
 
       status.textContent = healthText + " · " + activeCount +
-        " fresh production signals · prices older than 15 minutes are excluded.";
+        " open production signals · stale price checks are labelled individually.";
       renderPromotedSignals();
       $("activeTabCount").textContent = activeCount;
       $("validTabCount").textContent = validCount;
