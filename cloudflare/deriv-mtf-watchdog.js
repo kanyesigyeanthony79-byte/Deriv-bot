@@ -62,7 +62,7 @@ async function dispatchR10(env, now) {
   try {
     await github(env, `/repos/${REPO}/actions/workflows/${workflow.id}/dispatches`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: BRANCH, inputs: { trigger_source: "cloudflare_r10_scheduler" } })
+      body: JSON.stringify({ ref: BRANCH, inputs: { trigger_source: "cloudflare_r10_scheduler", provider_enabled: "true", emergency_kill_switch: "false", telegram_enabled: "true" } })
     });
     return { status: "dispatch_accepted", workflowId: workflow.id, at: now.toISOString(),
       note: "GitHub runner startup is asynchronous; this is not a hard real-time M1 delivery guarantee." };
