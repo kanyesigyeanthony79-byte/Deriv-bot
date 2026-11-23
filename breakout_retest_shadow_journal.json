@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-23T18:54:50.000Z",
+  "updatedAt": "2026-11-23T18:59:50.000Z",
   "markets": {
     "R_10": {
       "lastProcessedM5Epoch": 1795413300,
@@ -17,21 +17,21 @@
       }
     },
     "R_25": {
-      "lastProcessedM5Epoch": 1795459500,
+      "lastProcessedM5Epoch": 1795459800,
       "pendingSetups": [],
       "cooldownUntilEpoch": 1795457700,
       "initializedAt": "2026-11-17T14:04:48.000Z",
       "dataQuality": "ok",
       "stats": {
-        "setupsDetected": 291,
+        "setupsDetected": 292,
         "signalsGenerated": 84,
-        "riskRejected": 4,
+        "riskRejected": 5,
         "overlapSuppressed": 45,
         "confirmationExpired": 158
       }
     },
     "R_50": {
-      "lastProcessedM5Epoch": 1795459500,
+      "lastProcessedM5Epoch": 1795459800,
       "pendingSetups": [],
       "cooldownUntilEpoch": 1795456740,
       "initializedAt": "2026-11-17T14:04:48.000Z",
@@ -45,13 +45,21 @@
       }
     },
     "R_75": {
-      "lastProcessedM5Epoch": 1795459500,
-      "pendingSetups": [],
-      "cooldownUntilEpoch": 1795455420,
+      "lastProcessedM5Epoch": 1795459800,
+      "pendingSetups": [
+        {
+          "setupCloseEpoch": 1795460100,
+          "direction": -1,
+          "boundary": 44485.9886,
+          "atr5": 165.7375459670464,
+          "contextM15": "up"
+        }
+      ],
+      "cooldownUntilEpoch": 1795460520,
       "initializedAt": "2026-11-17T14:04:48.000Z",
       "dataQuality": "ok",
       "stats": {
-        "setupsDetected": 292,
+        "setupsDetected": 293,
         "signalsGenerated": 86,
         "riskRejected": 8,
         "overlapSuppressed": 52,
@@ -59,7 +67,7 @@
       }
     },
     "JD75": {
-      "lastProcessedM5Epoch": 1795459500,
+      "lastProcessedM5Epoch": 1795459800,
       "pendingSetups": [],
       "cooldownUntilEpoch": 1795450740,
       "initializedAt": "2026-11-17T14:04:48.000Z",
@@ -73,7 +81,7 @@
       }
     },
     "JD100": {
-      "lastProcessedM5Epoch": 1795459500,
+      "lastProcessedM5Epoch": 1795459800,
       "pendingSetups": [
         {
           "setupCloseEpoch": 1795459800,
@@ -95,16 +103,8 @@
       }
     },
     "CRASH500": {
-      "lastProcessedM5Epoch": 1795459500,
-      "pendingSetups": [
-        {
-          "setupCloseEpoch": 1795459500,
-          "direction": -1,
-          "boundary": 2749.652,
-          "atr5": 2.9163709771162227,
-          "contextM15": "neutral"
-        }
-      ],
+      "lastProcessedM5Epoch": 1795459800,
+      "pendingSetups": [],
       "cooldownUntilEpoch": 1795435380,
       "initializedAt": "2026-11-17T14:04:48.000Z",
       "dataQuality": "ok",
@@ -113,11 +113,11 @@
         "signalsGenerated": 39,
         "riskRejected": 31,
         "overlapSuppressed": 26,
-        "confirmationExpired": 267
+        "confirmationExpired": 268
       }
     },
     "BOOM500": {
-      "lastProcessedM5Epoch": 1795459500,
+      "lastProcessedM5Epoch": 1795459800,
       "pendingSetups": [
         {
           "setupCloseEpoch": 1795459800,
@@ -125,13 +125,20 @@
           "boundary": 5642.381,
           "atr5": 4.396808811616338,
           "contextM15": "up"
+        },
+        {
+          "setupCloseEpoch": 1795460100,
+          "direction": -1,
+          "boundary": 5638.941,
+          "atr5": 4.309175727550327,
+          "contextM15": "up"
         }
       ],
       "cooldownUntilEpoch": 1795459560,
       "initializedAt": "2026-11-17T14:04:48.000Z",
       "dataQuality": "ok",
       "stats": {
-        "setupsDetected": 391,
+        "setupsDetected": 392,
         "signalsGenerated": 44,
         "riskRejected": 26,
         "overlapSuppressed": 30,
@@ -161,14 +168,15 @@
         "target": 2
       },
       "contextM15": "up",
-      "status": "pending",
+      "status": "stopped",
       "evaluationSource": "forward_shadow",
-      "lastProcessedEpoch": 1795459800,
-      "outcomeCandles": 0,
-      "maxFavourableR": 0,
-      "maxAdverseR": 0,
-      "realizedR": null,
-      "createdAt": "2026-11-23T18:50:00.000Z"
+      "lastProcessedEpoch": 1795460280,
+      "outcomeCandles": 8,
+      "maxFavourableR": 0.806694368371236,
+      "maxAdverseR": 1.158895878995289,
+      "realizedR": -1,
+      "createdAt": "2026-11-23T18:50:00.000Z",
+      "exitEpoch": 1795460280
     },
     {
       "signalId": "BOOM500-BREAKOUT_RETEST-1795458900",
@@ -17691,14 +17699,14 @@
     "strategy": "M5 breakout beyond prior 12-bar range; M1 retest confirmation; next-M1-open entry",
     "marketsMonitored": 8,
     "signalsGenerated": 566,
-    "resolvedSignals": 565,
-    "pendingSignals": 1,
+    "resolvedSignals": 566,
+    "pendingSignals": 0,
     "targetBeforeStop": 206,
-    "stopBeforeTarget": 343,
+    "stopBeforeTarget": 344,
     "timeExit": 14,
     "ambiguous": 2,
     "targetRatePct": 37.5,
-    "averageRealizedR": 0.131,
+    "averageRealizedR": 0.129,
     "markets": {
       "R_10": {
         "dataQuality": "insufficient_or_discontinuous_candles",
@@ -17728,9 +17736,9 @@
         "timeExit": 4,
         "targetRatePct": 38.8,
         "averageRealizedR": 0.163,
-        "setupsDetected": 291,
+        "setupsDetected": 292,
         "signalsGenerated": 84,
-        "riskRejected": 4,
+        "riskRejected": 5,
         "overlapSuppressed": 45,
         "confirmationExpired": 158
       },
@@ -17754,15 +17762,15 @@
       "R_75": {
         "dataQuality": "ok",
         "signals": 86,
-        "resolved": 85,
-        "pending": 1,
+        "resolved": 86,
+        "pending": 0,
         "targetBeforeStop": 27,
-        "stopBeforeTarget": 56,
+        "stopBeforeTarget": 57,
         "ambiguous": 0,
         "timeExit": 2,
-        "targetRatePct": 32.5,
-        "averageRealizedR": -0.032,
-        "setupsDetected": 292,
+        "targetRatePct": 32.1,
+        "averageRealizedR": -0.043,
+        "setupsDetected": 293,
         "signalsGenerated": 86,
         "riskRejected": 8,
         "overlapSuppressed": 52,
@@ -17817,7 +17825,7 @@
         "signalsGenerated": 39,
         "riskRejected": 31,
         "overlapSuppressed": 26,
-        "confirmationExpired": 267
+        "confirmationExpired": 268
       },
       "BOOM500": {
         "dataQuality": "ok",
@@ -17830,7 +17838,7 @@
         "timeExit": 0,
         "targetRatePct": 53.5,
         "averageRealizedR": 0.605,
-        "setupsDetected": 391,
+        "setupsDetected": 392,
         "signalsGenerated": 44,
         "riskRejected": 26,
         "overlapSuppressed": 30,
