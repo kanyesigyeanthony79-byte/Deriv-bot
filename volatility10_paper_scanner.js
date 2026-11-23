@@ -81,6 +81,16 @@ async function deliverPaperSignal(signal) {
   if (!response.ok || body.success !== true) throw new Error(body.error || "Paper Telegram route failed");
   return {sent:true};
 }
+function indicatorSegmentStartBeforeCursor(completed, lastProcessedEpoch) {
+  const firstNewIndex = completed.findIndex(candle => candle.epoch > lastProcessedEpoch);
+  let segmentStart = 0;
+  if (firstNewIndex > 0) {
+    for (let i=1;i<=firstNewIndex;i++) {
+      if (completed[i].epoch - completed[i-1].epoch !== 60) segmentStart = i;
+    }
+  }
+  return segmentStart;
+}
 function processNewCandles(state, journal, completed, nextCandle, nowEpoch) {
   if (!completed.length) return;
   const latest = completed[completed.length - 1];
@@ -91,13 +101,7 @@ function processNewCandles(state, journal, completed, nextCandle, nowEpoch) {
     return;
   }
   let previousEpoch = Number(state.lastProcessedEpoch);
-  const firstNewIndex = completed.findIndex(candle => candle.epoch > state.lastProcessedEpoch);
-  let indicatorSegmentStart = 0;
-  if (firstNewIndex > 0) {
-    for (let j=1;j<=firstNewIndex;j++) {
-      if (completed[j].epoch - completed[j-1].epoch !== 60) indicatorSegmentStart = j;
-    }
-  }
+  let indicatorSegmentStart = indicatorSegmentStartBeforeCursor(completed, state.lastProcessedEpoch);
   let segmentIndicators = indicators(completed.slice(indicatorSegmentStart));
   for (let i=0;i<completed.length;i++) {
     const candle = completed[i];
@@ -219,4 +223,4 @@ async function main() {
   console.log(JSON.stringify({event:"r10_paper_scanner_window_complete",providerId:PROVIDER_ID,liveExecution:false}));
 }
 if (require.main === module) main().catch(error=>{console.error(JSON.stringify({event:"r10_paper_scanner_failed",message:error.message}));process.exitCode=1;});
-module.exports={collect,splitCandleHistory,processNewCandles};
+module.exports={collect,splitCandleHistory,indicatorSegmentStartBeforeCursor,processNewCandles};
