@@ -232,8 +232,14 @@ async function main() {
         marketData.errors.push({ timeframe: "W1", message: "Fewer than 51 completed weekly candles available; position signals will remain warming." });
       }
       // Generate observation-only candidates. No alerts or trade execution.
-      marketData.signals = evaluateAllCategories(marketId, marketName, marketData.timeframes);
-      marketData.recentSignals = evaluateRecentSignals(marketId, marketName, marketData.timeframes, 6);
+      if (marketId === "R_10" && process.env.R10_LEGACY_ROLLBACK_ENABLED !== "true") {
+        marketData.signals = [];
+        marketData.recentSignals = [];
+        marketData.providerGate = { exclusive: true, providerId: "volatility10_ema_atr_slope20_v1", legacyProvidersEnabled: false };
+      } else {
+        marketData.signals = evaluateAllCategories(marketId, marketName, marketData.timeframes);
+        marketData.recentSignals = evaluateRecentSignals(marketId, marketName, marketData.timeframes, 6);
+      }
       output.markets[marketId] = marketData;
     }
 
