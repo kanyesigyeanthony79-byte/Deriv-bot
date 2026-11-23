@@ -290,7 +290,7 @@ test("paper scanner records signal evaluation reasons without changing strategy 
     lastSignalEpoch:null, activePosition:null, closedPositions:[]
   };
   const journal = {signals:[],health:[]};
-  processNewCandles(state,journal,completed,null,completed.at(-1).epoch+30);
+  processNewCandles(state,journal,completed,{epoch:completed.at(-1).epoch+60,open:100,high:100.5,low:99.5,close:100},completed.at(-1).epoch+30);
   assert.equal(journal.signalDiagnostics.evaluations,1);
   assert.equal(journal.signalDiagnostics.last.evaluatedCandleEpoch,completed.at(-1).epoch);
   assert.equal(journal.signalDiagnostics.last.reason,"conditions_not_met");
