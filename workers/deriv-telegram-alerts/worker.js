@@ -1,12 +1,27 @@
+function isVolatility10Alert(data = {}) {
+  const marketId = String(data.marketId || "").trim().toUpperCase();
+  const normalized = String(data.market || data.instrument || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return ["R_10", "R10", "VOLATILITY 10 INDEX", "VOLATILITY10INDEX"].includes(marketId) ||
+    ["volatility10", "volatility10index", "volatility10indexm1"].some(alias => normalized.includes(alias));
+}
+
 function shouldDeliverTelegramAlert(data = {}, env = {}) {
   if (data.event === "daily_summary") return true;
+  if (isVolatility10Alert(data)) {
+    if (env.R10_LEGACY_ROLLBACK_ENABLED === "true") return true;
+    return env.R10_PAPER_ROUTE_ENABLED === "true" &&
+      env.R10_EMERGENCY_KILL_SWITCH === "false" &&
+      data.providerId === "volatility10_ema_atr_slope20_v1" &&
+      data.strategyVersion === "volatility10_ema_atr_slope20_v1" &&
+      data.timeframe === "M1" &&
+      (data.status === "PAPER" || data.paper === true) && data.live !== true;
+  }
   const marketId = String(data.marketId || "").trim().toUpperCase();
   const market = String(data.market || "");
-  const isR50 = marketId === "R_50" || /\bvolatility\s*50(?:\s+index)?\b/i.test(market);
+  const isR50 = marketId === "R_50" || /\\bvolatility\\s*50(?:\\s+index)?\\b/i.test(market);
   if (!isR50) return true;
   return data.source === "LEGACY_15M" && data.priorityTier === "RESEARCH_PRIORITY";
 }
-
 
 const MT5_ALLOWED_MARKETS=new Set(["R_25","R_50","R_75","JD100","CRASH500","BOOM500"]);
 const MT5_MAX_AGE={SCALP:600,SHORT_TERM:1800,POSITION:14400};
