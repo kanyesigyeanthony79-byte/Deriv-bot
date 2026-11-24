@@ -1,4 +1,5 @@
 "use strict";
+// Gold research uses the latest aligned continuous session; session gaps are not bridged.
 // Research/forward-shadow cycle shared by the hosted scanner. Standard Volatility 10 and retired MTF are excluded; 1-second products are separate markets.
 // Observation/Telegram only; never imports production routing or MT5 execution modules.
 const fs = require("node:fs");
