@@ -163,3 +163,14 @@ test("forward journal rejects breakout when M15 direction is not aligned", () =>
   assert.equal(journal.signals.length, 0);
   assert.equal(journal.markets.R_10.stats.m15Rejected, 1);
 });
+
+
+test("M5/M15 research keeps only the latest continuous aligned session after a gap", () => {
+  const { latestContinuousFrame } = require("../breakout_retest_m5_m15_shadow");
+  const start = Math.floor(1_700_000_000 / 900) * 900;
+  const before = Array.from({length:8},(_,i)=>({epoch:start+i*900,open:100,high:101,low:99,close:100}));
+  const after = Array.from({length:60},(_,i)=>({epoch:start+8*900+75*60+i*900,open:100,high:101,low:99,close:100}));
+  const result = latestContinuousFrame(before.concat(after),900,55);
+  assert.equal(result.length,60);
+  assert.equal(result[0].epoch,after[0].epoch);
+});
