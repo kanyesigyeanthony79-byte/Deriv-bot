@@ -4,9 +4,19 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const { MARKETS, toAlert } = require("../research_shadow_telegram_collector");
+const breakoutM1 = require("../breakout_retest_shadow");
+const emaPullback = require("../m5_ema_pullback_shadow");
+const breakoutM5M15 = require("../breakout_retest_m5_m15_shadow");
 
 test("Gold is included in the active research-shadow scanner", () => {
   assert.ok(MARKETS.some(([id]) => id === "frxXAUUSD"));
+});
+
+
+test("Gold is enabled in all three isolated research strategy engines", () => {
+  assert.ok(breakoutM1.RESEARCH_MARKETS.includes("frxXAUUSD"));
+  assert.ok(emaPullback.MARKETS.includes("frxXAUUSD"));
+  assert.ok(breakoutM5M15.RESEARCH_MARKETS.includes("frxXAUUSD"));
 });
 
 test("Gold research candidates are formatted as shadow-only Telegram alerts", () => {
