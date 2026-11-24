@@ -2,8 +2,8 @@
 // Forward-only M5 execution / M15 directional-confirmation breakout-retest shadow.
 // Isolated from production signals, Telegram delivery and all MT5 execution.
 
-const SYNTHETIC_MARKETS = Object.freeze([
-  "R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "1HZ10V", "1HZ75V"
+const RESEARCH_MARKETS = Object.freeze([
+  "R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "1HZ10V", "1HZ75V", "frxXAUUSD"
 ]);
 const M5_SECONDS = 300;
 const M15_SECONDS = 900;
