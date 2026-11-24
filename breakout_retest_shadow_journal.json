@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-24T09:39:53.000Z",
+  "updatedAt": "2026-11-24T09:44:50.000Z",
   "markets": {
     "R_10": {
       "lastProcessedM5Epoch": 1795413300,
@@ -17,7 +17,7 @@
       }
     },
     "R_25": {
-      "lastProcessedM5Epoch": 1795512600,
+      "lastProcessedM5Epoch": 1795512900,
       "pendingSetups": [
         {
           "setupCloseEpoch": 1795512900,
@@ -39,7 +39,7 @@
       }
     },
     "R_50": {
-      "lastProcessedM5Epoch": 1795512600,
+      "lastProcessedM5Epoch": 1795512900,
       "pendingSetups": [],
       "cooldownUntilEpoch": 1795512660,
       "initializedAt": "2026-11-17T14:04:48.000Z",
@@ -53,13 +53,21 @@
       }
     },
     "R_75": {
-      "lastProcessedM5Epoch": 1795512600,
-      "pendingSetups": [],
+      "lastProcessedM5Epoch": 1795512900,
+      "pendingSetups": [
+        {
+          "setupCloseEpoch": 1795513200,
+          "direction": 1,
+          "boundary": 45468.1093,
+          "atr5": 156.20265789248523,
+          "contextM15": "up"
+        }
+      ],
       "cooldownUntilEpoch": 1795510860,
       "initializedAt": "2026-11-17T14:04:48.000Z",
       "dataQuality": "ok",
       "stats": {
-        "setupsDetected": 326,
+        "setupsDetected": 327,
         "signalsGenerated": 95,
         "riskRejected": 8,
         "overlapSuppressed": 54,
@@ -67,7 +75,7 @@
       }
     },
     "JD75": {
-      "lastProcessedM5Epoch": 1795512600,
+      "lastProcessedM5Epoch": 1795512900,
       "pendingSetups": [],
       "cooldownUntilEpoch": 1795512780,
       "initializedAt": "2026-11-17T14:04:48.000Z",
@@ -81,7 +89,7 @@
       }
     },
     "JD100": {
-      "lastProcessedM5Epoch": 1795512600,
+      "lastProcessedM5Epoch": 1795512900,
       "pendingSetups": [],
       "cooldownUntilEpoch": 1795501080,
       "initializedAt": "2026-11-17T14:04:48.000Z",
@@ -95,9 +103,9 @@
       }
     },
     "CRASH500": {
-      "lastProcessedM5Epoch": 1795512600,
+      "lastProcessedM5Epoch": 1795512900,
       "pendingSetups": [],
-      "cooldownUntilEpoch": 1795507380,
+      "cooldownUntilEpoch": 1795513320,
       "initializedAt": "2026-11-17T14:04:48.000Z",
       "dataQuality": "ok",
       "stats": {
@@ -109,7 +117,7 @@
       }
     },
     "BOOM500": {
-      "lastProcessedM5Epoch": 1795512600,
+      "lastProcessedM5Epoch": 1795512900,
       "pendingSetups": [],
       "cooldownUntilEpoch": 1795506900,
       "initializedAt": "2026-11-17T14:04:48.000Z",
@@ -123,20 +131,20 @@
       }
     },
     "1HZ10V": {
-      "lastProcessedM5Epoch": 1795512600,
+      "lastProcessedM5Epoch": 1795512900,
       "pendingSetups": [
-        {
-          "setupCloseEpoch": 1795512600,
-          "direction": 1,
-          "boundary": 9736.98,
-          "atr5": 4.8616042632556855,
-          "contextM15": "up"
-        },
         {
           "setupCloseEpoch": 1795512900,
           "direction": 1,
           "boundary": 9743.65,
           "atr5": 5.0722039587373855,
+          "contextM15": "up"
+        },
+        {
+          "setupCloseEpoch": 1795513200,
+          "direction": 1,
+          "boundary": 9746.31,
+          "atr5": 5.101300846628497,
           "contextM15": "up"
         }
       ],
@@ -144,15 +152,15 @@
       "initializedAt": "2026-11-23T19:38:25.000Z",
       "dataQuality": "ok",
       "stats": {
-        "setupsDetected": 36,
+        "setupsDetected": 37,
         "signalsGenerated": 13,
         "riskRejected": 0,
         "overlapSuppressed": 3,
-        "confirmationExpired": 18
+        "confirmationExpired": 19
       }
     },
     "1HZ75V": {
-      "lastProcessedM5Epoch": 1795512600,
+      "lastProcessedM5Epoch": 1795512900,
       "pendingSetups": [],
       "cooldownUntilEpoch": 1795509180,
       "initializedAt": "2026-11-23T19:38:25.000Z",
@@ -188,14 +196,15 @@
         "target": 2
       },
       "contextM15": "up",
-      "status": "pending",
+      "status": "tp2_hit",
       "evaluationSource": "forward_shadow",
-      "lastProcessedEpoch": 1795512780,
-      "outcomeCandles": 0,
-      "maxFavourableR": 0,
+      "lastProcessedEpoch": 1795513080,
+      "outcomeCandles": 5,
+      "maxFavourableR": 2.1951300079506173,
       "maxAdverseR": 0,
-      "realizedR": null,
-      "createdAt": "2026-11-24T09:30:00.000Z"
+      "realizedR": 2,
+      "createdAt": "2026-11-24T09:30:00.000Z",
+      "exitEpoch": 1795513080
     },
     {
       "signalId": "1HZ10V-BREAKOUT_RETEST-1795512000",
@@ -20353,14 +20362,14 @@
     "strategy": "M5 breakout beyond prior 12-bar range; M1 retest confirmation; next-M1-open entry",
     "marketsMonitored": 10,
     "signalsGenerated": 651,
-    "resolvedSignals": 650,
-    "pendingSignals": 1,
-    "targetBeforeStop": 235,
+    "resolvedSignals": 651,
+    "pendingSignals": 0,
+    "targetBeforeStop": 236,
     "stopBeforeTarget": 398,
     "timeExit": 15,
     "ambiguous": 2,
-    "targetRatePct": 37.1,
-    "averageRealizedR": 0.121,
+    "targetRatePct": 37.2,
+    "averageRealizedR": 0.123,
     "markets": {
       "R_10": {
         "dataQuality": "insufficient_or_discontinuous_candles",
@@ -20424,7 +20433,7 @@
         "timeExit": 2,
         "targetRatePct": 32.3,
         "averageRealizedR": -0.039,
-        "setupsDetected": 326,
+        "setupsDetected": 327,
         "signalsGenerated": 95,
         "riskRejected": 8,
         "overlapSuppressed": 54,
@@ -20467,14 +20476,14 @@
       "CRASH500": {
         "dataQuality": "ok",
         "signals": 44,
-        "resolved": 43,
-        "pending": 1,
-        "targetBeforeStop": 16,
+        "resolved": 44,
+        "pending": 0,
+        "targetBeforeStop": 17,
         "stopBeforeTarget": 26,
         "ambiguous": 1,
         "timeExit": 0,
-        "targetRatePct": 38.1,
-        "averageRealizedR": 0.143,
+        "targetRatePct": 39.5,
+        "averageRealizedR": 0.186,
         "setupsDetected": 403,
         "signalsGenerated": 44,
         "riskRejected": 33,
@@ -20509,11 +20518,11 @@
         "timeExit": 0,
         "targetRatePct": 23.1,
         "averageRealizedR": -0.308,
-        "setupsDetected": 36,
+        "setupsDetected": 37,
         "signalsGenerated": 13,
         "riskRejected": 0,
         "overlapSuppressed": 3,
-        "confirmationExpired": 18
+        "confirmationExpired": 19
       },
       "1HZ75V": {
         "dataQuality": "ok",
