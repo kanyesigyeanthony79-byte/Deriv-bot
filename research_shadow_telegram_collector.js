@@ -7,6 +7,7 @@ const { getDataDir } = require("./scanner_data_dir");
 const { updateBreakoutRetestJournal } = require("./breakout_retest_shadow");
 const { updateM5PullbackJournal } = require("./m5_ema_pullback_shadow");
 const { updateJournal: updateBreakoutM5M15Journal } = require("./breakout_retest_m5_m15_shadow");
+const { evaluateMarketRegime } = require("./market_regime_filter_shadow");
 
 const DATA_DIR = getDataDir();
 // 1-second products use their canonical Deriv API symbol codes (not standard R_* aliases).
@@ -96,7 +97,7 @@ function newSignals(before, after) {
   const oldIds = new Set((before || []).map(s => s.signalId));
   return (after || []).filter(s => s.signalId && !oldIds.has(s.signalId));
 }
-function toAlert(signal, strategy) {
+function toAlert(signal, strategy, marketData) {
   if (!signal || signal.marketId === "R_10" || !MARKETS.some(([id]) => id === signal.marketId)) return null;
   const entry = Number(signal.entry);
   const stopLoss = Number(signal.stopLoss);
@@ -111,8 +112,13 @@ function toAlert(signal, strategy) {
       (direction === "BUY" && !(stopLoss < entry && target > entry)) ||
       (direction === "SELL" && !(stopLoss > entry && target < entry))) return null;
   const tp1 = entry + sign * 1.5 * risk;
+  const frames = marketData && marketData.timeframes || {};
+  const regime = evaluateMarketRegime({ m15: frames.M15 || [], m5: frames.M5 || [], direction, entryTimeframe: signal.entryTimeframe || "M5" });
+  if (marketData) { marketData.regimeFilterDecisions ||= []; marketData.regimeFilterDecisions.push({ signalId: String(signal.signalId), strategyId: strategy, direction, entryTimeframe: signal.entryTimeframe || "?", ...regime }); }
+  if (!regime.passed) return null;
   return {
     event: "new_signal", source: "RESEARCH_SHADOW", paper: true, live: false,
+    marketRegimeFilter: { status: "PASSED", adx: regime.adx, emaSeparationAtr: regime.emaSeparationAtr },
     signalId: String(signal.signalId), strategyId: strategy,
     strategyLabel: String(signal.strategyLabel || strategy),
     marketId: String(signal.marketId), market: String(signal.market || signal.marketId),
@@ -163,14 +169,14 @@ async function main(env = process.env, options = {}) {
     const delivery = readJson(JOURNALS.delivery, { version: 1, updatedAt: null, signals: {} });
     delivery.signals ||= {};
     const allCurrent = [
-      ...nextA.signals.map(s => toAlert(s, "M5_BREAKOUT_M1_RETEST")),
-      ...nextB.signals.map(s => toAlert(s, "M15_M5_EMA_PULLBACK")),
-      ...nextC.signals.map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM"))
+      ...nextA.signals.map(s => toAlert(s, "M5_BREAKOUT_M1_RETEST", output.markets[s.marketId])),
+      ...nextB.signals.map(s => toAlert(s, "M15_M5_EMA_PULLBACK", output.markets[s.marketId])),
+      ...nextC.signals.map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM", output.markets[s.marketId]))
     ].filter(Boolean);
     const fresh = [
-      ...newSignals(priorA.signals, nextA.signals).map(s => toAlert(s, "M5_BREAKOUT_M1_RETEST")),
-      ...newSignals(priorB.signals, nextB.signals).map(s => toAlert(s, "M15_M5_EMA_PULLBACK")),
-      ...newSignals(priorC.signals, nextC.signals).map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM"))
+      ...newSignals(priorA.signals, nextA.signals).map(s => toAlert(s, "M5_BREAKOUT_M1_RETEST", output.markets[s.marketId])),
+      ...newSignals(priorB.signals, nextB.signals).map(s => toAlert(s, "M15_M5_EMA_PULLBACK", output.markets[s.marketId])),
+      ...newSignals(priorC.signals, nextC.signals).map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM", output.markets[s.marketId]))
     ].filter(Boolean);
     // Failed or interrupted deliveries are retried by stable ID; old journal entries
     // without a delivery record are never backfilled into Telegram.
@@ -229,6 +235,10 @@ async function main(env = process.env, options = {}) {
       },
       r10Excluded: true, mtfEnabled: false, mt5ExecutionEnabled: false
     };
+    const regimeJournal = { version: 1, generatedAt: output.generatedAt, mode: "shadow_only", productionGateEnabled: false, markets: Object.fromEntries(Object.entries(output.markets).map(([id, market]) => [id, { decisions: market.regimeFilterDecisions || [] }])) };
+    const decisions = Object.values(regimeJournal.markets).flatMap(x => x.decisions);
+    output.summary.marketRegime = { candidatesEvaluated: decisions.length, passed: decisions.filter(x => x.passed).length, rejected: decisions.filter(x => !x.passed).length, productionSignalsChanged: false };
+    writeJson("market_regime_filter_shadow_journal.json", regimeJournal);
     writeJson("research_shadow_collection.json", output);
     console.log(JSON.stringify({ event: "research_shadow_collection_complete", summary: output.summary, errors: output.errors }));
     if (output.errors.length === MARKETS.length && ownsClient) process.exitCode = 1;
