@@ -48,13 +48,13 @@ function atrSeries(candles, period = 14) {
   return out;
 }
 
-function validFrame(candles, seconds, minimum) {
+function validFrame(candles, seconds, minimum, maxGapSeconds = seconds) {
   if (!Array.isArray(candles) || candles.length < minimum) return false;
   for (let i = 0; i < candles.length; i++) {
     const c = candles[i];
     if (!c || ![c.epoch, c.open, c.high, c.low, c.close].every(Number.isFinite) ||
         c.high < Math.max(c.open, c.close, c.low) || c.low > Math.min(c.open, c.close) ||
-        c.epoch % seconds !== 0 || (i > 0 && c.epoch - candles[i - 1].epoch !== seconds)) return false;
+        c.epoch % seconds !== 0 || (i > 0 && (c.epoch - candles[i - 1].epoch < seconds || c.epoch - candles[i - 1].epoch > maxGapSeconds))) return false;
   }
   return true;
 }
@@ -423,7 +423,7 @@ function updateJournal(priorJournal, markets, nowEpoch = Math.floor(Date.now() /
     const frames = market.timeframes || {};
     const m5 = frames.M5 || [], m15 = frames.M15 || [];
     const state = journal.markets[marketId] ||= blankMarketState();
-    if (!validFrame(m5, M5_SECONDS, 65) || !validFrame(m15, M15_SECONDS, 55)) {
+    if (!validFrame(m5, M5_SECONDS, 65) || !validFrame(m15, M15_SECONDS, 55, marketId === "frxXAUUSD" ? 6 * 60 * 60 : M15_SECONDS)) {
       state.dataQuality = "insufficient_or_discontinuous_candles";
       continue;
     }

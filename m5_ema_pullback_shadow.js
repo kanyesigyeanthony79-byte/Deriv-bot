@@ -20,11 +20,11 @@ function atr(candles, period=14) {
   for(let i=period;i<tr.length;i++)v=(v*(period-1)+tr[i])/period;
   return v;
 }
-function continuous(rows, step, min) {
-  return Array.isArray(rows)&&rows.length>=min&&rows.every((c,i)=>c&&[c.epoch,c.open,c.high,c.low,c.close].every(Number.isFinite)&&c.high>=Math.max(c.open,c.close,c.low)&&c.low<=Math.min(c.open,c.close)&&(i===0||c.epoch-rows[i-1].epoch===step));
+function continuous(rows, step, min, maxGapSteps = 1) {
+  return Array.isArray(rows)&&rows.length>=min&&rows.every((c,i)=>c&&[c.epoch,c.open,c.high,c.low,c.close].every(Number.isFinite)&&c.epoch%step===0&&c.high>=Math.max(c.open,c.close,c.low)&&c.low<=Math.min(c.open,c.close)&&(i===0||(c.epoch-rows[i-1].epoch>=step&&c.epoch-rows[i-1].epoch<=step*maxGapSteps)));
 }
-function m15Bias(rows) {
-  if(!continuous(rows,M15,65))return null;
+function m15Bias(rows, allowSessionGaps = false) {
+  if(!continuous(rows,M15,65,allowSessionGaps?24:1))return null;
   const r=evaluate(rows,DEF);
   return r.state==="ok"&&["BUY","SELL"].includes(r.signal)?r.signal:null;
 }
@@ -76,13 +76,13 @@ function updateM5PullbackJournal(prior, markets, nowEpoch=Math.floor(Date.now()/
     if(!MARKETS.includes(id))continue;
     const f=m.timeframes||{},m5=f.M5||[],m15=f.M15||[],st=j.markets[id]||{lastM15Epoch:null,lastM5Epoch:null,initializedAt:null,signals:0};
     st.pendingSetups ||= [];
-    if(!continuous(m5,M5,65)||!continuous(m15,M15,65)){st.dataQuality="insufficient_or_discontinuous";j.markets[id]=st;continue;}
+    if(!continuous(m5,M5,65)||!continuous(m15,M15,65,id === "frxXAUUSD" ? 24 : 1)){st.dataQuality="insufficient_or_discontinuous";j.markets[id]=st;continue;}
     st.dataQuality="ok";
     for(const s of j.signals.filter(x=>x.marketId===id&&x.status==="pending"))updateOutcome(s,m5);
     if(st.lastM15Epoch===null||st.lastM5Epoch===null){st.lastM15Epoch=m15.at(-1).epoch;st.lastM5Epoch=m5.at(-1).epoch;st.initializedAt=new Date(nowEpoch*1000).toISOString();j.markets[id]=st;continue;}
     const newM15=m15.filter(c=>c.epoch>st.lastM15Epoch);
     for(const setup of newM15){
-      const bias=m15Bias(m15.filter(c=>c.epoch<=setup.epoch));
+      const bias=m15Bias(m15.filter(c=>c.epoch<=setup.epoch), id === "frxXAUUSD");
       if(bias)st.pendingSetups.push({setupCloseEpoch:setup.epoch+M15,direction:bias,expiresEpoch:setup.epoch+M15+SETUP_MAX_AGE});
     }
     st.lastM15Epoch=m15.at(-1).epoch;

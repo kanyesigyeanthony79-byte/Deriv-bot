@@ -82,7 +82,7 @@ function normalizeCandles(rows, seconds, nowEpoch) {
     epoch: Number(c.epoch), open: Number(c.open), high: Number(c.high),
     low: Number(c.low), close: Number(c.close)
   })).filter(c => [c.epoch, c.open, c.high, c.low, c.close].every(Number.isFinite) &&
-    c.epoch <= lastClosedEpoch && c.high >= Math.max(c.open, c.close, c.low) &&
+    c.epoch <= lastClosedEpoch && c.epoch % seconds === 0 && c.high >= Math.max(c.open, c.close, c.low) &&
     c.low <= Math.min(c.open, c.close)).sort((a, b) => a.epoch - b.epoch);
 }
 async function fetchCandles(client, symbol, granularity, count, nowEpoch) {
