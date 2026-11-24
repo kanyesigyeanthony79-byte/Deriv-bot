@@ -3,8 +3,13 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   detectBreakout, findRetestConfirmation, updateSignalOutcome,
-  updateBreakoutRetestJournal, summarizeBreakoutRetestJournal, TERMINAL
+  updateBreakoutRetestJournal, summarizeBreakoutRetestJournal, SYNTHETIC_MARKETS, TERMINAL
 } = require("../breakout_retest_shadow");
+
+test("breakout shadow strategy includes both official 1-second Deriv symbols", () => {
+  assert.ok(SYNTHETIC_MARKETS.includes("1HZ10V"));
+  assert.ok(SYNTHETIC_MARKETS.includes("1HZ75V"));
+});
 
 function candles(count, step, start = 1_700_000_000, price = 100) {
   return Array.from({ length: count }, (_, i) => ({
@@ -128,4 +133,17 @@ test("forward journal initializes at the latest M5 candle without historical bac
 test("breakout-retest summary does not publish unverified historical holdout metrics", () => {
   const summary = summarizeBreakoutRetestJournal({ version: 1, signals: [], markets: {} });
   assert.equal(Object.hasOwn(summary, "historicalHoldout"), false);
+});
+
+
+test("Gold research uses the latest aligned session after an M15 session gap", () => {
+  const { latestContinuousFrame } = require("../breakout_retest_shadow");
+  const start = Math.floor(1_700_000_000 / 900) * 900;
+  const badFirst = { epoch: start + 39, open: 100, high: 101, low: 99, close: 100 };
+  const beforeGap = Array.from({length: 10},(_,i)=>({epoch:start+i*900,open:100,high:101,low:99,close:100}));
+  const afterGap = Array.from({length: 70},(_,i)=>({epoch:start+10*900+75*60+i*900,open:100,high:101,low:99,close:100}));
+  const result = latestContinuousFrame([badFirst,...beforeGap,...afterGap],900,55);
+  assert.equal(result.length,70);
+  assert.equal(result[0].epoch,afterGap[0].epoch);
+  assert.equal(latestContinuousFrame(afterGap.slice(-54),900,55),null);
 });
