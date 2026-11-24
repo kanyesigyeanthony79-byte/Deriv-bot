@@ -22132,14 +22132,26 @@
         }
       ],
       "status": "sent",
-      "tp1Hit": false,
+      "tp1Hit": true,
       "tp2Hit": false,
       "finalOutcome": null,
-      "events": [],
-      "maxFavourablePrice": 5539.19,
-      "maxFavourablePoints": 34.509,
-      "maxFavourablePct": 0.61914,
-      "maxFavourableEpoch": 1795538700
+      "events": [
+        {
+          "outcome": "TP1_HIT",
+          "observedAt": "2026-11-24T17:19:55.142Z",
+          "candleEpoch": 1795539600,
+          "candle": {
+            "open": 5541.997,
+            "high": 5554.177,
+            "low": 5536.201,
+            "close": 5554.086
+          }
+        }
+      ],
+      "maxFavourablePrice": 5536.201,
+      "maxFavourablePoints": 37.498,
+      "maxFavourablePct": 0.67277,
+      "maxFavourableEpoch": 1795539600
     },
     {
       "signalId": "BOOM500-1795532400",
@@ -22462,10 +22474,10 @@
       "tp2Hit": false,
       "finalOutcome": null,
       "events": [],
-      "maxFavourablePrice": 5539.19,
-      "maxFavourablePoints": 14.937,
-      "maxFavourablePct": 0.26894,
-      "maxFavourableEpoch": 1795538700
+      "maxFavourablePrice": 5536.201,
+      "maxFavourablePoints": 17.926,
+      "maxFavourablePct": 0.32275,
+      "maxFavourableEpoch": 1795539600
     },
     {
       "signalId": "CRASH500-1795537800",
@@ -22518,6 +22530,70 @@
         {
           "passed": true,
           "reason": "Not extended from EMA20 (0.6 ATR)"
+        },
+        {
+          "passed": true,
+          "reason": "No spike candle"
+        }
+      ],
+      "status": "suppressed",
+      "tp1Hit": false,
+      "tp2Hit": false,
+      "finalOutcome": null,
+      "events": [],
+      "statusReason": "duplicate_or_cooldown"
+    },
+    {
+      "signalId": "CRASH500-1795539600",
+      "marketId": "CRASH500",
+      "market": "Crash 500 Index",
+      "direction": "BUY",
+      "localDate": "2026-11-24",
+      "createdAt": "2026-11-24T17:00:00.000Z",
+      "candleEpoch": 1795539600,
+      "score": 88,
+      "entry": 2788.414,
+      "metrics": {
+        "ema20": 2784.2554642016894,
+        "ema50": 2779.1229465840656,
+        "ema50Previous": 2777.747730132592,
+        "atr": 5.180525672978047,
+        "emaSeparationAtr": 0.9907329760752469,
+        "emaSlopeAtr": 0.2654588623403125,
+        "bodyRatio": 0.64757604562745,
+        "closeLocation": 0.64757604562745,
+        "extensionAtr": 0.802724677150431,
+        "swingAtr": 1.2492940694721615,
+        "candleRange": 4.208000000000084
+      },
+      "checks": [
+        {
+          "passed": true,
+          "reason": "EMA20/EMA50 trend up, gap 0.99 ATR"
+        },
+        {
+          "passed": true,
+          "reason": "Close on the trend side of EMA20"
+        },
+        {
+          "passed": true,
+          "reason": "EMA50 sloping with the trend"
+        },
+        {
+          "passed": true,
+          "reason": "RSI 55.6 inside 50-68"
+        },
+        {
+          "passed": true,
+          "reason": "Bullish candle, body 65% of range"
+        },
+        {
+          "passed": true,
+          "reason": "Higher low formed"
+        },
+        {
+          "passed": true,
+          "reason": "Not extended from EMA20 (0.8 ATR)"
         },
         {
           "passed": true,
