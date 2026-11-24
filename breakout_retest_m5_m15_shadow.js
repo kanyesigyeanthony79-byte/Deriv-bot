@@ -59,6 +59,21 @@ function validFrame(candles, seconds, minimum) {
   return true;
 }
 
+// Keep only the newest aligned, gap-free session segment. Never bridge a market closure.
+function latestContinuousFrame(candles, seconds, minimum) {
+  if (!Array.isArray(candles)) return null;
+  let segment = [];
+  for (const c of candles) {
+    const valid = c && [c.epoch, c.open, c.high, c.low, c.close].every(Number.isFinite) &&
+      c.epoch % seconds === 0 && c.high >= Math.max(c.open, c.close, c.low) &&
+      c.low <= Math.min(c.open, c.close);
+    if (!valid) { segment = []; continue; }
+    if (segment.length && c.epoch - segment[segment.length - 1].epoch !== seconds) segment = [];
+    segment.push(c);
+  }
+  return segment.length >= minimum ? segment : null;
+}
+
 function directionFeatures(candle, direction) {
   const range = candle.high - candle.low;
   if (!(range > 0)) return { body: 0, closeLocation: 0 };
@@ -421,9 +436,10 @@ function updateJournal(priorJournal, markets, nowEpoch = Math.floor(Date.now() /
   for (const [marketId, market] of Object.entries(markets || {})) {
     if (!RESEARCH_MARKETS.includes(marketId)) continue;
     const frames = market.timeframes || {};
-    const m5 = frames.M5 || [], m15 = frames.M15 || [];
     const state = journal.markets[marketId] ||= blankMarketState();
-    if (!validFrame(m5, M5_SECONDS, 65) || !validFrame(m15, M15_SECONDS, 55)) {
+    const m5 = latestContinuousFrame(frames.M5 || [], M5_SECONDS, 65);
+    const m15 = latestContinuousFrame(frames.M15 || [], M15_SECONDS, 55);
+    if (!m5 || !m15) {
       state.dataQuality = "insufficient_or_discontinuous_candles";
       continue;
     }
@@ -525,7 +541,7 @@ function updateJournal(priorJournal, markets, nowEpoch = Math.floor(Date.now() /
 }
 
 module.exports = {
-  RESEARCH_MARKETS, SYNTHETIC_MARKETS: RESEARCH_MARKETS, TERMINAL, ema, atrSeries, validFrame, directionFeatures,
+  RESEARCH_MARKETS, SYNTHETIC_MARKETS: RESEARCH_MARKETS, TERMINAL, ema, atrSeries, validFrame, latestContinuousFrame, directionFeatures,
   detectBreakout, m15ContextAt, findM5RetestConfirmation, createSignal,
   updateSignalOutcome, summarizeJournal, updateJournal
 };

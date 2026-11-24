@@ -23,6 +23,17 @@ function atr(candles, period=14) {
 function continuous(rows, step, min) {
   return Array.isArray(rows)&&rows.length>=min&&rows.every((c,i)=>c&&[c.epoch,c.open,c.high,c.low,c.close].every(Number.isFinite)&&c.high>=Math.max(c.open,c.close,c.low)&&c.low<=Math.min(c.open,c.close)&&(i===0||c.epoch-rows[i-1].epoch===step));
 }
+function latestContinuousFrame(rows, step, min) {
+  if(!Array.isArray(rows))return null;
+  let segment=[];
+  for(const c of rows){
+    const valid=c&&[c.epoch,c.open,c.high,c.low,c.close].every(Number.isFinite)&&c.epoch%step===0&&c.high>=Math.max(c.open,c.close,c.low)&&c.low<=Math.min(c.open,c.close);
+    if(!valid){segment=[];continue;}
+    if(segment.length&&c.epoch-segment.at(-1).epoch!==step)segment=[];
+    segment.push(c);
+  }
+  return segment.length>=min?segment:null;
+}
 function m15Bias(rows) {
   if(!continuous(rows,M15,65))return null;
   const r=evaluate(rows,DEF);
@@ -74,9 +85,10 @@ function updateM5PullbackJournal(prior, markets, nowEpoch=Math.floor(Date.now()/
   const ids=new Set(j.signals.map(s=>s.signalId));
   for(const [id,m] of Object.entries(markets||{})){
     if(!MARKETS.includes(id))continue;
-    const f=m.timeframes||{},m5=f.M5||[],m15=f.M15||[],st=j.markets[id]||{lastM15Epoch:null,lastM5Epoch:null,initializedAt:null,signals:0};
+    const f=m.timeframes||{},st=j.markets[id]||{lastM15Epoch:null,lastM5Epoch:null,initializedAt:null,signals:0};
     st.pendingSetups ||= [];
-    if(!continuous(m5,M5,65)||!continuous(m15,M15,65)){st.dataQuality="insufficient_or_discontinuous";j.markets[id]=st;continue;}
+    const m5=latestContinuousFrame(f.M5||[],M5,65),m15=latestContinuousFrame(f.M15||[],M15,65);
+    if(!m5||!m15){st.dataQuality="insufficient_or_discontinuous";j.markets[id]=st;continue;}
     st.dataQuality="ok";
     for(const s of j.signals.filter(x=>x.marketId===id&&x.status==="pending"))updateOutcome(s,m5);
     if(st.lastM15Epoch===null||st.lastM5Epoch===null){st.lastM15Epoch=m15.at(-1).epoch;st.lastM5Epoch=m5.at(-1).epoch;st.initializedAt=new Date(nowEpoch*1000).toISOString();j.markets[id]=st;continue;}
@@ -109,4 +121,4 @@ function updateM5PullbackJournal(prior, markets, nowEpoch=Math.floor(Date.now()/
   }
   j.updatedAt=new Date(nowEpoch*1000).toISOString();j.signals.sort((a,b)=>b.entryCandleEpoch-a.entryCandleEpoch);j.signals=j.signals.slice(0,2000);j.summary=summarize(j);return j;
 }
-module.exports={MARKETS,ema,atr,continuous,m15Bias,m5Trigger,makeSignal,updateOutcome,summarize,updateM5PullbackJournal,TERMINAL};
+module.exports={MARKETS,ema,atr,continuous,latestContinuousFrame,m15Bias,m5Trigger,makeSignal,updateOutcome,summarize,updateM5PullbackJournal,TERMINAL};
