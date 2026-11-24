@@ -54,10 +54,10 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   </nav>
 
   <section id="promoted-system" class="hero system-view" data-system-view="promoted" style="margin-top:12px">
-    <div class="top"><h2 style="margin:0">Promoted system · production signals</h2><span class="pill">APPROVED RULESET</span></div>
-    <p style="margin-top:8px">This panel shows the strategy currently authorized for production Telegram signals. Research candidates below remain isolated and cannot promote themselves.</p>
+    <div class="top"><h2 style="margin:0">Promoted system · retired</h2><span class="pill">RETIRED · NOT ACTIVE</span></div>
+    <p style="margin-top:8px">The former promoted multi-timeframe production route is retired. No current promoted signal stream is active; use the Volatility 10 · R10 or Original System tabs for live scanner evidence.</p>
     <div class="grid" id="promotedMetrics">
-      <div class="card"><div class="detail">SYSTEM STATUS</div><div class="signal none">LOADING</div></div>
+      <div class="card"><div class="detail">SYSTEM STATUS</div><div class="signal none">RETIRED</div></div>
       <div class="card"><div class="detail">ACTIVE VALID SIGNALS</div><div class="signal">—</div></div>
       <div class="card"><div class="detail">STRONG SIGNALS</div><div class="signal">—</div></div>
       <div class="card"><div class="detail">VALID SIGNALS</div><div class="signal">—</div></div>
@@ -70,7 +70,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
         <tr><td>Signal quality</td><td>STRONG ≥80 / VALID 65–79</td><td>WATCH below 65 · not sent</td><td>Only STRONG and VALID sent</td></tr>
         <tr><td>Trade management</td><td>3 equal entries</td><td>2 entries close at TP1 = 1.5R</td><td>Runner targets TP2 = 3R</td></tr>
       </tbody></table>
-      <div class="muted" id="promotedStatus" style="margin-top:9px">Waiting for the latest production snapshot…</div>
+      <div class="muted" id="promotedStatus" style="margin-top:9px">Promoted multi-timeframe production routing is retired; no snapshot will be loaded.</div>
     </div>
     <div class="row" style="margin-top:12px"><button class="btn primary smallbtn" id="promotedRefresh" type="button">Refresh active signals &amp; reviews</button><span class="muted" id="promotedRefreshTime" aria-live="polite">Not refreshed yet</span></div>
     <h3 style="margin-top:14px">Production signal views</h3>
@@ -80,7 +80,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <button class="btn signal-filter" type="button" data-signal-filter="valid" aria-pressed="false">Valid <span id="validTabCount">—</span></button>
       <button class="btn signal-filter" type="button" data-signal-filter="strong" aria-pressed="false">Strong <span id="strongTabCount">—</span></button>
     </nav>
-    <div class="signal-list" id="promotedSignals" aria-live="polite"><div class="signal-empty">Loading current signal states…</div></div>
+    <div class="signal-list" id="promotedSignals" aria-live="polite"><div class="signal-empty">No promoted production stream is active.</div></div>
     <div class="notice">Production status is read from the latest collector snapshot. A signal is shown only while its price-observation state is pending or TP1 touched and its quote is fresh. This is not proof of an MT5 order. Research/shadow strategies are not promoted or executed here.</div>
   </section>
 
@@ -225,9 +225,17 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <script>
 (() => {
   const systemTabs=[...document.querySelectorAll("[data-system-tab]")];
+  const $ = id => document.getElementById(id);
   function showSystem(name){
     document.querySelectorAll("[data-system-view]").forEach(el=>{el.hidden=el.dataset.systemView!==name;});
     systemTabs.forEach(btn=>btn.setAttribute("aria-pressed",String(btn.dataset.systemTab===name)));
+  }
+  function refreshPromoted(){
+    $("promotedMetrics").innerHTML=[["SYSTEM STATUS","RETIRED"],["ACTIVE VALID SIGNALS","—"],["STRONG SIGNALS","—"],["VALID SIGNALS","—"]].map(([label,value])=>'<div class="card"><div class="detail">'+label+'</div><div class="signal none">'+value+'</div></div>').join("");
+    $("promotedStatus").textContent="Promoted multi-timeframe production routing is retired; no current snapshot is loaded.";
+    $("promotedRefreshTime").textContent="Retired route confirmed · "+new Date().toLocaleTimeString();
+    $("promotedSignals").innerHTML='<div class="signal-empty">No promoted production stream is active. Open the R10 or Original System tab for current evidence.</div>';
+    for(const id of ["activeTabCount","validTabCount","strongTabCount"]) $(id).textContent="—";
   }
 
   const FORWARD_SHADOW_MARKETS=[["R_10","research_r10_forward_shadow_journal.json"],["R_25","research_r_25_forward_shadow_journal.json"],["R_50","research_r_50_forward_shadow_journal.json"],["R_75","research_r_75_forward_shadow_journal.json"],["JD75","research_jd75_forward_shadow_journal.json"],["JD100","research_jd100_forward_shadow_journal.json"]];
@@ -257,6 +265,8 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 
   systemTabs.forEach(btn=>btn.addEventListener("click",()=>showSystem(btn.dataset.systemTab)));
   showSystem("promoted");
+  $("promotedRefresh").addEventListener("click",refreshPromoted);
+  refreshPromoted();
   document.addEventListener("click",event=>{
     const filterButton=event.target.closest("[data-signal-filter]");
     const metricButton=event.target.closest("[data-metric-filter]");
@@ -269,7 +279,6 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   const DASHBOARD_RESET_EPOCH = 1794822510; // 2026-11-16T09:48:30Z
   const JOURNAL_URL = "./trade_journal.json";
   let latestSignals = [];
-  const $ = id => document.getElementById(id);
   document.getElementById("forwardShadowRefresh").addEventListener("click",refreshForwardShadow);
   refreshForwardShadow();
   setInterval(refreshForwardShadow,60000);
