@@ -21,7 +21,7 @@ test("both 1-second volatility products can produce research-only Telegram alert
     const alert = collector.toAlert({
       signalId: marketId + "-example-123", marketId, market,
       direction: "BUY", entry: 100, stopLoss: 95, tp2: 110
-    }, "M5_BREAKOUT_M1_RETEST");
+    }, "M5_BREAKOUT_M1_RETEST", undefined, false);
     assert.equal(alert.marketId, marketId);
     assert.equal(alert.source, "RESEARCH_SHADOW");
     assert.equal(alert.paper, true);
@@ -35,7 +35,7 @@ test("shadow alerts contain demo-only routing fields and calculated TP1", () => 
     signalId: "R_25-example-123", marketId: "R_25", market: "Volatility 25 Index",
     direction: "BUY", entry: 100, stopLoss: 95, tp2: 110,
     setupTimeframe: "M5", entryTimeframe: "M1", confirmationTimeframe: "M1"
-  }, "M5_BREAKOUT_M1_RETEST");
+  }, "M5_BREAKOUT_M1_RETEST", undefined, false);
   assert.equal(alert.source, "RESEARCH_SHADOW");
   assert.equal(alert.paper, true);
   assert.equal(alert.live, false);
