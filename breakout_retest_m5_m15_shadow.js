@@ -525,7 +525,7 @@ function updateJournal(priorJournal, markets, nowEpoch = Math.floor(Date.now() /
 }
 
 module.exports = {
-  RESEARCH_MARKETS, TERMINAL, ema, atrSeries, validFrame, directionFeatures,
+  RESEARCH_MARKETS, SYNTHETIC_MARKETS: RESEARCH_MARKETS, TERMINAL, ema, atrSeries, validFrame, directionFeatures,
   detectBreakout, m15ContextAt, findM5RetestConfirmation, createSignal,
   updateSignalOutcome, summarizeJournal, updateJournal
 };
