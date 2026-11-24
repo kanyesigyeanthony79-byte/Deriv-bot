@@ -31,7 +31,7 @@ test("Gold research candidates are formatted as shadow-only Telegram alerts", ()
     setupTimeframe: "M15",
     entryTimeframe: "M1",
     confirmationTimeframe: "M5"
-  }, "M5_BREAKOUT_M1_RETEST");
+  }, "M5_BREAKOUT_M1_RETEST", undefined, false);
   assert.equal(alert.marketId, "frxXAUUSD");
   assert.equal(alert.source, "RESEARCH_SHADOW");
   assert.equal(alert.paper, true);
