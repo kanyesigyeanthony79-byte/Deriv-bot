@@ -2,8 +2,8 @@
 // Forward-only M5 execution / M15 directional-confirmation breakout-retest shadow.
 // Isolated from production signals, Telegram delivery and all MT5 execution.
 
-const SYNTHETIC_MARKETS = Object.freeze([
-  "R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "1HZ10V", "1HZ75V"
+const RESEARCH_MARKETS = Object.freeze([
+  "R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "1HZ10V", "1HZ75V", "frxXAUUSD"
 ]);
 const M5_SECONDS = 300;
 const M15_SECONDS = 900;
@@ -330,7 +330,7 @@ function summarizeJournal(journal) {
   const productionAmbiguous = productionTerminal.filter(s => s.productionStatus === "ambiguous" || s.productionStatus === "ambiguous_after_tp1").length;
   const productionTimeExit = productionTerminal.filter(s => s.productionStatus === "time_exit").length;
   const markets = {};
-  for (const id of SYNTHETIC_MARKETS) {
+  for (const id of RESEARCH_MARKETS) {
     const rows = signals.filter(s => s.marketId === id);
     const done = rows.filter(s => TERMINAL.has(s.status));
     const productionDone = rows.filter(s => PRODUCTION_TERMINAL.has(s.productionStatus));
@@ -419,7 +419,7 @@ function updateJournal(priorJournal, markets, nowEpoch = Math.floor(Date.now() /
   const byId = new Map(journal.signals.map(s => [s.signalId, s]));
 
   for (const [marketId, market] of Object.entries(markets || {})) {
-    if (!SYNTHETIC_MARKETS.includes(marketId)) continue;
+    if (!RESEARCH_MARKETS.includes(marketId)) continue;
     const frames = market.timeframes || {};
     const m5 = frames.M5 || [], m15 = frames.M15 || [];
     const state = journal.markets[marketId] ||= blankMarketState();
@@ -525,7 +525,7 @@ function updateJournal(priorJournal, markets, nowEpoch = Math.floor(Date.now() /
 }
 
 module.exports = {
-  SYNTHETIC_MARKETS, TERMINAL, ema, atrSeries, validFrame, directionFeatures,
+  RESEARCH_MARKETS, SYNTHETIC_MARKETS: RESEARCH_MARKETS, TERMINAL, ema, atrSeries, validFrame, directionFeatures,
   detectBreakout, m15ContextAt, findM5RetestConfirmation, createSignal,
   updateSignalOutcome, summarizeJournal, updateJournal
 };

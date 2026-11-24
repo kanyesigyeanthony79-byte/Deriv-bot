@@ -2,8 +2,8 @@
 // Forward-only research journal for the frozen M5 breakout / M1 retest candidate.
 // Observation only: no production signals, Telegram delivery, or order execution.
 
-const SYNTHETIC_MARKETS = Object.freeze([
-  "R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "1HZ10V", "1HZ75V"
+const RESEARCH_MARKETS = Object.freeze([
+  "R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "1HZ10V", "1HZ75V", "frxXAUUSD"
 ]);
 const M1_SECONDS = 60;
 const M5_SECONDS = 300;
@@ -224,7 +224,7 @@ function summarizeBreakoutRetestJournal(journal) {
   const decisive = target + stopped;
   const realized = terminal.map(s => s.realizedR).filter(Number.isFinite);
   const markets = {};
-  for (const id of SYNTHETIC_MARKETS) {
+  for (const id of RESEARCH_MARKETS) {
     const rows = signals.filter(s => s.marketId === id);
     const done = rows.filter(s => TERMINAL.has(s.status));
     const wins = done.filter(s => s.status === "tp2_hit").length;
@@ -269,7 +269,7 @@ function updateBreakoutRetestJournal(priorJournal, markets, nowEpoch = Math.floo
   const byId = new Map(journal.signals.map(s => [s.signalId, s]));
 
   for (const [marketId, market] of Object.entries(markets || {})) {
-    if (!SYNTHETIC_MARKETS.includes(marketId)) continue;
+    if (!RESEARCH_MARKETS.includes(marketId)) continue;
     const frames = market.timeframes || {};
     const m1 = frames.M1 || [], m5 = frames.M5 || [], m15 = frames.M15 || [];
     const marketState = journal.markets[marketId] ||= blankMarketState();
@@ -360,7 +360,7 @@ function updateBreakoutRetestJournal(priorJournal, markets, nowEpoch = Math.floo
 }
 
 module.exports = {
-  SYNTHETIC_MARKETS, TERMINAL, ema, atrSeries, validFrame, directionFeatures,
+  RESEARCH_MARKETS, SYNTHETIC_MARKETS: RESEARCH_MARKETS, TERMINAL, ema, atrSeries, validFrame, directionFeatures,
   detectBreakout, findRetestConfirmation, m15ContextAt, createSignal,
   updateSignalOutcome, summarizeBreakoutRetestJournal, updateBreakoutRetestJournal
 };
