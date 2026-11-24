@@ -360,7 +360,7 @@ function updateBreakoutRetestJournal(priorJournal, markets, nowEpoch = Math.floo
 }
 
 module.exports = {
-  RESEARCH_MARKETS, TERMINAL, ema, atrSeries, validFrame, directionFeatures,
+  RESEARCH_MARKETS, SYNTHETIC_MARKETS: RESEARCH_MARKETS, TERMINAL, ema, atrSeries, validFrame, directionFeatures,
   detectBreakout, findRetestConfirmation, m15ContextAt, createSignal,
   updateSignalOutcome, summarizeBreakoutRetestJournal, updateBreakoutRetestJournal
 };
