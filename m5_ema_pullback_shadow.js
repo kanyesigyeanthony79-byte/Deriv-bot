@@ -21,10 +21,10 @@ function atr(candles, period=14) {
   return v;
 }
 function continuous(rows, step, min, maxGapSteps = 1) {
-  return Array.isArray(rows)&&rows.length>=min&&rows.every((c,i)=>c&&[c.epoch,c.open,c.high,c.low,c.close].every(Number.isFinite)&&c.high>=Math.max(c.open,c.close,c.low)&&c.low<=Math.min(c.open,c.close)&&(i===0||c.epoch-rows[i-1].epoch===step));
+  return Array.isArray(rows)&&rows.length>=min&&rows.every((c,i)=>c&&[c.epoch,c.open,c.high,c.low,c.close].every(Number.isFinite)&&c.epoch%step===0&&c.high>=Math.max(c.open,c.close,c.low)&&c.low<=Math.min(c.open,c.close)&&(i===0||(c.epoch-rows[i-1].epoch>=step&&c.epoch-rows[i-1].epoch<=step*maxGapSteps)));
 }
-function m15Bias(rows) {
-  if(!continuous(rows,M15,65))return null;
+function m15Bias(rows, allowSessionGaps = false) {
+  if(!continuous(rows,M15,65,allowSessionGaps?24:1))return null;
   const r=evaluate(rows,DEF);
   return r.state==="ok"&&["BUY","SELL"].includes(r.signal)?r.signal:null;
 }
