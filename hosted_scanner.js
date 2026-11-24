@@ -10,6 +10,7 @@ const { dailySummary, deliverDailyReport, previousUgandaDay } = require("./daily
 const { createDerivDemoReadOnlySnapshot } = require("./scripts/demo_readonly_account_snapshot");
 const { priorityForMarket } = require("./priority_pairs");
 const { createHeartbeat } = require("./scanner_heartbeat");
+const { evaluateMarketShadow } = require("./market_shadow_profiles");
 const { cleanupUnmonitoredSignals } = require("./stale_signal_cleanup");
 const { main: runResearchShadowCycle, MARKETS: RESEARCH_MARKETS } = require("./research_shadow_telegram_collector");
 
@@ -409,6 +410,7 @@ async function main() {
           .filter(x => x.epoch + GRANULARITY <= now);
 
         const result = evaluate(candles);
+        const shadowEvaluation = evaluateMarketShadow(candles, id);
         const hasSignal = result.state === "ok" && result.signal !== "NO TRADE";
         // Record market-data/evaluation health separately from notification delivery.
         // A Telegram failure must never turn a successfully scanned market into a scan error.
@@ -416,7 +418,11 @@ async function main() {
           candles: candles.length,
           signalFound: hasSignal,
           evaluationState: result.state || "unknown",
-          ...(hasSignal ? { direction: result.signal } : {})
+          ...(hasSignal ? { direction: result.signal } : {}),
+          ...(shadowEvaluation ? {
+            shadowCandidateSignal: shadowEvaluation.signal,
+            shadowCandidateAccepted: shadowEvaluation.signal === result.signal
+          } : {})
         });
 
         await monitorSignals(id, candles, now);
@@ -439,6 +445,7 @@ async function main() {
           } : {}),
           createdAt:new Date(candleEpoch*1000).toISOString(), candleEpoch, score:result.score,
           entry:result.c.close, metrics:result.metrics || {}, checks:result.checks || [],
+          ...(shadowEvaluation ? { shadowEvaluation } : {}),
           status:"detected", tp1Hit:false, tp2Hit:false, finalOutcome:null, events:[]
         });
         const previous = Number(state.lastSig[id] || 0);

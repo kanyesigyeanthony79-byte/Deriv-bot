@@ -34,7 +34,8 @@ function evaluate(cs, C = DEF) {
     [dirOK && bodyR >= C.minBody, (up ? "Bullish" : "Bearish") + " candle, body " + pc + "% of range"],
     [swing > 0, up ? "Higher low formed" : "Lower high formed"],
     [ext <= C.maxExt, "Not extended from " + FE + " (" + ext.toFixed(1) + " ATR)"],
-    [range <= C.maxRange * a, "No spike candle"]
+    [range <= C.maxRange * a, "No spike candle"],
+    [C.minCloseLocation == null || loc >= C.minCloseLocation, "Candle closes strongly in the signal direction"]
   ];
   const rsiQ = up ? (rv < lo + 5 ? (rv - lo) / 5 : rv > hi - 3 ? (hi - rv) / 3 : 1) : (rv > hi - 5 ? (hi - rv) / 5 : rv < lo + 3 ? (rv - lo) / 3 : 1);
   const score = Math.round(25 * clamp(sep, 1) + 15 * clamp(slope, 0.5) + 20 * clamp(rsiQ, 1) + 20 * (clamp(bodyR, 0.7) + clamp(loc, 1)) / 2 + 20 * clamp(swing, 0.5));
