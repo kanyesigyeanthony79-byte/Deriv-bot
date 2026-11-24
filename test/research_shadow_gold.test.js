@@ -7,7 +7,6 @@ const { MARKETS, toAlert, normalizeCandles } = require("../research_shadow_teleg
 const breakoutM1 = require("../breakout_retest_shadow");
 const emaPullback = require("../m5_ema_pullback_shadow");
 const breakoutM5M15 = require("../breakout_retest_m5_m15_shadow");
-const emaPullback = require("../m5_ema_pullback_shadow");
 
 test("Gold M15 session gaps are accepted only within a bounded window", () => {
   const rows = Array.from({ length: 65 }, (_, i) => {
