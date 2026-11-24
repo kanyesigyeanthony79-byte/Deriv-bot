@@ -97,7 +97,7 @@ function newSignals(before, after) {
   const oldIds = new Set((before || []).map(s => s.signalId));
   return (after || []).filter(s => s.signalId && !oldIds.has(s.signalId));
 }
-function toAlert(signal, strategy, marketData) {
+function toAlert(signal, strategy, marketData, applyRegime = true) {
   if (!signal || signal.marketId === "R_10" || !MARKETS.some(([id]) => id === signal.marketId)) return null;
   const entry = Number(signal.entry);
   const stopLoss = Number(signal.stopLoss);
@@ -113,8 +113,13 @@ function toAlert(signal, strategy, marketData) {
       (direction === "SELL" && !(stopLoss > entry && target < entry))) return null;
   const tp1 = entry + sign * 1.5 * risk;
   const frames = marketData && marketData.timeframes || {};
-  const regime = evaluateMarketRegime({ m15: frames.M15 || [], m5: frames.M5 || [], direction, entryTimeframe: signal.entryTimeframe || "M5" });
-  if (marketData) { marketData.regimeFilterDecisions ||= []; marketData.regimeFilterDecisions.push({ signalId: String(signal.signalId), strategyId: strategy, direction, entryTimeframe: signal.entryTimeframe || "?", ...regime }); }
+  const regime = applyRegime
+    ? evaluateMarketRegime({ m15: frames.M15 || [], m5: frames.M5 || [], direction, entryTimeframe: signal.entryTimeframe || "M5" })
+    : { passed: true, adx: null, emaSeparationAtr: null };
+  if (applyRegime && marketData) {
+    marketData.regimeFilterDecisions ||= [];
+    marketData.regimeFilterDecisions.push({ signalId: String(signal.signalId), strategyId: strategy, direction, entryTimeframe: signal.entryTimeframe || "?", ...regime });
+  }
   if (!regime.passed) return null;
   return {
     event: "new_signal", source: "RESEARCH_SHADOW", paper: true, live: false,
@@ -169,9 +174,9 @@ async function main(env = process.env, options = {}) {
     const delivery = readJson(JOURNALS.delivery, { version: 1, updatedAt: null, signals: {} });
     delivery.signals ||= {};
     const allCurrent = [
-      ...nextA.signals.map(s => toAlert(s, "M5_BREAKOUT_M1_RETEST", output.markets[s.marketId])),
-      ...nextB.signals.map(s => toAlert(s, "M15_M5_EMA_PULLBACK", output.markets[s.marketId])),
-      ...nextC.signals.map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM", output.markets[s.marketId]))
+      ...nextA.signals.map(s => toAlert(s, "M5_BREAKOUT_M1_RETEST", output.markets[s.marketId], false)),
+      ...nextB.signals.map(s => toAlert(s, "M15_M5_EMA_PULLBACK", output.markets[s.marketId], false)),
+      ...nextC.signals.map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM", output.markets[s.marketId], false))
     ].filter(Boolean);
     const fresh = [
       ...newSignals(priorA.signals, nextA.signals).map(s => toAlert(s, "M5_BREAKOUT_M1_RETEST", output.markets[s.marketId])),
