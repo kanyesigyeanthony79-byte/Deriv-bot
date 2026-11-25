@@ -51,8 +51,20 @@ async function dispatchR10(env, now) {
   }
   const workflow = await getR10Workflow(env);
   const runs = await inspectRuns(env, workflow.id);
-  if (runs.activeRuns.length) {
-    return { status: "skipped_active_run", workflowId: workflow.id, activeRuns: runs.activeRuns };
+  // A queued run older than ten minutes is stranded and otherwise blocks the
+  // minute scheduler forever. Cancel only stale QUEUED runs; never cancel an
+  // in-progress scanner. A fresh queued run remains a blocker.
+  const staleQueued = runs.activeRuns.filter(run =>
+    run.status === "queued" && Number.isFinite(Date.parse(run.createdAt)) &&
+    now.getTime() - Date.parse(run.createdAt) > 10 * 60 * 1000
+  );
+  for (const run of staleQueued) {
+    await github(env, `/repos/${REPO}/actions/runs/${run.id}/cancel`, { method: "POST" });
+  }
+  const blockingRuns = runs.activeRuns.filter(run => !staleQueued.some(stale => stale.id === run.id));
+  if (blockingRuns.length) {
+    return { status: "skipped_active_run", workflowId: workflow.id, activeRuns: blockingRuns,
+      staleQueuedRunsCanceled: staleQueued.map(run => run.id) };
   }
   const lockKey = "r10_paper_dispatch_lock";
   const lock = await env.STATE.get(lockKey);
