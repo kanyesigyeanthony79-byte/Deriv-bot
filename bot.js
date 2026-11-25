@@ -9,7 +9,8 @@ const E = process.env, GRAN = 900, PUBLIC = "wss://api.derivws.com/trading/v1/op
 const MODE = (E.TRADE_MODE || "demo").toLowerCase(), TRADING = E.TRADE_ENABLED === "true";
 const STAKE = +E.STAKE || 1, STAKE_CAP = 20, DUR = Math.max(1, Math.round(+E.TRADE_DURATION_CANDLES || 4)), CUR = E.CURRENCY || "USD";
 const MAX_TRADES = +E.MAX_TRADES_PER_DAY || 3, MAX_OPEN = +E.MAX_OPEN_TRADES || 2, MAX_LOSS = +E.MAX_DAILY_LOSS || 3 * STAKE, MIN_PAYOUT = +E.MIN_PAYOUT_RATIO || 0.6, MAX_AGE = 120;
-const MARKETS = [["R_10", "Volatility 10 Index"], ["R_25", "Volatility 25 Index"], ["R_50", "Volatility 50 Index"], ["R_75", "Volatility 75 Index"], ["JD100", "Jump 100 Index"]];
+// R_10 is exclusively handled by the frozen Telegram-only forward-test scanner.
+const MARKETS = [["R_25", "Volatility 25 Index"], ["R_50", "Volatility 50 Index"], ["R_75", "Volatility 75 Index"], ["JD100", "Jump 100 Index"]];
 const norm = s => String(s || "").toLowerCase().replace(/\s+/g, " ").trim(), nm = s => s.underlying_symbol_name || s.display_name || "", cd = s => s.underlying_symbol || s.symbol || "";
 
 function fatal(m) { console.error("STARTUP REFUSED: " + m); process.exit(1); }
@@ -50,6 +51,7 @@ async function otpUrl() {
 }
 
 async function trade(id, name, sym, r, now) {
+  if (id === "R_10") return log({ev:"trade_blocked",market:name,why:"R_10 is Telegram-only forward-test; broker orders are prohibited"});
   const day = new Date().toISOString().slice(0, 10);
   if (S.day !== day) Object.assign(S, {day, trades:0, startBal:null});
   S.open = S.open.filter(t => t > now);
@@ -80,6 +82,7 @@ async function trade(id, name, sym, r, now) {
 }
 
 async function onSignal(id, name, sym, r, now) {
+  if (id === "R_10") return log({ev:"signal_blocked",market:name,why:"R_10 is exclusively handled by the frozen forward-test scanner"});
   const ep = r.c.epoch, last = S.lastSig[id] || 0;
   if (ep <= last || ep - last < DEF.cooldown * GRAN) return; // duplicate or cooldown, same as the app
   S.lastSig[id] = ep; save();
