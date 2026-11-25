@@ -7,10 +7,14 @@ test("shadow collector excludes standard Volatility 10 and includes both distinc
   assert.equal(collector.MARKETS.some(([id]) => id === "R_10"), false);
   assert.deepEqual(collector.MARKETS.map(([id]) => id), [
     "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "frxXAUUSD",
-    "1HZ10V", "1HZ75V", "RB100", "RB200"
+    "1HZ10V", "1HZ75V", "R_100", "JD25", "JD50", "CRASH100", "BOOM100"
   ]);
   assert.equal(collector.MARKETS.find(([id]) => id === "1HZ10V")[1], "Volatility 10 (1s) Index");
   assert.equal(collector.MARKETS.find(([id]) => id === "1HZ75V")[1], "Volatility 75 (1s) Index");
+  for (const id of ["R_100", "JD25", "JD50", "CRASH100", "BOOM100"]) {
+    assert.ok(collector.MARKETS.some(([marketId]) => marketId === id), id + " must be in research scanning");
+  }
+  assert.equal(collector.MARKETS.some(([id]) => id === "RB100" || id === "RB200"), false);
 });
 
 test("both 1-second volatility products can produce research-only Telegram alerts", () => {
@@ -56,4 +60,23 @@ test("new-signal detection is based on previously unseen stable IDs", () => {
   const previous = [{ signalId: "old" }];
   const current = [{ signalId: "old" }, { signalId: "new" }, { signalId: null }];
   assert.deepEqual(collector.newSignals(previous, current).map(s => s.signalId), ["new"]);
+});
+
+test("the five expansion markets can generate explicitly research-only Telegram alerts", () => {
+  for (const [marketId, market] of [
+    ["R_100", "Volatility 100 Index"], ["JD25", "Jump 25 Index"],
+    ["JD50", "Jump 50 Index"], ["CRASH100", "Crash 100 Index"],
+    ["BOOM100", "Boom 100 Index"]
+  ]) {
+    const alert = collector.toAlert({
+      signalId: marketId + "-example-123", marketId, market,
+      direction: "SELL", entry: 100, stopLoss: 105, tp2: 90
+    }, "M5_BREAKOUT_M1_RETEST", undefined, false);
+    assert.equal(alert.marketId, marketId);
+    assert.equal(alert.source, "RESEARCH_SHADOW");
+    assert.equal(alert.paper, true);
+    assert.equal(alert.live, false);
+    assert.equal(alert.status, "SHADOW");
+    assert.equal(alert.strategyId, "M5_BREAKOUT_M1_RETEST");
+  }
 });
