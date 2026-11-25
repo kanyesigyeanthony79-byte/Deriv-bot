@@ -161,3 +161,18 @@ test("scanner resumes from the latest contiguous valid M1 segment after gaps or 
  const gapRows=[0,60,120,240,300,360].map(epoch=>candle(epoch,10,11,9,10));
  assert.deepEqual(scanner.latestContinuousSegment(gapRows).map(x=>x.epoch),[240,300,360]);
 });
+
+
+test("0.20R live quote gate accepts at the boundary and rejects displacement beyond it",()=>{
+ const signal={referenceEntryPrice:100,risk:2};
+ assert.equal(scanner.validateEntryQuote(signal,{price:100.4,ageSeconds:1}).accepted,true);
+ const rejected=scanner.validateEntryQuote(signal,{price:100.4001,ageSeconds:1});
+ assert.equal(rejected.accepted,false);
+ assert.equal(rejected.reason,"ENTRY_DISPLACEMENT_EXCEEDED");
+ assert.ok(rejected.displacementR>0.20);
+});
+test("0.20R live quote gate fails closed for missing or stale quotes",()=>{
+ const signal={referenceEntryPrice:100,risk:2};
+ assert.equal(scanner.validateEntryQuote(signal,null).reason,"live_quote_missing_or_stale");
+ assert.equal(scanner.validateEntryQuote(signal,{price:100,ageSeconds:6}).reason,"live_quote_missing_or_stale");
+});
