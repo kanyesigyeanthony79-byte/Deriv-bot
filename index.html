@@ -628,7 +628,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       for(const [market,m] of markets){
         const signals=raNum(m.signals??m.signalsGenerated);
         const wins=raNum(m.targetBeforeStop),losses=raNum(m.stopBeforeTarget);
-        const timeExit=Number.isFinite(Number(m.timeExit))?Number(m.timeExit):null;
+        const timeExit=m.timeExit!==null&&m.timeExit!==undefined&&Number.isFinite(Number(m.timeExit))?Number(m.timeExit):null;
         const pending=raNum(m.pending),ambiguous=raNum(m.ambiguous);
         s.signals+=signals;s.wins+=wins;s.losses+=losses;
         if(timeExit!==null)s.time+=timeExit;
