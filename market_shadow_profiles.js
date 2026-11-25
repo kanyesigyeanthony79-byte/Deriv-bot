@@ -28,6 +28,11 @@ function shadowProfileForMarket(marketId) {
   return SHADOW_PROFILES[marketId] || null;
 }
 
+function candidateGateDecision({ enabled, baselineSignal, shadowSignal }) {
+  const active = Boolean(enabled && shadowSignal != null);
+  return { active, accepted: !active || shadowSignal === baselineSignal };
+}
+
 function evaluateMarketShadow(candles, marketId) {
   const profile = shadowProfileForMarket(marketId);
   if (!profile) return null;
@@ -48,4 +53,4 @@ function evaluateMarketShadow(candles, marketId) {
   };
 }
 
-module.exports = { SHADOW_PROFILES, shadowProfileForMarket, evaluateMarketShadow };
+module.exports = { SHADOW_PROFILES, shadowProfileForMarket, candidateGateDecision, evaluateMarketShadow };

@@ -360,6 +360,9 @@ export default {
           : data.source === "LEGACY_15M"
             ? { header: "📊 DERIV SIGNAL ASSISTANT — ORIGINAL 15-MINUTE", label: "ORIGINAL 15-MINUTE SYSTEM" }
             : { header: "DERIV SIGNAL ASSISTANT", label: "SIGNAL SOURCE NOT SPECIFIED" };
+        const strategyProfileLine = data.strategyProfile
+          ? "🧪 Paper profile: " + String(data.strategyProfile).slice(0, 60)
+          : null;
 
         if (data.event === "outcome") {
           const outcomes = {
@@ -399,6 +402,7 @@ export default {
           message = [
             sourceIdentity.header,
             sourceIdentity.label,
+            strategyProfileLine,
             outcome.title,
             ...priorityLines,
             "━━━━━━━━━━━━━━━━",
@@ -425,6 +429,7 @@ export default {
           message = [
             sourceIdentity.header,
             sourceIdentity.label,
+            strategyProfileLine,
             "🆕 NEW SIGNAL ALERT",
             ...priorityLines,
             "━━━━━━━━━━━━━━━━",

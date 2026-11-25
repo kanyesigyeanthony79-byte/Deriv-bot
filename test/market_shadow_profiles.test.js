@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { DEF, evaluate } = require("../engine");
-const { SHADOW_PROFILES, shadowProfileForMarket, evaluateMarketShadow } = require("../market_shadow_profiles");
+const { SHADOW_PROFILES, shadowProfileForMarket, candidateGateDecision, evaluateMarketShadow } = require("../market_shadow_profiles");
 
 function risingCandles(last = {}) {
   const rows = Array.from({ length: 90 }, (_, i) => {
@@ -30,6 +30,13 @@ test("does not alter active defaults or create profiles for other markets", () =
   assert.equal(DEF.minCloseLocation, undefined);
   assert.equal(shadowProfileForMarket("R_50"), null);
   assert.equal(evaluateMarketShadow([], "R_50"), null);
+});
+
+test("paper gate accepts only candidate-matching signals when enabled", () => {
+  assert.deepEqual(candidateGateDecision({ enabled: true, baselineSignal: "BUY", shadowSignal: "BUY" }), { active: true, accepted: true });
+  assert.deepEqual(candidateGateDecision({ enabled: true, baselineSignal: "BUY", shadowSignal: "NO TRADE" }), { active: true, accepted: false });
+  assert.deepEqual(candidateGateDecision({ enabled: false, baselineSignal: "BUY", shadowSignal: "NO TRADE" }), { active: false, accepted: true });
+  assert.deepEqual(candidateGateDecision({ enabled: true, baselineSignal: "BUY", shadowSignal: null }), { active: false, accepted: true });
 });
 
 test("optional close-location gate rejects an indecisive candidate candle", () => {
