@@ -175,7 +175,7 @@ async function main(env = process.env, options = {}) {
   const client = options.client || await connect();
   const symbols = options.symbols || {};
   try {
-    const output = { version: 1, generatedAt: new Date(now * 1000).toISOString(), markets: {}, errors: [] };
+    const output = { version: 1, generatedAt: new Date(now * 1000).toISOString(), cycleStatus: "running", markets: {}, errors: [] };
     for (const [marketId, marketName] of MARKETS) {
       const market = { marketId, marketName, timeframes: {}, errors: [] };
       for (const [tf, seconds, count] of FRAMES) {
@@ -255,6 +255,7 @@ async function main(env = process.env, options = {}) {
       delivery.updatedAt = new Date().toISOString();
       writeJson(JOURNALS.delivery, delivery);
     }
+    output.cycleStatus = output.errors.length ? "partial" : "success";
     output.summary = {
       markets: Object.keys(output.markets).length,
       newCandidates: candidates.length, telegramSent: sent, telegramFailed: failed,
