@@ -58,13 +58,22 @@ async function dispatchR10(env, now) {
     run.status === "queued" && Number.isFinite(Date.parse(run.createdAt)) &&
     now.getTime() - Date.parse(run.createdAt) > 10 * 60 * 1000
   );
+  const staleQueuedCancellation = [];
   for (const run of staleQueued) {
-    await github(env, `/repos/${REPO}/actions/runs/${run.id}/cancel`, { method: "POST" });
+    try {
+      await github(env, `/repos/${REPO}/actions/runs/${run.id}/cancel`, { method: "POST" });
+      staleQueuedCancellation.push({ id: run.id, result: "cancel_requested" });
+    } catch (error) {
+      // GitHub can leave an orphaned queued run that rejects cancellation
+      // (for example HTTP 409). It must not block the independent R10 queue.
+      staleQueuedCancellation.push({ id: run.id, result: "cancel_failed_ignored", reason: String(error).slice(0, 240) });
+      console.warn("R10_STALE_QUEUED_RUN_CANCEL_FAILED_IGNORED", run.id, String(error));
+    }
   }
   const blockingRuns = runs.activeRuns.filter(run => !staleQueued.some(stale => stale.id === run.id));
   if (blockingRuns.length) {
     return { status: "skipped_active_run", workflowId: workflow.id, activeRuns: blockingRuns,
-      staleQueuedRunsCanceled: staleQueued.map(run => run.id) };
+      staleQueuedCancellation };
   }
   const lockKey = "r10_paper_dispatch_lock";
   const lock = await env.STATE.get(lockKey);
