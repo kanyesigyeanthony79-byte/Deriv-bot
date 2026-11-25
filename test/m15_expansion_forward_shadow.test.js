@@ -40,7 +40,7 @@ test("builds an explicitly non-live research alert with the backtest's 2R and 3R
   const signal = {
     signalId:"M15EXP-RB100-123", strategyId:"M15_EXPANSION_FORWARD_V1",
     marketId:"RB100", market:"Range Break 100 Index", direction:"BUY",
-    status:"PENDING", entryEpoch:900, entry:100, stopLoss:98.5, tp1:103, tp2:104.5
+    status:"PENDING", setupCloseEpoch:900, entryEpoch:900, entry:100, stopLoss:98.5, tp1:103, tp2:104.5
   };
   const alert = buildExpansionAlert(signal, 1800);
   assert.equal(alert.source,"RESEARCH_SHADOW");
@@ -49,9 +49,38 @@ test("builds an explicitly non-live research alert with the backtest's 2R and 3R
   assert.match(alert.strategyProfile,/SHADOW \/ RESEARCH — NOT LIVE/);
   assert.equal(alert.tp1,103);
   assert.equal(alert.tp2,104.5);
-  assert.equal(buildExpansionAlert({...signal, entryEpoch:0},1800),null);
+  assert.equal(buildExpansionAlert({...signal, setupCloseEpoch:0, entryEpoch:0},1800),null);
 });
 
+
+
+test("uses the forming next M15 candle open without counting its incomplete OHLC outcome", () => {
+  const rows = flatHistory(100);
+  const journal = updateM15ExpansionForwardShadowJournal(null, {
+    RB100:{marketName:"Range Break 100 Index",timeframes:{M15:rows}},
+    RB200:{marketName:"Range Break 200 Index",timeframes:{M15:rows}}
+  }, 200000);
+  const setupCloseEpoch = rows.at(-1).epoch+900;
+  journal.signals.push({
+    signalId:"M15EXP-RB100-FORMING", strategyId:"M15_EXPANSION_FORWARD_V1",
+    marketId:"RB100", market:"Range Break 100 Index", direction:"BUY",
+    signalEpoch:setupCloseEpoch-900, setupCloseEpoch, setupAtr:1,
+    status:"AWAITING_ENTRY", entry:null, entryEpoch:null,
+    stopLoss:null, tp1:null, tp2:null, tp1ReachedAt:null,
+    outcomeEpoch:null, r:null, barsObserved:0, horizonCandles:96
+  });
+  const forming = candle(setupCloseEpoch,101,102,100.5,101.5);
+  const updated = updateM15ExpansionForwardShadowJournal(journal, {
+    RB100:{marketName:"Range Break 100 Index",timeframes:{M15:rows},formingM15:forming},
+    RB200:{marketName:"Range Break 200 Index",timeframes:{M15:rows}}
+  }, 200300);
+  const trade = updated.signals.find(s => s.signalId === "M15EXP-RB100-FORMING");
+  assert.equal(trade.status,"PENDING");
+  assert.equal(trade.entry,101);
+  assert.equal(trade.entryEpoch,setupCloseEpoch);
+  assert.equal(trade.barsObserved,0);
+  assert.equal(trade.outcomeEpoch,null);
+});
 
 test("records TP1 as a milestone and resolves the later TP2 at +3R", () => {
   const rows = flatHistory(70);
