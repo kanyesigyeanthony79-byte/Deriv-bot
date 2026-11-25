@@ -10,7 +10,7 @@ function isVolatility10Alert(data = {}) {
 function shouldDeliverTelegramAlert(data = {}, env = {}) {
   if (data.event === "daily_summary") return true;
   if (isVolatility10Alert(data)) {
-    if (env.R10_LEGACY_ROLLBACK_ENABLED === "true") return true;
+    if (env.R10_LEGACY_ROLLBACK_ENABLED === "true") return env.R10_PAPER_ROUTE_ENABLED === "true" && env.R10_EMERGENCY_KILL_SWITCH === "false";
     return env.R10_PAPER_ROUTE_ENABLED === "true" &&
       env.R10_EMERGENCY_KILL_SWITCH === "false" &&
       data.providerId === "volatility10_transition_lowvol_1r_forward_v1" &&
@@ -460,6 +460,41 @@ export default {
       if (!shouldDeliverTelegramAlert(data, env)) {
         const reason = isVolatility10Alert(data) ? "R10_EXCLUSIVE_PROVIDER_PAPER_ONLY" : "R_50_PRIORITY_PAIR_ONLY";
         return reply({ success: true, suppressed: true, reason });
+      }
+      if (isVolatility10Alert(data) && env.R10_LEGACY_ROLLBACK_ENABLED === "true") {
+        const legacyRequired = ["instrument","timeframe","direction","signalTimestamp","strategyVersion",
+          "ema12","ema26","ema100","atr14","referenceEntryPrice","stopLoss","takeProfit","providerId"];
+        for (const field of legacyRequired) {
+          if (data[field] === undefined || data[field] === null || data[field] === "")
+            return reply({error:"Missing legacy Volatility 10 field: "+field},400);
+        }
+        if (data.status !== "PAPER" || data.paper !== true || data.live === true)
+          return reply({error:"Legacy rollback route accepts paper signals only"},403);
+        const message = [
+          "DERIV SIGNAL ASSISTANT — VOLATILITY 10",
+          "LEGACY ROLLBACK — PAPER SIGNAL — NO LIVE EXECUTION",
+          "━━━━━━━━━━━━━━━━",
+          "Instrument: "+data.instrument,
+          "Timeframe: "+data.timeframe,
+          "Direction: "+data.direction,
+          "Signal time (UTC): "+data.signalTimestamp,
+          "Strategy: "+data.strategyVersion,
+          "EMA 12 / 26 / 100: "+[data.ema12,data.ema26,data.ema100].join(" / "),
+          "ATR 14: "+data.atr14,
+          "Reference entry: "+data.referenceEntryPrice,
+          "Stop loss: "+data.stopLoss,
+          "Take profit: "+data.takeProfit,
+          "Provider: "+data.providerId,
+          "Status: PAPER",
+          "━━━━━━━━━━━━━━━━",
+          "Legacy rollback notification only. No broker order was placed."
+        ].join("\\n");
+        const telegramURL=`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+        const telegramResponse=await fetch(telegramURL,{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID,text:message})});
+        const result=await telegramResponse.json();
+        if(!telegramResponse.ok||!result.ok)return reply({error:"Telegram delivery failed"},502);
+        return reply({success:true,message:"Legacy Volatility 10 paper alert delivered"});
       }
       if (isVolatility10Alert(data) && env.R10_LEGACY_ROLLBACK_ENABLED !== "true") {
         const required = ["timeframe", "direction", "signalTimestamp", "strategyVersion", "signalId",
