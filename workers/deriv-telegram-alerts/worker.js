@@ -292,13 +292,22 @@ export default {
         "M5_BREAKOUT_M1_RETEST",
         "M5_BREAKOUT_M5_RETEST_M15_CONFIRM"
       ]);
-      if (d.source !== "RESEARCH_SHADOW" || d.event !== "new_signal" ||
-          d.paper !== true || d.live !== false || d.status !== "SHADOW" ||
-          d.marketMode !== "LIVE_MARKET" || d.executionMode !== "DEMO_MANUAL") {
-        return reply({ error: "Research shadow route accepts shadow-only demo events" }, 403);
+      const pilotMarket = ["RB100", "BOOM100"].includes(String(d.marketId || ""));
+      const liveAlertPilot = d.source === "RESEARCH_LIVE_ALERT_PILOT" &&
+        d.event === "new_signal" && d.pilot === true && d.alertMode === "LIVE_MARKET_PILOT" &&
+        d.paper === false && d.live === false && d.status === "PILOT" &&
+        d.marketMode === "LIVE_MARKET" && d.executionMode === "DEMO_MANUAL" && pilotMarket;
+      const shadowAlert = d.source === "RESEARCH_SHADOW" && d.event === "new_signal" &&
+        d.paper === true && d.live === false && d.status === "SHADOW" &&
+        d.marketMode === "LIVE_MARKET" && d.executionMode === "DEMO_MANUAL";
+      if (!liveAlertPilot && !shadowAlert) {
+        return reply({ error: "Research route accepts approved shadow alerts or RB100/BOOM100 live-alert pilot events" }, 403);
       }
       if (!allowedMarkets.has(String(d.marketId || "")) || isVolatility10Alert(d)) {
-        return reply({ error: "Market is not allowed on the research shadow route" }, 403);
+        return reply({ error: "Market is not allowed on the research route" }, 403);
+      }
+      if (liveAlertPilot && !pilotMarket) {
+        return reply({ error: "Live-alert pilot is restricted to RB100 and BOOM100" }, 403);
       }
       if (!allowedStrategies.has(String(d.strategyId || ""))) {
         return reply({ error: "Unapproved research strategy" }, 403);
@@ -321,8 +330,8 @@ export default {
         return reply({ error: "Telegram secrets are not configured" }, 500);
       }
       const message = [
-        "📡 DERIV SIGNAL ASSISTANT — LIVE MARKET SIGNAL",
-        "LIVE MARKET DATA • MANUAL EXECUTION ON YOUR DEMO ACCOUNT",
+        (liveAlertPilot ? "📡 DERIV SIGNAL ASSISTANT — LIVE ALERT PILOT" : "📡 DERIV SIGNAL ASSISTANT — SHADOW MARKET ALERT"),
+        (liveAlertPilot ? "RB100 / BOOM100 • LIVE MARKET DATA • PILOT UNDER VALIDATION" : "LIVE MARKET DATA • SHADOW / DEMO OBSERVATION"),
         "━━━━━━━━━━━━━━━━",
         "Strategy: " + String(d.strategyLabel || d.strategyId).slice(0, 100),
         "Market: " + String(d.market).slice(0, 80),
@@ -335,7 +344,7 @@ export default {
           String(d.setupTimeframe || "?") + " setup / " + String(d.confirmationTimeframe || "?") + " confirmation",
         "Signal: " + String(d.signalId).slice(0, 100),
         "━━━━━━━━━━━━━━━━",
-        "Manual demo trading only. No real-money order or automatic trade has been placed."
+        (liveAlertPilot ? "PILOT ALERT ONLY. Verify independently; demo/manual use only. No automatic or real-money order has been placed." : "Shadow observation only. No real-money order or automatic trade has been placed.")
       ].join("\n");
       const telegramResponse = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: "POST", headers: { "Content-Type": "application/json" },
