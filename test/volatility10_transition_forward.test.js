@@ -176,3 +176,20 @@ test("0.20R live quote gate fails closed for missing or stale quotes",()=>{
  assert.equal(scanner.validateEntryQuote(signal,null).reason,"live_quote_missing_or_stale");
  assert.equal(scanner.validateEntryQuote(signal,{price:100,ageSeconds:6}).reason,"live_quote_missing_or_stale");
 });
+
+
+test("scanner pages backward when the latest Deriv response is shorter than the M1 warm-up",async()=>{
+ const rows=Array.from({length:3000},(_,i)=>candle(i*60,100,101,99,100));
+ const calls=[];
+ const client={ask:async request=>{
+  calls.push(request);
+  if(request.style!=="candles")throw new Error("unexpected request");
+  if(request.end==="latest")return {candles:rows.slice(1000)};
+  return {candles:rows.slice(0,1000)};
+ }};
+ const split=await scanner.fetchCandleHistory(client,3000*60+30);
+ assert.equal(calls.length,2);
+ assert.equal(calls[0].end,"latest");
+ assert.equal(calls[1].end,String(1000*60-1));
+ assert.equal(scanner.latestContinuousSegment(split.completed).length,3000);
+});
