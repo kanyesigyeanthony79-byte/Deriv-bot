@@ -343,9 +343,9 @@ test("R10 scheduler logically expires its 55-second lease despite KV's 60-second
 
 test("R10 journal persistence rebases and retries concurrent main updates", () => {
   const workflow = fs.readFileSync(path.join(__dirname,"../.github/workflows/volatility10-paper.yml"),"utf8");
-  assert.ok(workflow.includes("git fetch origin main"));
-  assert.ok(workflow.includes("git rebase origin/main"));
-  assert.ok(workflow.includes("git push origin HEAD:main"));
+  assert.ok(workflow.includes('git fetch origin "$GITHUB_REF_NAME"'));
+  assert.ok(workflow.includes('git rebase "origin/$GITHUB_REF_NAME"'));
+  assert.ok(workflow.includes('git push origin "HEAD:$GITHUB_REF_NAME"'));
   assert.ok(workflow.includes("for attempt in 1 2 3"));
 });
 
