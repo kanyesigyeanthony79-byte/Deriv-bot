@@ -120,7 +120,7 @@ function newSignals(before, after) {
   const oldIds = new Set((before || []).map(s => s.signalId));
   return (after || []).filter(s => s.signalId && !oldIds.has(s.signalId));
 }
-function toAlert(signal, strategy, marketData, applyRegime = true) {
+function toAlert(signal, strategy, marketData, applyRegime = true, recordDecision = true) {
   if (!signal || signal.marketId === "R_10" || !MARKETS.some(([id]) => id === signal.marketId)) return null;
   const entry = Number(signal.entry);
   const stopLoss = Number(signal.stopLoss);
@@ -134,7 +134,7 @@ function toAlert(signal, strategy, marketData, applyRegime = true) {
       entry <= 0 || stopLoss <= 0 || risk <= 0 || target <= 0 ||
       (direction === "BUY" && !(stopLoss < entry && target > entry)) ||
       (direction === "SELL" && !(stopLoss > entry && target < entry))) {
-    if (marketData) {
+    if (marketData && recordDecision) {
       marketData.candidateDecisions ||= [];
       marketData.candidateDecisions.push({ signalId: String(signal.signalId || "unknown"), strategyId: strategy, decision: "rejected", reason: "invalid_signal_levels_or_direction" });
     }
@@ -145,11 +145,18 @@ function toAlert(signal, strategy, marketData, applyRegime = true) {
   const regime = applyRegime
     ? evaluateMarketRegime({ m15: frames.M15 || [], m5: frames.M5 || [], direction, entryTimeframe: signal.entryTimeframe || "M5" })
     : { passed: true, adx: null, emaSeparationAtr: null };
-  if (applyRegime && marketData) {
-    marketData.regimeFilterDecisions ||= [];
-    marketData.regimeFilterDecisions.push({ signalId: String(signal.signalId), strategyId: strategy, direction, entryTimeframe: signal.entryTimeframe || "?", decision: regime.passed ? "passed" : "rejected", reason: regime.passed ? null : "market_regime_filter_rejected", ...regime });
+  if (marketData && recordDecision) {
+    if (applyRegime) {
+      marketData.regimeFilterDecisions ||= [];
+      marketData.regimeFilterDecisions.push({ signalId: String(signal.signalId), strategyId: strategy, direction, entryTimeframe: signal.entryTimeframe || "?", decision: regime.passed ? "passed" : "rejected", reason: regime.passed ? null : "market_regime_filter_rejected", ...regime });
+    }
     marketData.candidateDecisions ||= [];
-    marketData.candidateDecisions.push({ signalId: String(signal.signalId), strategyId: strategy, decision: regime.passed ? "accepted" : "rejected", reason: regime.passed ? null : "market_regime_filter_rejected" });
+    marketData.candidateDecisions.push({
+      signalId: String(signal.signalId), strategyId: strategy,
+      decision: regime.passed ? "accepted" : "rejected",
+      reason: regime.passed ? null : "market_regime_filter_rejected",
+      regimeFilterApplied: applyRegime
+    });
   }
   if (!regime.passed) return null;
   return {
@@ -209,15 +216,22 @@ async function main(env = process.env, options = {}) {
     const delivery = readJson(JOURNALS.delivery, { version: 1, updatedAt: null, signals: {} });
     delivery.signals ||= {};
     const allCurrent = [
-      ...nextA.signals.map(s => toAlert(s, "M5_BREAKOUT_M1_RETEST", output.markets[s.marketId], false)),
-      ...nextB.signals.map(s => toAlert(s, "M15_M5_EMA_PULLBACK", output.markets[s.marketId], false)),
-      ...nextC.signals.map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM", output.markets[s.marketId], false))
+      ...nextA.signals.map(s => toAlert(s, "M5_BREAKOUT_M1_RETEST", output.markets[s.marketId], false, false)),
+      ...nextB.signals.map(s => toAlert(s, "M15_M5_EMA_PULLBACK", output.markets[s.marketId], false, false)),
+      ...nextC.signals.map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM", output.markets[s.marketId], false, false))
     ].filter(Boolean);
-    const fresh = [
-      ...newSignals(priorA.signals, nextA.signals).map(s => toAlert(s, "M5_BREAKOUT_M1_RETEST", output.markets[s.marketId])),
-      ...newSignals(priorB.signals, nextB.signals).map(s => toAlert(s, "M15_M5_EMA_PULLBACK", output.markets[s.marketId])),
-      ...newSignals(priorC.signals, nextC.signals).map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM", output.markets[s.marketId]))
-    ].filter(Boolean);
+    const freshSignals = [
+      ...newSignals(priorA.signals, nextA.signals).map(signal => ({ signal, strategyId: "M5_BREAKOUT_M1_RETEST" })),
+      ...newSignals(priorB.signals, nextB.signals).map(signal => ({ signal, strategyId: "M15_M5_EMA_PULLBACK" })),
+      ...newSignals(priorC.signals, nextC.signals).map(signal => ({ signal, strategyId: "M5_BREAKOUT_M5_RETEST_M15_CONFIRM" }))
+    ];
+    for (const { signal } of freshSignals) {
+      const market = output.markets[signal.marketId];
+      if (market) market.newStrategyObservations = (market.newStrategyObservations || 0) + 1;
+    }
+    const fresh = freshSignals.map(({ signal, strategyId }) =>
+      toAlert(signal, strategyId, output.markets[signal.marketId])
+    ).filter(Boolean);
     // Failed or interrupted deliveries are retried by stable ID; old journal entries
     // without a delivery record are never backfilled into Telegram.
     const retryIds = new Set(Object.entries(delivery.signals)
@@ -268,6 +282,8 @@ async function main(env = process.env, options = {}) {
     output.cycleStatus = output.errors.length ? "partial" : "success";
     output.summary = {
       markets: Object.keys(output.markets).length,
+      newStrategyObservations: freshSignals.length,
+      eligibleNewCandidates: fresh.length,
       newCandidates: candidates.length, telegramSent: sent, telegramFailed: failed,
       strategies: {
         breakoutM1: nextA.summary || null,
@@ -314,6 +330,13 @@ async function main(env = process.env, options = {}) {
         scanStatus: market.errors.length ? (FRAMES.every(([tf]) => market.errors.some(error => error.timeframe === tf)) ? "failed" : "partial") : "success",
         timeframes: timeframeHealth,
         strategies: strategyStats,
+        signalPipeline: {
+          newStrategyObservations: market.newStrategyObservations || 0,
+          eligibleCandidates: fresh.filter(alert => alert.marketId === marketId).length,
+          deliveryCandidates: candidates.filter(alert => alert.marketId === marketId).length,
+          telegramSentThisCycle: candidates.filter(alert => alert.marketId === marketId && delivery.signals[alert.signalId]?.status === "sent" && delivery.signals[alert.signalId]?.sentAt && new Date(delivery.signals[alert.signalId].sentAt).getTime() >= now * 1000).length,
+          telegramFailedThisCycle: candidates.filter(alert => alert.marketId === marketId && delivery.signals[alert.signalId]?.status === "failed" && delivery.signals[alert.signalId]?.lastAttemptAt === new Date(now * 1000).toISOString()).length
+        },
         candidateDecisions: {
           accepted: marketDecisions.filter(record => record.decision === "accepted").length,
           rejected: marketDecisions.filter(record => record.decision === "rejected").length,
