@@ -361,7 +361,9 @@ export default {
             ? { header: "📊 DERIV SIGNAL ASSISTANT — ORIGINAL 15-MINUTE", label: "ORIGINAL 15-MINUTE SYSTEM" }
             : { header: "DERIV SIGNAL ASSISTANT", label: "SIGNAL SOURCE NOT SPECIFIED" };
         const strategyProfileLine = data.strategyProfile
-          ? "🧪 Paper profile: " + String(data.strategyProfile).slice(0, 60)
+          ? String(data.strategyProfile).includes("_CANDIDATE_")
+            ? "🧪 CANDIDATE SIGNAL — PAPER ONLY: " + String(data.strategyProfile).slice(0, 60)
+            : "🧪 Paper profile: " + String(data.strategyProfile).slice(0, 60)
           : null;
 
         if (data.event === "outcome") {
