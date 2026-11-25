@@ -32,6 +32,21 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 .system-tabs{display:flex;gap:9px;margin:14px 0 4px;position:sticky;top:0;z-index:5;padding:8px 0;background:rgba(11,23,18,.96)}.system-tab{flex:1;min-width:0}.system-tab[aria-pressed="true"]{background:var(--gold);color:#17170f;border-color:var(--gold)}.system-view[hidden]{display:none!important}.foot{margin-top:22px;color:var(--muted);font-size:11px;line-height:1.6}.metric-click{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}.metric-click:focus-visible,.signal-filter:focus-visible{outline:2px solid var(--gold);outline-offset:3px}.signal-filter-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.signal-filter{flex:1;min-width:100px}.signal-filter[aria-pressed="true"]{background:var(--gold);color:#17170f;border-color:var(--gold)}.signal-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-top:10px}.signal-card-link{display:block;color:inherit;text-decoration:none;border-radius:13px}.signal-card-link:focus-visible{outline:2px solid var(--gold);outline-offset:3px}.signal-item{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px;min-width:0;transition:border-color .15s,transform .15s}.signal-card-link:hover .signal-item{border-color:var(--gold);transform:translateY(-1px)}.signal-item-head{display:flex;justify-content:space-between;gap:8px;align-items:center;font-weight:750;font-size:13px}.signal-item .detail{margin-top:7px}.signal-empty{padding:14px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:13px}.review-queue{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-top:10px}.review-item{background:#241f16;border:1px solid #66512a;border-radius:13px;padding:12px;min-width:0}.review-item .detail{margin-top:7px}
 @media(max-width:420px){.brand{font-size:16px}.hero{padding:14px}h1{font-size:22px}}
 </style>
+
+/* Unified signal monitor shared by all four system tabs */
+.unified-monitor{margin:14px 0 18px;padding:14px;border:1px solid var(--line);border-radius:15px;background:rgba(20,37,29,.72)}
+.unified-monitor h3{margin:0 0 5px;font-size:16px}.unified-monitor .monitor-meta{font-size:11px;color:var(--muted);margin-bottom:10px}
+.monitor-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.monitor-count{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:10px 8px;text-align:left;color:var(--txt);cursor:pointer;min-width:0}
+.monitor-count[aria-pressed="true"]{border-color:var(--gold);background:var(--panel2)}
+.monitor-count strong{display:block;font-size:21px}.monitor-count span{font-size:10px;color:var(--muted);letter-spacing:.2px}
+.monitor-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-top:10px}
+.monitor-signal{border:1px solid var(--line);border-radius:11px;background:var(--panel);padding:11px;min-width:0}
+.monitor-signal .monitor-head{display:flex;justify-content:space-between;gap:7px;font-size:12px;font-weight:750}
+.monitor-signal .monitor-dir{font-size:17px;font-weight:850;margin:7px 0 3px}
+.monitor-empty{border:1px dashed var(--line);border-radius:11px;padding:13px;color:var(--muted);font-size:12px}
+.monitor-warning{color:var(--gold)}
+
 </head>
 <body>
 <main>
@@ -741,6 +756,189 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   setInterval(refreshResearchAnalytics,120000);
   })();
 
+</script>
+
+<script>
+(() => {
+  "use strict";
+  const configs = [
+    {key:"promoted", title:"Promoted System", subtitle:"Retired route · any unresolved legacy records are kept visible for review."},
+    {key:"r10", title:"Volatility 10 · R10", subtitle:"Dedicated M1 paper signals and paper-position outcomes."},
+    {key:"original", title:"Original System", subtitle:"Delivered M15 signals, including the full historical journal."},
+    {key:"research", title:"Research & Forward Shadow", subtitle:"Three independent forward-shadow strategy journals · observation only."}
+  ];
+  const esc = v => String(v == null ? "—" : v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const num = v => Number.isFinite(Number(v)) ? Number(v).toFixed(3) : "—";
+  const dateMs = v => {
+    if (typeof v === "number" && Number.isFinite(v)) return v > 1e12 ? v : v * 1000;
+    const n = Date.parse(v || "");
+    return Number.isFinite(n) ? n : NaN;
+  };
+  const ageText = ms => {
+    if (!Number.isFinite(ms)) return "Age unavailable";
+    const sec = Math.max(0,Math.floor(ms/1000));
+    if (sec < 3600) return Math.floor(sec/60)+"m "+(sec%60)+"s";
+    return Math.floor(sec/3600)+"h "+Math.floor((sec%3600)/60)+"m";
+  };
+  const terminal = new Set(["TP2_HIT","SL_HIT","EXPIRED","AMBIGUOUS","TP1_HIT","TP_HIT","TARGET","STOP","WIN","LOSS","TP2_HIT","TP1_HIT","TIME_EXIT","TIME_EXITED","STOPPED","STOP","TP2_HIT","TP_HIT"]);
+  const isTerminal = s => {
+    const outcome = String(s.finalOutcome || s.status || "").toUpperCase();
+    return terminal.has(outcome) || Boolean(s.finalOutcome) ||
+      (Array.isArray(s.events) && s.events.some(e=>terminal.has(String(e.outcome||"").toUpperCase())));
+  };
+  const fetchJson = async path => {
+    const r = await fetch("./"+path+"?monitor="+Date.now(),{cache:"no-store"});
+    if(!r.ok) throw new Error(path+" · HTTP "+r.status);
+    return r.json();
+  };
+  const panels = {};
+  configs.forEach(cfg=>{
+    const host = document.querySelector('[data-system-view="'+cfg.key+'"]');
+    if(!host) return;
+    const panel = document.createElement("section");
+    panel.className = "unified-monitor";
+    panel.innerHTML =
+      '<h3>Signal status · '+esc(cfg.title)+'</h3>'+
+      '<div class="monitor-meta">'+esc(cfg.subtitle)+' <span class="monitor-source-status" aria-live="polite">Loading signal records…</span></div>'+
+      '<div class="monitor-counts">'+
+        '<button class="monitor-count" data-monitor-filter="active" aria-pressed="true"><strong data-count="active">—</strong><span>ACTIVE</span></button>'+
+        '<button class="monitor-count" data-monitor-filter="review" aria-pressed="false"><strong data-count="review">—</strong><span>NEEDS REVIEW</span></button>'+
+        '<button class="monitor-count" data-monitor-filter="completed" aria-pressed="false"><strong data-count="completed">—</strong><span>COMPLETED</span></button>'+
+      '</div>'+
+      '<div class="monitor-list" aria-live="polite"><div class="monitor-empty">Loading signal status…</div></div>';
+    const heading = host.querySelector("h2");
+    if(heading && heading.parentNode===host) heading.insertAdjacentElement("afterend",panel);
+    else host.insertBefore(panel,host.firstChild);
+    panels[cfg.key]={panel,filter:"active",records:{active:[],review:[],completed:[]},errors:[]};
+    panel.addEventListener("click",e=>{
+      const btn=e.target.closest("[data-monitor-filter]");
+      if(!btn)return;
+      panels[cfg.key].filter=btn.dataset.monitorFilter;
+      render(cfg.key);
+    });
+  });
+  function card(s){
+    const direction=String(s.direction||"—").toUpperCase();
+    const cls=direction==="BUY"||direction==="LONG"?"buy":direction==="SELL"||direction==="SHORT"?"sell":"none";
+    const status=String(s.displayStatus||s.finalOutcome||s.status||"UNKNOWN").replaceAll("_"," ").toUpperCase();
+    const age=ageText(Date.now()-(s.createdMs||NaN));
+    return '<article class="monitor-signal"><div class="monitor-head"><span>'+esc(s.market||s.marketId||"Unknown market")+'</span><span class="mtf-tag">'+esc(status)+'</span></div>'+
+      '<div class="monitor-dir '+cls+'">'+esc(direction)+'</div>'+
+      '<div class="detail">Entry: '+num(s.entry)+'<br>Stop loss: '+num(s.stopLoss)+'<br>Take profit: '+num(s.takeProfit)+
+      '<br>Age: '+esc(age)+'<br>Last update: '+esc(s.updatedLabel||"Not recorded")+
+      (s.note?'<br>'+esc(s.note):"")+'</div></article>';
+  }
+  function render(key){
+    const p=panels[key]; if(!p)return;
+    ["active","review","completed"].forEach(k=>{
+      p.panel.querySelector('[data-count="'+k+'"]').textContent=p.records[k].length;
+      p.panel.querySelector('[data-monitor-filter="'+k+'"]').setAttribute("aria-pressed",String(p.filter===k));
+    });
+    const rows=p.records[p.filter];
+    p.panel.querySelector(".monitor-list").innerHTML=rows.length?rows.map(card).join(""):'<div class="monitor-empty">No '+(p.filter==="review"?"signals waiting for review":p.filter+" signals")+' recorded for this system.</div>';
+  }
+  function put(p,s,bucket){p.records[bucket].push(s);}
+  async function loadPromoted(){
+    const p=panels.promoted;
+    const [state,journal]=await Promise.all([fetchJson("signal_state.json"),fetchJson("trade_journal.json")]);
+    const activeById=new Map((state.activeSignals||[]).map(x=>[x.signalId,x]));
+    const signals=Array.isArray(journal.signals)?journal.signals:[];
+    signals.forEach(s=>{
+      const active=activeById.get(s.signalId), createdMs=dateMs(s.createdEpoch||s.candleEpoch||s.createdAt);
+      const checkedMs=dateMs(active&&active.lastCheckedEpoch), done=isTerminal(s);
+      const item={...s,createdMs,updatedLabel:active&&active.lastCheckedEpoch?new Date(checkedMs).toLocaleString():"No current-state check",
+        takeProfit:s.tp2||s.takeProfit,displayStatus:done?(s.finalOutcome||s.status):active?"OPEN / PRICE MONITOR":"UNRESOLVED"};
+      if(done){put(p,item,"completed");return;}
+      if(s.status!=="sent")return;
+      if(!active || active.closed || !Number.isFinite(checkedMs) || Date.now()-checkedMs>15*60*1000 || Date.now()-createdMs>=60*60*1000){
+        item.displayStatus="REVIEW · STATE / PRICE CHECK";
+        item.note="Legacy promoted route is retired; no signal is treated as newly active.";
+        put(p,item,"review");
+      }else put(p,item,"active");
+    });
+    return "Journal records: "+signals.length+" · legacy route retired";
+  }
+  async function loadR10(){
+    const p=panels.r10;
+    const [journal,state]=await Promise.all([fetchJson("volatility10_paper_journal.json"),fetchJson("volatility10_paper_state.json")]);
+    const closed=new Map((state.closedPositions||[]).map(x=>[String(x.signalEpoch),x]));
+    const active=state.activePosition;
+    const signals=Array.isArray(journal.signals)?journal.signals:[];
+    signals.forEach(s=>{
+      const outcome=closed.get(String(s.signalEpoch));
+      const activeMatch=active&&String(active.signalEpoch)===String(s.signalEpoch);
+      const createdMs=dateMs(s.signalTimestamp||s.signalEpoch);
+      const item={...s,market:s.instrument||s.marketId,direction:s.direction==="LONG"?"BUY":s.direction==="SHORT"?"SELL":s.direction,
+        entry:s.referenceEntryPrice,stopLoss:s.stopLoss,takeProfit:s.takeProfit,createdMs,
+        updatedLabel:outcome?outcome.closedAt:activeMatch?"Active paper position":"No close record",
+        displayStatus:outcome?(outcome.exitReason||"CLOSED"):activeMatch?"ACTIVE PAPER POSITION":"UNRESOLVED PAPER RECORD",
+        note:"Paper observation only · no live order."};
+      if(outcome){item.finalOutcome=outcome.exitReason;put(p,item,"completed");}
+      else if(activeMatch && Date.now()-createdMs<60*60*1000)put(p,item,"active");
+      else put(p,item,"review");
+    });
+    return "Paper signals: "+signals.length+" · closed paper positions: "+(state.closedPositions||[]).length;
+  }
+  async function loadOriginal(){
+    const p=panels.original, journal=await fetchJson("trade_journal.json");
+    const signals=Array.isArray(journal.signals)?journal.signals:[];
+    signals.forEach(s=>{
+      const createdMs=dateMs(s.createdAt||s.candleEpoch), done=isTerminal(s);
+      const item={...s,createdMs,takeProfit:s.tp2||s.takeProfit,
+        updatedLabel:(s.events||[]).length?new Date(dateMs(s.events[s.events.length-1].observedAt)).toLocaleString():"No outcome event",
+        displayStatus:done?(s.finalOutcome||s.status):s.status==="sent"?"DELIVERED · UNRESOLVED":String(s.status||"UNKNOWN")};
+      if(done){put(p,item,"completed");return;}
+      if(s.status==="sent" && Date.now()-createdMs<60*60*1000)put(p,item,"active");
+      else if(s.status==="sent" || ["stale","state_missing"].includes(s.status) || s.status==="suppressed"){
+        item.note=s.status==="sent"?"Unresolved for one hour or longer.":(s.statusReason||"Not delivered; inspect journal reason.");
+        put(p,item,"review");
+      }
+    });
+    return "Historical journal records: "+signals.length;
+  }
+  async function loadResearch(){
+    const p=panels.research;
+    const paths=["breakout_retest_shadow_journal.json","m5_ema_pullback_shadow_journal.json","breakout_retest_m5_m15_shadow_journal.json"];
+    const results=await Promise.all(paths.map(async path=>({path,journal:await fetchJson(path)})));
+    let total=0;
+    results.forEach(({path,journal})=>{
+      const signals=Array.isArray(journal.signals)?journal.signals:[];
+      total+=signals.length;
+      signals.forEach(s=>{
+        const createdMs=dateMs(s.createdAt||s.entryCandleEpoch||s.setupCloseEpoch);
+        const status=String(s.status||"").toLowerCase();
+        const done=status!=="pending" && status!=="open" && status!=="active" && Boolean(status);
+        const item={...s,createdMs,market:s.market||s.marketId,
+          takeProfit:s.tp2||s.takeProfit||s.productionTp2,
+          updatedLabel:s.lastProcessedEpoch?new Date(Number(s.lastProcessedEpoch)*1000).toLocaleString():"Not recorded",
+          displayStatus:s.strategyLabel+" · "+status.replaceAll("_"," ").toUpperCase(),
+          note:"Research / shadow record · not a production trade."};
+        if(done)put(p,item,"completed");
+        else if(Date.now()-createdMs>=60*60*1000){item.displayStatus="NEEDS REVIEW · "+(s.strategyLabel||"SHADOW");item.note="Pending for one hour or longer; retained for outcome review.";put(p,item,"review");}
+        else put(p,item,"active");
+      });
+    });
+    return "Research strategy records: "+total+" · 3 journals";
+  }
+  async function refreshAll(){
+    const loaders={promoted:loadPromoted,r10:loadR10,original:loadOriginal,research:loadResearch};
+    for(const key of Object.keys(loaders)){
+      const p=panels[key];if(!p)continue;
+      p.records={active:[],review:[],completed:[]};
+      const status=p.panel.querySelector(".monitor-source-status");
+      status.textContent="Refreshing…";
+      try{
+        const msg=await loaders[key]();
+        p.panel.querySelector(".monitor-meta").lastChild.textContent=" "+msg+" · Updated "+new Date().toLocaleTimeString();
+      }catch(error){
+        status.textContent="Source unavailable: "+error.message+" · Counts exclude unavailable data.";
+      }
+      render(key);
+    }
+  }
+  refreshAll();
+  setInterval(refreshAll,60000);
+})();
 </script>
 </body>
 </html>
