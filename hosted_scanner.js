@@ -11,9 +11,9 @@ const { createDerivDemoReadOnlySnapshot } = require("./scripts/demo_readonly_acc
 const { priorityForMarket } = require("./priority_pairs");
 const { createHeartbeat } = require("./scanner_heartbeat");
 const { evaluateMarketShadow, candidateGateDecision } = require("./market_shadow_profiles");
-const { cleanupUnmonitoredSignals } = require("./stale_signal_cleanup");
 const { main: runResearchShadowCycle, MARKETS: RESEARCH_MARKETS } = require("./research_shadow_telegram_collector");
 const CANDIDATE_GATE_ENABLED = process.env.R75_JD100_CANDIDATE_FILTER_ENABLED === "true";
+const { evaluateSignalCandle } = require("./signal_lifecycle");
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const GRANULARITY = 900;
@@ -33,7 +33,6 @@ let heartbeat;
 const WORKER_URL = process.env.TELEGRAM_WORKER_URL;
 const API_KEY = process.env.SIGNAL_API_KEY;
 const MAX_SIGNAL_AGE = 360;
-const MAX_MONITOR_AGE = 60 * 60; // expire unresolved original-system signals after one hour
 
 if (!WORKER_URL || !API_KEY) {
   console.error("Missing TELEGRAM_WORKER_URL or SIGNAL_API_KEY GitHub Actions secret.");
@@ -65,20 +64,6 @@ try {
 } catch {}
 const saveJournal = () => fs.writeFileSync(JOURNAL_FILE, JSON.stringify(journal, null, 2) + "\n");
 if (reconcileJournalState(journal, state, log) > 0) saveJournal();
-const unmonitoredExpired = cleanupUnmonitoredSignals({
-  state, journal,
-  nowEpoch: Math.floor(Date.now() / 1000),
-  monitoredMarketIds: MARKETS.filter(([id]) => id !== "R_10").map(([id]) => id),
-  excludedMarketIds: [],
-  maxAgeSeconds: MAX_MONITOR_AGE,
-  markExpired,
-  log
-});
-if (unmonitoredExpired > 0) {
-  saveState();
-  saveJournal();
-  log("unmonitored_signal_cleanup_completed", { expired: unmonitoredExpired });
-}
 const localDate = epoch => new Intl.DateTimeFormat("en-CA", {timeZone:"Africa/Kampala",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(epoch * 1000));
 const findJournalSignal = id => journal.signals.find(s => s.signalId === id);
 
@@ -310,36 +295,54 @@ async function sendOutcome(signal, outcome, candle) {
 async function monitorSignals(marketId, candles, now) {
   const active = state.activeSignals.filter(s => s.marketId === marketId && !s.closed);
   for (const signal of active) {
-    if (now - signal.createdEpoch > MAX_MONITOR_AGE) {
-      const lastCandle = candles[candles.length - 1];
-      if (lastCandle) {
-        try {
-          await sendOutcome(signal, "EXPIRED", lastCandle);
-        } catch (error) {
-          markExpired(journal, signal.signalId, lastCandle, "expired_after_1_hour; expiry_alert_failed");
-          saveJournal();
-          log("expiry_alert_failed", { signalId: signal.signalId, market: signal.market, message: error.message });
-        }
-      } else {
-        markExpired(journal, signal.signalId, null, "expired_after_1_hour_no_recent_candle");
-        saveJournal();
-      }
-      signal.closed = true;
-      signal.closeReason = "expired_after_1_hour";
-      log("signal_expired", { signalId: signal.signalId, market: signal.market });
-      continue;
-    }
+    // Signals created before the entry-triggered lifecycle were monitored from
+    // publication; preserve those in-flight records as already entered.
+    if (typeof signal.entryTriggered !== "boolean") signal.entryTriggered = true;
 
     const laterCandles = candles.filter(c => c.epoch > Number(signal.lastCheckedEpoch || signal.createdEpoch));
     for (const candle of laterCandles) {
       updateFavourableMovement(journal, signal.signalId, candle);
-      const isBuy = signal.direction === "BUY";
-      const slTouched = isBuy ? candle.low <= signal.stopLoss : candle.high >= signal.stopLoss;
-      const tp1Touched = isBuy ? candle.high >= signal.tp1 : candle.low <= signal.tp1;
-      const tp2Touched = isBuy ? candle.high >= signal.tp2 : candle.low <= signal.tp2;
+      const decision = evaluateSignalCandle(signal, candle);
 
-      // OHLC candles cannot tell us which level came first if both sides were touched.
-      if (slTouched && (tp1Touched || tp2Touched)) {
+      if (decision.action === "WAIT") {
+        signal.lastCheckedEpoch = candle.epoch;
+        continue;
+      }
+
+      if (decision.action === "ENTRY_TRIGGERED") {
+        signal.entryTriggered = true;
+        signal.entryTriggeredEpoch = candle.epoch;
+        signal.lastCheckedEpoch = candle.epoch;
+        const entryRecord = findJournalSignal(signal.signalId);
+        if (entryRecord) {
+          entryRecord.entryTriggered = true;
+          entryRecord.entryTriggeredAt = new Date(candle.epoch * 1000).toISOString();
+        }
+        log("signal_entry_triggered", { signalId: signal.signalId, market: signal.market, candle_epoch: candle.epoch });
+        continue;
+      }
+
+      if (decision.action === "EXPIRED_TP1_BEFORE_ENTRY" || decision.action === "EXPIRED_SL_BEFORE_ENTRY") {
+        const reason = decision.action === "EXPIRED_TP1_BEFORE_ENTRY"
+          ? "tp1_hit_before_entry" : "stop_loss_hit_before_entry";
+        try {
+          await sendOutcome(signal, "EXPIRED", candle);
+        } catch (error) {
+          markExpired(journal, signal.signalId, candle, reason + "; expiry_alert_failed");
+          saveJournal();
+          log("expiry_alert_failed", { signalId: signal.signalId, market: signal.market, reason, message: error.message });
+        }
+        const entryRecord = findJournalSignal(signal.signalId);
+        if (entryRecord) entryRecord.statusReason = reason;
+        signal.closed = true;
+        signal.closeReason = reason;
+        signal.lastCheckedEpoch = candle.epoch;
+        saveJournal();
+        log("signal_expired_before_entry", { signalId: signal.signalId, market: signal.market, reason, candle_epoch: candle.epoch });
+        break;
+      }
+
+      if (decision.action === "AMBIGUOUS") {
         signal.closed = true;
         signal.closeReason = "ambiguous_same_candle";
         signal.lastCheckedEpoch = candle.epoch;
@@ -349,7 +352,7 @@ async function monitorSignals(marketId, candles, now) {
         break;
       }
 
-      if (slTouched) {
+      if (decision.action === "SL_HIT") {
         await sendOutcome(signal, "SL_HIT", candle);
         signal.closed = true;
         signal.closeReason = signal.tp1Hit ? "sl_after_tp1" : "sl_hit";
@@ -357,12 +360,20 @@ async function monitorSignals(marketId, candles, now) {
         break;
       }
 
-      if (tp1Touched && !signal.tp1Hit) {
+      if (decision.action === "TP1_HIT") {
         await sendOutcome(signal, "TP1_HIT", candle);
         signal.tp1Hit = true;
+        if (decision.alsoTp2) {
+          await sendOutcome(signal, "TP2_HIT", candle);
+          signal.tp2Hit = true;
+          signal.closed = true;
+          signal.closeReason = "tp2_hit";
+          signal.lastCheckedEpoch = candle.epoch;
+          break;
+        }
       }
 
-      if (tp2Touched && !signal.tp2Hit) {
+      if (decision.action === "TP2_HIT") {
         if (!signal.tp1Hit) {
           await sendOutcome(signal, "TP1_HIT", candle);
           signal.tp1Hit = true;
@@ -495,7 +506,7 @@ async function main() {
         const levels = makeLevels(candles, result.signal);
         const telegramResult = await postTelegram({
           event: "new_signal", source: "LEGACY_15M", signalId, marketId: id, market: name, direction: result.signal, ...levels,
-          candleEpoch, score: result.score, entryTimeframe: "M15", validityMinutes: 60,
+          candleEpoch, score: result.score, entryTimeframe: "M15",
           ...(candidateGateActive ? { strategyProfile: id + "_CANDIDATE_V1" } : {}),
           ...(priority ? {
             priorityTier: priority.tier, priorityLabel: priority.label,
@@ -519,6 +530,8 @@ async function main() {
           ...(candidateGateActive ? { strategyProfile: id + "_CANDIDATE_V1" } : {}),
           createdEpoch: candleEpoch,
           lastCheckedEpoch: candleEpoch,
+          entryTriggered: false,
+          entryTriggeredEpoch: null,
           tp1Hit: false,
           tp2Hit: false,
           closed: false
