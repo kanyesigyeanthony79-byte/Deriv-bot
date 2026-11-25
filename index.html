@@ -596,6 +596,10 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   setInterval(refresh,60000);
 })();
 
+  (() => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const time = s => { const d=new Date(s); return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString(); };
   const RESEARCH_ANALYTICS_FILES = [
     ["Breakout + M1 retest","./breakout_retest_shadow_journal.json"],
     ["M15 trend + M5 EMA pullback","./m5_ema_pullback_shadow_journal.json"],
@@ -662,7 +666,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       ["ACTIVE STRATEGY RECORDS",total.records],
       ["TARGET BEFORE STOP",total.wins],
       ["STOP BEFORE TARGET",total.losses],
-      ["NET RECORDED R",raFmt(total.netR)]
+      ["AVERAGE RECORDED R",total.realized?raFmt(total.netR/total.realized):"—"]
     ].map(([label,value],i)=>'<div class="card"><div class="detail">'+label+'</div><div class="signal '+(i===1?"buy":i===2?"sell":"")+'">'+esc(value)+'</div></div>').join("");
     $("researchAnalyticsStrategies").innerHTML=strategyRows.join("");
     $("researchAnalyticsMarkets").innerHTML=Object.entries(marketMap).sort((a,b)=>b[1].records-a[1].records).map(([market,m])=>{
@@ -683,11 +687,12 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       $("researchAnalyticsDelivery").innerHTML='<div class="signal-empty">Delivery journal unavailable: '+esc(error.message)+'. Delivery status is not inferred.</div>';
     }
     const latest=valid.map(x=>x.journal.updatedAt).filter(Boolean).sort().slice(-1)[0];
-    if(status)status.textContent=valid.length+"/3 journals loaded · source updated "+(latest?time(latest):"time unavailable")+" · refreshed "+new Date().toLocaleTimeString();
+    if(status)status.textContent=valid.length+"/3 journals loaded"+(valid.length!==3?" · PARTIAL DATA — unavailable journals excluded":"")+" · source updated "+(latest?time(latest):"time unavailable")+" · refreshed "+new Date().toLocaleTimeString();
   }
   $("researchAnalyticsRefresh").addEventListener("click",refreshResearchAnalytics);
   refreshResearchAnalytics();
   setInterval(refreshResearchAnalytics,120000);
+  })();
 
 </script>
 </body>
