@@ -655,7 +655,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       const avg=s.realized?s.netR/s.realized:NaN;
       strategyRows.push('<tr><td>'+esc(item.label)+'</td><td>'+s.records+'</td><td>'+s.wins+'</td><td>'+s.losses+'</td><td>'+s.time+'</td><td>'+s.pending+'</td><td>'+s.ambiguous+'</td><td>'+raRate(s.wins,s.losses)+'</td><td>'+raFmt(s.netR)+'</td><td>'+raFmt(avg)+'</td></tr>');
       for(const [market,summary] of Object.entries(item.journal.summary?.markets||{})){
-        if(market!=="R_10"&&summary.dataQuality&&!marketMap[market].quality.includes(summary.dataQuality))marketMap[market].quality.push(summary.dataQuality);
+        if(market!=="R_10"){if(!marketMap[market])marketMap[market]={records:0,wins:0,losses:0,time:0,pending:0,ambiguous:0,other:0,netR:0,realized:0,quality:[]};if(summary.dataQuality&&!marketMap[market].quality.includes(summary.dataQuality))marketMap[market].quality.push(summary.dataQuality);}
       }
     }
     $("researchAnalyticsTotals").innerHTML=[
