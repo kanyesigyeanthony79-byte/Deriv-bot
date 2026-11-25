@@ -33,9 +33,10 @@ function latestContinuousSegment(rows,step=60){
  if(!Array.isArray(rows)||!rows.length)return [];
  let start=0;
  for(let i=0;i<rows.length;i++){
-  if(!strategy.validCandle(rows[i])||(i>0&&Number(rows[i].epoch)-Number(rows[i-1].epoch)!==step))start=i;
+  if(!strategy.validCandle(rows[i])){start=i+1;continue;}
+  if(i>0&&(!strategy.validCandle(rows[i-1])||Number(rows[i].epoch)-Number(rows[i-1].epoch)!==step))start=i;
  }
- return rows.slice(start);
+ return rows.slice(start).filter(strategy.validCandle);
 }
 function splitCandles(rows,nowEpoch){
  const sorted=rows.map(c=>({epoch:Number(c.epoch),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)}))
