@@ -43,15 +43,36 @@ function splitCandles(rows,nowEpoch){
   .filter(strategy.validCandle).sort((a,b)=>a.epoch-b.epoch);
  return {completed:sorted.filter(c=>c.epoch+60<=nowEpoch),forming:sorted.find(c=>c.epoch+60>nowEpoch)||null};
 }
+async function fetchCandleHistory(client,nowEpoch){
+ const rows=[];
+ let end="latest",previousOldest=Infinity;
+ // The public endpoint may return fewer candles than requested. Page backward
+ // by the oldest returned candle until the latest contiguous completed segment
+ // is long enough for the frozen H4/H1/M5 warm-up.
+ for(let page=0;page<4;page++){
+  const response=await client.ask({ticks_history:"R_10",adjust_start_time:1,count:5000,end,granularity:60,style:"candles"});
+  const batch=Array.isArray(response.candles)?response.candles:[];
+  if(!batch.length)break;
+  rows.push(...batch);
+  const split=splitCandles(rows,nowEpoch);
+  if(latestContinuousSegment(split.completed).length>=2700)return split;
+  const epochs=batch.map(c=>Number(c.epoch)).filter(Number.isFinite);
+  if(!epochs.length)break;
+  const oldest=Math.min(...epochs);
+  if(oldest>=previousOldest||oldest<=1)break;
+  previousOldest=oldest;
+  end=String(oldest-1);
+ }
+ return splitCandles(rows,nowEpoch);
+}
 async function collect(client){
  const t=await client.ask({time:1});
  const nowEpoch=Number(t.time);
  if(!Number.isFinite(nowEpoch))throw new Error("Deriv server UTC time unavailable");
- const [r,q]=await Promise.all([
-  client.ask({ticks_history:"R_10",adjust_start_time:1,count:5000,end:"latest",granularity:60,style:"candles"}),
+ const [split,q]=await Promise.all([
+  fetchCandleHistory(client,nowEpoch),
   client.ask({ticks_history:"R_10",adjust_start_time:1,count:1,end:"latest",style:"ticks"})
  ]);
- const split=splitCandles(r.candles||[],nowEpoch);
  const quoteTime=Number(q.history?.times?.[0]),quotePrice=Number(q.history?.prices?.[0]);
  const quote={price:Number.isFinite(quotePrice)?quotePrice:null,epoch:Number.isFinite(quoteTime)?quoteTime:null,
   ageSeconds:Number.isFinite(quoteTime)?Math.max(0,nowEpoch-quoteTime):null};
