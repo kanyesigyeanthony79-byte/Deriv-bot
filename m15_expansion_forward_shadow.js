@@ -230,7 +230,7 @@ function updateM15ExpansionForwardShadowJournal(prior, markets, nowEpoch=Math.fl
   return journal;
 }
 function buildExpansionAlert(signal, nowEpoch=Math.floor(Date.now()/1000)) {
-  if (!signal || signal.status !== "PENDING" || !Number.isFinite(signal.entryEpoch)) return null;
+  if (!signal || signal.status === "AWAITING_ENTRY" || signal.status === "CENSORED" || !Number.isFinite(signal.entryEpoch)) return null;
   const signalAgeSeconds = Math.max(0, nowEpoch-(signal.entryEpoch+TIMEFRAME_SECONDS));
   if (signalAgeSeconds > 900) return null;
   return {
