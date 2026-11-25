@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { MARKETS, toAlert } = require("../research_shadow_telegram_collector");
+const { MARKETS, toAlert, createDeliveryPayload } = require("../research_shadow_telegram_collector");
 
 test("research diagnostics cover all 17 shadow markets including both 1-second indices", () => {
   assert.equal(MARKETS.length, 17);
@@ -54,4 +54,32 @@ test("valid research alerts remain explicitly shadow-only", () => {
   assert.deepEqual({ decision: market.candidateDecisions[0].decision, regimeFilterApplied: market.candidateDecisions[0].regimeFilterApplied }, {
     decision: "accepted", regimeFilterApplied: false
   });
+});
+
+test("RB100 and BOOM100 use monitored live-alert pilot labels without enabling execution", () => {
+  for (const marketId of ["RB100", "BOOM100"]) {
+    const payload = createDeliveryPayload({
+      event: "new_signal", source: "RESEARCH_SHADOW", marketId,
+      paper: true, live: false, status: "SHADOW",
+      executionMode: "DEMO_MANUAL"
+    });
+    assert.equal(payload.source, "RESEARCH_LIVE_ALERT_PILOT");
+    assert.equal(payload.status, "PILOT");
+    assert.equal(payload.alertMode, "LIVE_MARKET_PILOT");
+    assert.equal(payload.pilot, true);
+    assert.equal(payload.paper, false);
+    assert.equal(payload.live, false);
+    assert.equal(payload.executionMode, "DEMO_MANUAL");
+  }
+});
+
+test("other markets remain on the existing shadow-only delivery path", () => {
+  const payload = createDeliveryPayload({
+    event: "new_signal", source: "RESEARCH_SHADOW", marketId: "R_25",
+    paper: true, live: false, status: "SHADOW"
+  });
+  assert.equal(payload.source, "RESEARCH_SHADOW");
+  assert.equal(payload.status, "SHADOW");
+  assert.equal(payload.paper, true);
+  assert.equal(payload.live, false);
 });
