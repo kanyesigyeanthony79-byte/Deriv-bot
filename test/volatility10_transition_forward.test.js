@@ -10,7 +10,7 @@ test("aggregates only complete, aligned M1 buckets",()=>{
  assert.equal(out.length,2);assert.equal(out[0].epoch,600);
  assert.equal(out[0].open,10);assert.equal(out[0].close,15);
  assert.equal(out[0].high,16);assert.equal(out[0].low,9);
- assert.deepEqual(s.aggregateM1(rows.slice(0,9),s.M5),[]);
+ assert.equal(s.aggregateM1(rows.slice(0,9),s.M5).length,1,"incomplete trailing M5 bucket is excluded");
 });
 test("confirmed swings appear only after right-side candles close",()=>{
  const rows=[
@@ -41,7 +41,7 @@ test("rolling ATR percentile uses only the 500 prior values and has an explicit 
  const values=Array.from({length:501},(_,i)=>i+1);
  assert.deepEqual(s.rollingAtrPercentile(values,499),{ready:false,percentile:null,warmupRequired:500});
  const rank=s.rollingAtrPercentile(values,500);
- assert.equal(rank.ready,true);assert.equal(rank.percentile,0.998);
+ assert.equal(rank.ready,true);assert.equal(rank.percentile,1);
  const low=s.rollingAtrPercentile(values.map((v,i)=>i===500?10:v),500);
  assert.ok(low.percentile<0.33);
 });
@@ -103,7 +103,7 @@ test("one-active-trade and duplicate setup gates reject before signal creation",
 });
 test("missing entry candle is skipped and stale entry is recorded, not filled",()=>{
  const x=lowVolSetupFixture();
- const missing=s.evaluateSetup({...x,m1:[],nowEpoch:x.setupClose+1});
+ const missing=s.evaluateSetup({...x,m1:[candle(x.setupClose+60,100,101,99,100)],nowEpoch:x.setupClose+1});
  assert.equal(missing.reason,"next_entry_candle_unavailable");
  const stale=s.evaluateSetup({...x,nowEpoch:x.setupClose+61});
  assert.equal(stale.reason,"stale_entry");
@@ -134,4 +134,20 @@ test("Telegram worker accepts only the new forward-test provider and R10 is excl
  assert.doesNotMatch(mt5,/AllowedMarkets\[\] = \{[^}]*"R_10"/);
  assert.doesNotMatch(mt5,/InpSymbolMap = "[^"]*R_10=/);
  assert.doesNotMatch(legacy,/MT5_ALLOWED_MARKETS=new Set\(\["R_10"/);
+});
+
+test("invalid or discontinuous M1 source is not aggregated across a gap",()=>{
+ const rows=Array.from({length:12},(_,i)=>candle(i*60,10,11,9,10));
+ rows[7]={...rows[7],epoch:rows[7].epoch+60};
+ assert.equal(s.validateSeries(rows,s.M1),"data_gap");
+ assert.deepEqual(s.aggregateM1(rows,s.M5),[]);
+});
+test("swing confirmation timestamp is never later than the decision timestamp",()=>{
+ const rows=[
+  [2,0],[3,1],[6,2],[4,1],[3,0],[4,2],[7,3],[5,2],[4,1],[5,3],[8,4],[6,3],[5,2]
+ ].map((v,i)=>candle(i*s.H1,3,v[0],v[1],3));
+ const decisionEpoch=13*s.H1;
+ const structure=s.classifyStructure(rows,s.H1,decisionEpoch);
+ for(const list of [structure.swings.highs,structure.swings.lows])
+  for(const swing of list)assert.ok(swing.confirmedAt<=decisionEpoch);
 });
