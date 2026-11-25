@@ -19,12 +19,12 @@ test("New Markets dashboard exposes both 1-second indices", () => {
   assert.match(section, /\["MARKETS IN THIS TAB",String\(ids\.length\)\]/);
 });
 
-test("100-signal collection includes both 1-second markets in a 17-market target", () => {
+test("100-signal collection includes all shared research markets in an 18-market target", () => {
   const html = fs.readFileSync(path.join(__dirname, "..", "signal-collection.html"), "utf8");
   const script = html.slice(html.indexOf("<script>"));
   assert.match(script, /\["1HZ10V","Volatility 10 \(1s\) Index"\]/);
-  assert.match(script, /\["1HZ75V","Volatility 75 \(1s\) Index"\]/);
+  assert.match(script, /\["1HZ75V","Volatility 75 \(1s\) Index"\]/);\n  assert.match(script, /\["JD75","Jump 75 Index"\]/);\n  const { MARKETS } = require("../research_shadow_telegram_collector");\n  for (const [id] of MARKETS) assert.ok(script.includes('["'+id+'"'), "collection register missing "+id);
   assert.match(script, /const COLLECTION_TARGET=MARKETS\.length\*100/);
   assert.match(script, /completed\+" \/ "\+MARKETS\.length/);
-  assert.match(html, /17 markets × 100 signals/);
+  assert.match(html, /18 markets × 100 signals/);
 });
