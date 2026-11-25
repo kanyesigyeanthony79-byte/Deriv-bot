@@ -613,7 +613,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   ];
   let researchAuditSignals=[];
   let researchDeliveryById={};
-  function raDate(signal){const raw=signal.createdAt||signal.signalTimestamp||"";return /^\\d{4}-\\d{2}-\\d{2}/.test(raw)?raw.slice(0,10):"Unknown date";}
+  function raDate(signal){const raw=signal.createdAt||signal.signalTimestamp||"";return /^\d{4}-\d{2}-\d{2}/.test(raw)?raw.slice(0,10):"Unknown date";}
   function raOutcome(signal){const k=raBucket(signal.status);return k==="wins"?"TARGET":k==="losses"?"STOP":k==="time"?"TIME EXIT":k.toUpperCase();}
   function renderResearchHistory(){
     const picker=$("researchHistoryDate"), daily=$("researchDailyHistory"), audit=$("researchSignalAudit"), info=$("researchHistoryStatus");
