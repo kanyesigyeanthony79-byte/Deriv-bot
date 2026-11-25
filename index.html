@@ -618,7 +618,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   $("r10Refresh").addEventListener("click",refreshR10);
   refreshR10(); setInterval(refreshR10,60000);
 
-  const RESEARCH_SCAN_MARKETS=[["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],["R_75","Volatility 75 Index"],["JD75","Jump 75 Index"],["JD100","Jump 100 Index"],["CRASH500","Crash 500 Index"],["BOOM500","Boom 500 Index"],["frxXAUUSD","Gold (XAUUSD)"],["1HZ10V","Volatility 10 (1s) Index"],["1HZ75V","Volatility 75 (1s) Index"],["R_100","Volatility 100 Index"],["JD25","Jump 25 Index"],["JD50","Jump 50 Index"],["CRASH100","Crash 100 Index"],["BOOM100","Boom 100 Index"]];
+  const RESEARCH_SCAN_MARKETS=[["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],["R_75","Volatility 75 Index"],["JD75","Jump 75 Index"],["JD100","Jump 100 Index"],["CRASH500","Crash 500 Index"],["BOOM500","Boom 500 Index"],["frxXAUUSD","Gold (XAUUSD)"],["1HZ10V","Volatility 10 (1s) Index"],["1HZ75V","Volatility 75 (1s) Index"],["R_100","Volatility 100 Index"],["JD25","Jump 25 Index"],["JD50","Jump 50 Index"],["CRASH100","Crash 100 Index"],["BOOM100","Boom 100 Index"],["RB100","Range Break 100 Index"],["RB200","Range Break 200 Index"]];
   async function refreshResearchScan(){
     const status=$("researchScanUpdated"), body=$("researchScanMarkets");
     status.textContent="Checking latest hosted research scan…";
@@ -651,7 +651,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       }).join("");
       status.textContent="Last successful snapshot "+stamp+" · "+Object.keys(markets).length+" research markets · cycle "+cycle.toUpperCase()+(snapshot.lastAttemptAt?" · last attempt "+new Date(snapshot.lastAttemptAt).toLocaleString():"")+(snapshot.lastError?" · "+snapshot.lastError:"")+" · "+(summary.telegramSent??0)+" Telegram shadow alerts sent / "+(summary.telegramFailed??0)+" failed in recorded cycle.";
     }catch(error){
-      body.innerHTML=RESEARCH_SCAN_MARKETS.map(([id,name])=>'<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal none">STATUS UNAVAILABLE</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>'+esc(error.message)+'</td></tr>').join("");
+      body.innerHTML=RESEARCH_SCAN_MARKETS.map(([id,name])=>'<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal none">STATUS UNAVAILABLE</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>'+esc(error.message)+'</td></tr>').join("");
       status.textContent="Research scanner status unavailable. No market is assumed to be scanning.";
     }
   }
