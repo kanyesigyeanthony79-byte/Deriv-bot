@@ -10,13 +10,14 @@ function isVolatility10Alert(data = {}) {
 function shouldDeliverTelegramAlert(data = {}, env = {}) {
   if (data.event === "daily_summary") return true;
   if (isVolatility10Alert(data)) {
-    if (env.R10_LEGACY_ROLLBACK_ENABLED === "true") return true;
+    if (env.R10_LEGACY_ROLLBACK_ENABLED === "true") return env.R10_PAPER_ROUTE_ENABLED === "true" && env.R10_EMERGENCY_KILL_SWITCH === "false";
     return env.R10_PAPER_ROUTE_ENABLED === "true" &&
       env.R10_EMERGENCY_KILL_SWITCH === "false" &&
-      data.providerId === "volatility10_ema_atr_slope20_v1" &&
-      data.strategyVersion === "volatility10_ema_atr_slope20_v1" &&
-      data.timeframe === "M1" &&
-      (data.status === "PAPER" || data.paper === true) && data.live !== true;
+      data.providerId === "volatility10_transition_lowvol_1r_forward_v1" &&
+      data.strategyVersion === "volatility10_transition_lowvol_1r_forward_v1" &&
+      data.timeframe === "M5" && data.forwardTest === true &&
+      data.event === "new_signal" && data.status === "PAPER" && data.paper === true &&
+      data.live === false && data.brokerExecutionAllowed === false && data.historicalCatchup !== true;
   }
   const marketId = String(data.marketId || "").trim().toUpperCase();
   const market = String(data.market || "");
@@ -153,8 +154,39 @@ export class ExecutionQueue{
  constructor(ctx,env){this.ctx=ctx;}
  async fetch(request){
   const u=new URL(request.url);
+  if(request.method==="POST"&&u.pathname==="/r10-delivery-reserve"){
+   const b=await request.json(),id=String(b.signalId||"");
+   if(!/^[A-Za-z0-9._:-]{1,120}$/.test(id))return Response.json({success:false,error:"invalid_signal_id"},{status:400});
+   const now=Math.floor(Date.now()/1000);
+   const result=await this.ctx.storage.transaction(async t=>{
+    const key="r10-delivery:"+id,rec=await t.get(key);
+    if(rec&&rec.status==="sent")return {success:true,duplicate:true,inFlight:false};
+    if(rec&&rec.status==="pending"&&rec.leaseUntil>now)return {success:true,duplicate:false,inFlight:true};
+    await t.put(key,{status:"pending",reservedAt:now,leaseUntil:now+90});
+    return {success:true,duplicate:false,inFlight:false};
+   });
+   return Response.json(result);
+  }
+  if(request.method==="POST"&&u.pathname==="/r10-delivery-ack"){
+   const b=await request.json(),id=String(b.signalId||"");
+   const result=await this.ctx.storage.transaction(async t=>{
+    const key="r10-delivery:"+id,rec=await t.get(key);if(!rec)return {success:false};
+    rec.status="sent";rec.sentAt=Math.floor(Date.now()/1000);rec.leaseUntil=0;await t.put(key,rec);return {success:true};
+   });
+   return Response.json(result,{status:result.success?200:404});
+  }
+  if(request.method==="POST"&&u.pathname==="/r10-delivery-release"){
+   const b=await request.json(),id=String(b.signalId||"");
+   const result=await this.ctx.storage.transaction(async t=>{
+    const key="r10-delivery:"+id,rec=await t.get(key);if(!rec||rec.status==="sent")return {success:false};
+    await t.delete(key);return {success:true,retryable:true};
+   });
+   return Response.json(result,{status:result.success?200:404});
+  }
   if(request.method==="POST"&&u.pathname==="/enqueue"){
-   const payload=await request.json(),id=String(payload.signalId),now=Math.floor(Date.now()/1000);
+   const payload=await request.json();
+   if(isVolatility10Alert(payload))return Response.json({success:false,error:"R_10 is forward-test-only and cannot enter the broker execution queue"},{status:403});
+   const id=String(payload.signalId),now=Math.floor(Date.now()/1000);
    const r=await this.ctx.storage.transaction(async t=>{
     const k="signal:"+id,old=await t.get(k);if(old)return {queued:old.status==="pending",duplicate:true,status:old.status};
     await t.put(k,{payload,queuedAt:now,status:"pending",leaseClient:"",leaseUntil:0,ackAt:0,result:null});
@@ -429,44 +461,115 @@ export default {
         const reason = isVolatility10Alert(data) ? "R10_EXCLUSIVE_PROVIDER_PAPER_ONLY" : "R_50_PRIORITY_PAIR_ONLY";
         return reply({ success: true, suppressed: true, reason });
       }
+      if (isVolatility10Alert(data) && env.R10_LEGACY_ROLLBACK_ENABLED === "true") {
+        const legacyRequired = ["instrument","timeframe","direction","signalTimestamp","strategyVersion",
+          "ema12","ema26","ema100","atr14","referenceEntryPrice","stopLoss","takeProfit","providerId"];
+        for (const field of legacyRequired) {
+          if (data[field] === undefined || data[field] === null || data[field] === "")
+            return reply({error:"Missing legacy Volatility 10 field: "+field},400);
+        }
+        if (data.status !== "PAPER" || data.paper !== true || data.live === true)
+          return reply({error:"Legacy rollback route accepts paper signals only"},403);
+        const message = [
+          "DERIV SIGNAL ASSISTANT — VOLATILITY 10",
+          "LEGACY ROLLBACK — PAPER SIGNAL — NO LIVE EXECUTION",
+          "━━━━━━━━━━━━━━━━",
+          "Instrument: "+data.instrument,
+          "Timeframe: "+data.timeframe,
+          "Direction: "+data.direction,
+          "Signal time (UTC): "+data.signalTimestamp,
+          "Strategy: "+data.strategyVersion,
+          "EMA 12 / 26 / 100: "+[data.ema12,data.ema26,data.ema100].join(" / "),
+          "ATR 14: "+data.atr14,
+          "Reference entry: "+data.referenceEntryPrice,
+          "Stop loss: "+data.stopLoss,
+          "Take profit: "+data.takeProfit,
+          "Provider: "+data.providerId,
+          "Status: PAPER",
+          "━━━━━━━━━━━━━━━━",
+          "Legacy rollback notification only. No broker order was placed."
+        ].join("\n");
+        const telegramURL=`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+        const telegramResponse=await fetch(telegramURL,{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID,text:message})});
+        const result=await telegramResponse.json();
+        if(!telegramResponse.ok||!result.ok)return reply({error:"Telegram delivery failed"},502);
+        return reply({success:true,message:"Legacy Volatility 10 paper alert delivered"});
+      }
       if (isVolatility10Alert(data) && env.R10_LEGACY_ROLLBACK_ENABLED !== "true") {
-        const required = ["instrument", "timeframe", "direction", "signalTimestamp", "strategyVersion",
-          "ema12", "ema26", "ema100", "atr14", "referenceEntryPrice", "stopLoss", "takeProfit", "providerId"];
+        const required = ["timeframe", "direction", "signalTimestamp", "strategyVersion", "signalId",
+          "entry", "stopLoss", "target", "atr14", "atrPercentile", "h4Structure", "h1Structure", "providerId", "utcHour"];
         for (const field of required) {
           if (data[field] === undefined || data[field] === null || data[field] === "") {
             return reply({ error: "Missing Volatility 10 field: " + field }, 400);
           }
         }
-        if (data.status !== "PAPER" || data.paper !== true || data.live === true) {
-          return reply({ error: "Volatility 10 route accepts paper signals only" }, 403);
+        if (data.status !== "PAPER" || data.paper !== true || data.live !== false ||
+            data.brokerExecutionAllowed !== false || data.forwardTest !== true ||
+            data.strategyVersion !== "volatility10_transition_lowvol_1r_forward_v1" ||
+            data.providerId !== "volatility10_transition_lowvol_1r_forward_v1" ||
+            data.timeframe !== "M5" || data.event !== "new_signal" ||
+            !["BUY","SELL"].includes(String(data.direction)) ||
+            !Number.isFinite(Number(data.entry)) || !Number.isFinite(Number(data.stopLoss)) ||
+            !Number.isFinite(Number(data.target)) || Number(data.atrPercentile) >= 0.33) {
+          return reply({ error: "Volatility 10 route accepts only the frozen forward-test paper schema" }, 403);
         }
-        const message = [
-          "DERIV SIGNAL ASSISTANT — VOLATILITY 10",
-          "PAPER SIGNAL — NO LIVE EXECUTION",
-          "━━━━━━━━━━━━━━━━",
-          "Instrument: " + data.instrument,
-          "Timeframe: " + data.timeframe,
-          "Direction: " + data.direction,
-          "Signal time: " + data.signalTimestamp,
-          "Strategy: " + data.strategyVersion,
-          "EMA 12 / 26 / 100: " + [data.ema12, data.ema26, data.ema100].join(" / "),
-          "ATR 14: " + data.atr14,
-          "Reference entry: " + data.referenceEntryPrice,
-          "Stop loss: " + data.stopLoss,
-          "Take profit: " + data.takeProfit,
-          "Provider: " + data.providerId,
-          "Status: PAPER",
-          "━━━━━━━━━━━━━━━━",
-          "Observation only. No order has been placed."
-        ].join("\n");
-        const telegramURL = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
-        const telegramResponse = await fetch(telegramURL, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text: message })
+        if (data.direction === "BUY" ? !(Number(data.stopLoss)<Number(data.entry) && Number(data.target)>Number(data.entry)) :
+            !(Number(data.stopLoss)>Number(data.entry) && Number(data.target)<Number(data.entry))) {
+          return reply({ error: "R10 entry, stop and 1R target are inconsistent" }, 400);
+        }
+        if (!env.EXECUTION_QUEUE) return reply({ error: "R10 idempotency store is unavailable" }, 503);
+        const q = env.EXECUTION_QUEUE.get(env.EXECUTION_QUEUE.idFromName("global-synthetic-signal-queue"));
+        const reserve = await q.fetch("https://queue/r10-delivery-reserve", {
+          method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({signalId:data.signalId})
         });
-        const result = await telegramResponse.json();
-        if (!telegramResponse.ok || !result.ok) return reply({ error: "Telegram delivery failed" }, 502);
-        return reply({ success: true, message: "Volatility 10 paper alert delivered" });
+        const reservation = await reserve.json();
+        if (!reserve.ok || !reservation.success) return reply({ error:"R10 delivery reservation failed" },503);
+        if (reservation.duplicate || reservation.inFlight)
+          return reply({ success:true, duplicate:Boolean(reservation.duplicate), inFlight:Boolean(reservation.inFlight), message:"R10 Telegram delivery already reserved or sent" });
+        const setup = data.m5Setup || {};
+        const message = [
+          "VOLATILITY 10 — FORWARD TEST — NO TRADE EXECUTED",
+          "━━━━━━━━━━━━━━━━",
+          "Market: Volatility 10 Index (R_10)",
+          "Direction: " + data.direction,
+          "Signal ID: " + String(data.signalId).slice(0,100),
+          "Signal timestamp (UTC): " + data.signalTimestamp,
+          "Entry/reference price: " + data.entry,
+          "Stop loss: " + data.stopLoss,
+          "1R target: " + data.target,
+          "H4 structure: " + data.h4Structure,
+          "H1 structure: " + data.h1Structure,
+          "M5 setup: " + JSON.stringify(setup).slice(0,400),
+          "M5 ATR(14): " + data.atr14,
+          "ATR percentile: " + data.atrPercentile,
+          "UTC hour: " + data.utcHour,
+          "Strategy version: " + data.strategyVersion,
+          "Spread: " + (data.spread == null ? "unavailable" : data.spread),
+          "Quote age: " + (data.quoteAgeSeconds == null ? "unavailable" : data.quoteAgeSeconds + "s"),
+          "Entry delay: " + (data.entryDelaySeconds == null ? "unavailable" : data.entryDelaySeconds + "s"),
+          "━━━━━━━━━━━━━━━━",
+          "FORWARD TEST / PAPER ONLY. No broker order was placed, queued, authorized, or executed."
+        ].join("\n");
+        try {
+          const telegramURL = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+          const telegramResponse = await fetch(telegramURL, {
+            method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID,text:message})
+          });
+          const result = await telegramResponse.json();
+          if (!telegramResponse.ok || !result.ok) throw new Error("Telegram delivery failed");
+          const ack = await q.fetch("https://queue/r10-delivery-ack", {
+            method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({signalId:data.signalId})
+          });
+          if (!ack.ok) throw new Error("R10 delivery acknowledgement failed");
+          return reply({success:true,message:"R10 forward-test Telegram alert delivered"});
+        } catch (error) {
+          await q.fetch("https://queue/r10-delivery-release", {
+            method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({signalId:data.signalId})
+          });
+          return reply({error:"R10 Telegram delivery failed; reservation released for retry"},502);
+        }
       }
       let message;
 

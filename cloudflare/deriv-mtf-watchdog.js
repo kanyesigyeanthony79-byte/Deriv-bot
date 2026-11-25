@@ -4,7 +4,7 @@ const LEGACY_WORKFLOWS = [
   { id: 417087054, key: "market-monitor", name: "Deriv Market Monitor", minuteOffset: 4 }
 ];
 const R10_WORKFLOW_PATH = ".github/workflows/volatility10-paper.yml";
-const R10_PROVIDER_ID = "volatility10_ema_atr_slope20_v1";
+const R10_PROVIDER_ID = "volatility10_transition_lowvol_1r_forward_v1";
 
 function headers(env) {
   if (!env.GITHUB_TOKEN) throw new Error("GITHUB_TOKEN secret is missing");
@@ -74,7 +74,7 @@ async function dispatchR10(env, now) {
   try {
     await github(env, `/repos/${REPO}/actions/workflows/${workflow.id}/dispatches`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: BRANCH, inputs: { trigger_source: "cloudflare_r10_scheduler", provider_enabled: "true", emergency_kill_switch: "false", telegram_enabled: "true" } })
+      body: JSON.stringify({ ref: BRANCH, inputs: { trigger_source: "cloudflare_r10_scheduler", provider_enabled: "true", emergency_kill_switch: "false", telegram_enabled: "true", route_enabled: "true", legacy_rollback_enabled: env.R10_LEGACY_ROLLBACK_ENABLED === "true" ? "true" : "false" } })
     });
     return { status: "dispatch_accepted", workflowId: workflow.id, at: now.toISOString(),
       note: "GitHub runner startup is asynchronous; this is not a hard real-time M1 delivery guarantee." };

@@ -14,7 +14,7 @@ input bool   InpObserveOnly = true;    // Receive/validate signals without sendi
 input string InpBridgeUrl = "https://deriv-telegram-alerts.kanyesigyeanthony79-451.workers.dev";
 input string InpApiKey = "";           // Same value as GitHub SIGNAL_API_KEY
 input string InpClientId = "MT5-DEMO-01";
-input string InpSymbolMap = "R_10=Volatility 10 Index;R_25=Volatility 25 Index;R_50=Volatility 50 Index;R_75=Volatility 75 Index;JD100=Jump 100 Index;CRASH500=Crash 500 Index;BOOM500=Boom 500 Index";
+input string InpSymbolMap = "R_25=Volatility 25 Index;R_50=Volatility 50 Index;R_75=Volatility 75 Index;JD100=Jump 100 Index;CRASH500=Crash 500 Index;BOOM500=Boom 500 Index";
 
 input int    InpEntriesPerSignal = 3;
 input double InpRiskPerBasket = 15.0;  // Account currency must be USD
@@ -26,7 +26,8 @@ input int    InpHttpTimeoutMs = 7000;
 input int    InpDeviationPoints = 30;
 input ulong  InpMagicNumber = 20261117;
 
-string AllowedMarkets[] = {"R_10","R_25","R_50","R_75","JD100","CRASH500","BOOM500"};
+// R_10 is permanently excluded: frozen forward-test signals are Telegram-only.
+string AllowedMarkets[] = {"R_25","R_50","R_75","JD100","CRASH500","BOOM500"};
 double DayStartEquity = 0.0;
 string DayKey = "";
 datetime LastHealthCheck = 0;
