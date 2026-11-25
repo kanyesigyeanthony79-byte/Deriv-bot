@@ -51,7 +51,6 @@ test("valid research alerts remain explicitly shadow-only", () => {
   assert.equal(alert.live, false);
   assert.equal(alert.marketId, "1HZ75V");
   assert.equal(alert.tp1, 98.5);
-  assert.deepEqual({ ...{ ...({}) } }, {});
   assert.deepEqual({ decision: market.candidateDecisions[0].decision, regimeFilterApplied: market.candidateDecisions[0].regimeFilterApplied }, {
     decision: "accepted", regimeFilterApplied: false
   });
