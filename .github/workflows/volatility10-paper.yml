@@ -74,7 +74,9 @@ jobs:
         run: |
           git config user.name "Volatility 10 Paper Scanner"
           git config user.email "actions@users.noreply.github.com"
-          git add volatility10_transition_forward_state.json volatility10_transition_forward_journal.json volatility10_paper_state.json volatility10_paper_journal.json
+          for file in volatility10_transition_forward_state.json volatility10_transition_forward_journal.json volatility10_paper_state.json volatility10_paper_journal.json; do
+            if [ -f "$file" ]; then git add "$file"; fi
+          done
           if ! git diff --cached --quiet; then
             git commit -m "Update Volatility 10 paper journal"
             pushed=false
