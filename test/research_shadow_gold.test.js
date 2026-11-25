@@ -45,5 +45,7 @@ test("the Telegram research-shadow endpoint explicitly permits Gold and both 1-s
   assert.match(worker, /allowedMarkets\s*=\s*new Set\(\[[^\]]*"frxXAUUSD"/);
   assert.match(worker, /"1HZ10V"/);
   assert.match(worker, /"1HZ75V"/);
+  assert.match(worker, /"RB100"/);
+  assert.match(worker, /"RB200"/);
   assert.match(worker, /normalized\.includes\("1hz10v"\).*normalized\.includes\("volatility101s"/);
 });
