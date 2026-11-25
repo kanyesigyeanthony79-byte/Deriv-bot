@@ -488,7 +488,7 @@ export default {
           "Status: PAPER",
           "━━━━━━━━━━━━━━━━",
           "Legacy rollback notification only. No broker order was placed."
-        ].join("\\n");
+        ].join("\n");
         const telegramURL=`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
         const telegramResponse=await fetch(telegramURL,{method:"POST",headers:{"Content-Type":"application/json"},
           body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID,text:message})});
