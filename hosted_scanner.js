@@ -71,7 +71,7 @@ const unmonitoredExpired = cleanupUnmonitoredSignals({
   state, journal,
   nowEpoch: Math.floor(Date.now() / 1000),
   monitoredMarketIds: MARKETS.map(([id]) => id),
-  excludedMarketIds: ["R_10"],
+  excludedMarketIds: [],
   maxAgeSeconds: MAX_MONITOR_AGE,
   markExpired,
   log
