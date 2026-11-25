@@ -69,11 +69,21 @@ Cloudflare `deriv-mtf-watchdog` Worker:
 
 ## Rollback
 
-1. Set `R10_EMERGENCY_KILL_SWITCH=true` in GitHub Actions, the watchdog Worker and the Telegram Worker.
+**To stop all R_10 activity immediately:**
+
+1. Set `R10_EMERGENCY_KILL_SWITCH=true` in GitHub Actions, the `deriv-mtf-watchdog` Worker and the `deriv-telegram-alerts` Worker.
 2. Set `R10_PAPER_PROVIDER_ENABLED=false` in GitHub Actions and the watchdog; set `R10_PAPER_SCHEDULER_ENABLED=false` on the watchdog.
-3. Set `R10_PAPER_TELEGRAM_ENABLED=false` and `R10_PAPER_ROUTE_ENABLED=false`.
-4. For source rollback, revert the forward-test PR/commit. To restore the previous R_10 signal provider, use the previous provider implementation and its matching worker/schema revision. Do not restore R_10 to the MT5 allow-list; the broker exclusion is permanent for this forward test and must remain in place.
-5. Preserve the forward-test journal files for audit; do not overwrite or delete the record.
+3. Set `R10_PAPER_TELEGRAM_ENABLED=false`, `R10_PAPER_ROUTE_ENABLED=false` and `R10_LEGACY_ROLLBACK_ENABLED=false`.
+
+**To restore the previous R_10 EMA/ATR paper scanner (without restoring broker execution):**
+
+1. Keep the MT5 R_10 exclusion in place. Never restore R_10 to `MT5_ALLOWED_MARKETS`, `AllowedMarkets`, `InpSymbolMap`, or the direct bot market list.
+2. Set `R10_LEGACY_ROLLBACK_ENABLED=true` in GitHub Actions variables, the `deriv-mtf-watchdog` Worker and the `deriv-telegram-alerts` Worker.
+3. Set `R10_PAPER_PROVIDER_ENABLED=true`, `R10_PAPER_SCHEDULER_ENABLED=true`, `R10_PAPER_TELEGRAM_ENABLED=true`, and `R10_PAPER_ROUTE_ENABLED=true`; set `R10_EMERGENCY_KILL_SWITCH=false` in the respective GitHub/Cloudflare environments.
+4. The workflow selects the retained `volatility10_paper_scanner.js` and the Worker accepts only the previous paper schema while the rollback flag is active. The Worker still rejects R_10 from MT5 validation and the Durable Object order queue.
+5. To return to the frozen strategy, set `R10_LEGACY_ROLLBACK_ENABLED=false`; the next workflow dispatch selects `volatility10_transition_forward_scanner.js`.
+
+Do not revert the entire PR as a rollback action: that would also restore the former R_10 broker allow-list entries. Preserve the R_10 execution exclusions and forward-test journals. If source rollback is necessary, revert only the R_10 strategy/notification implementation while retaining the MT5, broker queue and direct-bot R_10 exclusions.
 
 ## Known limitations before production activation
 
