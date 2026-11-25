@@ -26,11 +26,13 @@ test("shadow collector excludes standard Volatility 10 and includes both distinc
 
 test("all seven added markets are configured in the original scanner and all three shadow strategies", () => {
   const scanner = fs.readFileSync(path.join(__dirname, "..", "hosted_scanner.js"), "utf8");
-  const marketBlock = scanner.match(/const MARKETS = \\[([\\s\\S]*?)\\n\\];/);
-  assert.ok(marketBlock, "original scanner market list must be discoverable");
+  const marketStart = scanner.indexOf("const MARKETS = [");
+  const marketEnd = scanner.indexOf("\n];", marketStart);
+  assert.ok(marketStart >= 0 && marketEnd > marketStart, "original scanner market list must be discoverable");
+  const marketBlock = scanner.slice(marketStart, marketEnd);
   const added = ["R_100", "JD25", "JD50", "RB100", "RB200", "BOOM100", "CRASH100"];
   for (const id of added) {
-    assert.ok(marketBlock[1].includes('"'+id+'"'), id + " must be scanned by original 15-minute system");
+    assert.ok(marketBlock.includes('"'+id+'"'), id + " must be scanned by original 15-minute system");
     assert.ok(collector.MARKETS.some(([marketId]) => marketId === id), id + " must be scanned by shadow collector");
     assert.ok(breakoutM1.RESEARCH_MARKETS.includes(id), id + " must be enabled in M1 retest strategy");
     assert.ok(emaPullback.MARKETS.includes(id), id + " must be enabled in EMA pullback strategy");
