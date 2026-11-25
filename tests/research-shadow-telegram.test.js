@@ -1,6 +1,11 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const breakoutM1 = require("../breakout_retest_shadow");
+const emaPullback = require("../m5_ema_pullback_shadow");
+const breakoutM5M15 = require("../breakout_retest_m5_m15_shadow");
 const collector = require("../research_shadow_telegram_collector");
 
 test("shadow collector excludes standard Volatility 10 and includes both distinct 1-second products", () => {
@@ -16,6 +21,21 @@ test("shadow collector excludes standard Volatility 10 and includes both distinc
   }
   assert.equal(collector.MARKETS.some(([id]) => id === "RB100"), true);
   assert.equal(collector.MARKETS.some(([id]) => id === "RB200"), true);
+});
+
+
+test("all seven added markets are configured in the original scanner and all three shadow strategies", () => {
+  const scanner = fs.readFileSync(path.join(__dirname, "..", "hosted_scanner.js"), "utf8");
+  const marketBlock = scanner.match(/const MARKETS = \\[([\\s\\S]*?)\\n\\];/);
+  assert.ok(marketBlock, "original scanner market list must be discoverable");
+  const added = ["R_100", "JD25", "JD50", "RB100", "RB200", "BOOM100", "CRASH100"];
+  for (const id of added) {
+    assert.ok(marketBlock[1].includes('"'+id+'"'), id + " must be scanned by original 15-minute system");
+    assert.ok(collector.MARKETS.some(([marketId]) => marketId === id), id + " must be scanned by shadow collector");
+    assert.ok(breakoutM1.RESEARCH_MARKETS.includes(id), id + " must be enabled in M1 retest strategy");
+    assert.ok(emaPullback.MARKETS.includes(id), id + " must be enabled in EMA pullback strategy");
+    assert.ok(breakoutM5M15.RESEARCH_MARKETS.includes(id), id + " must be enabled in M5/M15 strategy");
+  }
 });
 
 test("both 1-second volatility products can produce research-only Telegram alerts", () => {
