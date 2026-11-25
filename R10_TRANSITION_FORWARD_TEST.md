@@ -52,6 +52,7 @@ GitHub Actions variables:
 - `R10_EMERGENCY_KILL_SWITCH=false` — release the scanner emergency stop.
 - `R10_PAPER_TELEGRAM_ENABLED=true` — allow scanner-side delivery attempts.
 - `R10_PAPER_ROUTE_ENABLED=true` — allow the workflow to pass the route gate.
+- `R10_LEGACY_ROLLBACK_ENABLED=false` — retain the new strategy; set true only to select the previous R10 EMA/ATR paper scanner.
 
 GitHub Actions secrets (existing names; do not print values):
 - `TELEGRAM_WORKER_URL`
