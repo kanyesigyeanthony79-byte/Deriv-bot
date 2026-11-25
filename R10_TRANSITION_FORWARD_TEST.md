@@ -89,7 +89,7 @@ Do not revert the entire PR as a rollback action: that would also restore the fo
 ## Known limitations before production activation
 
 - The Deriv candle feed does not provide bid/ask spread or a tick-age quote in the current scanner contract. Those journal fields are explicitly null. Entry delay is recorded from Deriv server time. No independent material-displacement threshold was specified, so the scanner does not invent one.
-- The supplied M1 dataset has not yet been located in this repository; the historical smoke test remains blocked until its exact path/data file is supplied or found.
+- The Library/repository research archive found is `strategy_research_candles.json`, containing R_10 M15 candles only; it contains no M1 or M5 history. It cannot validly smoke-test this M1-derived M5/H1/H4 strategy. Historical smoke testing is therefore blocked pending an actual R_10 M1 OHLC dataset (at least 2,700 continuous candles for a basic warm-up check; longer history is preferable). No M15 data has been upsampled or treated as M1.
 - A 5,000-candle M1 fetch is the scanner's current history request. The latest continuous segment must contain at least 2,700 M1 candles to satisfy the 500-prior-ATR warm-up and higher-timeframe structure availability.
 - No forward-test start time is claimed until the deployed scanner initializes its live cursor and writes `startedAt`.
 - No deployment is performed by this branch. Cloudflare Worker and watchdog deployments require the existing authorized deployment process and confirmation of current bindings/secrets.
