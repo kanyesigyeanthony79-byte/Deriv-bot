@@ -22,7 +22,7 @@ function fixture() {
   };
 }
 
-test("expires over-24-hour signals only for markets no longer monitored", () => {
+test("expires over-one-hour signals only for markets no longer monitored", () => {
   const f = fixture();
   const logs = [];
   const changed = cleanupUnmonitoredSignals({
@@ -33,7 +33,7 @@ test("expires over-24-hour signals only for markets no longer monitored", () => 
   assert.equal(changed, 1);
   assert.deepEqual(f.state.activeSignals.map(s => s.signalId), ["JUMP-RECENT", "R10-OLD"]);
   assert.equal(f.journal.signals[0].finalOutcome, "EXPIRED");
-  assert.equal(f.journal.signals[0].statusReason, "expired_after_24_hours_market_not_monitored");
+  assert.equal(f.journal.signals[0].statusReason, "expired_after_one_hour_market_not_monitored");
   assert.equal(f.journal.signals[0].events.length, 0, "no candle means no fabricated price event");
   assert.equal(f.journal.signals[1].finalOutcome, null, "recent monitored signal remains open");
   assert.equal(f.journal.signals[2].finalOutcome, null, "R10 lifecycle remains with exclusive provider");
