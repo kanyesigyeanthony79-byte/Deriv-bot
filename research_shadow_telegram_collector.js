@@ -201,7 +201,7 @@ async function main(env = process.env, options = {}) {
       ...newSignals(priorB.signals, nextB.signals).map(s => toAlert(s, "M15_M5_EMA_PULLBACK", output.markets[s.marketId])),
       ...newSignals(priorC.signals, nextC.signals).map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM", output.markets[s.marketId])),
       ...nextExpansion.signals
-        .filter(s => s.status === "PENDING" && !priorExpansion.signals?.some(p => p.signalId === s.signalId && Number.isFinite(p.entryEpoch)))
+        .filter(s => Number.isFinite(s.entryEpoch) && !priorExpansion.signals?.some(p => p.signalId === s.signalId && Number.isFinite(p.entryEpoch)))
         .map(s => buildExpansionAlert(s, now))
     ].filter(Boolean);
     // Failed or interrupted deliveries are retried by stable ID; old journal entries
