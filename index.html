@@ -49,12 +49,45 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   <div class="row" style="margin:0 0 10px"><a class="btn" href="./signal-collection.html">100-Signal Collection →</a></div>
 
   <nav class="system-tabs" aria-label="Signal system dashboard">
-    <button class="btn system-tab" type="button" data-system-tab="promoted" aria-pressed="true">Promoted System</button>
+    <button class="btn system-tab" type="button" data-system-tab="livemonitor" aria-pressed="true">Live Monitor</button>
+    <button class="btn system-tab" type="button" data-system-tab="promoted" aria-pressed="false">Promoted System</button>
     <button class="btn system-tab" type="button" data-system-tab="r10" aria-pressed="false">Volatility 10 · R10</button>
     <button class="btn system-tab" type="button" data-system-tab="original" aria-pressed="false">Original System</button>
     <button class="btn system-tab" type="button" data-system-tab="research" aria-pressed="false">Research &amp; Forward Shadow</button>
     <button class="btn system-tab" type="button" data-system-tab="newmarkets" aria-pressed="false">New Markets</button>
   </nav>
+
+  <section id="live-monitor" class="hero system-view" data-system-view="livemonitor" style="margin-top:12px">
+    <div class="top"><h2 style="margin:0">Live Monitor · all systems</h2><span class="pill">SIGNAL-ONLY MONITOR</span></div>
+    <p style="margin-top:8px">One place to see scanner health, market coverage, current delivered signals, signal quality and items needing review. “Live” means a fresh unresolved alert, not a live trade or streaming price feed.</p>
+    <div class="grid" id="liveMonitorMetrics">
+      <div class="card"><div class="detail">ORIGINAL SCANNER</div><div class="signal">Loading</div></div>
+      <div class="card"><div class="detail">MARKETS SCANNED</div><div class="signal">—</div></div>
+      <div class="card"><div class="detail">ACTIVE SIGNALS</div><div class="signal">—</div></div>
+      <div class="card"><div class="detail">NEEDS REVIEW</div><div class="signal">—</div></div>
+      <div class="card"><div class="detail">VALID · 65–79</div><div class="signal">—</div></div>
+      <div class="card"><div class="detail">STRONG · 80–100</div><div class="signal">—</div></div>
+    </div>
+    <div class="row" style="align-items:center"><button class="btn primary smallbtn" id="liveMonitorRefresh" type="button">Refresh all monitor data</button><span class="muted" id="liveMonitorUpdated" aria-live="polite">Loading scanner and signal records…</span></div>
+    <h3 style="margin-top:16px">Signal views</h3>
+    <p class="muted">Select a category to inspect the matching signal records. Scores are the scanner's recorded quality score, not a probability of winning.</p>
+    <nav class="signal-filter-tabs" aria-label="Live monitor signal filters">
+      <button class="btn signal-filter" type="button" data-live-filter="active" aria-pressed="true">LIVE <span id="liveCount">—</span></button>
+      <button class="btn signal-filter" type="button" data-live-filter="valid" aria-pressed="false">VALID <span id="liveValidCount">—</span></button>
+      <button class="btn signal-filter" type="button" data-live-filter="strong" aria-pressed="false">STRONG <span id="liveStrongCount">—</span></button>
+      <button class="btn signal-filter" type="button" data-live-filter="review" aria-pressed="false">NEEDS REVIEW <span id="liveReviewCount">—</span></button>
+    </nav>
+    <div class="signal-list" id="liveMonitorSignals" aria-live="polite"><div class="signal-empty">Loading signal records…</div></div>
+    <h3 style="margin-top:18px">Original M15 · markets being scanned</h3>
+    <p class="muted">Scanner heartbeat evidence, including skipped markets and last update. A market is not labelled scanning merely because it appears in configuration.</p>
+    <div class="card mtf-table-wrap"><table><thead><tr><th>Market</th><th>Scanner status</th><th>Candles</th><th>Signal found</th><th>Last checked</th></tr></thead><tbody id="liveMonitorMarkets"><tr><td colspan="5" class="muted">Waiting for heartbeat…</td></tr></tbody></table></div>
+    <h3 style="margin-top:18px">Volatility 10 · independent M1 paper scanner</h3>
+    <div class="grid" id="liveMonitorR10"><div class="card"><div class="detail">R10 SCANNER</div><div class="signal">Loading</div></div></div>
+    <h3 style="margin-top:18px">Research &amp; expanded markets · shadow collection</h3>
+    <p class="muted">Research-only collection status. These markets are not part of the Original M15 production route unless separately promoted and validated.</p>
+    <div class="card mtf-table-wrap"><table><thead><tr><th>Market</th><th>Collection status</th><th>M1</th><th>M5</th><th>M15</th><th>Last snapshot</th></tr></thead><tbody id="liveMonitorResearchMarkets"><tr><td colspan="6" class="muted">Waiting for research snapshot…</td></tr></tbody></table></div>
+    <div class="notice">Signal grades: STRONG = 80–100; VALID = 65–79; WATCH = below 65. The Original system only lists delivered alerts as active. R10 records are paper-only. Research/shadow collection is shown separately. Scanner health, alert delivery, signal quality and trade execution are different states; this dashboard does not place trades.</div>
+  </section>
 
   <section id="promoted-system" class="hero system-view" data-system-view="promoted" style="margin-top:12px">
     <div class="top"><h2 style="margin:0">Promoted system · retired</h2><span class="pill">RETIRED · NOT ACTIVE</span></div>
@@ -314,7 +347,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   }
 
   systemTabs.forEach(btn=>btn.addEventListener("click",()=>showSystem(btn.dataset.systemTab)));
-  showSystem("promoted");
+  showSystem("livemonitor");
   $("promotedRefresh").addEventListener("click",refreshPromoted);
   refreshPromoted();
   document.addEventListener("click",event=>{
@@ -812,6 +845,95 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     }
     const button=$("newMarketsRefresh");
     if(button){button.addEventListener("click",refreshNewMarkets);refreshNewMarkets();setInterval(refreshNewMarkets,60000);}
+  })();
+
+
+  (() => {
+    const $=id=>document.getElementById(id);
+    const esc=v=>String(v??"—").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    const fmt=v=>Number.isFinite(Number(v))?Number(v).toFixed(2):"—";
+    const dt=v=>{if(!v)return "—";const d=new Date(v);return Number.isNaN(d.getTime())?"—":d.toLocaleString();};
+    const ageSeconds=v=>{const n=Date.parse(v||"");return Number.isFinite(n)?Math.max(0,(Date.now()-n)/1000):Infinity;};
+    const coreMarkets=["Volatility 10 Index","Volatility 25 Index","Volatility 50 Index","Volatility 75 Index","Jump 100 Index","Crash 500 Index","Boom 500 Index","Gold (XAUUSD)"];
+    let currentFilter="active", originalSignals=[];
+    function terminal(s){return Boolean(s.finalOutcome)||((s.events||[]).some(e=>["TP2_HIT","SL_HIT","EXPIRED","AMBIGUOUS"].includes(e.outcome)));}
+    function epoch(s){const n=Date.parse(s.createdAt||"");return Number.isFinite(n)?n/1000:Number(s.candleEpoch||0);}
+    function renderSignalCards(){
+      const now=Date.now()/1000;
+      const active=originalSignals.filter(s=>s.status==="sent"&&!terminal(s)&&now-epoch(s)>=-60&&now-epoch(s)<3600);
+      const review=originalSignals.filter(s=>s.status==="sent"&&!terminal(s)&&now-epoch(s)>=3600);
+      const valid=active.filter(s=>Number(s.score)>=65&&Number(s.score)<80);
+      const strong=active.filter(s=>Number(s.score)>=80);
+      $("liveCount").textContent=active.length;$("liveValidCount").textContent=valid.length;$("liveStrongCount").textContent=strong.length;$("liveReviewCount").textContent=review.length;
+      const list=currentFilter==="review"?review:currentFilter==="valid"?valid:currentFilter==="strong"?strong:active;
+      $("liveMonitorSignals").innerHTML=list.length?list.slice().sort((a,b)=>epoch(b)-epoch(a)).map(s=>{
+        const score=Number(s.score),grade=score>=80?"STRONG":score>=65?"VALID":"WATCH",age=Math.floor(Math.max(0,now-epoch(s)));
+        const cls=s.direction==="BUY"?"buy":"sell",width=Math.max(0,Math.min(100,Number.isFinite(score)?score:0));
+        const reviewLink="./original-signal-review.html?signalId="+encodeURIComponent(s.signalId||"");
+        return '<article class="signal-item"><div class="signal-item-head"><span>'+esc(s.market)+'</span><span class="mtf-tag">'+(currentFilter==="review"?"NEEDS REVIEW":grade)+'</span></div><div class="signal '+cls+'">'+esc(s.direction)+'</div><div class="detail">Quality score: <b>'+esc(Number.isFinite(score)?score:"Not recorded")+'/100 · '+grade+'</b><br>Entry reference: '+fmt(s.entry)+'<br>Age: '+Math.floor(age/60)+'m '+(age%60)+'s<br>Alert: DELIVERED · UNRESOLVED<br>Created: '+esc(dt(s.createdAt))+'</div><div style="height:7px;background:#304438;border-radius:8px;overflow:hidden;margin:9px 0"><div style="height:7px;width:'+width+'%;background:'+(score>=80?"#55c58b":score>=65?"#d5a83d":"#9a9a9a")+'"></div></div><a class="btn smallbtn" href="'+reviewLink+'">'+(currentFilter==="review"?"OPEN REVIEW":"OPEN SIGNAL STATUS")+'</a></article>';
+      }).join(""):'<div class="signal-empty">No signals in this view right now. Counts are based on the latest Original M15 journal.</div>';
+    }
+    async function load(){
+      $("liveMonitorUpdated").textContent="Refreshing heartbeat, signal journal, R10 and research snapshot…";
+      const results=await Promise.allSettled([
+        fetch("./scanner_heartbeat.json?v="+Date.now(),{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("Heartbeat HTTP "+r.status);return r.json();}),
+        fetch("./trade_journal.json?v="+Date.now(),{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("Journal HTTP "+r.status);return r.json();}),
+        fetch("./volatility10_paper_journal.json?v="+Date.now(),{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("R10 journal HTTP "+r.status);return r.json();}),
+        fetch("./research_shadow_collection.json?v="+Date.now(),{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("Research HTTP "+r.status);return r.json();})
+      ]);
+      const hb=results[0].status==="fulfilled"?results[0].value:null;
+      const journal=results[1].status==="fulfilled"?results[1].value:null;
+      const r10=results[2].status==="fulfilled"?results[2].value:null;
+      const research=results[3].status==="fulfilled"?results[3].value:null;
+      originalSignals=journal&&Array.isArray(journal.signals)?journal.signals.filter(s=>Number(s.candleEpoch||0)>=1794822510):[];
+      renderSignalCards();
+      const hbAge=hb?ageSeconds(hb.completedAt||hb.startedAt):Infinity;
+      const hbFresh=hb&&hbAge<=900&&hb.status==="success";
+      const marketResults=hb&&Array.isArray(hb.marketResults)?hb.marketResults:[];
+      const scanned=marketResults.filter(m=>m.status==="success").length;
+      const failed=marketResults.filter(m=>m.status==="error"||m.status==="failed").length;
+      const now=Date.now()/1000;
+      const active=originalSignals.filter(s=>s.status==="sent"&&!terminal(s)&&now-epoch(s)>=-60&&now-epoch(s)<3600).length;
+      const review=originalSignals.filter(s=>s.status==="sent"&&!terminal(s)&&now-epoch(s)>=3600).length;
+      const valid=originalSignals.filter(s=>s.status==="sent"&&!terminal(s)&&now-epoch(s)>=-60&&now-epoch(s)<3600&&Number(s.score)>=65&&Number(s.score)<80).length;
+      const strong=originalSignals.filter(s=>s.status==="sent"&&!terminal(s)&&now-epoch(s)>=-60&&now-epoch(s)<3600&&Number(s.score)>=80).length;
+      $("liveMonitorMetrics").innerHTML=[
+        ["ORIGINAL SCANNER",hbFresh?"RUNNING":hb?"STALE / CHECK":"UNAVAILABLE"],
+        ["MARKETS SCANNED",scanned+"/"+(hb?.marketsExpected??8)],
+        ["ACTIVE SIGNALS",active],["NEEDS REVIEW",review],["VALID · 65–79",valid],["STRONG · 80–100",strong]
+      ].map(([label,value],i)=>'<div class="card"><div class="detail">'+esc(label)+'</div><div class="signal '+(i===0?(hbFresh?"buy":"none"):"")+'">'+esc(value)+'</div></div>').join("");
+      $("liveMonitorMarkets").innerHTML=marketResults.length?marketResults.map(m=>{
+        const skipped=m.status==="skipped",ok=m.status==="success",label=skipped?"SKIPPED · "+(m.reason||"GATE"):ok?"SCANNED":String(m.status||"UNKNOWN").toUpperCase();
+        return '<tr><td>'+esc(m.market)+'</td><td class="'+(ok?"buy":"none")+'">'+esc(label)+'</td><td>'+esc(m.candles??"—")+'</td><td>'+esc(m.signalFound===true?"YES":m.signalFound===false?"NO":"—")+'</td><td>'+esc(dt(m.updatedAt||hb.completedAt))+'</td></tr>';
+      }).join(""):'<tr><td colspan="5" class="muted">'+esc(results[0].status==="rejected"?results[0].reason.message:"No market-level heartbeat records")+'</td></tr>';
+      const r10Health=r10&&Array.isArray(r10.health)&&r10.health.length?r10.health[r10.health.length-1]:null;
+      const r10Age=r10Health?ageSeconds(r10Health.at):Infinity,r10Fresh=r10Health&&r10Age<=180&&r10Health.status==="healthy";
+      $("liveMonitorR10").innerHTML=[
+        ["SCANNER STATUS",r10Fresh?"RUNNING":r10Health?"STALE / CHECK":"NO HEALTH RECORD"],
+        ["PAPER SIGNALS",r10?.signals?.length??"—"],
+        ["LAST EVALUATION",r10Health?dt(r10Health.lastEvaluationAt):"—"],
+        ["LAST DECISION",r10Health?.lastEvaluationReason||"—"],
+        ["ACTIVE PAPER POSITION",r10Health?.activePosition?"YES":"NO / NOT REPORTED"]
+      ].map(([label,value])=>'<div class="card"><div class="detail">'+esc(label)+'</div><div class="signal">'+esc(value)+'</div></div>').join("");
+      const rm=research&&research.markets?research.markets:{},rStamp=research?dt(research.generatedAt):"—";
+      const names={"1HZ10V":"Volatility 10 (1s)","1HZ75V":"Volatility 75 (1s)","R_100":"Volatility 100","JD75":"Jump 75","JD25":"Jump 25","JD50":"Jump 50","CRASH100":"Crash 100","BOOM100":"Boom 100","R_25":"Volatility 25","R_50":"Volatility 50","R_75":"Volatility 75","JD100":"Jump 100","CRASH500":"Crash 500","BOOM500":"Boom 500","frxXAUUSD":"Gold (XAUUSD)"};
+      $("liveMonitorResearchMarkets").innerHTML=research?Object.keys(names).map(id=>{
+        const m=rm[id],frames=m?.timeframes||{},errs=Array.isArray(m?.errors)?m.errors.length:0;
+        const state=!m?"NOT IN SNAPSHOT":research.cycleStatus==="failed"?"LAST CYCLE FAILED":errs?"PARTIAL / ERROR":"COLLECTED";
+        const count=tf=>Array.isArray(frames[tf])?frames[tf].length:"—";
+        return '<tr><td>'+esc(names[id])+' ('+id+')</td><td class="'+(m&&!errs&&research.cycleStatus!=="failed"?"buy":"none")+'">'+state+'</td><td>'+count("M1")+'</td><td>'+count("M5")+'</td><td>'+count("M15")+'</td><td>'+esc(rStamp)+'</td></tr>';
+      }).join(""):'<tr><td colspan="6" class="muted">Research snapshot unavailable. Collection status is not assumed.</td></tr>';
+      const problems=results.filter(x=>x.status==="rejected").length;
+      $("liveMonitorUpdated").textContent="Updated "+new Date().toLocaleTimeString()+" · "+(hb?"Original heartbeat "+dt(hb.completedAt):"Original heartbeat unavailable")+" · "+problems+" data source(s) unavailable"+(failed?" · "+failed+" original market errors":"");
+    }
+    document.querySelectorAll("[data-live-filter]").forEach(btn=>btn.addEventListener("click",()=>{
+      currentFilter=btn.dataset.liveFilter;
+      document.querySelectorAll("[data-live-filter]").forEach(b=>b.setAttribute("aria-pressed",String(b===btn)));
+      renderSignalCards();
+    }));
+    $("liveMonitorRefresh").addEventListener("click",()=>load().catch(e=>$("liveMonitorUpdated").textContent="Refresh failed: "+e.message));
+    load().catch(e=>$("liveMonitorUpdated").textContent="Monitor refresh failed: "+e.message);
+    setInterval(()=>load().catch(e=>$("liveMonitorUpdated").textContent="Monitor refresh failed: "+e.message),60000);
   })();
 
 </script>
