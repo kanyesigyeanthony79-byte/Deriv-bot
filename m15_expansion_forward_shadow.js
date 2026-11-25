@@ -16,6 +16,18 @@ function validCandle(c) {
   return c && [c.epoch, c.open, c.high, c.low, c.close].every(Number.isFinite) &&
     c.high >= Math.max(c.open, c.close) && c.low <= Math.min(c.open, c.close);
 }
+function calculateAtr(candles, period=14) {
+  if (!Array.isArray(candles) || candles.length <= period) return 0;
+  const ranges = [];
+  for (let i=1;i<candles.length;i++) {
+    const current=candles[i], previous=candles[i-1];
+    ranges.push(Math.max(current.high-current.low,
+      Math.abs(current.high-previous.close), Math.abs(current.low-previous.close)));
+  }
+  let value=ranges.slice(0,period).reduce((sum,item)=>sum+item,0)/period;
+  for(let i=period;i<ranges.length;i++) value=(value*(period-1)+ranges[i])/period;
+  return value;
+}
 function summarize(trades) {
   const resolved = trades.filter(t => ["TP2", "SL", "SL_AFTER_TP1"].includes(t.status));
   const wins = resolved.filter(t => t.status === "TP2").length;
@@ -116,7 +128,8 @@ function updateMarket(journal, marketId, market, nowEpoch) {
         state.cooldownSuppressed += 1;
         continue;
       }
-      const atr = Number(result.metrics?.atr);
+      // Match the historical expansion replay: ATR(14) is calculated from setup history.
+      const atr = calculateAtr(history, 14);
       if (!(atr > 0)) continue;
       const signalId = "M15EXP-" + marketId + "-" + candle.epoch;
       if (byId.has(signalId)) continue;
@@ -247,5 +260,5 @@ function buildExpansionAlert(signal, nowEpoch=Math.floor(Date.now()/1000)) {
 }
 module.exports = {
   MARKET_IDS, TIMEFRAME_SECONDS, STOP_ATR, TP1_R, TP2_R, HORIZON_CANDLES,
-  summarize, updateM15ExpansionForwardShadowJournal, buildExpansionAlert
+  calculateAtr, summarize, updateM15ExpansionForwardShadowJournal, buildExpansionAlert
 };
