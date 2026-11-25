@@ -11,6 +11,12 @@ function evaluateSignalCandle(signal, candle) {
   const slTouched = buy ? candle.low <= signal.stopLoss : candle.high >= signal.stopLoss;
 
   if (!signal.entryTriggered) {
+    // A candle opening beyond a target/stop is the observable gap case:
+    // that level was already passed before any intrabar entry touch.
+    const tp1AlreadyPassedAtOpen = buy ? candle.open >= signal.tp1 : candle.open <= signal.tp1;
+    const stopAlreadyPassedAtOpen = buy ? candle.open <= signal.stopLoss : candle.open >= signal.stopLoss;
+    if (tp1AlreadyPassedAtOpen) return { action: "EXPIRED_TP1_BEFORE_ENTRY" };
+    if (stopAlreadyPassedAtOpen) return { action: "EXPIRED_SL_BEFORE_ENTRY" };
     if (!entryTouched) {
       if (tp1Touched) return { action: "EXPIRED_TP1_BEFORE_ENTRY" };
       if (slTouched) return { action: "EXPIRED_SL_BEFORE_ENTRY" };
