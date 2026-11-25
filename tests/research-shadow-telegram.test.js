@@ -1,20 +1,43 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const breakoutM1 = require("../breakout_retest_shadow");
+const emaPullback = require("../m5_ema_pullback_shadow");
+const breakoutM5M15 = require("../breakout_retest_m5_m15_shadow");
 const collector = require("../research_shadow_telegram_collector");
 
 test("shadow collector excludes standard Volatility 10 and includes both distinct 1-second products", () => {
   assert.equal(collector.MARKETS.some(([id]) => id === "R_10"), false);
   assert.deepEqual(collector.MARKETS.map(([id]) => id), [
     "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "frxXAUUSD",
-    "1HZ10V", "1HZ75V", "R_100", "JD25", "JD50", "CRASH100", "BOOM100"
+    "1HZ10V", "1HZ75V", "R_100", "JD25", "JD50", "CRASH100", "BOOM100", "RB100", "RB200"
   ]);
   assert.equal(collector.MARKETS.find(([id]) => id === "1HZ10V")[1], "Volatility 10 (1s) Index");
   assert.equal(collector.MARKETS.find(([id]) => id === "1HZ75V")[1], "Volatility 75 (1s) Index");
   for (const id of ["R_100", "JD25", "JD50", "CRASH100", "BOOM100"]) {
     assert.ok(collector.MARKETS.some(([marketId]) => marketId === id), id + " must be in research scanning");
   }
-  assert.equal(collector.MARKETS.some(([id]) => id === "RB100" || id === "RB200"), false);
+  assert.equal(collector.MARKETS.some(([id]) => id === "RB100"), true);
+  assert.equal(collector.MARKETS.some(([id]) => id === "RB200"), true);
+});
+
+
+test("all seven added markets are configured in the original scanner and all three shadow strategies", () => {
+  const scanner = fs.readFileSync(path.join(__dirname, "..", "hosted_scanner.js"), "utf8");
+  const marketStart = scanner.indexOf("const MARKETS = [");
+  const marketEnd = scanner.indexOf("\n];", marketStart);
+  assert.ok(marketStart >= 0 && marketEnd > marketStart, "original scanner market list must be discoverable");
+  const marketBlock = scanner.slice(marketStart, marketEnd);
+  const added = ["R_100", "JD25", "JD50", "RB100", "RB200", "BOOM100", "CRASH100"];
+  for (const id of added) {
+    assert.ok(marketBlock.includes('"'+id+'"'), id + " must be scanned by original 15-minute system");
+    assert.ok(collector.MARKETS.some(([marketId]) => marketId === id), id + " must be scanned by shadow collector");
+    assert.ok(breakoutM1.RESEARCH_MARKETS.includes(id), id + " must be enabled in M1 retest strategy");
+    assert.ok(emaPullback.MARKETS.includes(id), id + " must be enabled in EMA pullback strategy");
+    assert.ok(breakoutM5M15.RESEARCH_MARKETS.includes(id), id + " must be enabled in M5/M15 strategy");
+  }
 });
 
 test("both 1-second volatility products can produce research-only Telegram alerts", () => {
@@ -66,11 +89,12 @@ test("new-signal detection is based on previously unseen stable IDs", () => {
   assert.deepEqual(collector.newSignals(previous, current).map(s => s.signalId), ["new"]);
 });
 
-test("the five expansion markets can generate explicitly research-only Telegram alerts", () => {
+test("all seven expansion markets can generate explicitly research-only Telegram alerts", () => {
   for (const [marketId, market] of [
     ["R_100", "Volatility 100 Index"], ["JD25", "Jump 25 Index"],
     ["JD50", "Jump 50 Index"], ["CRASH100", "Crash 100 Index"],
-    ["BOOM100", "Boom 100 Index"]
+    ["BOOM100", "Boom 100 Index"], ["RB100", "Range Break 100 Index"],
+    ["RB200", "Range Break 200 Index"]
   ]) {
     const alert = collector.toAlert({
       signalId: marketId + "-example-123", marketId, market,

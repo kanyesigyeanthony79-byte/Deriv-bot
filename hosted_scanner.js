@@ -25,7 +25,14 @@ const MARKETS = [
   ["JD100", "Jump 100 Index"],
   ["CRASH500", "Crash 500 Index"],
   ["BOOM500", "Boom 500 Index"],
-  ["frxXAUUSD", "Gold (XAUUSD)"]
+  ["frxXAUUSD", "Gold (XAUUSD)"],
+  ["R_100", "Volatility 100 Index"],
+  ["JD25", "Jump 25 Index"],
+  ["JD50", "Jump 50 Index"],
+  ["RB100", "Range Break 100 Index"],
+  ["RB200", "Range Break 200 Index"],
+  ["BOOM100", "Boom 100 Index"],
+  ["CRASH100", "Crash 100 Index"]
 ];
 const STATE_FILE = path.join(DATA_DIR, "signal_state.json");
 const HEARTBEAT_FILE = path.join(DATA_DIR, "scanner_heartbeat.json");

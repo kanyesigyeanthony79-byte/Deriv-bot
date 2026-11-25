@@ -23,7 +23,9 @@ const MARKETS = Object.freeze([
   ["JD25", "Jump 25 Index"],
   ["JD50", "Jump 50 Index"],
   ["CRASH100", "Crash 100 Index"],
-  ["BOOM100", "Boom 100 Index"]
+  ["BOOM100", "Boom 100 Index"],
+  ["RB100", "Range Break 100 Index"],
+  ["RB200", "Range Break 200 Index"]
 ]);
 const FRAMES = [["M1", 60, 300], ["M5", 300, 120], ["M15", 900, 120]];
 const JOURNALS = {

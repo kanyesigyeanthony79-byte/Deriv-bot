@@ -3,7 +3,7 @@
 // Isolated from production signals, Telegram delivery and all MT5 execution.
 
 const RESEARCH_MARKETS = Object.freeze([
-  "R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "1HZ10V", "1HZ75V", "frxXAUUSD", "R_100", "JD25", "JD50", "CRASH100", "BOOM100"
+  "R_10", "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "1HZ10V", "1HZ75V", "frxXAUUSD", "R_100", "JD25", "JD50", "CRASH100", "BOOM100", "RB100", "RB200"
 ]);
 const M5_SECONDS = 300;
 const M15_SECONDS = 900;
