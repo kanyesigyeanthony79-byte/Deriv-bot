@@ -150,6 +150,12 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <div class="card mtf-table-wrap"><table><thead><tr><th>Strategy</th><th>Records</th><th>Target</th><th>Stop</th><th>Time exit</th><th>Pending</th><th>Ambiguous</th><th>Win rate*</th><th>Net R</th><th>Average R</th></tr></thead><tbody id="researchAnalyticsStrategies"><tr><td colspan="10" class="muted">Loading strategy summaries…</td></tr></tbody></table></div>
     <h3 style="margin-top:14px">Market comparison · all active research markets</h3>
     <div class="card mtf-table-wrap"><table><thead><tr><th>Market</th><th>Records</th><th>Target</th><th>Stop</th><th>Time exit</th><th>Win rate*</th><th>Net R</th><th>Data quality</th></tr></thead><tbody id="researchAnalyticsMarkets"><tr><td colspan="8" class="muted">Loading market summaries…</td></tr></tbody></table></div>
+    <h3 style="margin-top:14px">Daily research history · select a date to inspect its records</h3>
+    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><label for="researchHistoryDate" class="muted">Signal date</label><select id="researchHistoryDate" class="btn smallbtn"><option value="">Loading dates…</option></select><span class="muted" id="researchHistoryStatus">Waiting for journal data…</span></div>
+    <div class="card mtf-table-wrap"><table><thead><tr><th>Date (UTC)</th><th>Strategy</th><th>Records</th><th>Targets</th><th>Stops</th><th>Time exits</th><th>Net R</th></tr></thead><tbody id="researchDailyHistory"><tr><td colspan="7" class="muted">Loading daily history…</td></tr></tbody></table></div>
+    <h3 style="margin-top:14px">Selected-day signal audit</h3>
+    <p class="muted">One row per strategy signal. Telegram status is shown only when the delivery journal contains a matching signal ID; otherwise it is marked not recorded.</p>
+    <div class="card mtf-table-wrap"><table><thead><tr><th>Created (UTC)</th><th>Market</th><th>Strategy</th><th>Direction</th><th>Entry</th><th>Outcome</th><th>Realized R</th><th>Telegram</th><th>Signal ID</th></tr></thead><tbody id="researchSignalAudit"><tr><td colspan="9" class="muted">Select a date to inspect signals.</td></tr></tbody></table></div>
     <h3 style="margin-top:14px">Research Telegram delivery audit</h3>
     <div class="grid" id="researchAnalyticsDelivery"><div class="card"><div class="detail">DELIVERY RECORDS</div><div class="signal">—</div></div></div>
     <div class="notice">*Win rate = target-before-stop ÷ (target-before-stop + stop-before-target); time exits are excluded. Net R and average R are calculated from each individual signal record with a numeric realizedR. No delivery success is inferred from signal generation. Telegram delivery currently has no confirmed records in its dedicated delivery journal. Research/shadow results are not live P&amp;L and exclude broker execution costs.</div>
@@ -605,6 +611,34 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     ["M15 trend + M5 EMA pullback","./m5_ema_pullback_shadow_journal.json"],
     ["Breakout + M5 retest + M15 confirmation","./breakout_retest_m5_m15_shadow_journal.json"]
   ];
+  let researchAuditSignals=[];
+  let researchDeliveryById={};
+  function raDate(signal){const raw=signal.createdAt||signal.signalTimestamp||"";return /^\\d{4}-\\d{2}-\\d{2}/.test(raw)?raw.slice(0,10):"Unknown date";}
+  function raOutcome(signal){const k=raBucket(signal.status);return k==="wins"?"TARGET":k==="losses"?"STOP":k==="time"?"TIME EXIT":k.toUpperCase();}
+  function renderResearchHistory(){
+    const picker=$("researchHistoryDate"), daily=$("researchDailyHistory"), audit=$("researchSignalAudit"), info=$("researchHistoryStatus");
+    if(!picker||!daily||!audit)return;
+    const dates=[...new Set(researchAuditSignals.map(raDate))].filter(x=>x!=="Unknown date").sort().reverse();
+    const previous=picker.value;
+    picker.innerHTML=dates.map(d=>'<option value="'+esc(d)+'">'+esc(d)+'</option>').join("")||'<option value="">No dated records</option>';
+    picker.value=dates.includes(previous)?previous:(dates[0]||"");
+    const byDay={};
+    for(const x of researchAuditSignals){
+      const d=raDate(x);if(d==="Unknown date")continue;
+      const k=d+"|"+(x.strategyLabel||x.strategyId||"Unknown strategy");
+      const a=byDay[k]||(byDay[k]={date:d,strategy:x.strategyLabel||x.strategyId||"Unknown strategy",records:0,wins:0,losses:0,time:0,pending:0,ambiguous:0,other:0,netR:0,realized:0});
+      a.records++;a[raBucket(x.status)]++;
+      if(Number.isFinite(x.realizedR)){a.netR+=x.realizedR;a.realized++;}
+    }
+    daily.innerHTML=Object.values(byDay).sort((a,b)=>b.date.localeCompare(a.date)||a.strategy.localeCompare(b.strategy)).map(a=>'<tr><td>'+esc(a.date)+'</td><td>'+esc(a.strategy)+'</td><td>'+a.records+'</td><td>'+a.wins+'</td><td>'+a.losses+'</td><td>'+a.time+'</td><td>'+raFmt(a.netR)+'</td></tr>').join("")||'<tr><td colspan="7" class="muted">No dated records available.</td></tr>';
+    const chosen=picker.value, rows=researchAuditSignals.filter(x=>raDate(x)===chosen).sort((a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
+    audit.innerHTML=rows.slice(0,200).map(x=>{
+      const d=researchDeliveryById[x.signalId];
+      const delivery=d?String(d.status||d.deliveryStatus||d.telegram?.status||"RECORDED").toUpperCase():"NOT RECORDED";
+      return '<tr><td>'+esc((x.createdAt||"").replace("T"," ").replace("Z",""))+'</td><td>'+esc(x.market||x.marketId||"—")+'</td><td>'+esc(x.strategyLabel||x.strategyId||"—")+'</td><td>'+esc(x.direction||"—")+'</td><td>'+esc(x.entry??"—")+'</td><td>'+esc(raOutcome(x))+'</td><td>'+raFmt(x.realizedR)+'</td><td>'+esc(delivery)+'</td><td>'+esc(x.signalId||"—")+'</td></tr>';
+    }).join("")||'<tr><td colspan="9" class="muted">No signals recorded for this date.</td></tr>';
+    if(info)info.textContent=chosen?rows.length+" signal records on "+chosen+" · showing up to 200":"No dated signal records";
+  }
   const raFmt=v=>Number.isFinite(v)?(v>=0?"+":"")+v.toFixed(2)+"R":"—";
   const raRate=(w,l)=>w+l?((w/(w+l))*100).toFixed(1)+"%":"—";
   function raBucket(status){
@@ -637,6 +671,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       return;
     }
     const strategyRows=[],marketMap={};
+    researchAuditSignals=loaded.filter(x=>x.journal).flatMap(x=>x.journal.signals.filter(signal=>signal.marketId!=="R_10").map(signal=>({...signal,strategyLabel:signal.strategyLabel||x.label})));
     const total={records:0,wins:0,losses:0,time:0,pending:0,ambiguous:0,other:0,netR:0,realized:0};
     for(const item of loaded){
       if(!item.journal){
@@ -676,7 +711,8 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       const response=await fetch("./shadow_telegram_delivery_journal.json?v="+Date.now(),{cache:"no-store"});
       if(!response.ok)throw new Error("HTTP "+response.status);
       const delivery=await response.json();
-      const records=Object.values(delivery.signals||{});
+      const records=Object.entries(delivery.signals||{}).map(([id,value])=>({signalId:id,...value}));
+      researchDeliveryById=Object.fromEntries(records.map(x=>[x.signalId,x]));
       const delivered=records.filter(x=>["sent","delivered"].includes(String(x.status||x.deliveryStatus||"").toLowerCase())).length;
       const failed=records.filter(x=>/fail|error/.test(String(x.status||x.deliveryStatus||"").toLowerCase())).length;
       $("researchAnalyticsDelivery").innerHTML=[
@@ -686,9 +722,11 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     }catch(error){
       $("researchAnalyticsDelivery").innerHTML='<div class="signal-empty">Delivery journal unavailable: '+esc(error.message)+'. Delivery status is not inferred.</div>';
     }
+    renderResearchHistory();
     const latest=valid.map(x=>x.journal.updatedAt).filter(Boolean).sort().slice(-1)[0];
     if(status)status.textContent=valid.length+"/3 journals loaded"+(valid.length!==3?" · PARTIAL DATA — unavailable journals excluded":"")+" · source updated "+(latest?time(latest):"time unavailable")+" · refreshed "+new Date().toLocaleTimeString();
   }
+  $("researchHistoryDate").addEventListener("change",renderResearchHistory);
   $("researchAnalyticsRefresh").addEventListener("click",refreshResearchAnalytics);
   refreshResearchAnalytics();
   setInterval(refreshResearchAnalytics,120000);
