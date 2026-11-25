@@ -77,6 +77,6 @@ test("the five expansion markets can generate explicitly research-only Telegram 
     assert.equal(alert.paper, true);
     assert.equal(alert.live, false);
     assert.equal(alert.status, "SHADOW");
-    assert.match(alert.strategyProfile, /SHADOW|RESEARCH/i);
+    assert.equal(alert.strategyId, "M5_BREAKOUT_M1_RETEST");
   }
 });
