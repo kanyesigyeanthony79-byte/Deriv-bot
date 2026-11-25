@@ -73,70 +73,68 @@ function updateMarket(journal, marketId, market, nowEpoch) {
   }
 
   const firstNewIndex = candles.findIndex(c => c.epoch > state.lastProcessedEpoch);
-  if (firstNewIndex < 0) {
-    state.updatedAt = new Date(nowEpoch * 1000).toISOString();
-    return;
-  }
-  const expectedNext = state.lastProcessedEpoch + TIMEFRAME_SECONDS;
-  if (candles[firstNewIndex].epoch !== expectedNext || firstNewIndex < 64) {
-    const missing = Math.max(1, Math.round((candles[firstNewIndex].epoch-state.lastProcessedEpoch)/TIMEFRAME_SECONDS)-1);
-    state.gapCount += 1;
-    state.largestGapCandles = Math.max(state.largestGapCandles, missing);
-    state.lastGap = {
-      afterEpoch: state.lastProcessedEpoch, resumedAtEpoch: candles[firstNewIndex].epoch,
-      missingCandles: missing, detectedAt: new Date(nowEpoch * 1000).toISOString()
-    };
-    // Skip the unobserved interval rather than manufacture historical forward signals.
-    state.lastProcessedEpoch = last.epoch;
-    state.updatedAt = new Date(nowEpoch * 1000).toISOString();
-    return;
-  }
-
-  const byId = new Map(journal.signals.filter(s => s.marketId === marketId).map(s => [s.signalId, s]));
-  for (let i=firstNewIndex;i<candles.length;i++) {
-    const candle = candles[i];
-    if (candle.epoch !== state.lastProcessedEpoch + TIMEFRAME_SECONDS) {
-      const missing = Math.max(1, Math.round((candle.epoch-state.lastProcessedEpoch)/TIMEFRAME_SECONDS)-1);
+  if (firstNewIndex >= 0) {
+    const expectedNext = state.lastProcessedEpoch + TIMEFRAME_SECONDS;
+    if (candles[firstNewIndex].epoch !== expectedNext || firstNewIndex < 64) {
+      const missing = Math.max(1, Math.round((candles[firstNewIndex].epoch-state.lastProcessedEpoch)/TIMEFRAME_SECONDS)-1);
       state.gapCount += 1;
       state.largestGapCandles = Math.max(state.largestGapCandles, missing);
       state.lastGap = {
-        afterEpoch: state.lastProcessedEpoch, resumedAtEpoch: candle.epoch,
+        afterEpoch: state.lastProcessedEpoch, resumedAtEpoch: candles[firstNewIndex].epoch,
         missingCandles: missing, detectedAt: new Date(nowEpoch * 1000).toISOString()
       };
+      // Skip the unobserved interval rather than manufacture historical forward signals.
+      state.lastProcessedEpoch = last.epoch;
+      state.updatedAt = new Date(nowEpoch * 1000).toISOString();
+      return;
+    }
+
+    const byId = new Map(journal.signals.filter(s => s.marketId === marketId).map(s => [s.signalId, s]));
+    for (let i=firstNewIndex;i<candles.length;i++) {
+      const candle = candles[i];
+      if (candle.epoch !== state.lastProcessedEpoch + TIMEFRAME_SECONDS) {
+        const missing = Math.max(1, Math.round((candle.epoch-state.lastProcessedEpoch)/TIMEFRAME_SECONDS)-1);
+        state.gapCount += 1;
+        state.largestGapCandles = Math.max(state.largestGapCandles, missing);
+        state.lastGap = {
+          afterEpoch: state.lastProcessedEpoch, resumedAtEpoch: candle.epoch,
+          missingCandles: missing, detectedAt: new Date(nowEpoch * 1000).toISOString()
+        };
+        state.lastProcessedEpoch = candle.epoch;
+        continue;
+      }
       state.lastProcessedEpoch = candle.epoch;
-      continue;
+      const history = candles.slice(0, i+1);
+      const result = evaluate(history);
+      state.evaluatedCandles += 1;
+      if (result.state !== "ok" || !["BUY","SELL"].includes(result.signal)) {
+        state.noSignalCandles += 1;
+        continue;
+      }
+      if (Number.isFinite(state.lastSignalEpoch) &&
+          candle.epoch-state.lastSignalEpoch < DEF.cooldown*TIMEFRAME_SECONDS) {
+        state.cooldownSuppressed += 1;
+        continue;
+      }
+      const atr = Number(result.metrics?.atr);
+      if (!(atr > 0)) continue;
+      const signalId = "M15EXP-" + marketId + "-" + candle.epoch;
+      if (byId.has(signalId)) continue;
+      const signal = {
+        signalId, strategyId: "M15_EXPANSION_FORWARD_V1", marketId,
+        market: market?.marketName || marketId, direction: result.signal, score: result.score,
+        signalEpoch: candle.epoch, setupCloseEpoch: candle.epoch+TIMEFRAME_SECONDS,
+        setupAtr: atr, status: "AWAITING_ENTRY",
+        entry: null, entryEpoch: null, stopLoss: null, tp1: null, tp2: null,
+        tp1ReachedAt: null, outcomeEpoch: null, r: null, barsObserved: 0,
+        horizonCandles: HORIZON_CANDLES,
+        checks: result.checks || [], metrics: result.metrics || {},
+        createdAt: new Date((candle.epoch+TIMEFRAME_SECONDS)*1000).toISOString()
+      };
+      journal.signals.push(signal);
+      byId.set(signalId, signal);
+      state.lastSignalEpoch = candle.epoch;
     }
-    state.lastProcessedEpoch = candle.epoch;
-    const history = candles.slice(0, i+1);
-    const result = evaluate(history);
-    state.evaluatedCandles += 1;
-    if (result.state !== "ok" || !["BUY","SELL"].includes(result.signal)) {
-      state.noSignalCandles += 1;
-      continue;
-    }
-    if (Number.isFinite(state.lastSignalEpoch) &&
-        candle.epoch-state.lastSignalEpoch < DEF.cooldown*TIMEFRAME_SECONDS) {
-      state.cooldownSuppressed += 1;
-      continue;
-    }
-    const atr = Number(result.metrics?.atr);
-    if (!(atr > 0)) continue;
-    const signalId = "M15EXP-" + marketId + "-" + candle.epoch;
-    if (byId.has(signalId)) continue;
-    const signal = {
-      signalId, strategyId: "M15_EXPANSION_FORWARD_V1", marketId,
-      market: market?.marketName || marketId, direction: result.signal, score: result.score,
-      signalEpoch: candle.epoch, setupCloseEpoch: candle.epoch+TIMEFRAME_SECONDS,
-      setupAtr: atr, status: "AWAITING_ENTRY",
-      entry: null, entryEpoch: null, stopLoss: null, tp1: null, tp2: null,
-      tp1ReachedAt: null, outcomeEpoch: null, r: null, barsObserved: 0,
-      horizonCandles: HORIZON_CANDLES,
-      checks: result.checks || [], metrics: result.metrics || {},
-      createdAt: new Date((candle.epoch+TIMEFRAME_SECONDS)*1000).toISOString()
-    };
-    journal.signals.push(signal);
-    byId.set(signalId, signal);
-    state.lastSignalEpoch = candle.epoch;
   }
 
   // Resolve entries and outcomes only from completed candles in the forward window.
