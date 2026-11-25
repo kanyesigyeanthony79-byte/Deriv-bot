@@ -97,6 +97,21 @@ async function fetchCandles(client, symbol, granularity, count, nowEpoch) {
   if (response.error) throw new Error(response.error.message || "Deriv candle request failed");
   return normalizeCandles(response.candles, granularity, nowEpoch).slice(-count);
 }
+async function fetchFormingCandle(client, symbol, granularity, nowEpoch) {
+  const response = await client.ask({
+    ticks_history: symbol, adjust_start_time: 1, count: 2,
+    end: "latest", granularity, style: "candles"
+  });
+  if (response.error) throw new Error(response.error.message || "Deriv forming-candle request failed");
+  const lastClosedEpoch = Math.floor(nowEpoch / granularity) * granularity - granularity;
+  const rows = (response.candles || []).map(c => ({
+    epoch:Number(c.epoch), open:Number(c.open), high:Number(c.high),
+    low:Number(c.low), close:Number(c.close)
+  })).filter(c => [c.epoch,c.open,c.high,c.low,c.close].every(Number.isFinite) &&
+    c.high >= Math.max(c.open,c.close) && c.low <= Math.min(c.open,c.close));
+  return rows.filter(c => c.epoch > lastClosedEpoch && c.epoch <= Math.floor(nowEpoch/granularity)*granularity)
+    .sort((a,b) => a.epoch-b.epoch).at(-1) || null;
+}
 function newSignals(before, after) {
   const oldIds = new Set((before || []).map(s => s.signalId));
   return (after || []).filter(s => s.signalId && !oldIds.has(s.signalId));
@@ -168,6 +183,7 @@ async function main(env = process.env, options = {}) {
           const symbol = symbols[marketId] || (!isExpansionMarket ? marketId : null);
           if (!symbol) throw new Error("Deriv active symbol was not confirmed; market skipped.");
           market.timeframes[tf] = await fetchCandles(client, symbol, seconds, count, now);
+          if (isExpansionMarket && tf === "M15") market.formingM15 = await fetchFormingCandle(client, symbol, seconds, now);
         } catch (error) { market.errors.push({ timeframe: tf, message: error.message }); }
       }
       output.markets[marketId] = market;
