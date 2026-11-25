@@ -93,7 +93,7 @@ function addRecord(s,label,deliveryInfo,forcedId){
  const signalId=s&&(s.signalId||forcedId);
  if(!s||!signalId||byId.has(signalId))return;
  const outcome=normalizedOutcome(s);
- byId.set(signalId,{...s,signalId,marketId:s.marketId||"UNKNOWN",market:s.market||s.marketName||s.marketId||"UNKNOWN",
+ byId.set(signalId,{...s,signalId,marketId:s.marketId||"UNKNOWN",market:s.market||s.marketName||s.marketId||"UNKNOWN",entry:s.entry??s.referenceEntryPrice??s.entryPrice??null,
  strategyId:s.strategyId||s.strategyVersion||label,strategyLabel:s.strategyLabel||s.categoryLabel||s.category||s.strategyId||s.strategyVersion||label,
  sourceLabel:label,outcome,sentAt:deliveryInfo?.sentAt||deliveryInfo?.deliveredAt||deliveryInfo?.createdAt||s.sentAt||s.createdAt||null,
  deliveryAttempts:deliveryInfo?.attempts??null});
