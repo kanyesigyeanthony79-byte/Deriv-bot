@@ -31,20 +31,21 @@ a{color:var(--gold);text-decoration:none}.hero,.panel,.market{background:rgba(20
 <div class="section-head"><h2>Delivered signal register</h2><span class="muted" id="recordCount">0 records</span></div>
 <div class="filters"><input id="search" type="search" placeholder="Search market, strategy or signal ID"><select id="marketFilter"><option value="">All 15 markets</option></select><select id="statusFilter"><option value="">All outcome statuses</option><option value="pending">Pending / active</option><option value="tp1_hit">TP1 hit</option><option value="tp2_hit">Target reached</option><option value="stopped">Stopped</option><option value="stop">Stop reached</option><option value="stopped_after_tp1">Stopped after TP1</option><option value="target">Target reached</option><option value="time_exit">Time exit</option><option value="expired">Expired</option><option value="ambiguous">Ambiguous</option><option value="unknown">Unknown / untracked</option></select></div>
 <div class="table-wrap"><table><thead><tr><th>#</th><th>Delivered at</th><th>Market</th><th>System / strategy</th><th>Direction</th><th>Entry</th><th>Stop loss</th><th>Take profit</th><th>Outcome status</th><th>Telegram delivery</th><th>Signal ID</th></tr></thead><tbody id="records"><tr><td colspan="11" class="empty">Loading…</td></tr></tbody></table></div>
-<div class="foot">Counting rules: only a delivery-journal entry with status SENT is included in market progress. A generated strategy observation without a confirmed Telegram delivery is excluded. Signal outcomes are read from the original strategy journal and are not inferred from delivery. Pending, TP1-hit, expired and ambiguous records remain visible as their own statuses; they are not converted into wins or losses. Records are deduplicated by signal ID. The tracker reads the original 15-minute production journal, the multi-timeframe Telegram journal, three forward-shadow strategy journals and the shared shadow Telegram delivery journal. Each source has its own delivery-confirmation rule; only confirmed SENT records count. Outcomes prefer finalOutcome over the intermediate status field.</div>
+<div class="foot">Counting rules: only a delivery-journal entry with status SENT is included in market progress. A generated strategy observation without a confirmed Telegram delivery is excluded. Signal outcomes are read from the original strategy journal and are not inferred from delivery. Pending, TP1-hit, expired and ambiguous records remain visible as their own statuses; they are not converted into wins or losses. Records are deduplicated by signal ID. The tracker reads the original 15-minute production journal, the R10 paper journal (Telegram-confirmed signals only), the multi-timeframe Telegram journal, three forward-shadow strategy journals and the shared shadow Telegram delivery journal. Each source has its own delivery-confirmation rule; only confirmed SENT records count. Outcomes prefer finalOutcome over the intermediate status field.</div>
 </main>
 <script>
 (()=>{
 const MARKETS=[
-["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],["R_75","Volatility 75 Index"],
-["JD75","Jump 75 Index"],["JD100","Jump 100 Index"],["CRASH500","Crash 500 Index"],
-["BOOM500","Boom 500 Index"],["frxXAUUSD","Gold (XAUUSD)"],["1HZ10V","Volatility 10 (1s) Index"],
-["1HZ75V","Volatility 75 (1s) Index"],["R_100","Volatility 100 Index"],["JD25","Jump 25 Index"],
-["JD50","Jump 50 Index"],["CRASH100","Crash 100 Index"],["BOOM100","Boom 100 Index"]
+["R_10","Volatility 10 Index"],["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],
+["R_75","Volatility 75 Index"],["JD100","Jump 100 Index"],["CRASH500","Crash 500 Index"],
+["BOOM500","Boom 500 Index"],["frxXAUUSD","Gold (XAUUSD)"],["R_100","Volatility 100 Index"],
+["JD25","Jump 25 Index"],["JD50","Jump 50 Index"],["RB100","Range Break 100 Index"],
+["RB200","Range Break 200 Index"],["BOOM100","Boom 100 Index"],["CRASH100","Crash 100 Index"]
 ];
 const SOURCES=[
 ["Original 15-minute system","./trade_journal.json","original"],
-["Multi-timeframe system","./multi_timeframe_journal.json","mtf"],
+["Volatility 10 · R10 paper system","./volatility10_paper_journal.json","r10"],
+["Promoted multi-timeframe system","./multi_timeframe_journal.json","mtf"],
 ["M5 breakout / M1 retest","./breakout_retest_shadow_journal.json","shadow"],
 ["M15 trend + M5 EMA pullback","./m5_ema_pullback_shadow_journal.json","shadow"],
 ["M5 breakout / M5 retest / M15 confirmation","./breakout_retest_m5_m15_shadow_journal.json","shadow"]
@@ -88,10 +89,11 @@ function normalizedOutcome(s){
  if(["time_exit","target","stop"].includes(state))return state;
  return "pending";
 }
-function addRecord(s,label,deliveryInfo){
- if(!s||!s.signalId||byId.has(s.signalId))return;
+function addRecord(s,label,deliveryInfo,forcedId){
+ const signalId=s&&(s.signalId||forcedId);
+ if(!s||!signalId||byId.has(signalId))return;
  const outcome=normalizedOutcome(s);
- byId.set(s.signalId,{...s,signalId:s.signalId,marketId:s.marketId||"UNKNOWN",market:s.market||s.marketName||s.marketId||"UNKNOWN",
+ byId.set(signalId,{...s,signalId,marketId:s.marketId||"UNKNOWN",market:s.market||s.marketName||s.marketId||"UNKNOWN",
  strategyId:s.strategyId||s.strategyVersion||label,strategyLabel:s.strategyLabel||s.categoryLabel||s.category||s.strategyId||s.strategyVersion||label,
  sourceLabel:label,outcome,sentAt:deliveryInfo?.sentAt||deliveryInfo?.deliveredAt||deliveryInfo?.createdAt||s.sentAt||s.createdAt||null,
  deliveryAttempts:deliveryInfo?.attempts??null});
@@ -99,6 +101,14 @@ function addRecord(s,label,deliveryInfo){
 // Original 15-minute production journal: only records marked sent count.
 const original=loaded.find(x=>x.kind==="original");
 for(const s of original.signals)if(String(s.status||"").toLowerCase()==="sent")addRecord(s,original.label,{sentAt:s.createdAt});
+// R10 is a separate paper-only system. Count a signal only when its journal confirms Telegram delivery.
+const r10=loaded.find(x=>x.kind==="r10");
+for(const s of r10.signals){
+ if(s.telegram&&s.telegram.sent===true){
+  const stableId=s.signalId||[s.marketId||"R_10",s.signalEpoch||s.entryTimestamp||s.signalTimestamp||"unknown",s.strategyVersion||"r10"].join("-");
+  addRecord(s,r10.label,{sentAt:s.telegram.sentAt||s.signalTimestamp||s.entryTimestamp},stableId);
+ }
+}
 // Multi-timeframe system: use its own confirmed Telegram status, not MT5 queue state.
 const mtf=loaded.find(x=>x.kind==="mtf");
 for(const s of mtf.signals)if(String(s.telegramStatus||"").toLowerCase()==="sent")addRecord(s,mtf.label,{sentAt:s.createdAt});
@@ -111,7 +121,7 @@ rows=[...byId.values()].filter(r=>MARKETS.some(([id])=>id===r.marketId))
 const filter=$("marketFilter"),previous=filter.value;
 filter.innerHTML='<option value="">All 15 markets</option>'+MARKETS.map(([id,name])=>'<option value="'+esc(id)+'">'+esc(id)+' · '+esc(name)+'</option>').join("");filter.value=previous;
 render();
-const sourceCounts=loaded.map(x=>x.label+": "+(x.kind==="original"?x.signals.filter(s=>String(s.status||"").toLowerCase()==="sent").length:x.kind==="mtf"?x.signals.filter(s=>String(s.telegramStatus||"").toLowerCase()==="sent").length:x.signals.filter(s=>deliveryMap[s.signalId]&&String(deliveryMap[s.signalId].status||"").toLowerCase()==="sent").length)).join(" · ");
+const sourceCounts=loaded.map(x=>x.label+": "+(x.kind==="original"?x.signals.filter(s=>String(s.status||"").toLowerCase()==="sent").length:x.kind==="r10"?x.signals.filter(s=>s.telegram&&s.telegram.sent===true).length:x.kind==="mtf"?x.signals.filter(s=>String(s.telegramStatus||"").toLowerCase()==="sent").length:x.signals.filter(s=>deliveryMap[s.signalId]&&String(deliveryMap[s.signalId].status||"").toLowerCase()==="sent").length)).join(" · ");
 $("updated").textContent=rows.length+" distinct confirmed Telegram deliveries loaded · "+sourceCounts+" · refreshed "+new Date().toLocaleTimeString();
 }catch(error){$("updated").textContent="Collection data unavailable: "+error.message+" · No progress has been estimated."; $("records").innerHTML='<tr><td colspan="11" class="empty">'+esc(error.message)+'</td></tr>';$("markets").innerHTML='<div class="panel muted">Market progress cannot be calculated until all source journals load successfully.</div>';}
 }
