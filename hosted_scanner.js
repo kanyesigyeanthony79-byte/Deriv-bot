@@ -558,7 +558,23 @@ async function main() {
       const researchResult = await runResearchShadowCycle({ ...process.env, TELEGRAM_WORKER_URL: researchWorkerUrl }, { client, symbols, now });
       log("research_shadow_cycle_completed", { sharedDerivConnection: true, r10Excluded: true, mtfEnabled: false, mt5ExecutionEnabled: false, summary: researchResult?.summary || null });
     } catch (error) {
-      log("research_shadow_cycle_failed", { message: String(error.message || error).slice(0, 200) });
+      const researchError = String(error.message || error).slice(0, 300);
+      try {
+        const snapshotPath = path.join(DATA_DIR, "research_shadow_collection.json");
+        let previous = { version: 1, markets: {}, errors: [] };
+        try {
+          const raw = fs.readFileSync(snapshotPath, "utf8");
+          if (raw.trim()) previous = JSON.parse(raw);
+        } catch {}
+        previous.version = 1;
+        previous.cycleStatus = "failed";
+        previous.lastAttemptAt = new Date(now * 1000).toISOString();
+        previous.lastError = researchError;
+        fs.writeFileSync(snapshotPath, JSON.stringify(previous, null, 2) + "\\n");
+      } catch (snapshotError) {
+        log("research_shadow_failure_snapshot_write_failed", { message: String(snapshotError.message || snapshotError).slice(0, 200) });
+      }
+      log("research_shadow_cycle_failed", { message: researchError });
     }
     await maybeSendDailySummary(now);
     saveState();
