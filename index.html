@@ -583,7 +583,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       const failedCycle=cycle==="failed";
       body.innerHTML=RESEARCH_SCAN_MARKETS.map(([id,name])=>{
         const m=markets[id];
-        if(!m)return '<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal none">'+(failedCycle?"CYCLE FAILED":"NOT IN SNAPSHOT")+'</td><td>—</td><td>—</td><td>—</td><td>—</td><td>'+esc(stamp)+'</td><td>'+esc(snapshot.lastError||"Awaiting next collector run")+'</td></tr>';
+        if(!m)return '<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal none">'+(failedCycle?"CYCLE FAILED":"NOT IN SNAPSHOT")+'</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>'+esc(stamp)+'</td><td>'+esc(snapshot.lastError||"Awaiting next collector run")+'</td></tr>';
         const frames=m.timeframes||{}, errors=Array.isArray(m.errors)?m.errors:[];
         const partial=errors.length>0, counts=["M1","M5","M15"].map(tf=>Array.isArray(frames[tf])?frames[tf].length:"—");
         const strategies=summary.strategies||{};
@@ -597,7 +597,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       }).join("");
       status.textContent="Last successful snapshot "+stamp+" · "+Object.keys(markets).length+" research markets · cycle "+cycle.toUpperCase()+(snapshot.lastAttemptAt?" · last attempt "+new Date(snapshot.lastAttemptAt).toLocaleString():"")+(snapshot.lastError?" · "+snapshot.lastError:"")+" · "+(summary.telegramSent??0)+" Telegram shadow alerts sent / "+(summary.telegramFailed??0)+" failed in recorded cycle.";
     }catch(error){
-      body.innerHTML=RESEARCH_SCAN_MARKETS.map(([id,name])=>'<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal none">STATUS UNAVAILABLE</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>'+esc(error.message)+'</td></tr>').join("");
+      body.innerHTML=RESEARCH_SCAN_MARKETS.map(([id,name])=>'<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal none">STATUS UNAVAILABLE</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>'+esc(error.message)+'</td></tr>').join("");
       status.textContent="Research scanner status unavailable. No market is assumed to be scanning.";
     }
   }
