@@ -184,7 +184,9 @@ export class ExecutionQueue{
    return Response.json(result,{status:result.success?200:404});
   }
   if(request.method==="POST"&&u.pathname==="/enqueue"){
-   const payload=await request.json(),id=String(payload.signalId),now=Math.floor(Date.now()/1000);
+   const payload=await request.json();
+   if(isVolatility10Alert(payload))return Response.json({success:false,error:"R_10 is forward-test-only and cannot enter the broker execution queue"},{status:403});
+   const id=String(payload.signalId),now=Math.floor(Date.now()/1000);
    const r=await this.ctx.storage.transaction(async t=>{
     const k="signal:"+id,old=await t.get(k);if(old)return {queued:old.status==="pending",duplicate:true,status:old.status};
     await t.put(k,{payload,queuedAt:now,status:"pending",leaseClient:"",leaseUntil:0,ackAt:0,result:null});
