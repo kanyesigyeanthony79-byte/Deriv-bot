@@ -29,6 +29,11 @@ on:
         required: false
         default: "false"
         type: string
+      legacy_rollback_enabled:
+        description: "Restore the previous R10 EMA/ATR paper scanner without restoring broker execution"
+        required: false
+        default: "false"
+        type: string
 
 permissions:
   contents: write
@@ -48,14 +53,20 @@ jobs:
           node-version: 22
       - name: Run complete repository test suite
         run: npm test
-      - name: Run frozen R10 M5/M1 forward-test scanner window
-        run: node volatility10_transition_forward_scanner.js
+      - name: Run frozen R10 scanner or explicitly selected legacy rollback
+        run: |
+          if [ "$R10_LEGACY_ROLLBACK_ENABLED" = "true" ]; then
+            node volatility10_paper_scanner.js
+          else
+            node volatility10_transition_forward_scanner.js
+          fi
         env:
           R10_PAPER_RUN_SECONDS: "30"
           R10_PAPER_PROVIDER_ENABLED: ${{ inputs.provider_enabled || 'false' }}
           R10_PAPER_ROUTE_ENABLED: ${{ inputs.route_enabled || 'false' }}
           R10_EMERGENCY_KILL_SWITCH: ${{ inputs.emergency_kill_switch || 'true' }}
           R10_PAPER_TELEGRAM_ENABLED: ${{ inputs.telegram_enabled || 'false' }}
+          R10_LEGACY_ROLLBACK_ENABLED: ${{ inputs.legacy_rollback_enabled || 'false' }}
           TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
           SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
       - name: Persist paper journal
@@ -63,7 +74,7 @@ jobs:
         run: |
           git config user.name "Volatility 10 Paper Scanner"
           git config user.email "actions@users.noreply.github.com"
-          git add volatility10_transition_forward_state.json volatility10_transition_forward_journal.json
+          git add volatility10_transition_forward_state.json volatility10_transition_forward_journal.json volatility10_paper_state.json volatility10_paper_journal.json
           if ! git diff --cached --quiet; then
             git commit -m "Update Volatility 10 paper journal"
             pushed=false
