@@ -52,6 +52,35 @@ test("builds an explicitly non-live research alert with the backtest's 2R and 3R
   assert.equal(buildExpansionAlert({...signal, entryEpoch:0},1800),null);
 });
 
+
+test("records TP1 as a milestone and resolves the later TP2 at +3R", () => {
+  const rows = flatHistory(70);
+  const journal = updateM15ExpansionForwardShadowJournal(null, {
+    RB100:{marketName:"Range Break 100 Index",timeframes:{M15:rows}},
+    RB200:{marketName:"Range Break 200 Index",timeframes:{M15:rows}}
+  }, 200000);
+  const state = journal.markets.RB100;
+  state.lastProcessedEpoch = rows.at(-2).epoch;
+  const entry = rows.at(-2);
+  journal.signals.push({
+    signalId:"M15EXP-RB100-TEST", strategyId:"M15_EXPANSION_FORWARD_V1",
+    marketId:"RB100", market:"Range Break 100 Index", direction:"BUY",
+    signalEpoch:entry.epoch-900, setupCloseEpoch:entry.epoch,
+    setupAtr:1, status:"PENDING", entry:100, entryEpoch:entry.epoch,
+    stopLoss:98.5, tp1:103, tp2:104.5, tp1ReachedAt:null,
+    outcomeEpoch:null, r:null, barsObserved:0, horizonCandles:96
+  });
+  rows[69] = candle(rows[69].epoch,100,105,100,104.5);
+  const updated = updateM15ExpansionForwardShadowJournal(journal, {
+    RB100:{marketName:"Range Break 100 Index",timeframes:rows},
+    RB200:{marketName:"Range Break 200 Index",timeframes:rows}
+  }, 200300);
+  const trade = updated.signals.find(s => s.signalId === "M15EXP-RB100-TEST");
+  assert.equal(trade.status,"TP2");
+  assert.equal(trade.r,3);
+  assert.ok(trade.tp1ReachedAt);
+});
+
 test("summary keeps unresolved and ambiguous records out of resolved expectancy", () => {
   const result = summarize([
     {status:"TP2",r:3}, {status:"SL",r:-1},
