@@ -20,8 +20,11 @@ const MARKETS = Object.freeze([
   ["BOOM500", "Boom 500 Index"], ["frxXAUUSD", "Gold (XAUUSD)"],
   ["1HZ10V", "Volatility 10 (1s) Index"],
   ["1HZ75V", "Volatility 75 (1s) Index"],
-  ["RB100", "Range Break 100 Index"],
-  ["RB200", "Range Break 200 Index"]
+  ["R_100", "Volatility 100 Index"],
+  ["JD25", "Jump 25 Index"],
+  ["JD50", "Jump 50 Index"],
+  ["CRASH100", "Crash 100 Index"],
+  ["BOOM100", "Boom 100 Index"]
 ]);
 const FRAMES = [["M1", 60, 300], ["M5", 300, 120], ["M15", 900, 120]];
 const JOURNALS = {
