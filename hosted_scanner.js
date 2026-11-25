@@ -570,7 +570,7 @@ async function main() {
         previous.cycleStatus = "failed";
         previous.lastAttemptAt = new Date(now * 1000).toISOString();
         previous.lastError = researchError;
-        fs.writeFileSync(snapshotPath, JSON.stringify(previous, null, 2) + "\\n");
+        fs.writeFileSync(snapshotPath, JSON.stringify(previous, null, 2) + "\n");
       } catch (snapshotError) {
         log("research_shadow_failure_snapshot_write_failed", { message: String(snapshotError.message || snapshotError).slice(0, 200) });
       }
