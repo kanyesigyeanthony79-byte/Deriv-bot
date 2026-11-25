@@ -76,7 +76,7 @@ function validateEntryQuote(signal,quote,maxDisplacementR=0.20,maxAgeSeconds=5){
  if(!quote||!Number.isFinite(quote.price)||!Number.isFinite(quote.ageSeconds)||quote.ageSeconds>maxAgeSeconds)
   return {accepted:false,reason:"live_quote_missing_or_stale",displacementR:null};
  const displacementR=Math.abs(quote.price-signal.referenceEntryPrice)/signal.risk;
- if(!Number.isFinite(displacementR)||displacementR>maxDisplacementR)
+ if(!Number.isFinite(displacementR)||displacementR>maxDisplacementR+1e-9)
   return {accepted:false,reason:"ENTRY_DISPLACEMENT_EXCEEDED",displacementR};
  return {accepted:true,reason:"within_entry_displacement_limit",displacementR};
 }
