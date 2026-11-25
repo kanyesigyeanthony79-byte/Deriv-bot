@@ -89,7 +89,23 @@ Do not revert the entire PR as a rollback action: that would also restore the fo
 ## Known limitations before production activation
 
 - The Deriv candle feed does not provide bid/ask spread or a tick-age quote in the current scanner contract. Those journal fields are explicitly null. Entry delay is recorded from Deriv server time. No independent material-displacement threshold was specified, so the scanner does not invent one.
-- The Library/repository research archive found is `strategy_research_candles.json`, containing R_10 M15 candles only; it contains no M1 or M5 history. It cannot validly smoke-test this M1-derived M5/H1/H4 strategy. Historical smoke testing is therefore blocked pending an actual R_10 M1 OHLC dataset (at least 2,700 continuous candles for a basic warm-up check; longer history is preferable). No M15 data has been upsampled or treated as M1.
+## Historical M1 smoke test (Deepnote, 25 Nov 2026)
+
+The existing Deepnote project `MT5 Gold Scalping Research — XAUUSD` already contained `Volatility 10 Index_M1.csv`; no re-upload or M15 upsampling was used. The separate smoke-test notebook and its output files are in that project.
+
+- Source coverage: 1,030,265 M1 rows, 2024-12-01 00:00 through 2026-11-16 13:22 (naive timestamps).
+- Integrity: zero duplicate timestamps, zero invalid OHLC rows, 33 missing-minute intervals (largest 21 minutes), split into 34 continuous segments. Thirty-one segments had at least 2,700 M1 candles.
+- Derived complete bars: 205,295 M5, 17,081 H1 and 4,248 H4.
+- Frozen-rule reference replay: 692 prefilter candidates; 80 non-overlapping signals generated after the exact filters and one-active-trade rule.
+- Outcomes: 44 WIN, 36 LOSS; 55.0% win rate, +8.0R gross aggregate, +0.10R gross expectancy per signal, gross profit factor 1.22. All 80 reached a terminal stop/target outcome within the 24-M5-bar limit; no ambiguous, unresolved, expired or pending outcomes occurred in this sample.
+- This is an uncosted historical reference replay, not evidence of a profitable live strategy. It uses the next M1 open as a reference entry and does not include spread, slippage, commission, or a verified executable quote.
+- The Deepnote runtime has no Node.js binary. The full-history replay therefore used a Python reference implementation mirroring the frozen JavaScript strategy rules; the repository's JavaScript unit/integration suite remains separately tested (383 passed, 0 failed). The historical replay is not represented as direct execution of the JavaScript module.
+- Look-ahead control: M5/H1/H4 were derived from complete M1 buckets within contiguous segments. Swing pivots use two right-hand candles and are admitted only when their confirmation epoch is at or before the setup close. The historical replay asserts confirmation occurs after the pivot candle.
+- Timezone remains unverified: source timestamps are naive. UTC hour filtering and epoch-aligned bucket boundaries in the historical replay are provisional until the MT5 export/server clock is reconciled to Deriv UTC.
+- Spread convention remains unverified: the raw spread column is present (median 167; 95th percentile 188 raw units), but the point conversion and bid/ask basis have not been independently confirmed for this export. No spread cost was applied.
+- Smoke-test artefacts: `r10_transition_forward_v1_historical_signals.csv` and `r10_transition_forward_v1_historical_summary.json` in Deepnote.
+
+Deepnote notebook: https://deepnote.com/workspace/deriv-quantitative-r-a4a0ca65-624b-4f3e-abcd-2c60b69d0ea5/project/MT5-Gold-Scalping-Research-XAUUSD-fc808e29-de21-4326-96d6-9548f5dabaf7/notebook/R10-Frozen-Transition-Low-Vol-1R-Historical-Smoke-Test-9603033890c7458083bdd3702c6a77d6?utm_content=fc808e29-de21-4326-96d6-9548f5dabaf7
 - A 5,000-candle M1 fetch is the scanner's current history request. The latest continuous segment must contain at least 2,700 M1 candles to satisfy the 500-prior-ATR warm-up and higher-timeframe structure availability.
 - No forward-test start time is claimed until the deployed scanner initializes its live cursor and writes `startedAt`.
 - No deployment is performed by this branch. Cloudflare Worker and watchdog deployments require the existing authorized deployment process and confirmation of current bindings/secrets.
