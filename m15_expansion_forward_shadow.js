@@ -144,14 +144,16 @@ function updateMarket(journal, marketId, market, nowEpoch) {
     if (signal.marketId !== marketId || ["TP2","SL","SL_AFTER_TP1","AMBIGUOUS","UNRESOLVED","CENSORED"].includes(signal.status)) continue;
     if (signal.status === "AWAITING_ENTRY") {
       const entryIndex = candles.findIndex(c => c.epoch === signal.setupCloseEpoch);
-      if (entryIndex < 0) {
+      const forming = validCandle(market?.formingM15) && market.formingM15.epoch === signal.setupCloseEpoch
+        ? market.formingM15 : null;
+      if (entryIndex < 0 && !forming) {
         if (last.epoch >= signal.setupCloseEpoch) {
           signal.status = "CENSORED";
           signal.reason = "next_m15_entry_candle_missing";
         }
         continue;
       }
-      const entryCandle = candles[entryIndex];
+      const entryCandle = forming || candles[entryIndex];
       const risk = signal.setupAtr * STOP_ATR;
       signal.entry = entryCandle.open;
       signal.entryEpoch = entryCandle.epoch;
@@ -163,6 +165,8 @@ function updateMarket(journal, marketId, market, nowEpoch) {
     if (signal.status !== "PENDING") continue;
     const entryIndex = candles.findIndex(c => c.epoch === signal.entryEpoch);
     if (entryIndex < 0) {
+      if (validCandle(market?.formingM15) && market.formingM15.epoch === signal.entryEpoch) continue;
+      if (last.epoch < signal.entryEpoch) continue;
       signal.status = "CENSORED";
       signal.reason = "entry_candle_outside_latest_continuous_window";
       continue;
@@ -231,7 +235,7 @@ function updateM15ExpansionForwardShadowJournal(prior, markets, nowEpoch=Math.fl
 }
 function buildExpansionAlert(signal, nowEpoch=Math.floor(Date.now()/1000)) {
   if (!signal || signal.status === "AWAITING_ENTRY" || signal.status === "CENSORED" || !Number.isFinite(signal.entryEpoch)) return null;
-  const signalAgeSeconds = Math.max(0, nowEpoch-(signal.entryEpoch+TIMEFRAME_SECONDS));
+  const signalAgeSeconds = Math.max(0, nowEpoch-Number(signal.setupCloseEpoch || signal.entryEpoch));
   if (signalAgeSeconds > 900) return null;
   return {
     event:"new_signal", source:"RESEARCH_SHADOW", paper:true, live:false,
