@@ -100,7 +100,6 @@ async function processSnapshot(state,journal,snapshot,env=process.env){
  const {nowEpoch,completed,forming}=snapshot;
  journal.strategyVersion=strategy.STRATEGY_VERSION;
  journal.marketId="R_10";
- journal.startedAt=journal.startedAt||new Date(nowEpoch*1000).toISOString();
  updateActiveOutcome(state,journal,completed);
  const continuous=latestContinuousSegment(completed);
  if(continuous.length<2700){
@@ -118,6 +117,7 @@ async function processSnapshot(state,journal,snapshot,env=process.env){
  const latest=m5[m5.length-1];
  if(state.lastSetupEpoch===null||state.lastSetupEpoch===undefined){
   state.lastSetupEpoch=Number(latest.epoch);
+  journal.startedAt=journal.startedAt||new Date(nowEpoch*1000).toISOString();
   journal.health.push({at:new Date(nowEpoch*1000).toISOString(),status:"forward_cursor_initialized_no_historical_catchup",lastSetupEpoch:state.lastSetupEpoch});
   return;
  }
