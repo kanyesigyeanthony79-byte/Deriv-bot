@@ -133,7 +133,13 @@ function toAlert(signal, strategy, marketData, applyRegime = true) {
       ![entry, stopLoss, risk, target].every(Number.isFinite) ||
       entry <= 0 || stopLoss <= 0 || risk <= 0 || target <= 0 ||
       (direction === "BUY" && !(stopLoss < entry && target > entry)) ||
-      (direction === "SELL" && !(stopLoss > entry && target < entry))) return null;
+      (direction === "SELL" && !(stopLoss > entry && target < entry))) {
+    if (marketData) {
+      marketData.candidateDecisions ||= [];
+      marketData.candidateDecisions.push({ signalId: String(signal.signalId || "unknown"), strategyId: strategy, decision: "rejected", reason: "invalid_signal_levels_or_direction" });
+    }
+    return null;
+  }
   const tp1 = entry + sign * 1.5 * risk;
   const frames = marketData && marketData.timeframes || {};
   const regime = applyRegime
@@ -141,7 +147,9 @@ function toAlert(signal, strategy, marketData, applyRegime = true) {
     : { passed: true, adx: null, emaSeparationAtr: null };
   if (applyRegime && marketData) {
     marketData.regimeFilterDecisions ||= [];
-    marketData.regimeFilterDecisions.push({ signalId: String(signal.signalId), strategyId: strategy, direction, entryTimeframe: signal.entryTimeframe || "?", ...regime });
+    marketData.regimeFilterDecisions.push({ signalId: String(signal.signalId), strategyId: strategy, direction, entryTimeframe: signal.entryTimeframe || "?", decision: regime.passed ? "passed" : "rejected", reason: regime.passed ? null : "market_regime_filter_rejected", ...regime });
+    marketData.candidateDecisions ||= [];
+    marketData.candidateDecisions.push({ signalId: String(signal.signalId), strategyId: strategy, decision: regime.passed ? "accepted" : "rejected", reason: regime.passed ? null : "market_regime_filter_rejected" });
   }
   if (!regime.passed) return null;
   return {
@@ -270,8 +278,84 @@ async function main(env = process.env, options = {}) {
       r10Excluded: true, mtfEnabled: false, mt5ExecutionEnabled: false
     };
     const regimeJournal = { version: 1, generatedAt: output.generatedAt, mode: "shadow_only", productionGateEnabled: false, markets: Object.fromEntries(Object.entries(output.markets).map(([id, market]) => [id, { decisions: market.regimeFilterDecisions || [] }])) };
-    const decisions = Object.values(regimeJournal.markets).flatMap(x => x.decisions);
-    output.summary.marketRegime = { candidatesEvaluated: decisions.length, passed: decisions.filter(x => x.passed).length, rejected: decisions.filter(x => !x.passed).length, productionSignalsChanged: false };
+    const regimeDecisions = Object.values(regimeJournal.markets).flatMap(x => x.decisions);
+    const candidateDecisions = Object.values(output.markets).flatMap(m => m.candidateDecisions || []);
+    const deliveryRecords = Object.values(delivery.signals);
+    const strategyJournals = [
+      ["M5_BREAKOUT_M1_RETEST", nextA],
+      ["M15_M5_EMA_PULLBACK", nextB],
+      ["M5_BREAKOUT_M5_RETEST_M15_CONFIRM", nextC]
+    ];
+    for (const [marketId, market] of Object.entries(output.markets)) {
+      const timeframeHealth = Object.fromEntries(FRAMES.map(([tf]) => [tf, {
+        candles: (market.timeframes[tf] || []).length,
+        status: market.errors.some(error => error.timeframe === tf) ? "error" : ((market.timeframes[tf] || []).length ? "ok" : "empty")
+      }]));
+      const strategyStats = Object.fromEntries(strategyJournals.map(([strategyId, journal]) => {
+        const stats = journal.summary?.markets?.[marketId] || {};
+        return [strategyId, {
+          setupsDetected: stats.setupsDetected ?? null,
+          signalsGenerated: stats.signals ?? 0,
+          riskRejected: stats.riskRejected ?? 0,
+          overlapSuppressed: stats.overlapSuppressed ?? 0,
+          confirmationExpired: stats.confirmationExpired ?? 0,
+          targetBeforeStop: stats.targetBeforeStop ?? 0,
+          stopBeforeTarget: stats.stopBeforeTarget ?? 0,
+          timeExit: stats.timeExit ?? 0,
+          averageRealizedR: stats.averageRealizedR ?? null
+        }];
+      }));
+      const marketDeliveries = deliveryRecords.filter(record => record.marketId === marketId);
+      const marketDecisions = candidateDecisions.filter(record => {
+        const source = [nextA, nextB, nextC].find(journal => journal.signals.some(signal => signal.signalId === record.signalId));
+        return source?.signals.some(signal => signal.marketId === marketId && signal.signalId === record.signalId);
+      });
+      market.diagnostics = {
+        scanStatus: market.errors.length ? (FRAMES.every(([tf]) => market.errors.some(error => error.timeframe === tf)) ? "failed" : "partial") : "success",
+        timeframes: timeframeHealth,
+        strategies: strategyStats,
+        candidateDecisions: {
+          accepted: marketDecisions.filter(record => record.decision === "accepted").length,
+          rejected: marketDecisions.filter(record => record.decision === "rejected").length,
+          rejectionReasons: marketDecisions.filter(record => record.decision === "rejected").reduce((acc, record) => {
+            const reason = record.reason || "unspecified";
+            acc[reason] = (acc[reason] || 0) + 1;
+            return acc;
+          }, {})
+        },
+        telegram: {
+          tracked: marketDeliveries.length,
+          sent: marketDeliveries.filter(record => record.status === "sent").length,
+          failed: marketDeliveries.filter(record => record.status === "failed").length,
+          pending: marketDeliveries.filter(record => record.status === "pending").length,
+          lastSentAt: marketDeliveries.filter(record => record.status === "sent").map(record => record.sentAt).sort().at(-1) || null
+        }
+      };
+    }
+    output.summary.marketRegime = {
+      candidatesEvaluated: regimeDecisions.length,
+      passed: regimeDecisions.filter(x => x.passed).length,
+      rejected: regimeDecisions.filter(x => !x.passed).length,
+      rejectionReasons: regimeDecisions.filter(x => !x.passed).reduce((acc, record) => {
+        const reason = record.reason || "unspecified";
+        acc[reason] = (acc[reason] || 0) + 1;
+        return acc;
+      }, {}),
+      productionSignalsChanged: false
+    };
+    output.summary.candidateDiagnostics = {
+      accepted: candidateDecisions.filter(record => record.decision === "accepted").length,
+      rejected: candidateDecisions.filter(record => record.decision === "rejected").length,
+      rejectionReasons: candidateDecisions.filter(record => record.decision === "rejected").reduce((acc, record) => {
+        const reason = record.reason || "unspecified";
+        acc[reason] = (acc[reason] || 0) + 1;
+        return acc;
+      }, {}),
+      deliveryRecords: deliveryRecords.length,
+      confirmedTelegramSends: deliveryRecords.filter(record => record.status === "sent").length,
+      failedTelegramDeliveries: deliveryRecords.filter(record => record.status === "failed").length,
+      pendingTelegramDeliveries: deliveryRecords.filter(record => record.status === "pending").length
+    };
     writeJson("market_regime_filter_shadow_journal.json", regimeJournal);
     writeJson("research_shadow_collection.json", output);
     console.log(JSON.stringify({ event: "research_shadow_collection_complete", summary: output.summary, errors: output.errors }));
