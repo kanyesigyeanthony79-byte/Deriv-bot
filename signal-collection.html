@@ -68,7 +68,7 @@ function renderResearchDiagnostics(data){
  const stamp=date(data.generatedAt),markets=data.markets||{};
  body.innerHTML=MARKETS.filter(([id])=>id!=="R_10").map(([id,name])=>{
   const m=markets[id],d=m?.diagnostics;
-  if(!m||!d)return '<tr><td><b>'+esc(id)+'</b><br>'+esc(name)+'</td><td colspan="7" class="diag-warn">No per-market diagnostic recorded</td></tr>';
+  if(!m||!d)return '<tr><td><b>'+esc(id)+'</b><br>'+esc(name)+'</td><td colspan="8" class="diag-warn">No per-market diagnostic recorded</td></tr>';
   const st=d.strategies||{},a=st.M5_BREAKOUT_M1_RETEST||{},b=st.M15_M5_EMA_PULLBACK||{},c=st.M5_BREAKOUT_M5_RETEST_M15_CONFIRM||{};
   const tf=d.timeframes||{},cand=d.candidateDecisions||{},tg=d.telegram||{};
   const reason=Object.entries(cand.rejectionReasons||{}).map(([k,v])=>esc(k)+" ("+v+")").join(", ")||"—";
