@@ -780,10 +780,11 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     if (sec < 3600) return Math.floor(sec/60)+"m "+(sec%60)+"s";
     return Math.floor(sec/3600)+"h "+Math.floor((sec%3600)/60)+"m";
   };
-  const terminal = new Set(["TP2_HIT","SL_HIT","EXPIRED","AMBIGUOUS","TP1_HIT","TP_HIT","TARGET","STOP","WIN","LOSS","TP2_HIT","TP1_HIT","TIME_EXIT","TIME_EXITED","STOPPED","STOP","TP2_HIT","TP_HIT"]);
+  const terminal = new Set(["TP2_HIT","SL_HIT","EXPIRED","AMBIGUOUS","TP_HIT","TARGET","STOP","WIN","LOSS","TIME_EXIT","TIME_EXITED","STOPPED"]);
   const isTerminal = s => {
-    const outcome = String(s.finalOutcome || s.status || "").toUpperCase();
-    return terminal.has(outcome) || Boolean(s.finalOutcome) ||
+    const final = String(s.finalOutcome || "").toUpperCase();
+    const outcome = String(s.status || "").toUpperCase();
+    return (final && final !== "UNVERIFIED") || terminal.has(outcome) ||
       (Array.isArray(s.events) && s.events.some(e=>terminal.has(String(e.outcome||"").toUpperCase())));
   };
   const fetchJson = async path => {
@@ -874,7 +875,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
         displayStatus:outcome?(outcome.exitReason||"CLOSED"):activeMatch?"ACTIVE PAPER POSITION":"UNRESOLVED PAPER RECORD",
         note:"Paper observation only · no live order."};
       if(outcome){item.finalOutcome=outcome.exitReason;put(p,item,"completed");}
-      else if(activeMatch && Date.now()-createdMs<60*60*1000)put(p,item,"active");
+      else if(activeMatch)put(p,item,"active");
       else put(p,item,"review");
     });
     return "Paper signals: "+signals.length+" · closed paper positions: "+(state.closedPositions||[]).length;
@@ -907,7 +908,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       signals.forEach(s=>{
         const createdMs=dateMs(s.createdAt||s.entryCandleEpoch||s.setupCloseEpoch);
         const status=String(s.status||"").toLowerCase();
-        const done=status!=="pending" && status!=="open" && status!=="active" && Boolean(status);
+        const done=["tp2_hit","tp_hit","target","stop","stopped","sl_hit","time_exit","expired","ambiguous","win","loss"].includes(status);
         const item={...s,createdMs,market:s.market||s.marketId,
           takeProfit:s.tp2||s.takeProfit||s.productionTp2,
           updatedLabel:s.lastProcessedEpoch?new Date(Number(s.lastProcessedEpoch)*1000).toLocaleString():"Not recorded",
