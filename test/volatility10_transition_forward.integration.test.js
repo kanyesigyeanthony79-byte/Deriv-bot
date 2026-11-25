@@ -70,3 +70,26 @@ test("integration: frozen R10 signal reaches Telegram once and is rejected by MT
   assert.match((await directQueue.json()).error,/cannot enter the broker execution queue/);
  }finally{global.fetch=originalFetch;}
 });
+
+test("legacy strategy rollback remains paper-only and is still blocked by the emergency kill switch",async()=>{
+ const source=fs.readFileSync(path.join(__dirname,"../workers/deriv-telegram-alerts/worker.js"),"utf8");
+ const module=await import("data:text/javascript;base64,"+Buffer.from(source).toString("base64"));
+ const env={SIGNAL_API_KEY:"test-key",TELEGRAM_BOT_TOKEN:"token",TELEGRAM_CHAT_ID:"chat",
+  R10_LEGACY_ROLLBACK_ENABLED:"true",R10_PAPER_ROUTE_ENABLED:"true",R10_EMERGENCY_KILL_SWITCH:"false"};
+ const legacy={event:"new_signal",marketId:"R_10",market:"Volatility 10 Index",
+  instrument:"Volatility 10 Index",timeframe:"M1",direction:"LONG",
+  signalTimestamp:"2026-01-01T16:00:00.000Z",strategyVersion:"volatility10_ema_atr_slope20_v1",
+  ema12:101,ema26:100,ema100:99,atr14:2,referenceEntryPrice:100,stopLoss:94,takeProfit:106,
+  providerId:"volatility10_ema_atr_slope20_v1",status:"PAPER",paper:true,live:false};
+ const originalFetch=global.fetch;let sent=0,last="";
+ global.fetch=async(url,init)=>{sent++;last=JSON.parse(init.body).text;return new Response(JSON.stringify({ok:true}),{status:200});};
+ try{
+  const req=()=>new Request("https://worker.example/",{method:"POST",
+   headers:{"Content-Type":"application/json","X-API-Key":"test-key"},body:JSON.stringify(legacy)});
+  const delivered=await module.default.fetch(req(),env);
+  assert.equal(delivered.status,200);assert.equal((await delivered.json()).success,true);
+  assert.match(last,/LEGACY ROLLBACK — PAPER SIGNAL/);assert.equal(sent,1);
+  const killed=await module.default.fetch(req(),{...env,R10_EMERGENCY_KILL_SWITCH:"true"});
+  assert.equal((await killed.json()).suppressed,true);assert.equal(sent,1);
+ }finally{global.fetch=originalFetch;}
+});
