@@ -192,6 +192,13 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <table><thead><tr><th>Market</th><th>Data</th><th>Setups</th><th>M15 confirmed</th><th>M15 rejected</th><th>Recheck rejected</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>Target %</th><th>Average R</th><th>Risk rejected</th></tr></thead>
       <tbody id="breakoutRetestM5M15Markets"><tr><td colspan="12" class="muted">Waiting for market results…</td></tr></tbody></table>
     </div>
+    <h2 style="margin-top:18px">Research market scanner · Telegram shadow signals</h2>
+    <div class="muted">These five additional markets are scanned by the independent research collector. New signals can be delivered to Telegram with the label SHADOW / RESEARCH — NOT LIVE. They are not part of Legacy M15 production routing and no orders are placed.</div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn smallbtn" id="researchScanRefresh" type="button">Refresh market scan status</button><span class="status" id="researchScanUpdated">Loading research scanner status…</span></div>
+    <div class="card mtf-table-wrap" style="margin-top:10px">
+      <table><thead><tr><th>Market</th><th>Scanner status</th><th>M1 candles</th><th>M5 candles</th><th>M15 candles</th><th>Telegram delivery (cycle)</th><th>Last scan</th><th>Details</th></tr></thead>
+      <tbody id="researchScanMarkets"><tr><td colspan="8" class="muted">Waiting for research scanner snapshot…</td></tr></tbody></table>
+    </div>
     <h2 style="margin-top:18px">Research lab · 162 rule combinations</h2>
     <div class="muted">Offline candle research only. It does not send alerts or place orders. Rules are screened on an earlier sample and then checked on a later, held-out sample.</div>
     <div class="status" id="researchStatus">Waiting for archived M15 candle history…</div>
@@ -536,6 +543,32 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   setInterval(refreshPromotedSystem, 60000);
   $("r10Refresh").addEventListener("click",refreshR10);
   refreshR10(); setInterval(refreshR10,60000);
+
+  const RESEARCH_SCAN_MARKETS=[["R_100","Volatility 100 Index"],["JD25","Jump 25 Index"],["JD50","Jump 50 Index"],["CRASH100","Crash 100 Index"],["BOOM100","Boom 100 Index"]];
+  async function refreshResearchScan(){
+    const status=$("researchScanUpdated"), body=$("researchScanMarkets");
+    status.textContent="Checking latest hosted research scan…";
+    try{
+      const response=await fetch("./research_shadow_collection.json?v="+Date.now(),{cache:"no-store"});
+      if(!response.ok)throw new Error("HTTP "+response.status);
+      const snapshot=await response.json(), markets=snapshot.markets||{}, summary=snapshot.summary||{};
+      const stamp=snapshot.generatedAt?new Date(snapshot.generatedAt).toLocaleString():"—";
+      body.innerHTML=RESEARCH_SCAN_MARKETS.map(([id,name])=>{
+        const m=markets[id];
+        if(!m)return '<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal none">NOT IN SNAPSHOT</td><td>—</td><td>—</td><td>—</td><td>—</td><td>'+esc(stamp)+'</td><td>Awaiting next collector run</td></tr>';
+        const frames=m.timeframes||{}, errors=Array.isArray(m.errors)?m.errors:[];
+        const failed=errors.length>0, counts=["M1","M5","M15"].map(tf=>Array.isArray(frames[tf])?frames[tf].length:"—");
+        const telegram=summary.telegramSent!==undefined?(summary.telegramSent+" sent / "+(summary.telegramFailed||0)+" failed overall"):"No delivery summary";
+        return '<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal '+(failed?"none":"buy")+'">'+(failed?"PARTIAL / ERROR":"SCANNED")+'</td><td>'+esc(counts[0])+'</td><td>'+esc(counts[1])+'</td><td>'+esc(counts[2])+'</td><td>'+esc(telegram)+'</td><td>'+esc(stamp)+'</td><td>'+esc(errors.map(e=>(e.timeframe||"data")+": "+e.message).join("; ")||"Market data retrieved")+'</td></tr>';
+      }).join("");
+      status.textContent="Snapshot "+stamp+" · "+Object.keys(markets).length+" research markets · "+(summary.telegramSent??0)+" Telegram shadow alerts sent / "+(summary.telegramFailed??0)+" failed in this cycle.";
+    }catch(error){
+      body.innerHTML=RESEARCH_SCAN_MARKETS.map(([id,name])=>'<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal none">STATUS UNAVAILABLE</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>'+esc(error.message)+'</td></tr>').join("");
+      status.textContent="Research scanner status unavailable. No market is assumed to be scanning.";
+    }
+  }
+  $("researchScanRefresh").addEventListener("click",refreshResearchScan);
+  refreshResearchScan(); setInterval(refreshResearchScan,60000);
 
   $("export").addEventListener("click",exportCsv);
   $("refresh").addEventListener("click",refresh);
