@@ -8,6 +8,12 @@ Needs Node 22+ and an always-on machine (VPS, Raspberry Pi or a worker on a host
 4. **Demo order testing is a separate, explicit step:** the existing bot can place fixed-stake Rise/Fall demo orders only if `TRADE_ENABLED=true` and `TRADE_MODE=demo`. Do not enable this until the strategy has passed replay and you have reviewed the stake, duration, and daily limits. The bot checks that Deriv returns a demo WebSocket endpoint before placing an order.
 5. **Kill switch:** create a file named `STOP` next to `bot.js`. No new trade is placed while it exists.
 
+## Signal mode: live market, manual demo execution
+- The hosted research scanner reads Deriv public market candles; its signal feed is based on live market data, not a demo price feed.
+- Research Telegram alerts are labelled `LIVE MARKET SIGNAL` and `DEMO_MANUAL`: you decide whether and how to place each signal on your Deriv demo account.
+- The legacy `paper: true` / `live: false` fields remain as safety-routing metadata. They do not mean that the market prices are demo prices and must not be interpreted as permission for real-money execution.
+- No real-money account is connected for order placement. No automatic order execution is enabled by this signal-mode change.
+
 ## What it does and does not do
 - The current production scanner uses the existing EMA/RSI/ATR rules in `engine.js`; this branch does not change its signals or Telegram path.
 - The market-structure document in `research/market-structure-experiment.md` is a research specification only. BOS/CHoCH, multi-timeframe confirmation, and trade-management rules have not yet been implemented or validated.

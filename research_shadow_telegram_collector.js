@@ -144,6 +144,7 @@ function toAlert(signal, strategy, marketData, applyRegime = true) {
   if (!regime.passed) return null;
   return {
     event: "new_signal", source: "RESEARCH_SHADOW", paper: true, live: false,
+    marketMode: "LIVE_MARKET", executionMode: "DEMO_MANUAL",
     marketRegimeFilter: { status: "PASSED", adx: regime.adx, emaSeparationAtr: regime.emaSeparationAtr },
     signalId: String(signal.signalId), strategyId: strategy,
     strategyLabel: String(signal.strategyLabel || strategy),

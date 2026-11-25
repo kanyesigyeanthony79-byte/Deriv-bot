@@ -30,6 +30,8 @@ test("both 1-second volatility products can produce research-only Telegram alert
     assert.equal(alert.source, "RESEARCH_SHADOW");
     assert.equal(alert.paper, true);
     assert.equal(alert.live, false);
+    assert.equal(alert.marketMode, "LIVE_MARKET");
+    assert.equal(alert.executionMode, "DEMO_MANUAL");
     assert.equal(alert.status, "SHADOW");
   }
 });
@@ -43,6 +45,8 @@ test("shadow alerts contain demo-only routing fields and calculated TP1", () => 
   assert.equal(alert.source, "RESEARCH_SHADOW");
   assert.equal(alert.paper, true);
   assert.equal(alert.live, false);
+  assert.equal(alert.marketMode, "LIVE_MARKET");
+  assert.equal(alert.executionMode, "DEMO_MANUAL");
   assert.equal(alert.status, "SHADOW");
   assert.equal(alert.tp1, 107.5);
   assert.equal(alert.tp2, 110);
