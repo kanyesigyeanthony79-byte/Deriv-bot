@@ -24,7 +24,8 @@ test("EMA and ATR helpers are deterministic and do not use future values", () =>
 
 test("provider configuration is fail-closed, paper-only and rollback-ready", () => {
   const config = require("../volatility10_provider_config");
-  assert.equal(config.providerId, strategy.PROVIDER_ID);
+  assert.equal(config.providerId, "volatility10_transition_lowvol_1r_forward_v1");
+  assert.equal(config.legacyProviderId, strategy.PROVIDER_ID);
   assert.equal(config.flags.providerEnabled, false);
   assert.equal(config.flags.paperRouteEnabled, false);
   assert.equal(config.flags.liveExecutionEnabled, false);
@@ -135,7 +136,9 @@ test("provider exclusivity gates legacy Volatility 10 producers and paper notifi
   assert.match(worker,/function isVolatility10Alert/);
   assert.match(worker,/volatility10_paper_only/);
   assert.match(worker,/if\(isVolatility10Alert\(rec\.payload\)\)/);
-  assert.match(worker,/data\.providerId === "volatility10_ema_atr_slope20_v1"/);
+  assert.match(worker,/data\.providerId === "volatility10_transition_lowvol_1r_forward_v1"/);
+  assert.match(worker,/data\.timeframe === "M5"/);
+  assert.match(worker,/data\.forwardTest === true/);
   assert.match(worker,/env\.R10_PAPER_ROUTE_ENABLED === "true"/);
   assert.match(worker,/env\.R10_EMERGENCY_KILL_SWITCH === "false"/);
   assert.match(hosted,/id === "R_10" && process\.env\.R10_LEGACY_ROLLBACK_ENABLED !== "true"/);
