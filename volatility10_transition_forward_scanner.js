@@ -74,11 +74,15 @@ function journalRecord(setupEpoch,result,nowEpoch){
   h1Structure:signal.h1Structure||result.h1Structure?.direction||null,m5Setup:signal.m5Setup||null,
   atr14:signal.atr14??result.atrValue??null,atrPercentile:signal.atrPercentile??result.atrPercentile??null,
   spread:signal.spread??null,quoteAgeSeconds:signal.quoteAgeSeconds??null,
-  entry:signal.entry??null,stopLoss:signal.stopLoss??null,target:signal.target??null,
+  entry:signal.entry??null,entryTimestampUTC:signal.entryTimestamp??null,
+  entryDelaySeconds:signal.entryDelaySeconds??result.entryDelaySeconds??null,
+  stopLoss:signal.stopLoss??null,target:signal.target??null,utcHour:signal.utcHour??null,
+  dataSource:signal.dataSource??null,paper:true,live:false,brokerExecutionAllowed:false,
   deliveryStatus:"NOT_SENT",outcome:null,exitTimestampUTC:null,exitPrice:null,outcomeReason:null,
-  dataGap:false,stale:result.reason==="stale_entry",ambiguous:false,
-  status:result.status,reason:result.reason||"generated",recordedAtUTC:new Date(nowEpoch*1000).toISOString(),
-  errorDetails:null
+  dataGap:false,stale:result.reason==="stale_entry",
+  invalid:typeof result.reason==="string"&&(result.reason.includes("invalid")||result.reason==="stop_not_on_correct_side"),
+  ambiguous:false,status:result.status,reason:result.reason||"generated",
+  recordedAtUTC:new Date(nowEpoch*1000).toISOString(),errorDetails:null
  };
 }
 function updateActiveOutcome(state,journal,completedM1){
