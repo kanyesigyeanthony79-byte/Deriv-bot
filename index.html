@@ -147,12 +147,12 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <div class="card"><div class="detail">AVERAGE RECORDED R</div><div class="signal">—</div></div>
     </div>
     <h3 style="margin-top:14px">Strategy comparison · R_10 excluded</h3>
-    <div class="card mtf-table-wrap"><table><thead><tr><th>Strategy</th><th>Records</th><th>Target</th><th>Stop</th><th>Time exit</th><th>Pending</th><th>Win rate*</th><th>Average R</th></tr></thead><tbody id="researchAnalyticsStrategies"><tr><td colspan="8" class="muted">Loading strategy summaries…</td></tr></tbody></table></div>
+    <div class="card mtf-table-wrap"><table><thead><tr><th>Strategy</th><th>Records</th><th>Target</th><th>Stop</th><th>Time exit</th><th>Pending</th><th>Ambiguous</th><th>Win rate*</th><th>Net R</th><th>Average R</th></tr></thead><tbody id="researchAnalyticsStrategies"><tr><td colspan="10" class="muted">Loading strategy summaries…</td></tr></tbody></table></div>
     <h3 style="margin-top:14px">Market comparison · all active research markets</h3>
-    <div class="card mtf-table-wrap"><table><thead><tr><th>Market</th><th>Records</th><th>Target</th><th>Stop</th><th>Win rate*</th><th>Average R</th><th>Data quality</th></tr></thead><tbody id="researchAnalyticsMarkets"><tr><td colspan="7" class="muted">Loading market summaries…</td></tr></tbody></table></div>
+    <div class="card mtf-table-wrap"><table><thead><tr><th>Market</th><th>Records</th><th>Target</th><th>Stop</th><th>Time exit</th><th>Win rate*</th><th>Net R</th><th>Data quality</th></tr></thead><tbody id="researchAnalyticsMarkets"><tr><td colspan="8" class="muted">Loading market summaries…</td></tr></tbody></table></div>
     <h3 style="margin-top:14px">Research Telegram delivery audit</h3>
     <div class="grid" id="researchAnalyticsDelivery"><div class="card"><div class="detail">DELIVERY RECORDS</div><div class="signal">—</div></div></div>
-    <div class="notice">*Win rate = target-before-stop ÷ (target-before-stop + stop-before-target); time exits are excluded. Average R is weighted from the journal's published averageRealizedR values where available. No delivery success is inferred from signal generation. Telegram delivery currently has no confirmed records in its dedicated delivery journal. Research/shadow results are not live P&amp;L and exclude broker execution costs.</div>
+    <div class="notice">*Win rate = target-before-stop ÷ (target-before-stop + stop-before-target); time exits are excluded. Net R and average R are calculated from each individual signal record with a numeric realizedR. No delivery success is inferred from signal generation. Telegram delivery currently has no confirmed records in its dedicated delivery journal. Research/shadow results are not live P&amp;L and exclude broker execution costs.</div>
   </section>
 
   <section id="strategy-comparison">
@@ -601,70 +601,87 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     ["M15 trend + M5 EMA pullback","./m5_ema_pullback_shadow_journal.json"],
     ["Breakout + M5 retest + M15 confirmation","./breakout_retest_m5_m15_shadow_journal.json"]
   ];
-  const raNum=v=>Number.isFinite(Number(v))?Number(v):0;
   const raFmt=v=>Number.isFinite(v)?(v>=0?"+":"")+v.toFixed(2)+"R":"—";
   const raRate=(w,l)=>w+l?((w/(w+l))*100).toFixed(1)+"%":"—";
+  function raBucket(status){
+    const s=String(status||"").toLowerCase();
+    if(["tp2_hit","target","tp_hit","win"].includes(s))return "wins";
+    if(["stopped","stop","sl_hit","loss"].includes(s))return "losses";
+    if(["time_exit","expired_time"].includes(s))return "time";
+    if(s==="pending")return "pending";
+    if(s==="ambiguous")return "ambiguous";
+    return "other";
+  }
   async function refreshResearchAnalytics(){
     const status=$("researchAnalyticsUpdated");
-    if(status)status.textContent="Reading existing strategy journals…";
+    if(status)status.textContent="Reading individual signal records…";
     const loaded=await Promise.all(RESEARCH_ANALYTICS_FILES.map(async([label,url])=>{
-      try{const response=await fetch(url+"?v="+Date.now(),{cache:"no-store"});if(!response.ok)throw new Error("HTTP "+response.status);const journal=await response.json();if(!journal.summary||!journal.summary.markets)throw new Error("Missing summary.markets");return {label,journal,error:null};}
-      catch(error){return {label,journal:null,error:error.message};}
+      try{
+        const response=await fetch(url+"?v="+Date.now(),{cache:"no-store"});
+        if(!response.ok)throw new Error("HTTP "+response.status);
+        const journal=await response.json();
+        if(!Array.isArray(journal.signals))throw new Error("Missing individual signal records");
+        return {label,journal,error:null};
+      }catch(error){return {label,journal:null,error:error.message};}
     }));
     const valid=loaded.filter(x=>x.journal);
     if(!valid.length){
       $("researchAnalyticsTotals").innerHTML='<div class="signal-empty">Research journals could not be loaded. No performance figures are being estimated.</div>';
-      $("researchAnalyticsStrategies").innerHTML='<tr><td colspan="8" class="muted">No verified journal data available.</td></tr>';
-      $("researchAnalyticsMarkets").innerHTML='<tr><td colspan="7" class="muted">No verified market data available.</td></tr>';
+      $("researchAnalyticsStrategies").innerHTML='<tr><td colspan="10" class="muted">No verified journal data available.</td></tr>';
+      $("researchAnalyticsMarkets").innerHTML='<tr><td colspan="8" class="muted">No verified market data available.</td></tr>';
       if(status)status.textContent="0/3 journals loaded";
       return;
     }
     const strategyRows=[],marketMap={};
-    let total={signals:0,wins:0,losses:0,time:0,pending:0,ambiguous:0,rWeighted:0,rWeight:0};
+    const total={records:0,wins:0,losses:0,time:0,pending:0,ambiguous:0,other:0,netR:0,realized:0};
     for(const item of loaded){
-      if(!item.journal){strategyRows.push('<tr><td>'+esc(item.label)+'</td><td colspan="7" class="muted">Unavailable: '+esc(item.error)+'</td></tr>');continue;}
-      const markets=Object.entries(item.journal.summary.markets).filter(([market])=>market!=="R_10");
-      let s={signals:0,wins:0,losses:0,time:0,pending:0,ambiguous:0,rWeighted:0,rWeight:0};
-      for(const [market,m] of markets){
-        const signals=raNum(m.signals??m.signalsGenerated);
-        const wins=raNum(m.targetBeforeStop),losses=raNum(m.stopBeforeTarget);
-        const timeExit=m.timeExit!==null&&m.timeExit!==undefined&&Number.isFinite(Number(m.timeExit))?Number(m.timeExit):null;
-        const pending=raNum(m.pending),ambiguous=raNum(m.ambiguous);
-        s.signals+=signals;s.wins+=wins;s.losses+=losses;
-        if(timeExit!==null)s.time+=timeExit;
-        s.pending+=pending;s.ambiguous+=ambiguous;
-        if(Number.isFinite(Number(m.averageRealizedR))&&signals>0){s.rWeighted+=Number(m.averageRealizedR)*signals;s.rWeight+=signals;}
-        if(!marketMap[market])marketMap[market]={signals:0,wins:0,losses:0,rWeighted:0,rWeight:0,quality:[]};
-        const a=marketMap[market];a.signals+=signals;a.wins+=wins;a.losses+=losses;
-        if(Number.isFinite(Number(m.averageRealizedR))&&signals>0){a.rWeighted+=Number(m.averageRealizedR)*signals;a.rWeight+=signals;}
-        if(m.dataQuality&&!a.quality.includes(m.dataQuality))a.quality.push(m.dataQuality);
+      if(!item.journal){
+        strategyRows.push('<tr><td>'+esc(item.label)+'</td><td colspan="9" class="muted">Unavailable: '+esc(item.error)+'</td></tr>');
+        continue;
       }
-      const avg=s.rWeight?s.rWeighted/s.rWeight:NaN;
-      total.signals+=s.signals;total.wins+=s.wins;total.losses+=s.losses;total.time+=s.time;total.pending+=s.pending;total.ambiguous+=s.ambiguous;total.rWeighted+=s.rWeighted;total.rWeight+=s.rWeight;
-      strategyRows.push('<tr><td>'+esc(item.label)+'</td><td>'+s.signals+'</td><td>'+s.wins+'</td><td>'+s.losses+'</td><td>'+(s.time||"—")+'</td><td>'+s.pending+'</td><td>'+raRate(s.wins,s.losses)+'</td><td>'+raFmt(avg)+'</td></tr>');
+      const active=item.journal.signals.filter(signal=>signal.marketId!=="R_10");
+      const s={records:active.length,wins:0,losses:0,time:0,pending:0,ambiguous:0,other:0,netR:0,realized:0};
+      for(const signal of active){
+        const bucket=raBucket(signal.status);
+        s[bucket]++;
+        if(Number.isFinite(signal.realizedR)){s.netR+=signal.realizedR;s.realized++;}
+        const market=signal.marketId||"UNKNOWN";
+        if(!marketMap[market])marketMap[market]={records:0,wins:0,losses:0,time:0,pending:0,ambiguous:0,other:0,netR:0,realized:0,quality:[]};
+        const m=marketMap[market];
+        m.records++;m[bucket]++;
+        if(Number.isFinite(signal.realizedR)){m.netR+=signal.realizedR;m.realized++;}
+      }
+      for(const key of ["records","wins","losses","time","pending","ambiguous","other","netR","realized"])total[key]+=s[key];
+      const avg=s.realized?s.netR/s.realized:NaN;
+      strategyRows.push('<tr><td>'+esc(item.label)+'</td><td>'+s.records+'</td><td>'+s.wins+'</td><td>'+s.losses+'</td><td>'+s.time+'</td><td>'+s.pending+'</td><td>'+s.ambiguous+'</td><td>'+raRate(s.wins,s.losses)+'</td><td>'+raFmt(s.netR)+'</td><td>'+raFmt(avg)+'</td></tr>');
+      for(const [market,summary] of Object.entries(item.journal.summary?.markets||{})){
+        if(market!=="R_10"&&summary.dataQuality&&!marketMap[market].quality.includes(summary.dataQuality))marketMap[market].quality.push(summary.dataQuality);
+      }
     }
     $("researchAnalyticsTotals").innerHTML=[
-      ["ACTIVE STRATEGY RECORDS",total.signals],
+      ["ACTIVE STRATEGY RECORDS",total.records],
       ["TARGET BEFORE STOP",total.wins],
       ["STOP BEFORE TARGET",total.losses],
-      ["WEIGHTED AVERAGE R",total.rWeight?raFmt(total.rWeighted/total.rWeight):"—"]
+      ["NET RECORDED R",raFmt(total.netR)]
     ].map(([label,value],i)=>'<div class="card"><div class="detail">'+label+'</div><div class="signal '+(i===1?"buy":i===2?"sell":"")+'">'+esc(value)+'</div></div>').join("");
     $("researchAnalyticsStrategies").innerHTML=strategyRows.join("");
-    $("researchAnalyticsMarkets").innerHTML=Object.entries(marketMap).sort((a,b)=>b[1].signals-a[1].signals).map(([market,m])=>{
-      const q=m.quality.length?m.quality.join(", "):"not supplied";
-      return '<tr><td>'+esc(market)+'</td><td>'+m.signals+'</td><td>'+m.wins+'</td><td>'+m.losses+'</td><td>'+raRate(m.wins,m.losses)+'</td><td>'+raFmt(m.rWeight?m.rWeighted/m.rWeight:NaN)+'</td><td>'+esc(q)+'</td></tr>';
-    }).join("")||'<tr><td colspan="7" class="muted">No market summaries available.</td></tr>';
+    $("researchAnalyticsMarkets").innerHTML=Object.entries(marketMap).sort((a,b)=>b[1].records-a[1].records).map(([market,m])=>{
+      return '<tr><td>'+esc(market)+'</td><td>'+m.records+'</td><td>'+m.wins+'</td><td>'+m.losses+'</td><td>'+m.time+'</td><td>'+raRate(m.wins,m.losses)+'</td><td>'+raFmt(m.netR)+'</td><td>'+esc(m.quality.join(", ")||"not supplied")+'</td></tr>';
+    }).join("")||'<tr><td colspan="8" class="muted">No market summaries available.</td></tr>';
     try{
       const response=await fetch("./shadow_telegram_delivery_journal.json?v="+Date.now(),{cache:"no-store"});
       if(!response.ok)throw new Error("HTTP "+response.status);
-      const delivery=await response.json(),records=Object.values(delivery.signals||{});
-      const delivered=records.filter(x=>String(x.status||x.deliveryStatus||"").toLowerCase()==="sent"||String(x.status||"").toLowerCase()==="delivered").length;
+      const delivery=await response.json();
+      const records=Object.values(delivery.signals||{});
+      const delivered=records.filter(x=>["sent","delivered"].includes(String(x.status||x.deliveryStatus||"").toLowerCase())).length;
       const failed=records.filter(x=>/fail|error/.test(String(x.status||x.deliveryStatus||"").toLowerCase())).length;
       $("researchAnalyticsDelivery").innerHTML=[
         ["DELIVERY RECORDS",records.length],["CONFIRMED SENT",delivered],["FAILED",failed],["NOT YET CONFIRMED",Math.max(0,records.length-delivered-failed)]
       ].map(([label,value])=>'<div class="card"><div class="detail">'+label+'</div><div class="signal">'+value+'</div></div>').join("");
       if(!records.length)$("researchAnalyticsDelivery").insertAdjacentHTML("beforeend",'<div class="muted">No confirmed research Telegram delivery attempts are recorded yet. This is not evidence that zero research signals were generated.</div>');
-    }catch(error){$("researchAnalyticsDelivery").innerHTML='<div class="signal-empty">Delivery journal unavailable: '+esc(error.message)+'. Delivery status is not inferred.</div>';}
+    }catch(error){
+      $("researchAnalyticsDelivery").innerHTML='<div class="signal-empty">Delivery journal unavailable: '+esc(error.message)+'. Delivery status is not inferred.</div>';
+    }
     const latest=valid.map(x=>x.journal.updatedAt).filter(Boolean).sort().slice(-1)[0];
     if(status)status.textContent=valid.length+"/3 journals loaded · source updated "+(latest?time(latest):"time unavailable")+" · refreshed "+new Date().toLocaleTimeString();
   }
