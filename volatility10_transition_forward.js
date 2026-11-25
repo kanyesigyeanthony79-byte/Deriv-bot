@@ -139,7 +139,7 @@ function evaluateSetup({m1,m5,h1,h4,nowEpoch,activeTrade=null,lastSetupEpoch=nul
   const signalId="R10-TF-"+setup.epoch+"-"+setupSignal.direction;
   return {status:"GENERATED",signal:{
     strategyVersion:STRATEGY_VERSION,providerId:STRATEGY_VERSION,signalId,marketId:MARKET_ID,
-    market:"Volatility 10 Index",direction:setupSignal.direction,
+    market:"Volatility 10 Index",timeframe:"M5",forwardTest:true,direction:setupSignal.direction,
     signalTimestamp:new Date(setupClose*1000).toISOString(),signalEpoch:setupClose,
     entryTimestamp:new Date(Number(entryCandle.epoch)*1000).toISOString(),
     entryEpoch:Number(entryCandle.epoch),entry:levels.entry,referenceEntryPrice:levels.entry,
