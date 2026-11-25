@@ -8,11 +8,12 @@ function shouldDeliverTelegramAlert(data = {}) {
 }
 
 
-const MT5_ALLOWED_MARKETS=new Set(["R_10","R_25","R_50","R_75","JD100","CRASH500","BOOM500"]);
+const MT5_ALLOWED_MARKETS=new Set(["R_25","R_50","R_75","JD100","CRASH500","BOOM500"]);
 const MT5_MAX_AGE={SCALP:600,SHORT_TERM:1800,POSITION:14400};
 function validateMt5Signal(d){
  if(!d||d.event!=="new_signal")return "Only new_signal events can be queued";
  if(!d.signalId||!/^[A-Za-z0-9._:-]{1,120}$/.test(String(d.signalId)))return "Invalid signalId";
+ if(String(d.marketId||"").trim().toUpperCase()==="R_10")return "R_10 is forward-test-only and cannot be queued for MT5";
  if(!MT5_ALLOWED_MARKETS.has(String(d.marketId||"")))return "Market is not on the synthetic allow-list";
  const marketId=String(d.marketId||"").trim().toUpperCase();
  if(marketId==="R_50"&&!(d.source==="LEGACY_15M"&&d.priorityTier==="RESEARCH_PRIORITY"))return "R_50 is restricted to LEGACY_15M RESEARCH_PRIORITY signals";
