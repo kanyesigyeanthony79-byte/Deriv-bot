@@ -2,8 +2,9 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
-  MARKETS, TIMEFRAME_SECONDS, normalizeCandles, splitContinuousSegments,
-  resolveTrade, summarizeTrades, backtestMarket
+  MARKETS, TIMEFRAME_SECONDS, normalizeCandles, filterClosedCandles,
+  splitContinuousSegments, summarizeCoverage, resolveTrade, summarizeTrades,
+  backtestMarket, fetchCandles
 } = require("../m15_expansion_backtest");
 
 function candle(epoch, open, high, low, close) {
@@ -34,6 +35,19 @@ test("candle normalization removes malformed and duplicate epochs", () => {
   assert.equal(rows[0].close, 2.6);
 });
 
+test("incomplete current M15 candle is excluded from replay", () => {
+  const rows = [0, 900, 1800].map(epoch => candle(epoch, 1, 2, 0.5, 1.5));
+  assert.deepEqual(filterClosedCandles(rows, 1800).map(c => c.epoch), [0, 900]);
+});
+
+test("continuous history coverage reports missing bars and gaps", () => {
+  const rows = [0, 900, 2700, 3600, 4500].map(epoch => candle(epoch, 1, 2, 0.5, 1.5));
+  assert.deepEqual(summarizeCoverage(rows, 0, 5400), {
+    expectedCandles: 6, actualCandles: 5, missingCandles: 1, coveragePct: 83.33,
+    gapCount: 1, largestGapCandles: 1, firstCandleEpoch: 0, lastCandleEpoch: 4500
+  });
+});
+
 test("continuity splits unexplained M15 gaps instead of bridging them", () => {
   const rows = [0, 900, 1800, 3600, 4500].map(epoch => candle(epoch, 1, 2, 0.5, 1.5));
   assert.deepEqual(splitContinuousSegments(rows, TIMEFRAME_SECONDS).map(s => s.length), [3, 2]);
@@ -46,6 +60,21 @@ test("same-candle stop and target touches are ambiguous, not losses", () => {
   ], 1);
   assert.equal(result.outcome, "AMBIGUOUS");
   assert.equal(result.r, null);
+});
+
+test("entry candle is included when checking stop and target touches", () => {
+  const stop = resolveTrade(trade(), [
+    candle(0, 100, 100.5, 99.5, 100), candle(900, 100, 100.1, 98.9, 99.2),
+    candle(1800, 99.2, 99.5, 99.1, 99.3)
+  ], 1);
+  const target = resolveTrade(trade(), [
+    candle(0, 100, 100.5, 99.5, 100), candle(900, 100, 103.1, 99.8, 102.5),
+    candle(1800, 102.5, 102.6, 102.2, 102.4)
+  ], 1);
+  assert.equal(stop.outcome, "SL");
+  assert.equal(stop.outcomeEpoch, 900);
+  assert.equal(target.outcome, "TP2");
+  assert.equal(target.outcomeEpoch, 900);
 });
 
 test("TP2 is +3R and a stop after TP1 is -1R", () => {
@@ -72,6 +101,30 @@ test("unresolved and ambiguous outcomes stay outside resolved win rate", () => {
     generated: 4, resolved: 2, wins: 1, losses: 1, resolvedWinRatePct: 50,
     ambiguous: 1, unresolved: 1, crudeR: 2, expectancyR: 1
   });
+});
+
+test("history fetch pages backwards with count and end, not an expensive start range", async () => {
+  const requests = [];
+  const client = {
+    async ask(request) {
+      requests.push(request);
+      if (request.end === 5400) {
+        return { candles: [2700, 3600, 4500].map(epoch => candle(epoch, 1, 2, 0.5, 1.5)) };
+      }
+      if (request.end === 1800) {
+        return { candles: [0, 900, 1800].map(epoch => candle(epoch, 1, 2, 0.5, 1.5)) };
+      }
+      throw new Error("Unexpected page end: " + request.end);
+    }
+  };
+  const rows = await fetchCandles(client, "R_100", { startEpoch: 0, endEpoch: 5400, requestGapMs: 0 });
+  assert.deepEqual(rows.map(c => c.epoch), [0, 900, 1800, 2700, 3600, 4500]);
+  assert.equal(requests.length, 2);
+  for (const request of requests) {
+    assert.equal(request.count, 1000);
+    assert.equal("start" in request, false);
+    assert.equal(request.granularity, 900);
+  }
 });
 
 test("backtest does not create trades from insufficient history", () => {
