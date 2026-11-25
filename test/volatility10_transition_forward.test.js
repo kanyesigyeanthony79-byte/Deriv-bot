@@ -27,7 +27,7 @@ test("classifies bullish, bearish and mixed structures using confirmed swing pai
   [2,0],[3,1],[6,2],[4,1],[3,0],[4,2],[7,3],[5,2],[4,1],[5,3],[8,4],[6,3],[5,2]
  ].map((v,i)=>candle(i*3600,3,v[0],v[1],3));
  assert.equal(s.classifyStructure(bullish,s.H1,13*3600).direction,"BULLISH");
- const bearish=bullish.map((c,i)=>({...c,high:10-c.high,low:10-c.low}));
+ const bearish=bullish.map(c=>({...c,high:20-c.low,low:20-c.high}));
  assert.equal(s.classifyStructure(bearish,s.H1,13*3600).direction,"BEARISH");
  assert.equal(s.classifyStructure(bullish.slice(0,4),s.H1,13*3600).direction,"NEUTRAL");
 });
@@ -81,4 +81,57 @@ test("R10 frozen identity is distinct from the retired EMA strategy and never au
  assert.equal(s.STRATEGY_VERSION,"volatility10_transition_lowvol_1r_forward_v1");
  assert.notEqual(s.STRATEGY_VERSION,"volatility10_ema_atr_slope20_v1");
  assert.equal(s.MARKET_ID,"R_10");
+});
+
+function lowVolSetupFixture(){
+ const end=Date.UTC(2026,0,1,15,55)/1000;
+ const start=end-519*300;
+ const m5=Array.from({length:520},(_,i)=>{
+  const epoch=start+i*300;
+  return i<400?candle(epoch,100,102,98,100.2):candle(epoch,100,100.25,99.75,100.05);
+ });
+ m5[519]=candle(end,99.8,100.3,99.5,100.25);
+ const h1=Array.from({length:8},(_,i)=>candle(Math.floor(start/3600)*3600+i*3600,100,101,99,100));
+ const h4=Array.from({length:8},(_,i)=>candle(Math.floor(start/14400)*14400+i*14400,100,101,99,100));
+ const m1=[candle(end+300,100.25,100.3,100.2,100.25)];
+ return {m1,m5,h1,h4,setupEpoch:end,setupClose:end+300};
+}
+test("one-active-trade and duplicate setup gates reject before signal creation",()=>{
+ const x=lowVolSetupFixture();
+ assert.equal(s.evaluateSetup({...x,nowEpoch:x.setupClose+1,activeTrade:{signalId:"open"}}).reason,"active_trade_exists");
+ assert.equal(s.evaluateSetup({...x,nowEpoch:x.setupClose+1,lastSetupEpoch:x.setupEpoch}).reason,"duplicate_setup_candle");
+});
+test("missing entry candle is skipped and stale entry is recorded, not filled",()=>{
+ const x=lowVolSetupFixture();
+ const missing=s.evaluateSetup({...x,m1:[],nowEpoch:x.setupClose+1});
+ assert.equal(missing.reason,"next_entry_candle_unavailable");
+ const stale=s.evaluateSetup({...x,nowEpoch:x.setupClose+61});
+ assert.equal(stale.reason,"stale_entry");
+ assert.equal(stale.status,"SKIPPED");
+});
+test("frozen setup creates a completed-candle signal with 1R levels and UTC metadata",()=>{
+ const x=lowVolSetupFixture();
+ const result=s.evaluateSetup({...x,nowEpoch:x.setupClose+5});
+ assert.equal(result.status,"GENERATED");
+ assert.equal(result.signal.strategyVersion,s.STRATEGY_VERSION);
+ assert.equal(result.signal.utcHour,16);
+ assert.equal(result.signal.timeframe,"M5");
+ assert.ok(Math.abs(Math.abs(result.signal.entry-result.signal.stopLoss)-Math.abs(result.signal.target-result.signal.entry))<1e-9);
+ assert.equal(result.signal.brokerExecutionAllowed,false);
+});
+test("Telegram worker accepts only the new forward-test provider and R10 is excluded at MT5 and queue boundaries",()=>{
+ const fs=require("node:fs"),path=require("node:path");
+ const worker=fs.readFileSync(path.join(__dirname,"../workers/deriv-telegram-alerts/worker.js"),"utf8");
+ const mt5=fs.readFileSync(path.join(__dirname,"../DerivSignalAssistantV2_SignalBridge.mq5"),"utf8");
+ const legacy=fs.readFileSync(path.join(__dirname,"../cloudflare/deriv-telegram-alerts.js"),"utf8");
+ assert.match(worker,/volatility10_transition_lowvol_1r_forward_v1/);
+ assert.match(worker,/VOLATILITY 10 — FORWARD TEST — NO TRADE EXECUTED/);
+ assert.match(worker,/data\.brokerExecutionAllowed === false/);
+ assert.match(worker,/data\.forwardTest === true/);
+ assert.match(worker,/r10-delivery-reserve/);
+ assert.match(worker,/R_10 is forward-test-only and cannot enter the broker execution queue/);
+ assert.match(worker,/const MT5_ALLOWED_MARKETS=new Set\(\["R_25"/);
+ assert.doesNotMatch(mt5,/AllowedMarkets\[\] = \{[^}]*"R_10"/);
+ assert.doesNotMatch(mt5,/InpSymbolMap = "[^"]*R_10=/);
+ assert.doesNotMatch(legacy,/MT5_ALLOWED_MARKETS=new Set\(\["R_10"/);
 });
