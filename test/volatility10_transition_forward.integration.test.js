@@ -13,7 +13,9 @@ class MemoryStorage{
 }
 function makeQueue(module){
  const storage=new MemoryStorage();
- return new module.ExecutionQueue({storage},{});
+ const durableObject=new module.ExecutionQueue({storage},{});
+ // Cloudflare DurableObjectStub.fetch converts string URLs into Request objects.
+ return {fetch(input,init){return durableObject.fetch(input instanceof Request?input:new Request(input,init));}};
 }
 test("integration: frozen R10 signal reaches Telegram once and is rejected by MT5 and order queue",async()=>{
  const source=fs.readFileSync(path.join(__dirname,"../workers/deriv-telegram-alerts/worker.js"),"utf8");
