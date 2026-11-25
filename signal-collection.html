@@ -74,10 +74,9 @@ $("records").innerHTML=filtered.length?filtered.map((r,i)=>'<tr><td>'+(i+1)+'</t
 async function refresh(){
 $("updated").textContent="Reading original, multi-timeframe and research journals…";
 try{
-const loaded=await Promise.all(SOURCES.map(async([label,url,kind])=>{const res=await fetch(url+"?v="+Date.now(),{cache:"no-store"});if(!res.ok)throw new Error(url+" HTTP "+res.status);const data=await res.json();if(!Array.isArray(data.signals))throw new Error(url+" has no signal array");return {label,kind,signals:data.signals};}));
-const deliveryRes=await fetch("./shadow_telegram_delivery_journal.json?v="+Date.now(),{cache:"no-store"});
-if(!deliveryRes.ok)throw new Error("Shadow delivery journal HTTP "+deliveryRes.status);
-const delivery=await deliveryRes.json(),deliveryMap=delivery.signals||{};
+const loaded=await Promise.all(SOURCES.map(async([label,url,kind])=>{try{const res=await fetch(url+"?v="+Date.now(),{cache:"no-store"});if(!res.ok)throw new Error("HTTP "+res.status);const raw=await res.text();if(!raw.trim())throw new Error("file is empty");const data=JSON.parse(raw);if(!Array.isArray(data.signals))throw new Error("no signals array");return {label,kind,signals:data.signals,error:null};}catch(error){return {label,kind,signals:[],error:url+" · "+error.message};}}));
+let deliveryMap={},deliveryError=null;
+try{const deliveryRes=await fetch("./shadow_telegram_delivery_journal.json?v="+Date.now(),{cache:"no-store"});if(!deliveryRes.ok)throw new Error("HTTP "+deliveryRes.status);const delivery=await deliveryRes.json();deliveryMap=delivery.signals||{};}catch(error){deliveryError="shadow_telegram_delivery_journal.json · "+error.message;}
 const byId=new Map();
 function normalizedOutcome(s){
  const final=String(s.finalOutcome||"").toUpperCase(),state=String(s.status||"").toLowerCase();
@@ -124,8 +123,10 @@ const filter=$("marketFilter"),previous=filter.value;
 filter.innerHTML='<option value="">All '+MARKETS.length+' markets</option>'+MARKETS.map(([id,name])=>'<option value="'+esc(id)+'">'+esc(id)+' · '+esc(name)+'</option>').join("");filter.value=previous;
 render();
 const sourceCounts=loaded.map(x=>x.label+": "+(x.kind==="original"?x.signals.filter(s=>String(s.status||"").toLowerCase()==="sent").length:x.kind==="r10"?x.signals.filter(s=>s.telegram&&s.telegram.sent===true).length:x.kind==="mtf"?x.signals.filter(s=>String(s.telegramStatus||"").toLowerCase()==="sent").length:x.signals.filter(s=>deliveryMap[s.signalId]&&String(deliveryMap[s.signalId].status||"").toLowerCase()==="sent").length)).join(" · ");
-$("updated").textContent=rows.length+" distinct confirmed Telegram deliveries loaded · "+sourceCounts+" · refreshed "+new Date().toLocaleTimeString();
-}catch(error){$("updated").textContent="Collection data unavailable: "+error.message+" · No progress has been estimated."; $("records").innerHTML='<tr><td colspan="11" class="empty">'+esc(error.message)+'</td></tr>';$("markets").innerHTML='<div class="panel muted">Market progress cannot be calculated until all source journals load successfully.</div>';}
+const sourceErrors=loaded.filter(x=>x.error).map(x=>x.label+" unavailable ("+x.error+")");
+if(deliveryError)sourceErrors.push("Shadow Telegram delivery journal unavailable ("+deliveryError+")");
+$("updated").textContent=rows.length+" confirmed Telegram deliveries loaded · "+sourceCounts+(sourceErrors.length?" · PARTIAL DATA: "+sourceErrors.join(" | "):" · all sources loaded")+" · refreshed "+new Date().toLocaleTimeString();
+}catch(error){$("updated").textContent="Collection data unavailable: "+error.message+" · No progress has been estimated."; $("records").innerHTML='<tr><td colspan="11" class="empty">'+esc(error.message)+'</td></tr>';$("markets").innerHTML='<div class="panel muted">Market progress cannot be calculated until the required journals load successfully.</div>';}
 }
 ["search","marketFilter","statusFilter"].forEach(id=>$(id).addEventListener(id==="search"?"input":"change",render));
 $("refresh").addEventListener("click",refresh);refresh();setInterval(refresh,60000);
