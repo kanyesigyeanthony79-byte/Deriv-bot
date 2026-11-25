@@ -710,6 +710,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     $("researchAnalyticsMarkets").innerHTML=Object.entries(marketMap).sort((a,b)=>b[1].records-a[1].records).map(([market,m])=>{
       return '<tr><td>'+esc(market)+'</td><td>'+m.records+'</td><td>'+m.wins+'</td><td>'+m.losses+'</td><td>'+m.time+'</td><td>'+raRate(m.wins,m.losses)+'</td><td>'+raFmt(m.netR)+'</td><td>'+esc(m.quality.join(", ")||"not supplied")+'</td></tr>';
     }).join("")||'<tr><td colspan="8" class="muted">No market summaries available.</td></tr>';
+    researchDeliveryById={};
     try{
       const response=await fetch("./shadow_telegram_delivery_journal.json?v="+Date.now(),{cache:"no-store"});
       if(!response.ok)throw new Error("HTTP "+response.status);
