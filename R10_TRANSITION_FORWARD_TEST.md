@@ -27,7 +27,7 @@ The scanner initializes a forward cursor at its first healthy run and never send
 - Sweep lookback: prior 10 completed M5 candles, excluding the current setup candle.
 - BUY: current low below prior 10-candle low, bullish close, body at least 0.8 x ATR.
 - SELL: current high above prior 10-candle high, bearish close, body at least 0.8 x ATR.
-- Entry reference: open of the next M1 candle whose epoch equals the completed M5 setup close. Entry delay over 60 seconds, missing entry candle, duplicate setup, active trade, invalid stop, insufficient history or non-qualifying regime is recorded as skipped.
+- Entry reference: open of the next M1 candle whose epoch equals the completed M5 setup close. Before delivery, the scanner requests the latest Deriv R_10 tick and fails closed if its quote is missing or older than 5 seconds. Absolute quote displacement from the reference entry divided by the original 1R risk must be <= 0.20R. Greater displacement is skipped as `ENTRY_DISPLACEMENT_EXCEEDED`; missing/stale quote is skipped as `live_quote_missing_or_stale`. The stop and target are never moved to accommodate a late quote. Entry delay over 60 seconds, missing entry candle, duplicate setup, active trade, invalid stop, insufficient history or non-qualifying regime is recorded as skipped.
 - BUY stop: sweep low minus 0.10 x ATR. SELL stop: sweep high plus 0.10 x ATR. The stop must be beyond the sweep and on the correct side of entry.
 - Target: exactly 1R from entry. No TP2, partial exit, breakeven, or trailing stop.
 - One active forward-test trade at a time.
@@ -88,7 +88,7 @@ Do not revert the entire PR as a rollback action: that would also restore the fo
 
 ## Known limitations before production activation
 
-- The Deriv candle feed does not provide bid/ask spread or a tick-age quote in the current scanner contract. Those journal fields are explicitly null. Entry delay is recorded from Deriv server time. No independent material-displacement threshold was specified, so the scanner does not invent one.
+- The Deriv public tick-history response supplies a last-traded quote, not a guaranteed executable bid/ask. The 0.20R gate is therefore a quote-displacement screen, not a spread/slippage guarantee. Quote age must be <=5 seconds; missing/stale quotes fail closed. Bid/ask spread remains unavailable and is not fabricated.
 ## Historical M1 smoke test (Deepnote, 25 Nov 2026)
 
 The existing Deepnote project `MT5 Gold Scalping Research — XAUUSD` already contained `Volatility 10 Index_M1.csv`; no re-upload or M15 upsampling was used. The separate smoke-test notebook and its output files are in that project.
