@@ -1,5 +1,5 @@
-name: Volatility 10 M1 Paper Scanner
-run-name: "${{ inputs.trigger_source || 'manual' }} — Volatility 10 M1 Paper Scanner"
+name: Volatility 10 Transition Forward Test
+run-name: "${{ inputs.trigger_source || 'manual' }} — Volatility 10 Transition Forward Test"
 
 on:
   workflow_dispatch:
@@ -20,7 +20,12 @@ on:
         default: "true"
         type: string
       telegram_enabled:
-        description: "Paper Telegram route gate supplied by the Cloudflare scheduler"
+        description: "Allow this scanner run to request forward-test Telegram delivery"
+        required: false
+        default: "false"
+        type: string
+      route_enabled:
+        description: "Worker-side R10 forward-test route gate"
         required: false
         default: "false"
         type: string
@@ -41,14 +46,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run Volatility 10 strategy tests
-        run: node --test test/volatility10_ema_atr_slope20.test.js
-      - name: Run paper-only M1 scanner window
-        run: node volatility10_paper_scanner.js
+      - name: Run complete repository test suite
+        run: npm test
+      - name: Run frozen R10 M5/M1 forward-test scanner window
+        run: node volatility10_transition_forward_scanner.js
         env:
           R10_PAPER_RUN_SECONDS: "30"
           R10_PAPER_PROVIDER_ENABLED: ${{ inputs.provider_enabled || 'false' }}
-          R10_PAPER_ROUTE_ENABLED: "true"
+          R10_PAPER_ROUTE_ENABLED: ${{ inputs.route_enabled || 'false' }}
           R10_EMERGENCY_KILL_SWITCH: ${{ inputs.emergency_kill_switch || 'true' }}
           R10_PAPER_TELEGRAM_ENABLED: ${{ inputs.telegram_enabled || 'false' }}
           TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
@@ -58,7 +63,7 @@ jobs:
         run: |
           git config user.name "Volatility 10 Paper Scanner"
           git config user.email "actions@users.noreply.github.com"
-          git add volatility10_paper_state.json volatility10_paper_journal.json
+          git add volatility10_transition_forward_state.json volatility10_transition_forward_journal.json
           if ! git diff --cached --quiet; then
             git commit -m "Update Volatility 10 paper journal"
             pushed=false
