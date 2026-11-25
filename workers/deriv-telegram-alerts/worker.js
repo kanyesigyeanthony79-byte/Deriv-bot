@@ -286,7 +286,7 @@ export default {
     if (url.pathname === "/shadow/research" && request.method === "POST") {
       let d;
       try { d = await request.json(); } catch { return reply({ error: "Invalid JSON" }, 400); }
-      const allowedMarkets = new Set(["R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "frxXAUUSD", "1HZ10V", "1HZ75V"]);
+      const allowedMarkets = new Set(["R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "frxXAUUSD", "1HZ10V", "1HZ75V", "R_100", "JD25", "JD50", "CRASH100", "BOOM100"]);
       const allowedStrategies = new Set([
         "M15_M5_EMA_PULLBACK",
         "M5_BREAKOUT_M1_RETEST",
