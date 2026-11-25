@@ -1,0 +1,46 @@
+name: M15 Expansion Backtest
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Historical replay window in days"
+        required: true
+        type: number
+        default: 180
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m15-expansion-backtest
+  cancel-in-progress: false
+
+jobs:
+  replay:
+    name: Run paper-only M15 expansion replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run isolated backtest
+        env:
+          BACKTEST_DAYS: ${{ inputs.days }}
+        run: |
+          mkdir -p artifacts
+          npm run backtest:m15-expansion -- --days="$BACKTEST_DAYS" --output=artifacts/m15_expansion_backtest_report.json
+
+      - name: Archive research report
+        uses: actions/upload-artifact@v4
+        with:
+          name: m15-expansion-backtest-${{ github.run_id }}
+          path: artifacts/m15_expansion_backtest_report.json
+          if-no-files-found: error
+          retention-days: 90
