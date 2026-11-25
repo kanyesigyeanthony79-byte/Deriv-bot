@@ -309,16 +309,19 @@ async function monitorSignals(marketId, candles, now) {
         continue;
       }
 
-      if (decision.action === "ENTRY_TRIGGERED") {
+      if (!signal.entryTriggered && !["WAIT", "EXPIRED_TP1_BEFORE_ENTRY", "EXPIRED_SL_BEFORE_ENTRY"].includes(decision.action)) {
         signal.entryTriggered = true;
         signal.entryTriggeredEpoch = candle.epoch;
-        signal.lastCheckedEpoch = candle.epoch;
         const entryRecord = findJournalSignal(signal.signalId);
         if (entryRecord) {
           entryRecord.entryTriggered = true;
           entryRecord.entryTriggeredAt = new Date(candle.epoch * 1000).toISOString();
         }
         log("signal_entry_triggered", { signalId: signal.signalId, market: signal.market, candle_epoch: candle.epoch });
+      }
+
+      if (decision.action === "ENTRY_TRIGGERED") {
+        signal.lastCheckedEpoch = candle.epoch;
         continue;
       }
 
