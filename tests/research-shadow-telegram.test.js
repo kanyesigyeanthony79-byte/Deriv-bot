@@ -7,7 +7,7 @@ test("shadow collector excludes standard Volatility 10 and includes both distinc
   assert.equal(collector.MARKETS.some(([id]) => id === "R_10"), false);
   assert.deepEqual(collector.MARKETS.map(([id]) => id), [
     "R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "frxXAUUSD",
-    "1HZ10V", "1HZ75V"
+    "1HZ10V", "1HZ75V", "RB100", "RB200"
   ]);
   assert.equal(collector.MARKETS.find(([id]) => id === "1HZ10V")[1], "Volatility 10 (1s) Index");
   assert.equal(collector.MARKETS.find(([id]) => id === "1HZ75V")[1], "Volatility 75 (1s) Index");
