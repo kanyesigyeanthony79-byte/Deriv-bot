@@ -191,8 +191,7 @@ async function main(env = process.env, options = {}) {
       if (market.errors.length) output.errors.push({ marketId, errors: market.errors });
     }
 
-    // RB100 and RB200 are discontinued from active research and forward-shadow scanning.
-    // Their historical backtest artifacts remain available for reference only.
+    // RB100 and RB200 are active expansion markets in forward-shadow scanning.
     const priorA = readJson(JOURNALS.breakoutM1, { version: 1, updatedAt: null, markets: {}, signals: [] });
     const priorB = readJson(JOURNALS.emaPullback, { version: 1, updatedAt: null, markets: {}, signals: [] });
     const priorC = readJson(JOURNALS.breakoutM5M15, { version: 1, updatedAt: null, markets: {}, signals: [] });
@@ -267,7 +266,7 @@ async function main(env = process.env, options = {}) {
         emaPullback: nextB.summary || null,
         breakoutM5M15: nextC.summary || null
       },
-      discontinuedExpansionMarkets: ["RB100", "RB200"],
+      activeExpansionMarkets: ["R_100", "JD25", "JD50", "RB100", "RB200", "BOOM100", "CRASH100"],
       r10Excluded: true, mtfEnabled: false, mt5ExecutionEnabled: false
     };
     const regimeJournal = { version: 1, generatedAt: output.generatedAt, mode: "shadow_only", productionGateEnabled: false, markets: Object.fromEntries(Object.entries(output.markets).map(([id, market]) => [id, { decisions: market.regimeFilterDecisions || [] }])) };
