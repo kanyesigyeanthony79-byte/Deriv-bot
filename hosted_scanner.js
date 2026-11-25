@@ -35,7 +35,7 @@ let heartbeat;
 const WORKER_URL = process.env.TELEGRAM_WORKER_URL;
 const API_KEY = process.env.SIGNAL_API_KEY;
 const MAX_SIGNAL_AGE = 360;
-const MAX_MONITOR_AGE = 96 * GRANULARITY; // expire unresolved signals after 24 hours
+const MAX_MONITOR_AGE = 60 * 60; // expire unresolved original-system signals after one hour
 
 if (!WORKER_URL || !API_KEY) {
   console.error("Missing TELEGRAM_WORKER_URL or SIGNAL_API_KEY GitHub Actions secret.");
