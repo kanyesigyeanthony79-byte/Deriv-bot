@@ -4,7 +4,7 @@ const LEGACY_WORKFLOWS = [
   { id: 417087054, key: "market-monitor", name: "Deriv Market Monitor", minuteOffset: 4 }
 ];
 const R10_WORKFLOW_PATH = ".github/workflows/volatility10-paper.yml";
-const R10_PROVIDER_ID = "volatility10_ema_atr_slope20_v1";
+const R10_PROVIDER_ID = "volatility10_transition_lowvol_1r_forward_v1";
 
 function headers(env) {
   if (!env.GITHUB_TOKEN) throw new Error("GITHUB_TOKEN secret is missing");
