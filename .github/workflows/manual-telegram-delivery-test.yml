@@ -1,4 +1,4 @@
-name: Manual Telegram delivery commissioning test
+name: Manual Research Shadow Telegram route test
 
 on:
   workflow_dispatch:
@@ -7,38 +7,55 @@ permissions:
   contents: read
 
 jobs:
-  telegram-delivery-test:
+  research-shadow-telegram-test:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Validate Telegram secrets are present
+      - name: Validate research shadow secrets and endpoint
         env:
-          TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
+          RESEARCH_SHADOW_WORKER_URL: ${{ secrets.RESEARCH_SHADOW_WORKER_URL }}
           SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
         run: |
-          test -n "$TELEGRAM_WORKER_URL" || { echo "Missing TELEGRAM_WORKER_URL secret"; exit 1; }
+          test -n "$RESEARCH_SHADOW_WORKER_URL" || { echo "Missing RESEARCH_SHADOW_WORKER_URL secret"; exit 1; }
           test -n "$SIGNAL_API_KEY" || { echo "Missing SIGNAL_API_KEY secret"; exit 1; }
-          case "$TELEGRAM_WORKER_URL" in
-            https://*) echo "Telegram Worker URL is HTTPS." ;;
-            *) echo "Telegram Worker URL must use HTTPS."; exit 1 ;;
+          case "$RESEARCH_SHADOW_WORKER_URL" in
+            https://*/shadow/research) echo "Research shadow endpoint is HTTPS and has the required path." ;;
+            *) echo "RESEARCH_SHADOW_WORKER_URL must be an HTTPS URL ending in /shadow/research"; exit 1 ;;
           esac
-          echo "Required Telegram secrets are present (values hidden)."
 
-      - name: Send clearly labelled commissioning message
+      - name: Send one clearly labelled shadow-route commissioning test
         env:
-          TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
+          RESEARCH_SHADOW_WORKER_URL: ${{ secrets.RESEARCH_SHADOW_WORKER_URL }}
           SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
         run: |
           node <<'NODE'
-          const url = process.env.TELEGRAM_WORKER_URL;
+          const url = process.env.RESEARCH_SHADOW_WORKER_URL;
           const apiKey = process.env.SIGNAL_API_KEY;
           const timestamp = new Date().toISOString();
-          const message = [
-            "TELEGRAM DELIVERY TEST — NOT A TRADING SIGNAL",
-            "ByYourSide Deriv-bot commissioning check.",
-            "This is a test message only; no market scan or trade was run.",
-            "Sent at: " + timestamp
-          ].join("\n");
+          const signalId = "ROUTE-TEST-" + timestamp.replace(/[^A-Za-z0-9._:-]/g, "-");
+
+          // These are deliberately synthetic validation values, not a market setup.
+          // The message labels itself as a test and explicitly says no trade was executed.
+          const payload = {
+            source: "RESEARCH_SHADOW",
+            event: "new_signal",
+            paper: true,
+            live: false,
+            status: "SHADOW",
+            signalId,
+            strategyId: "M15_M5_EMA_PULLBACK",
+            strategyLabel: "ROUTE COMMISSIONING TEST — NOT A MARKET SIGNAL",
+            marketId: "R_25",
+            market: "TEST ONLY — NOT A MARKET SIGNAL",
+            direction: "BUY",
+            entry: 100,
+            stopLoss: 99,
+            tp1: 101,
+            tp2: 102,
+            entryTimeframe: "TEST",
+            setupTimeframe: "TEST",
+            confirmationTimeframe: "TEST"
+          };
 
           (async () => {
             const response = await fetch(url, {
@@ -47,23 +64,23 @@ jobs:
                 "Content-Type": "application/json",
                 "X-API-Key": apiKey
               },
-              body: JSON.stringify({
-                event: "daily_summary",
-                message,
-                text: message
-              }),
+              body: JSON.stringify(payload),
               signal: AbortSignal.timeout(15000)
             });
             const result = await response.json().catch(() => ({}));
             if (!response.ok || result.success !== true) {
-              console.error("Telegram Worker delivery was not confirmed. HTTP status:", response.status);
+              console.error("Research shadow Telegram delivery was not confirmed. HTTP status:", response.status);
+              console.error("Worker response:", JSON.stringify(result));
               process.exit(1);
             }
-            console.log("TELEGRAM_WORKER_ACCEPTED_TEST_MESSAGE");
+            console.log("RESEARCH_SHADOW_TELEGRAM_DELIVERY_CONFIRMED");
+            console.log("Signal ID:", signalId);
             console.log("HTTP status:", response.status);
+            console.log("Worker result:", result.message || "success");
             console.log("Timestamp:", timestamp);
+            console.log("No market scan, MT5 order, or live trade was executed.");
           })().catch(error => {
-            console.error("Telegram delivery test failed:", error.name || "network_error");
+            console.error("Research shadow Telegram test failed:", error.name || "network_error");
             process.exit(1);
           });
           NODE
