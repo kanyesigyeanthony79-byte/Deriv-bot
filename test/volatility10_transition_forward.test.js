@@ -2,6 +2,7 @@
 const test=require("node:test");
 const assert=require("node:assert/strict");
 const s=require("../volatility10_transition_forward");
+const scanner=require("../volatility10_transition_forward_scanner");
 const candle=(epoch,open,high,low,close)=>({epoch,open,high,low,close});
 
 test("aggregates only complete, aligned M1 buckets",()=>{
@@ -150,4 +151,13 @@ test("swing confirmation timestamp is never later than the decision timestamp",(
  const structure=s.classifyStructure(rows,s.H1,decisionEpoch);
  for(const list of [structure.swings.highs,structure.swings.lows])
   for(const swing of list)assert.ok(swing.confirmedAt<=decisionEpoch);
+});
+
+test("scanner resumes from the latest contiguous valid M1 segment after gaps or invalid rows",()=>{
+ const rows=[0,60,120,240,300,360,420,480].map((epoch,i)=>candle(epoch,10,11,9,10));
+ rows[6]={...rows[6],high:8};
+ const segment=scanner.latestContinuousSegment(rows);
+ assert.deepEqual(segment.map(x=>x.epoch),[480]);
+ const gapRows=[0,60,120,240,300,360].map(epoch=>candle(epoch,10,11,9,10));
+ assert.deepEqual(scanner.latestContinuousSegment(gapRows).map(x=>x.epoch),[240,300,360]);
 });
