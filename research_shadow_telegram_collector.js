@@ -175,10 +175,21 @@ function toAlert(signal, strategy, marketData, applyRegime = true, recordDecisio
 }
 async function deliver(alert, env) {
   if (!env.TELEGRAM_WORKER_URL || !env.SIGNAL_API_KEY) throw new Error("Telegram worker URL/API key is not configured");
-  const response = await fetch(env.TELEGRAM_WORKER_URL, {
+  // RB100 and BOOM100 enter a monitored live-market alert pilot. This changes
+  // notification labelling/routing only; it never enables order execution.
+  const pilotMarket = ["RB100", "BOOM100"].includes(String(alert.marketId));
+  const payload = pilotMarket ? {
+    ...alert, source: "RESEARCH_LIVE_ALERT_PILOT", status: "PILOT",
+    paper: false, live: false, alertMode: "LIVE_MARKET_PILOT",
+    executionMode: "DEMO_MANUAL", pilot: true
+  } : alert;
+  const endpoint = pilotMarket
+    ? env.TELEGRAM_WORKER_URL.replace(/\/$/, "") + "/shadow/research"
+    : env.TELEGRAM_WORKER_URL;
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-API-Key": env.SIGNAL_API_KEY },
-    body: JSON.stringify(alert)
+    body: JSON.stringify(payload)
   });
   let result = {};
   try { result = await response.json(); } catch {}
