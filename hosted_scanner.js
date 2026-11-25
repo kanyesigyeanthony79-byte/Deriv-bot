@@ -13,7 +13,6 @@ const { createHeartbeat } = require("./scanner_heartbeat");
 const { evaluateMarketShadow, candidateGateDecision } = require("./market_shadow_profiles");
 const { cleanupUnmonitoredSignals } = require("./stale_signal_cleanup");
 const { main: runResearchShadowCycle, MARKETS: RESEARCH_MARKETS } = require("./research_shadow_telegram_collector");
-const { latestContinuousCandleSegment } = require("./market_continuity");
 const CANDIDATE_GATE_ENABLED = process.env.R75_JD100_CANDIDATE_FILTER_ENABLED === "true";
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
@@ -28,7 +27,6 @@ const MARKETS = [
   ["BOOM500", "Boom 500 Index"],
   ["frxXAUUSD", "Gold (XAUUSD)"]
 ];
-const MARKET_CONTINUITY = Object.freeze({ frxXAUUSD: { timeframe: "M15", minCandles: 65 } });
 const STATE_FILE = path.join(DATA_DIR, "signal_state.json");
 const HEARTBEAT_FILE = path.join(DATA_DIR, "scanner_heartbeat.json");
 let heartbeat;
@@ -415,13 +413,10 @@ async function main() {
           .sort((a, b) => a.epoch - b.epoch)
           .filter(x => x.epoch + GRANULARITY <= now);
 
-        const continuity = MARKET_CONTINUITY[id];
-        const evaluationCandles = continuity
-          ? latestContinuousCandleSegment(candles, GRANULARITY, continuity.minCandles)
-          : candles;
-        const result = evaluationCandles
-          ? evaluate(evaluationCandles)
-          : { state: "insufficient_continuity", signal: "NO TRADE", checks: [], metrics: null };
+        // Preserve the original M15 evaluation path for Gold. Gold has normal
+        // trading-session gaps, so a strict uninterrupted-candle gate can block
+        // every evaluation even when fresh market data is available.
+        const result = evaluate(candles);
         const shadowEvaluation = evaluateMarketShadow(candles, id);
         const gateDecision = candidateGateDecision({
           enabled: CANDIDATE_GATE_ENABLED && Boolean(shadowEvaluation),
@@ -437,11 +432,6 @@ async function main() {
           candles: candles.length,
           signalFound: hasSignal,
           evaluationState: result.state || "unknown",
-          ...(continuity ? {
-            continuityTimeframe: continuity.timeframe,
-            continuityRequiredCandles: continuity.minCandles,
-            continuityAvailableCandles: evaluationCandles ? evaluationCandles.length : 0
-          } : {}),
           ...(hasSignal ? { direction: result.signal } : {}),
           ...(shadowEvaluation ? {
             shadowCandidateSignal: shadowEvaluation.signal,
@@ -502,7 +492,7 @@ async function main() {
           continue;
         }
 
-        const levels = makeLevels(evaluationCandles || candles, result.signal);
+        const levels = makeLevels(candles, result.signal);
         const telegramResult = await postTelegram({
           event: "new_signal", source: "LEGACY_15M", signalId, marketId: id, market: name, direction: result.signal, ...levels,
           ...(candidateGateActive ? { strategyProfile: id + "_CANDIDATE_V1" } : {}),
