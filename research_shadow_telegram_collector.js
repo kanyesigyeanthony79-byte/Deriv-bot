@@ -183,9 +183,7 @@ async function deliver(alert, env) {
     paper: false, live: false, alertMode: "LIVE_MARKET_PILOT",
     executionMode: "DEMO_MANUAL", pilot: true
   } : alert;
-  const endpoint = pilotMarket
-    ? env.TELEGRAM_WORKER_URL.replace(/\/$/, "") + "/shadow/research"
-    : env.TELEGRAM_WORKER_URL;
+  const endpoint = env.TELEGRAM_WORKER_URL;
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-API-Key": env.SIGNAL_API_KEY },
