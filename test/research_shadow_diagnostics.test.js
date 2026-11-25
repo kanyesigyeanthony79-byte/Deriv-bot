@@ -33,6 +33,7 @@ test("research alert validation records an explicit rejection reason", () => {
 });
 
 test("valid research alerts remain explicitly shadow-only", () => {
+  const market = { timeframes: {} };
   const alert = toAlert({
     signalId: "1HZ75V-test-valid",
     marketId: "1HZ75V",
@@ -44,10 +45,14 @@ test("valid research alerts remain explicitly shadow-only", () => {
     setupTimeframe: "M5",
     entryTimeframe: "M1",
     confirmationTimeframe: "M1"
-  }, "TEST_STRATEGY", { timeframes: {} }, false);
+  }, "TEST_STRATEGY", market, false);
   assert.equal(alert.status, "SHADOW");
   assert.equal(alert.paper, true);
   assert.equal(alert.live, false);
   assert.equal(alert.marketId, "1HZ75V");
   assert.equal(alert.tp1, 98.5);
+  assert.deepEqual({ ...{ ...({}) } }, {});
+  assert.deepEqual({ decision: market.candidateDecisions[0].decision, regimeFilterApplied: market.candidateDecisions[0].regimeFilterApplied }, {
+    decision: "accepted", regimeFilterApplied: false
+  });
 });
