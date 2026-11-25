@@ -316,16 +316,16 @@ async function monitorSignals(marketId, candles, now) {
         try {
           await sendOutcome(signal, "EXPIRED", lastCandle);
         } catch (error) {
-          markExpired(journal, signal.signalId, lastCandle, "expired_after_24_hours; expiry_alert_failed");
+          markExpired(journal, signal.signalId, lastCandle, "expired_after_1_hour; expiry_alert_failed");
           saveJournal();
           log("expiry_alert_failed", { signalId: signal.signalId, market: signal.market, message: error.message });
         }
       } else {
-        markExpired(journal, signal.signalId, null, "expired_after_24_hours_no_recent_candle");
+        markExpired(journal, signal.signalId, null, "expired_after_1_hour_no_recent_candle");
         saveJournal();
       }
       signal.closed = true;
-      signal.closeReason = "expired_after_24_hours";
+      signal.closeReason = "expired_after_1_hour";
       log("signal_expired", { signalId: signal.signalId, market: signal.market });
       continue;
     }
@@ -495,6 +495,7 @@ async function main() {
         const levels = makeLevels(candles, result.signal);
         const telegramResult = await postTelegram({
           event: "new_signal", source: "LEGACY_15M", signalId, marketId: id, market: name, direction: result.signal, ...levels,
+          candleEpoch, score: result.score, entryTimeframe: "M15", validityMinutes: 60,
           ...(candidateGateActive ? { strategyProfile: id + "_CANDIDATE_V1" } : {}),
           ...(priority ? {
             priorityTier: priority.tier, priorityLabel: priority.label,
