@@ -6,6 +6,7 @@
 // mutates the production trade journal.
 const fs = require("node:fs");
 const path = require("node:path");
+const crypto = require("node:crypto");
 const { getDataDir } = require("./scanner_data_dir");
 const { evaluate, DEF } = require("./engine");
 
@@ -16,6 +17,7 @@ const DEFAULT_DAYS = 180;
 const DEFAULT_HORIZON_CANDLES = 96; // 24 hours on M15
 const DEFAULT_COOLDOWN_CANDLES = DEF.cooldown;
 const REQUEST_GAP_MS = 1200;
+const PAGE_SIZE = 1000;
 const RATE_LIMIT_RETRIES = 3;
 const STOP_ATR = 1.5;
 const TP1_R = 2;
@@ -32,6 +34,10 @@ const MARKETS = Object.freeze([
 
 function connect(url = PUBLIC_WS) {
   return new Promise((resolve, reject) => {
+    if (typeof WebSocket !== "function") {
+      reject(new Error("This backtest requires a Node.js runtime with global WebSocket support (Node.js 22+)."));
+      return;
+    }
     const ws = new WebSocket(url);
     const timer = setTimeout(() => {
       try { ws.close(); } catch {}
@@ -96,6 +102,11 @@ function normalizeCandles(rows) {
   return [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch);
 }
 
+// A candle is eligible only when its full 15-minute interval ended by endEpoch.
+function filterClosedCandles(candles, endEpoch, timeframe = TIMEFRAME_SECONDS) {
+  return normalizeCandles(candles).filter(c => c.epoch + timeframe <= endEpoch);
+}
+
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 function splitContinuousSegments(candles, timeframe = TIMEFRAME_SECONDS) {
@@ -110,6 +121,36 @@ function splitContinuousSegments(candles, timeframe = TIMEFRAME_SECONDS) {
   }
   if (segment.length) segments.push(segment);
   return segments;
+}
+
+function summarizeCoverage(candles, startEpoch, endEpoch, timeframe = TIMEFRAME_SECONDS) {
+  const firstExpected = Math.ceil(startEpoch / timeframe) * timeframe;
+  const lastExpected = Math.floor((endEpoch - timeframe) / timeframe) * timeframe;
+  const expectedCandles = lastExpected >= firstExpected
+    ? Math.floor((lastExpected - firstExpected) / timeframe) + 1 : 0;
+  const inWindow = normalizeCandles(candles).filter(c =>
+    c.epoch >= firstExpected && c.epoch <= lastExpected &&
+    c.epoch % timeframe === 0
+  );
+  const missingCandles = Math.max(0, expectedCandles - inWindow.length);
+  const gaps = splitContinuousSegments(inWindow, timeframe);
+  let largestGapCandles = 0;
+  for (let i = 1; i < inWindow.length; i++) {
+    largestGapCandles = Math.max(
+      largestGapCandles,
+      Math.max(0, Math.round((inWindow[i].epoch - inWindow[i - 1].epoch) / timeframe) - 1)
+    );
+  }
+  return {
+    expectedCandles,
+    actualCandles: inWindow.length,
+    missingCandles,
+    coveragePct: expectedCandles ? Number((inWindow.length / expectedCandles * 100).toFixed(2)) : null,
+    gapCount: Math.max(0, gaps.length - 1),
+    largestGapCandles,
+    firstCandleEpoch: inWindow[0]?.epoch ?? null,
+    lastCandleEpoch: inWindow.at(-1)?.epoch ?? null
+  };
 }
 
 function calculateAtr(candles, period = 14) {
@@ -140,9 +181,10 @@ function makeTrade({ marketId, marketName, signalCandle, entryCandle, result, hi
 }
 
 function resolveTrade(trade, candles, entryIndex) {
-  const end = Math.min(candles.length, entryIndex + 1 + trade.horizonCandles);
+  // Include the entry candle: its high/low occur after the next-candle-open fill.
+  const end = Math.min(candles.length, entryIndex + trade.horizonCandles);
   let tp1Hit = false;
-  for (let i = entryIndex + 1; i < end; i++) {
+  for (let i = entryIndex; i < end; i++) {
     const candle = candles[i];
     const buy = trade.direction === "BUY";
     const slTouched = buy ? candle.low <= trade.stopLoss : candle.high >= trade.stopLoss;
@@ -201,21 +243,23 @@ function backtestMarket({ marketId, marketName, candles, horizonCandles = DEFAUL
   return { marketId, marketName, segments: segments.length, candleCount: candles.length, trades, summary: summarizeTrades(trades) };
 }
 
-async function fetchCandles(client, symbol, { startEpoch, endEpoch }) {
+async function fetchCandles(client, symbol, { startEpoch, endEpoch, requestGapMs = REQUEST_GAP_MS }) {
   const rows = [];
   let end = endEpoch;
   let lastRequestAt = 0;
   while (end > startEpoch) {
-    const waitForGap = REQUEST_GAP_MS - (Date.now() - lastRequestAt);
+    const waitForGap = requestGapMs - (Date.now() - lastRequestAt);
     if (waitForGap > 0) await sleep(waitForGap);
     let reply;
     let lastError;
     for (let attempt = 0; attempt <= RATE_LIMIT_RETRIES; attempt++) {
       try {
         lastRequestAt = Date.now();
+        // With start supplied Deriv ignores count and may return an expensive
+        // full-range response. Page backwards using count + end only.
         reply = await client.ask({
-          ticks_history: symbol, start: startEpoch, end, adjust_start_time: 1,
-          granularity: TIMEFRAME_SECONDS, style: "candles", count: 1000
+          ticks_history: symbol, end, count: PAGE_SIZE, adjust_start_time: 1,
+          granularity: TIMEFRAME_SECONDS, style: "candles"
         });
         if (!reply.error) break;
         lastError = new Error(reply.error.message || "ticks_history failed");
@@ -229,14 +273,19 @@ async function fetchCandles(client, symbol, { startEpoch, endEpoch }) {
       await sleep(5000 * (attempt + 1));
     }
     if (reply.error) throw new Error(reply.error.message || "ticks_history failed");
-    const batch = normalizeCandles(reply.candles || []).filter(c => c.epoch >= startEpoch && c.epoch <= end);
+    const batch = normalizeCandles(reply.candles || []).filter(c =>
+      c.epoch >= startEpoch && c.epoch <= end
+    );
     if (!batch.length) break;
     rows.push(...batch);
-    const first = batch[0].epoch;
-    if (first <= startEpoch || batch.length < 2) break;
-    end = first - TIMEFRAME_SECONDS;
+    const earliest = batch[0].epoch;
+    if (earliest <= startEpoch) break;
+    end = earliest - TIMEFRAME_SECONDS;
   }
-  return normalizeCandles(rows).filter(c => c.epoch >= startEpoch && c.epoch <= endEpoch);
+  return filterClosedCandles(
+    normalizeCandles(rows).filter(c => c.epoch >= startEpoch && c.epoch <= endEpoch),
+    endEpoch
+  );
 }
 
 function parseArgs(argv = process.argv.slice(2)) {
@@ -258,6 +307,10 @@ function parseArgs(argv = process.argv.slice(2)) {
   };
 }
 
+function sha256File(filePath) {
+  return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
+}
+
 async function runBacktest(options = {}) {
   const config = { ...parseArgs([]), ...options };
   const client = await connect();
@@ -273,19 +326,26 @@ async function runBacktest(options = {}) {
         continue;
       }
       const candles = await fetchCandles(client, symbol, { startEpoch: config.startEpoch, endEpoch: config.endEpoch });
+      const dataQuality = summarizeCoverage(candles, config.startEpoch, config.endEpoch);
       const replay = backtestMarket({ marketId, marketName: available.get(symbol) || configuredName, candles, horizonCandles: config.horizonCandles, cooldownCandles: config.cooldownCandles });
-      reportMarkets[marketId] = { status: "replayed", ...replay };
+      reportMarkets[marketId] = { status: "replayed", dataQuality, ...replay };
     }
-    const summaries = Object.values(reportMarkets).filter(m => m.status === "replayed").map(m => m.summary);
     const combinedTrades = Object.values(reportMarkets).filter(m => m.status === "replayed").flatMap(m => m.trades);
+    const enginePath = require.resolve("./engine");
     const report = {
       generatedAt: new Date().toISOString(), mode: "paper_only_m15_expansion_backtest",
-      strategy: { evaluator: "engine.evaluate", entry: "next completed M15 candle open", stopAtr: STOP_ATR, tp1R: TP1_R, tp2R: TP2_R, horizonCandles: config.horizonCandles, cooldownCandles: config.cooldownCandles, warmupCandles: WARMUP_CANDLES },
+      strategy: {
+        evaluator: "engine.evaluate", engineSha256: sha256File(enginePath),
+        entry: "next completed M15 candle open", stopAtr: STOP_ATR, tp1R: TP1_R, tp2R: TP2_R,
+        tp1Semantics: "milestone_only; no partial close and original stop remains active",
+        horizonCandles: config.horizonCandles, cooldownCandles: config.cooldownCandles,
+        warmupCandles: WARMUP_CANDLES
+      },
       window: { startEpoch: config.startEpoch, endEpoch: config.endEpoch, days: Number(((config.endEpoch - config.startEpoch) / 86400).toFixed(3)) },
       safety: { telegram: false, orderExecution: false, productionJournalMutation: false },
       markets: reportMarkets,
       combined: summarizeTrades(combinedTrades),
-      note: "Historical results are counterfactual research evidence, not a guarantee. Ambiguous and unresolved outcomes are excluded from resolved win rate and expectancy."
+      note: "Historical outcomes are counterfactual research evidence, not actual account P/L. TP1 is a milestone only; it does not book partial profit or move the stop. Ambiguous and unresolved outcomes are excluded from resolved win rate and expectancy. Check per-market dataQuality coverage before interpreting results."
     };
     if (config.output) {
       fs.mkdirSync(path.dirname(config.output), { recursive: true });
@@ -308,6 +368,7 @@ if (require.main === module) {
 
 module.exports = {
   MARKETS, TIMEFRAME_SECONDS, WARMUP_CANDLES, STOP_ATR, TP1_R, TP2_R,
-  normalizeCandles, splitContinuousSegments, makeTrade, resolveTrade,
-  summarizeTrades, backtestMarket, fetchCandles, parseArgs, runBacktest
+  normalizeCandles, filterClosedCandles, splitContinuousSegments, summarizeCoverage,
+  makeTrade, resolveTrade, summarizeTrades, backtestMarket, fetchCandles,
+  parseArgs, runBacktest
 };
