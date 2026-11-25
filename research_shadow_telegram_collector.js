@@ -257,6 +257,77 @@ async function main(env = process.env, options = {}) {
       delivery.updatedAt = new Date().toISOString();
       writeJson(JOURNALS.delivery, delivery);
     }
+    // Per-market funnel diagnostics: keep setup/rejection/quality and Telegram stages
+    // separate so an empty delivery journal cannot be mistaken for an inactive scanner.
+    const journalSignals = [
+      ...nextA.signals.map(x => ({ ...x, diagnosticStrategy: "M5_BREAKOUT_M1_RETEST" })),
+      ...nextB.signals.map(x => ({ ...x, diagnosticStrategy: "M15_M5_EMA_PULLBACK" })),
+      ...nextC.signals.map(x => ({ ...x, diagnosticStrategy: "M5_BREAKOUT_M5_RETEST_M15_CONFIRM" }))
+    ];
+    const deliveryRecords = Object.values(delivery.signals);
+    const diagnosticStrategies = {
+      M5_BREAKOUT_M1_RETEST: nextA,
+      M15_M5_EMA_PULLBACK: nextB,
+      M5_BREAKOUT_M5_RETEST_M15_CONFIRM: nextC
+    };
+    output.diagnostics = {
+      generatedAt: output.generatedAt,
+      mode: "SHADOW_ONLY",
+      liveExecution: false,
+      telegramDeliveryIsRequiredForCollectionCount: true,
+      totals: {
+        marketsExpected: MARKETS.length,
+        marketsWithCandleErrors: output.errors.length,
+        signalsObserved: journalSignals.length,
+        freshTelegramCandidates: candidates.length,
+        telegramSentThisCycle: sent,
+        telegramFailedThisCycle: failed,
+        telegramPending: deliveryRecords.filter(x => x.status === "pending").length,
+        telegramSentTotal: deliveryRecords.filter(x => x.status === "sent").length,
+        telegramFailedTotal: deliveryRecords.filter(x => x.status === "failed").length
+      },
+      markets: Object.fromEntries(MARKETS.map(([id]) => {
+        const market = output.markets[id] || {};
+        const frames = market.timeframes || {};
+        const marketSignals = journalSignals.filter(x => x.marketId === id);
+        const deliveryForMarket = deliveryRecords.filter(x => x.marketId === id);
+        const strategies = {};
+        for (const [strategyId, journal] of Object.entries(diagnosticStrategies)) {
+          const state = journal.markets?.[id] || {};
+          const signals = journal.signals.filter(x => x.marketId === id);
+          const stats = state.stats || {};
+          strategies[strategyId] = {
+            dataQuality: state.dataQuality || "not_collected",
+            signalsGenerated: signals.length,
+            pendingSetups: Array.isArray(state.pendingSetups) ? state.pendingSetups.length : null,
+            setupsDetected: stats.setupsDetected ?? null,
+            m15Confirmed: stats.m15Confirmed ?? null,
+            m15Rejected: stats.m15Rejected ?? null,
+            m15ReconfirmRejected: stats.m15ReconfirmRejected ?? null,
+            riskRejected: stats.riskRejected ?? null,
+            overlapSuppressed: stats.overlapSuppressed ?? null,
+            confirmationExpired: stats.confirmationExpired ?? null,
+            rejectionDiagnostics: stats.setupsDetected === undefined ? "not_instrumented" : "available"
+          };
+        }
+        const regime = market.regimeFilterDecisions || [];
+        return [id, {
+          scanStatus: market.errors?.length ? "partial" : FRAMES.every(([tf]) => Array.isArray(frames[tf])) ? "success" : "incomplete",
+          candleCounts: Object.fromEntries(FRAMES.map(([tf]) => [tf, Array.isArray(frames[tf]) ? frames[tf].length : 0])),
+          candleErrors: market.errors || [],
+          signalsObserved: marketSignals.length,
+          freshTelegramCandidates: candidates.filter(x => x.marketId === id).length,
+          regimeEvaluated: regime.length,
+          regimePassed: regime.filter(x => x.passed).length,
+          regimeRejected: regime.filter(x => !x.passed).length,
+          telegramSentTotal: deliveryForMarket.filter(x => x.status === "sent").length,
+          telegramFailedTotal: deliveryForMarket.filter(x => x.status === "failed").length,
+          telegramPending: deliveryForMarket.filter(x => x.status === "pending").length,
+          lastTelegramSentAt: deliveryForMarket.filter(x => x.status === "sent").map(x => x.sentAt).sort().at(-1) || null,
+          strategies
+        }];
+      }))
+    };
     output.cycleStatus = output.errors.length ? "partial" : "success";
     output.summary = {
       markets: Object.keys(output.markets).length,
