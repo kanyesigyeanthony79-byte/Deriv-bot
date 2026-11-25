@@ -11,7 +11,7 @@ const { updateJournal: updateBreakoutM5M15Journal } = require("./breakout_retest
 const { evaluateMarketRegime } = require("./market_regime_filter_shadow");
 
 const DATA_DIR = getDataDir();
-// 1-second products use their canonical Deriv API symbol codes (not standard R_* aliases).
+// The 1-second products are part of this shared collector and use their canonical Deriv API symbol codes (not standard R_* aliases).
 const MARKETS = Object.freeze([
   ["R_25", "Volatility 25 Index"], ["R_50", "Volatility 50 Index"],
   ["R_75", "Volatility 75 Index"], ["JD75", "Jump 75 Index"],
@@ -266,7 +266,7 @@ async function main(env = process.env, options = {}) {
         emaPullback: nextB.summary || null,
         breakoutM5M15: nextC.summary || null
       },
-      activeExpansionMarkets: ["R_100", "JD25", "JD50", "RB100", "RB200", "BOOM100", "CRASH100"],
+      activeExpansionMarkets: ["1HZ10V", "1HZ75V", "R_100", "JD75", "JD25", "JD50", "CRASH100", "BOOM100"],
       r10Excluded: true, mtfEnabled: false, mt5ExecutionEnabled: false
     };
     const regimeJournal = { version: 1, generatedAt: output.generatedAt, mode: "shadow_only", productionGateEnabled: false, markets: Object.fromEntries(Object.entries(output.markets).map(([id, market]) => [id, { decisions: market.regimeFilterDecisions || [] }])) };
