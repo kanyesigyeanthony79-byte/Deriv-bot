@@ -13,23 +13,21 @@ jobs:
     steps:
       - name: Validate research shadow secrets and endpoint
         env:
-          RESEARCH_SHADOW_WORKER_URL: ${{ secrets.RESEARCH_SHADOW_WORKER_URL }}
+          TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
           SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
         run: |
-          test -n "$RESEARCH_SHADOW_WORKER_URL" || { echo "Missing RESEARCH_SHADOW_WORKER_URL secret"; exit 1; }
+          test -n "$TELEGRAM_WORKER_URL" || { echo "Missing TELEGRAM_WORKER_URL secret"; exit 1; }
           test -n "$SIGNAL_API_KEY" || { echo "Missing SIGNAL_API_KEY secret"; exit 1; }
-          case "$RESEARCH_SHADOW_WORKER_URL" in
-            https://*/shadow/research) echo "Research shadow endpoint is HTTPS and has the required path." ;;
-            *) echo "RESEARCH_SHADOW_WORKER_URL must be an HTTPS URL ending in /shadow/research"; exit 1 ;;
-          esac
+          node -e 'const u = new URL(process.env.TELEGRAM_WORKER_URL); if (u.protocol !== "https:") process.exit(1); console.log("Existing Telegram Worker base URL is valid HTTPS; shadow route will be derived from it.");'
 
       - name: Send one clearly labelled shadow-route commissioning test
         env:
-          RESEARCH_SHADOW_WORKER_URL: ${{ secrets.RESEARCH_SHADOW_WORKER_URL }}
+          TELEGRAM_WORKER_URL: ${{ secrets.TELEGRAM_WORKER_URL }}
           SIGNAL_API_KEY: ${{ secrets.SIGNAL_API_KEY }}
         run: |
           node <<'NODE'
-          const url = process.env.RESEARCH_SHADOW_WORKER_URL;
+          // Match hosted_scanner.js: reuse the existing Worker base URL and derive its shadow-only route.
+          const url = new URL("/shadow/research", process.env.TELEGRAM_WORKER_URL).toString();
           const apiKey = process.env.SIGNAL_API_KEY;
           const timestamp = new Date().toISOString();
           const signalId = "ROUTE-TEST-" + timestamp.replace(/[^A-Za-z0-9._:-]/g, "-");
