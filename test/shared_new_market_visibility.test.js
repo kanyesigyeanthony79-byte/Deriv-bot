@@ -18,3 +18,13 @@ test("New Markets dashboard exposes both 1-second indices", () => {
   assert.match(section, /\["1HZ75V","Volatility 75 \(1s\) Index"\]/);
   assert.match(section, /\["MARKETS IN THIS TAB",String\(ids\.length\)\]/);
 });
+
+test("100-signal collection includes both 1-second markets in a 17-market target", () => {
+  const html = fs.readFileSync(path.join(__dirname, "..", "signal-collection.html"), "utf8");
+  const script = html.slice(html.indexOf("<script>"));
+  assert.match(script, /\["1HZ10V","Volatility 10 \(1s\) Index"\]/);
+  assert.match(script, /\["1HZ75V","Volatility 75 \(1s\) Index"\]/);
+  assert.match(script, /const COLLECTION_TARGET=MARKETS\.length\*100/);
+  assert.match(script, /completed\+" \/ "\+MARKETS\.length/);
+  assert.match(html, /17 markets × 100 signals/);
+});
