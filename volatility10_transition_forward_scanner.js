@@ -47,9 +47,15 @@ async function collect(client){
  const t=await client.ask({time:1});
  const nowEpoch=Number(t.time);
  if(!Number.isFinite(nowEpoch))throw new Error("Deriv server UTC time unavailable");
- const r=await client.ask({ticks_history:"R_10",adjust_start_time:1,count:5000,end:"latest",granularity:60,style:"candles"});
+ const [r,q]=await Promise.all([
+  client.ask({ticks_history:"R_10",adjust_start_time:1,count:5000,end:"latest",granularity:60,style:"candles"}),
+  client.ask({ticks_history:"R_10",adjust_start_time:1,count:1,end:"latest",style:"ticks"})
+ ]);
  const split=splitCandles(r.candles||[],nowEpoch);
- return {nowEpoch,...split};
+ const quoteTime=Number(q.history?.times?.[0]),quotePrice=Number(q.history?.prices?.[0]);
+ const quote={price:Number.isFinite(quotePrice)?quotePrice:null,epoch:Number.isFinite(quoteTime)?quoteTime:null,
+  ageSeconds:Number.isFinite(quoteTime)?Math.max(0,nowEpoch-quoteTime):null};
+ return {nowEpoch,...split,quote};
 }
 async function deliverForwardSignal(signal,env=process.env){
  if(env.R10_PAPER_TELEGRAM_ENABLED!=="true")return {sent:false,reason:"telegram_flag_off"};
@@ -102,7 +108,7 @@ function updateActiveOutcome(state,journal,completedM1){
  state.activeTrade=null;
 }
 async function processSnapshot(state,journal,snapshot,env=process.env){
- const {nowEpoch,completed,forming}=snapshot;
+ const {nowEpoch,completed,forming,quote}=snapshot;
  journal.strategyVersion=strategy.STRATEGY_VERSION;
  journal.marketId="R_10";
  updateActiveOutcome(state,journal,completed);
@@ -140,6 +146,17 @@ async function processSnapshot(state,journal,snapshot,env=process.env){
   state.lastSetupEpoch=setupEpoch;
   if(result.status!=="GENERATED")continue;
   const signal=result.signal;
+  // Fail closed unless a fresh Deriv tick confirms the reference entry is still within 0.20R.
+  if(!quote||!Number.isFinite(quote.price)||!Number.isFinite(quote.ageSeconds)||quote.ageSeconds>5){
+   rec.status="SKIPPED";rec.reason="live_quote_missing_or_stale";rec.deliveryStatus="NOT_SENT";
+   rec.quoteAgeSeconds=quote?.ageSeconds??null;continue;
+  }
+  const displacementR=Math.abs(quote.price-signal.referenceEntryPrice)/signal.risk;
+  rec.quotePrice=quote.price;rec.quoteAgeSeconds=quote.ageSeconds;rec.entryDisplacementR=displacementR;
+  if(!Number.isFinite(displacementR)||displacementR>0.20){
+   rec.status="SKIPPED";rec.reason="ENTRY_DISPLACEMENT_EXCEEDED";rec.deliveryStatus="NOT_SENT";continue;
+  }
+  signal.quotePrice=quote.price;signal.quoteAgeSeconds=quote.ageSeconds;signal.entryDisplacementR=displacementR;
   // Only the just-closed setup can be delivered. Historical catch-up is journal-only.
   if(nowEpoch-signal.signalEpoch>strategy.MAX_ENTRY_DELAY_SECONDS){
    rec.status="SKIPPED";rec.reason="historical_catchup_not_delivered";rec.stale=true;
