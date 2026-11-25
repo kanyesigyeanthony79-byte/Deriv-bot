@@ -10,9 +10,10 @@ const { dailySummary, deliverDailyReport, previousUgandaDay } = require("./daily
 const { createDerivDemoReadOnlySnapshot } = require("./scripts/demo_readonly_account_snapshot");
 const { priorityForMarket } = require("./priority_pairs");
 const { createHeartbeat } = require("./scanner_heartbeat");
-const { evaluateMarketShadow } = require("./market_shadow_profiles");
+const { evaluateMarketShadow, candidateGateDecision } = require("./market_shadow_profiles");
 const { cleanupUnmonitoredSignals } = require("./stale_signal_cleanup");
 const { main: runResearchShadowCycle, MARKETS: RESEARCH_MARKETS } = require("./research_shadow_telegram_collector");
+const CANDIDATE_GATE_ENABLED = process.env.R75_JD100_CANDIDATE_FILTER_ENABLED === "true";
 
 const PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const GRANULARITY = 900;
@@ -41,12 +42,13 @@ let parsedUrl;
 try { parsedUrl = new URL(WORKER_URL); } catch { throw new Error("TELEGRAM_WORKER_URL is not a valid URL."); }
 if (parsedUrl.protocol !== "https:") throw new Error("Telegram Worker URL must use HTTPS.");
 
-let state = { lastSig: {}, activeSignals: [] };
+let state = { lastSig: {}, lastCandidateSig: {}, activeSignals: [] };
 try {
   const saved = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
   if (saved && typeof saved === "object") {
     state = {
       lastSig: saved.lastSig && typeof saved.lastSig === "object" ? saved.lastSig : {},
+      lastCandidateSig: saved.lastCandidateSig && typeof saved.lastCandidateSig === "object" ? saved.lastCandidateSig : {},
       activeSignals: Array.isArray(saved.activeSignals) ? saved.activeSignals : []
     };
   }
@@ -288,6 +290,7 @@ async function sendOutcome(signal, outcome, candle) {
     signalId: signal.signalId,
     market: signal.market,
     direction: signal.direction,
+    ...(signal.strategyProfile ? { strategyProfile: signal.strategyProfile } : {}),
     priorityTier: signal.priorityTier || null,
     priorityLabel: signal.priorityLabel || null,
     priorityMetricName: signal.priorityMetricName || null,
@@ -411,6 +414,13 @@ async function main() {
 
         const result = evaluate(candles);
         const shadowEvaluation = evaluateMarketShadow(candles, id);
+        const gateDecision = candidateGateDecision({
+          enabled: CANDIDATE_GATE_ENABLED && Boolean(shadowEvaluation),
+          baselineSignal: result.signal,
+          shadowSignal: shadowEvaluation?.signal
+        });
+        const candidateGateActive = gateDecision.active;
+        const candidateAccepted = gateDecision.accepted;
         const hasSignal = result.state === "ok" && result.signal !== "NO TRADE";
         // Record market-data/evaluation health separately from notification delivery.
         // A Telegram failure must never turn a successfully scanned market into a scan error.
@@ -421,7 +431,8 @@ async function main() {
           ...(hasSignal ? { direction: result.signal } : {}),
           ...(shadowEvaluation ? {
             shadowCandidateSignal: shadowEvaluation.signal,
-            shadowCandidateAccepted: shadowEvaluation.signal === result.signal
+            shadowCandidateAccepted: shadowEvaluation.signal === result.signal,
+            candidateGateActive
           } : {})
         });
 
@@ -448,10 +459,25 @@ async function main() {
           ...(shadowEvaluation ? { shadowEvaluation } : {}),
           status:"detected", tp1Hit:false, tp2Hit:false, finalOutcome:null, events:[]
         });
+        if (candidateGateActive && !candidateAccepted) {
+          journalStatus(signalId, "candidate_suppressed", "r75_jd100_candidate_gate");
+          log("signal_suppressed", {
+            market: name, direction: result.signal, reason: "r75_jd100_candidate_gate",
+            candidateProfile: id === "R_75" ? "R_75_CANDIDATE_V1" : "JD100_CANDIDATE_V1",
+            candle_epoch: candleEpoch
+          });
+          continue;
+        }
         const previous = Number(state.lastSig[id] || 0);
-        if (candleEpoch <= previous || candleEpoch - previous < DEF.cooldown * GRANULARITY) {
+        const cooldown = candidateGateActive ? shadowEvaluation.profile.cooldown : DEF.cooldown;
+        const candidatePrevious = Number(state.lastCandidateSig[id] || 0);
+        const previousForGate = candidateGateActive ? candidatePrevious : previous;
+        if (candleEpoch <= previousForGate || candleEpoch - previousForGate < cooldown * GRANULARITY) {
           journalStatus(signalId, "suppressed", "duplicate_or_cooldown");
-          log("signal_suppressed", { market: name, direction: result.signal, reason: "duplicate_or_cooldown", candle_epoch: candleEpoch });
+          log("signal_suppressed", {
+            market: name, direction: result.signal, reason: "duplicate_or_cooldown",
+            cooldown, candidateGateActive, candle_epoch: candleEpoch
+          });
           continue;
         }
 
@@ -465,6 +491,7 @@ async function main() {
         const levels = makeLevels(candles, result.signal);
         const telegramResult = await postTelegram({
           event: "new_signal", source: "LEGACY_15M", signalId, marketId: id, market: name, direction: result.signal, ...levels,
+          ...(candidateGateActive ? { strategyProfile: id + "_CANDIDATE_V1" } : {}),
           ...(priority ? {
             priorityTier: priority.tier, priorityLabel: priority.label,
             priorityMetricName: priority.metricName, priorityMetricPct: priority.metricPct
@@ -473,6 +500,7 @@ async function main() {
         journalStatus(signalId, telegramResult?.suppressed === true ? "suppressed" : "sent",
           telegramResult?.suppressed === true ? (telegramResult.reason || "market_specific_telegram_filter") : undefined);
         state.lastSig[id] = candleEpoch;
+        if (candidateGateActive) state.lastCandidateSig[id] = candleEpoch;
         state.activeSignals.push({
           signalId,
           marketId: id,
@@ -483,6 +511,7 @@ async function main() {
             priorityMetricName: priority.metricName, priorityMetricPct: priority.metricPct
           } : {}),
           ...levels,
+          ...(candidateGateActive ? { strategyProfile: id + "_CANDIDATE_V1" } : {}),
           createdEpoch: candleEpoch,
           lastCheckedEpoch: candleEpoch,
           tp1Hit: false,
