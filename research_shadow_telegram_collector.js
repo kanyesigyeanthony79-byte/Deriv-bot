@@ -144,7 +144,7 @@ function toAlert(signal, strategy, marketData, applyRegime = true, onReject = nu
     marketData.regimeFilterDecisions ||= [];
     marketData.regimeFilterDecisions.push({ signalId: String(signal.signalId), strategyId: strategy, direction, entryTimeframe: signal.entryTimeframe || "?", ...regime });
   }
-  if (!regime.passed) return null;
+  if (!regime.passed) return reject("market_regime_rejected");
   return {
     event: "new_signal", source: "RESEARCH_SHADOW", paper: true, live: false,
     marketMode: "LIVE_MARKET", executionMode: "DEMO_MANUAL",
