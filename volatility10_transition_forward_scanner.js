@@ -72,6 +72,14 @@ async function deliverForwardSignal(signal,env=process.env){
  if(!response.ok||body.success!==true)throw new Error("R10 Telegram route rejected delivery");
  return {sent:true,duplicate:Boolean(body.duplicate),deliveredAt:new Date().toISOString()};
 }
+function validateEntryQuote(signal,quote,maxDisplacementR=0.20,maxAgeSeconds=5){
+ if(!quote||!Number.isFinite(quote.price)||!Number.isFinite(quote.ageSeconds)||quote.ageSeconds>maxAgeSeconds)
+  return {accepted:false,reason:"live_quote_missing_or_stale",displacementR:null};
+ const displacementR=Math.abs(quote.price-signal.referenceEntryPrice)/signal.risk;
+ if(!Number.isFinite(displacementR)||displacementR>maxDisplacementR)
+  return {accepted:false,reason:"ENTRY_DISPLACEMENT_EXCEEDED",displacementR};
+ return {accepted:true,reason:"within_entry_displacement_limit",displacementR};
+}
 function journalRecord(setupEpoch,result,nowEpoch){
  const signal=result.signal||{};
  return {
@@ -147,16 +155,13 @@ async function processSnapshot(state,journal,snapshot,env=process.env){
   if(result.status!=="GENERATED")continue;
   const signal=result.signal;
   // Fail closed unless a fresh Deriv tick confirms the reference entry is still within 0.20R.
-  if(!quote||!Number.isFinite(quote.price)||!Number.isFinite(quote.ageSeconds)||quote.ageSeconds>5){
-   rec.status="SKIPPED";rec.reason="live_quote_missing_or_stale";rec.deliveryStatus="NOT_SENT";
-   rec.quoteAgeSeconds=quote?.ageSeconds??null;continue;
+  const quoteGate=validateEntryQuote(signal,quote);
+  rec.quotePrice=quote?.price??null;rec.quoteAgeSeconds=quote?.ageSeconds??null;
+  rec.entryDisplacementR=quoteGate.displacementR;
+  if(!quoteGate.accepted){
+   rec.status="SKIPPED";rec.reason=quoteGate.reason;rec.deliveryStatus="NOT_SENT";continue;
   }
-  const displacementR=Math.abs(quote.price-signal.referenceEntryPrice)/signal.risk;
-  rec.quotePrice=quote.price;rec.quoteAgeSeconds=quote.ageSeconds;rec.entryDisplacementR=displacementR;
-  if(!Number.isFinite(displacementR)||displacementR>0.20){
-   rec.status="SKIPPED";rec.reason="ENTRY_DISPLACEMENT_EXCEEDED";rec.deliveryStatus="NOT_SENT";continue;
-  }
-  signal.quotePrice=quote.price;signal.quoteAgeSeconds=quote.ageSeconds;signal.entryDisplacementR=displacementR;
+  signal.quotePrice=quote.price;signal.quoteAgeSeconds=quote.ageSeconds;signal.entryDisplacementR=quoteGate.displacementR;
   // Only the just-closed setup can be delivered. Historical catch-up is journal-only.
   if(nowEpoch-signal.signalEpoch>strategy.MAX_ENTRY_DELAY_SECONDS){
    rec.status="SKIPPED";rec.reason="historical_catchup_not_delivered";rec.stale=true;
@@ -205,4 +210,4 @@ if(require.main===module)main().catch(error=>{
  console.error(JSON.stringify({event:"r10_transition_scanner_failed",error:String(error.message||"scanner_error").slice(0,240)}));
  process.exitCode=1;
 });
-module.exports={connect,latestContinuousSegment,splitCandles,collect,deliverForwardSignal,journalRecord,updateActiveOutcome,processSnapshot};
+module.exports={connect,latestContinuousSegment,splitCandles,collect,deliverForwardSignal,validateEntryQuote,journalRecord,updateActiveOutcome,processSnapshot};
