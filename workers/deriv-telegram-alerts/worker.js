@@ -559,8 +559,8 @@ export default {
             ...priorityLines,
             "━━━━━━━━━━━━━━━━",
             `📊 Market: ${market}`,
-            `🏅 Quality: ${String(data.quality || "UNRATED")}`,
-            `⏱ Timeframes: ${data.entryTimeframe || "?"} entry / ${data.setupTimeframe || "?"} setup / ${data.confirmationTimeframe || "?"} confirmation`,
+            `🏅 Quality: ${data.quality ? String(data.quality) : Number.isFinite(Number(data.score)) ? `ENGINE SCORE ${Number(data.score)}/100 (not a win-rate)` : "NOT PROVIDED"}`,
+            `⏱ Timeframes: ${data.entryTimeframe || (data.source === "LEGACY_15M" ? "M15" : "Not provided")} entry / ${data.setupTimeframe || "Not provided"} setup / ${data.confirmationTimeframe || "Not provided"} confirmation`,
             `📈 Direction: ${direction}`,
             `🎯 Entry: ${data.entry}`,
             `🛑 Stop Loss: ${data.stopLoss}`,
@@ -569,6 +569,7 @@ export default {
             data.livePrice !== undefined ? `📍 Live price at alert: ${data.livePrice}` : null,
             data.signalAgeSeconds !== undefined ? `⏱ Signal age: ${Math.round(Number(data.signalAgeSeconds))}s` : null,
             data.priceValidation === "PASS" ? `✅ Entry distance check: PASS (${data.entryDeviationR}R)` : null,
+            data.candleEpoch !== undefined ? `⌛ Valid until: ${new Date((Number(data.candleEpoch) + Number(data.validityMinutes || 60) * 60) * 1000).toLocaleString("en-GB", { timeZone: "Africa/Kampala", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" })} (Uganda time)` : null,
             data.signalId ? `🔖 Signal: ${String(data.signalId).slice(0, 60)}` : null,
             "━━━━━━━━━━━━━━━━",
             "⚠️ Signal only. Verify conditions before trading; no trade is executed automatically."
