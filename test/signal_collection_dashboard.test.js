@@ -18,7 +18,7 @@ test("collection page tolerates an empty or unavailable optional journal without
 });
 
 test("collection page inline JavaScript parses", () => {
-  const scripts = [...html.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)];
+  const scripts = [...html.matchAll(/<script>([\s\\S]*?)<\/script>/g)];
   assert.ok(scripts.length > 0, "no inline collection script found");
   for (const match of scripts) assert.doesNotThrow(() => new Function(match[1]));
 });
