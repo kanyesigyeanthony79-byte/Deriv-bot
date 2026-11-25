@@ -9,6 +9,7 @@ const { updateBreakoutRetestJournal } = require("./breakout_retest_shadow");
 const { updateM5PullbackJournal } = require("./m5_ema_pullback_shadow");
 const { updateJournal: updateBreakoutM5M15Journal } = require("./breakout_retest_m5_m15_shadow");
 const { evaluateMarketRegime } = require("./market_regime_filter_shadow");
+const { updateM15ExpansionForwardShadowJournal, buildExpansionAlert } = require("./m15_expansion_forward_shadow");
 
 const DATA_DIR = getDataDir();
 // 1-second products use their canonical Deriv API symbol codes (not standard R_* aliases).
@@ -18,7 +19,9 @@ const MARKETS = Object.freeze([
   ["JD100", "Jump 100 Index"], ["CRASH500", "Crash 500 Index"],
   ["BOOM500", "Boom 500 Index"], ["frxXAUUSD", "Gold (XAUUSD)"],
   ["1HZ10V", "Volatility 10 (1s) Index"],
-  ["1HZ75V", "Volatility 75 (1s) Index"]
+  ["1HZ75V", "Volatility 75 (1s) Index"],
+  ["RB100", "Range Break 100 Index"],
+  ["RB200", "Range Break 200 Index"]
 ]);
 const FRAMES = [["M1", 60, 300], ["M5", 300, 120], ["M15", 900, 120]];
 const JOURNALS = {
@@ -94,6 +97,21 @@ async function fetchCandles(client, symbol, granularity, count, nowEpoch) {
   if (response.error) throw new Error(response.error.message || "Deriv candle request failed");
   return normalizeCandles(response.candles, granularity, nowEpoch).slice(-count);
 }
+async function fetchFormingCandle(client, symbol, granularity, nowEpoch) {
+  const response = await client.ask({
+    ticks_history: symbol, adjust_start_time: 1, count: 2,
+    end: "latest", granularity, style: "candles"
+  });
+  if (response.error) throw new Error(response.error.message || "Deriv forming-candle request failed");
+  const lastClosedEpoch = Math.floor(nowEpoch / granularity) * granularity - granularity;
+  const rows = (response.candles || []).map(c => ({
+    epoch:Number(c.epoch), open:Number(c.open), high:Number(c.high),
+    low:Number(c.low), close:Number(c.close)
+  })).filter(c => [c.epoch,c.open,c.high,c.low,c.close].every(Number.isFinite) &&
+    c.high >= Math.max(c.open,c.close) && c.low <= Math.min(c.open,c.close));
+  return rows.filter(c => c.epoch > lastClosedEpoch && c.epoch <= Math.floor(nowEpoch/granularity)*granularity)
+    .sort((a,b) => a.epoch-b.epoch).at(-1) || null;
+}
 function newSignals(before, after) {
   const oldIds = new Set((before || []).map(s => s.signalId));
   return (after || []).filter(s => s.signalId && !oldIds.has(s.signalId));
@@ -158,31 +176,49 @@ async function main(env = process.env, options = {}) {
     const output = { version: 1, generatedAt: new Date(now * 1000).toISOString(), markets: {}, errors: [] };
     for (const [marketId, marketName] of MARKETS) {
       const market = { marketId, marketName, timeframes: {}, errors: [] };
+      const isExpansionMarket = marketId === "RB100" || marketId === "RB200";
       for (const [tf, seconds, count] of FRAMES) {
-        try { market.timeframes[tf] = await fetchCandles(client, symbols[marketId] || marketId, seconds, count, now); }
-        catch (error) { market.errors.push({ timeframe: tf, message: error.message }); }
+        if (isExpansionMarket && tf !== "M15") continue;
+        try {
+          const symbol = symbols[marketId] || (!isExpansionMarket ? marketId : null);
+          if (!symbol) throw new Error("Deriv active symbol was not confirmed; market skipped.");
+          market.timeframes[tf] = await fetchCandles(client, symbol, seconds, count, now);
+          if (isExpansionMarket && tf === "M15") market.formingM15 = await fetchFormingCandle(client, symbol, seconds, now);
+        } catch (error) { market.errors.push({ timeframe: tf, message: error.message }); }
       }
       output.markets[marketId] = market;
       if (market.errors.length) output.errors.push({ marketId, errors: market.errors });
     }
 
+    // Keep the two M15 expansion markets out of the existing shadow strategies.
+    // They receive only the isolated original-engine M15 forward evaluation below.
+    const strategyMarkets = Object.fromEntries(Object.entries(output.markets)
+      .filter(([marketId]) => marketId !== "RB100" && marketId !== "RB200"));
+    const priorExpansion = readJson("m15_expansion_forward_shadow_journal.json", {
+      version: 1, mode: "forward_shadow_observation_only", markets: {}, signals: []
+    });
+    const nextExpansion = updateM15ExpansionForwardShadowJournal(priorExpansion, output.markets, now);
     const priorA = readJson(JOURNALS.breakoutM1, { version: 1, updatedAt: null, markets: {}, signals: [] });
     const priorB = readJson(JOURNALS.emaPullback, { version: 1, updatedAt: null, markets: {}, signals: [] });
     const priorC = readJson(JOURNALS.breakoutM5M15, { version: 1, updatedAt: null, markets: {}, signals: [] });
-    const nextA = updateBreakoutRetestJournal(priorA, output.markets, now);
-    const nextB = updateM5PullbackJournal(priorB, output.markets, now);
-    const nextC = updateBreakoutM5M15Journal(priorC, output.markets, now);
+    const nextA = updateBreakoutRetestJournal(priorA, strategyMarkets, now);
+    const nextB = updateM5PullbackJournal(priorB, strategyMarkets, now);
+    const nextC = updateBreakoutM5M15Journal(priorC, strategyMarkets, now);
     const delivery = readJson(JOURNALS.delivery, { version: 1, updatedAt: null, signals: {} });
     delivery.signals ||= {};
     const allCurrent = [
       ...nextA.signals.map(s => toAlert(s, "M5_BREAKOUT_M1_RETEST", output.markets[s.marketId], false)),
       ...nextB.signals.map(s => toAlert(s, "M15_M5_EMA_PULLBACK", output.markets[s.marketId], false)),
-      ...nextC.signals.map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM", output.markets[s.marketId], false))
+      ...nextC.signals.map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM", output.markets[s.marketId], false)),
+      ...nextExpansion.signals.map(s => buildExpansionAlert(s, now))
     ].filter(Boolean);
     const fresh = [
       ...newSignals(priorA.signals, nextA.signals).map(s => toAlert(s, "M5_BREAKOUT_M1_RETEST", output.markets[s.marketId])),
       ...newSignals(priorB.signals, nextB.signals).map(s => toAlert(s, "M15_M5_EMA_PULLBACK", output.markets[s.marketId])),
-      ...newSignals(priorC.signals, nextC.signals).map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM", output.markets[s.marketId]))
+      ...newSignals(priorC.signals, nextC.signals).map(s => toAlert(s, "M5_BREAKOUT_M5_RETEST_M15_CONFIRM", output.markets[s.marketId])),
+      ...nextExpansion.signals
+        .filter(s => Number.isFinite(s.entryEpoch) && !priorExpansion.signals?.some(p => p.signalId === s.signalId && Number.isFinite(p.entryEpoch)))
+        .map(s => buildExpansionAlert(s, now))
     ].filter(Boolean);
     // Failed or interrupted deliveries are retried by stable ID; old journal entries
     // without a delivery record are never backfilled into Telegram.
@@ -208,6 +244,7 @@ async function main(env = process.env, options = {}) {
     writeJson(JOURNALS.delivery, delivery);
     writeJson(JOURNALS.breakoutM1, nextA);
     writeJson(JOURNALS.emaPullback, nextB);
+    writeJson("m15_expansion_forward_shadow_journal.json", nextExpansion);
     writeJson(JOURNALS.breakoutM5M15, nextC);
 
     let sent = 0, failed = 0;
@@ -239,6 +276,7 @@ async function main(env = process.env, options = {}) {
         emaPullback: nextB.summary || null,
         breakoutM5M15: nextC.summary || null
       },
+      m15ExpansionForwardShadow: nextExpansion.summary || null,
       r10Excluded: true, mtfEnabled: false, mt5ExecutionEnabled: false
     };
     const regimeJournal = { version: 1, generatedAt: output.generatedAt, mode: "shadow_only", productionGateEnabled: false, markets: Object.fromEntries(Object.entries(output.markets).map(([id, market]) => [id, { decisions: market.regimeFilterDecisions || [] }])) };
