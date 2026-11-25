@@ -95,7 +95,7 @@ const loaded=await Promise.all(SOURCES.map(async([label,url,kind])=>{try{const r
 let deliveryMap={},deliveryError=null,researchSnapshot=null,researchError=null;
 try{const deliveryRes=await fetch("./shadow_telegram_delivery_journal.json?v="+Date.now(),{cache:"no-store"});if(!deliveryRes.ok)throw new Error("HTTP "+deliveryRes.status);const delivery=await deliveryRes.json();deliveryMap=delivery.signals||{};}catch(error){deliveryError="shadow_telegram_delivery_journal.json · "+error.message;}
 try{const researchRes=await fetch("./research_shadow_collection.json?v="+Date.now(),{cache:"no-store"});if(!researchRes.ok)throw new Error("HTTP "+researchRes.status);researchSnapshot=await researchRes.json();}catch(error){researchError="research_shadow_collection.json · "+error.message;}
-renderResearchDiagnostics(researchSnapshot);
+try{renderResearchDiagnostics(researchSnapshot);}catch(diagnosticError){$("researchUpdated").textContent="Research diagnostics failed to render: "+diagnosticError.message;$("researchDiagnostics").innerHTML='<tr><td colspan="9" class="empty">Research diagnostics could not be displayed. The delivered-signal register will still load independently.</td></tr>';}
 const byId=new Map();
 function normalizedOutcome(s){
  const final=String(s.finalOutcome||"").toUpperCase(),state=String(s.status||"").toLowerCase();
