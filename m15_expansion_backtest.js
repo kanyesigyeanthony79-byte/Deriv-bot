@@ -256,7 +256,7 @@ async function fetchCandles(client, symbol, { startEpoch, endEpoch, requestGapMs
       try {
         lastRequestAt = Date.now();
         // With start supplied Deriv ignores count and may return an expensive
-        // full-range response. Page backwards using count + end only.
+        // full-range response. Page backwards using count + end only, capped at PAGE_SIZE.
         reply = await client.ask({
           ticks_history: symbol, end, count: PAGE_SIZE, adjust_start_time: 1,
           granularity: TIMEFRAME_SECONDS, style: "candles"
