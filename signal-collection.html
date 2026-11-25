@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10251d">
+<title>100-Signal Collection | Deriv Signal Assistant</title>
+<style>
+:root{color-scheme:dark;--bg:#09140f;--panel:#14251d;--panel2:#1b3026;--line:#2c4939;--txt:#eef5ef;--muted:#a8b9ad;--gold:#d5a83d;--green:#55c58b;--red:#f07878;--blue:#8eb8e8}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#10251d,#09120e 70%);color:var(--txt);font:14px system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1100px;margin:auto;padding:18px 14px 44px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.brand{font-size:18px;font-weight:850;letter-spacing:.3px}.muted{color:var(--muted);font-size:12px;line-height:1.5}.pill{border:1px solid var(--line);border-radius:30px;padding:6px 10px;color:var(--gold);font-size:11px}
+a{color:var(--gold);text-decoration:none}.hero,.panel,.market{background:rgba(20,37,29,.94);border:1px solid var(--line);border-radius:16px;padding:15px}.hero{margin:16px 0}.hero h1{font-size:24px;margin:0 0 6px}.hero p{margin:0;color:var(--muted);line-height:1.55}.toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:14px}.btn{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px 13px;font-weight:700;cursor:pointer}.btn.primary{background:var(--gold);color:#17170f;border-color:var(--gold)}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:12px 0}.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px}.stat .k{font-size:10px;color:var(--muted);letter-spacing:.6px}.stat .v{font-size:25px;font-weight:850;margin-top:5px}.progress{height:8px;background:#26382e;border-radius:9px;overflow:hidden;margin-top:10px}.progress span{display:block;height:100%;background:var(--green);width:0}.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:20px 0 9px}.section-head h2{font-size:16px;margin:0}.markets{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}.market{padding:12px}.market-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.market-name{font-weight:800}.market-id{color:var(--muted);font-size:11px}.count{font-size:23px;font-weight:850;margin-top:9px}.count small{font-size:12px;color:var(--muted);font-weight:600}.bar{height:7px;border-radius:8px;background:#26382e;overflow:hidden;margin:8px 0}.bar span{display:block;height:100%;background:var(--gold);width:0}.done .bar span{background:var(--green)}.done-mark{color:var(--green);font-size:12px;font-weight:800}.statusline{font-size:11px;color:var(--muted)}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:13px;background:var(--panel)}table{width:100%;border-collapse:collapse;min-width:850px;font-size:12px}th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);font-weight:650;position:sticky;top:0;background:var(--panel)}.tag{display:inline-block;padding:3px 7px;border-radius:20px;border:1px solid var(--line);font-size:10px;white-space:nowrap}.tag.sent,.tag.tp2_hit,.tag.target{color:var(--green)}.tag.failed,.tag.stopped,.tag.ambiguous{color:var(--red)}.tag.pending,.tag.tp1_hit,.tag.expired{color:var(--gold)}.filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.filters input,.filters select{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:9px;padding:9px;min-width:150px}.empty{padding:16px;text-align:center;color:var(--muted)}.foot{margin-top:18px;color:var(--muted);font-size:11px;line-height:1.6}
+@media(max-width:480px){main{padding:13px 10px 35px}.hero h1{font-size:21px}.stat .v{font-size:22px}}
+</style>
+</head>
+<body><main>
+<div class="top"><div><div class="brand">DERIV SIGNAL ASSISTANT</div><div class="muted">100-signal collection tracker</div></div><span class="pill">RESEARCH · TELEGRAM-DELIVERED ONLY</span></div>
+<div class="hero">
+<h1>100-Signal Collection</h1>
+<p>Track every research signal confirmed as delivered to Telegram across the 15 active markets. Each delivered signal is listed with its strategy, entry, stop loss, target, delivery record and latest outcome status. A market receives its completion tick only after 100 distinct delivered signal IDs are recorded.</p>
+<div class="toolbar"><a class="btn" href="./index.html">← Back to main dashboard</a><button class="btn primary" id="refresh">Refresh collection</button><span class="muted" id="updated" aria-live="polite">Loading signal and delivery journals…</span></div>
+</div>
+<div class="stats">
+<div class="stat"><div class="k">TOTAL DELIVERED SIGNALS</div><div class="v" id="total">—</div></div>
+<div class="stat"><div class="k">COLLECTION TARGET</div><div class="v">1,500</div><div class="muted">15 markets × 100 signals</div></div>
+<div class="stat"><div class="k">MARKETS COMPLETED</div><div class="v" id="completed">—</div></div>
+<div class="stat"><div class="k">OVERALL PROGRESS</div><div class="v" id="overall">—</div><div class="progress"><span id="overallBar"></span></div></div>
+</div>
+<div class="section-head"><h2>Market-by-market progress</h2><span class="muted">100 delivered signals per market</span></div>
+<div class="markets" id="markets"><div class="panel muted">Loading market progress…</div></div>
+<div class="section-head"><h2>Delivered signal register</h2><span class="muted" id="recordCount">0 records</span></div>
+<div class="filters"><input id="search" type="search" placeholder="Search market, strategy or signal ID"><select id="marketFilter"><option value="">All 15 markets</option></select><select id="statusFilter"><option value="">All outcome statuses</option><option value="pending">Pending / active</option><option value="tp1_hit">TP1 hit</option><option value="tp2_hit">Target reached</option><option value="stopped">Stopped</option><option value="stopped_after_tp1">Stopped after TP1</option><option value="expired">Expired</option><option value="ambiguous">Ambiguous</option><option value="unknown">Unknown / untracked</option></select></div>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>Delivered at</th><th>Market</th><th>Strategy</th><th>Direction</th><th>Entry</th><th>Stop loss</th><th>Take profit</th><th>Outcome status</th><th>Telegram delivery</th><th>Signal ID</th></tr></thead><tbody id="records"><tr><td colspan="11" class="empty">Loading…</td></tr></tbody></table></div>
+<div class="foot">Counting rules: only a delivery-journal entry with status SENT is included in market progress. A generated strategy observation without a confirmed Telegram delivery is excluded. Signal outcomes are read from the original strategy journal and are not inferred from delivery. Pending, TP1-hit, expired and ambiguous records remain visible as their own statuses; they are not converted into wins or losses. Records are deduplicated by signal ID. The tracker reads the three existing forward-shadow strategy journals and the Telegram delivery journal.</div>
+</main>
+<script>
+(()=>{
+const MARKETS=[
+["R_25","Volatility 25 Index"],["R_50","Volatility 50 Index"],["R_75","Volatility 75 Index"],
+["JD75","Jump 75 Index"],["JD100","Jump 100 Index"],["CRASH500","Crash 500 Index"],
+["BOOM500","Boom 500 Index"],["frxXAUUSD","Gold (XAUUSD)"],["1HZ10V","Volatility 10 (1s) Index"],
+["1HZ75V","Volatility 75 (1s) Index"],["R_100","Volatility 100 Index"],["JD25","Jump 25 Index"],
+["JD50","Jump 50 Index"],["CRASH100","Crash 100 Index"],["BOOM100","Boom 100 Index"]
+];
+const SOURCES=[
+["M5 breakout / M1 retest","./breakout_retest_shadow_journal.json"],
+["M15 trend + M5 EMA pullback","./m5_ema_pullback_shadow_journal.json"],
+["M5 breakout / M5 retest / M15 confirmation","./breakout_retest_m5_m15_shadow_journal.json"]
+];
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??"—").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=v=>v===null||v===undefined||!Number.isFinite(Number(v))?"—":Number(v).toLocaleString(undefined,{maximumFractionDigits:5});
+const date=v=>{if(!v)return "—";const d=new Date(v);return Number.isNaN(d.getTime())?"—":d.toLocaleString();};
+let rows=[];
+function outcome(s){const v=String(s||"unknown").toLowerCase();return v;}
+function statusLabel(s){const map={pending:"PENDING / ACTIVE",tp1_hit:"TP1 HIT",tp2_hit:"TARGET REACHED",stopped:"STOPPED",stopped_after_tp1:"STOPPED AFTER TP1",expired:"EXPIRED",ambiguous:"AMBIGUOUS",time_exit:"TIME EXIT",target:"TARGET REACHED",win:"WIN",loss:"LOSS"};return map[s]||String(s||"UNKNOWN").replace(/_/g," ").toUpperCase();}
+function created(r){if(r.createdAt)return r.createdAt;const e=Number(r.entryCandleEpoch??r.triggerEpoch??r.setupCloseEpoch);return Number.isFinite(e)?new Date(e*1000).toISOString():null;}
+function render(){
+const counts=Object.fromEntries(MARKETS.map(([id])=>[id,0]));
+for(const r of rows)if(counts[r.marketId]!==undefined)counts[r.marketId]++;
+const total=rows.length, completed=MARKETS.filter(([id])=>counts[id]>=100).length, progress=Math.min(100,total/1500*100);
+$("total").textContent=total.toLocaleString();$("completed").textContent=completed+" / 15";$("overall").textContent=progress.toFixed(1)+"%";$("overallBar").style.width=progress+"%";
+$("markets").innerHTML=MARKETS.map(([id,name])=>{const n=counts[id],pct=Math.min(100,n);const done=n>=100;return '<article class="market '+(done?"done":"")+'"><div class="market-head"><div><div class="market-name">'+esc(name)+'</div><div class="market-id">'+esc(id)+'</div></div>'+(done?'<span class="done-mark">✓ TARGET COMPLETE</span>':'<span class="tag">'+(100-n)+' TO GO</span>')+'</div><div class="count">'+n+' <small>/ 100 delivered</small></div><div class="bar"><span style="width:'+pct+'%"></span></div><div class="statusline">'+pct+'% of target · '+(done?"ready for market review":"collecting confirmed Telegram deliveries")+'</div></article>';}).join("");
+const q=$("search").value.trim().toLowerCase(), mf=$("marketFilter").value, sf=$("statusFilter").value;
+const filtered=rows.filter(r=>(!mf||r.marketId===mf)&&(!sf||outcome(r.outcome)===sf||(!r.outcome&&sf==="unknown"))&&(!q||[r.marketId,r.market,r.strategyLabel,r.strategyId,r.signalId,r.direction].join(" ").toLowerCase().includes(q)));
+$("recordCount").textContent=filtered.length+" of "+total+" records";
+$("records").innerHTML=filtered.length?filtered.map((r,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(date(r.sentAt||r.deliveredAt||r.delivery?.sentAt||r.createdAt))+'</td><td><b>'+esc(r.marketId)+'</b><br><span class="muted">'+esc(r.market)+'</span></td><td>'+esc(r.strategyLabel||r.strategyId)+'</td><td>'+esc(r.direction)+'</td><td>'+esc(fmt(r.entry))+'</td><td>'+esc(fmt(r.stopLoss))+'</td><td>'+esc(fmt(r.tp2??r.takeProfit))+'</td><td><span class="tag '+esc(outcome(r.outcome))+'">'+esc(statusLabel(r.outcome))+'</span></td><td><span class="tag sent">SENT</span><br><span class="muted">'+esc(r.deliveryAttempts??"—")+' attempt(s)</span></td><td><code>'+esc(r.signalId)+'</code></td></tr>').join(""):'<tr><td colspan="11" class="empty">No confirmed Telegram-delivered signals match these filters.</td></tr>';
+}
+async function refresh(){
+$("updated").textContent="Reading strategy journals and Telegram delivery journal…";
+try{
+const loaded=await Promise.all(SOURCES.map(async([label,url])=>{const res=await fetch(url+"?v="+Date.now(),{cache:"no-store"});if(!res.ok)throw new Error(url+" HTTP "+res.status);const data=await res.json();if(!Array.isArray(data.signals))throw new Error(url+" has no signal array");return {label,signals:data.signals};}));
+const response=await fetch("./shadow_telegram_delivery_journal.json?v="+Date.now(),{cache:"no-store"});if(!response.ok)throw new Error("Delivery journal HTTP "+response.status);
+const delivery=await response.json(), delivered=Object.entries(delivery.signals||{}).filter(([,d])=>String(d.status||"").toLowerCase()==="sent");
+const byId=new Map();for(const source of loaded)for(const signal of source.signals)if(signal.signalId)byId.set(signal.signalId,{...signal,strategyLabel:signal.strategyLabel||source.label});
+rows=delivered.map(([id,d])=>{const s=byId.get(id)||{};return {...s,signalId:id,marketId:s.marketId||d.marketId||"UNKNOWN",market:s.market||s.marketId||d.marketId||"UNKNOWN",strategyId:s.strategyId||d.strategyId||"Unknown strategy",strategyLabel:s.strategyLabel||d.strategyId||"Unknown strategy",outcome:s.status||"unknown",sentAt:d.sentAt||d.deliveredAt||d.lastAttemptAt||null,deliveryAttempts:d.attempts??null};}).filter(r=>MARKETS.some(([id])=>id===r.marketId)).sort((a,b)=>String(b.sentAt||created(b)||"").localeCompare(String(a.sentAt||created(a)||"")));
+const filter=$("marketFilter");const previous=filter.value;filter.innerHTML='<option value="">All 15 markets</option>'+MARKETS.map(([id,name])=>'<option value="'+esc(id)+'">'+esc(id)+' · '+esc(name)+'</option>').join("");filter.value=previous;
+render();const stamp=delivery.updatedAt?date(delivery.updatedAt):"timestamp unavailable";$("updated").textContent=rows.length+" confirmed deliveries loaded · delivery journal updated "+stamp+" · refreshed "+new Date().toLocaleTimeString();
+}catch(error){$("updated").textContent="Collection data unavailable: "+error.message+" · No progress has been estimated."; $("records").innerHTML='<tr><td colspan="11" class="empty">'+esc(error.message)+'</td></tr>';$("markets").innerHTML='<div class="panel muted">Market progress cannot be calculated until all source journals load successfully.</div>';}
+}
+["search","marketFilter","statusFilter"].forEach(id=>$(id).addEventListener(id==="search"?"input":"change",render));
+$("refresh").addEventListener("click",refresh);refresh();setInterval(refresh,60000);
+})();
+</script></body></html>
