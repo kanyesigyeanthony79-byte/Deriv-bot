@@ -173,16 +173,19 @@ function toAlert(signal, strategy, marketData, applyRegime = true, recordDecisio
     status: "SHADOW"
   };
 }
-async function deliver(alert, env) {
-  if (!env.TELEGRAM_WORKER_URL || !env.SIGNAL_API_KEY) throw new Error("Telegram worker URL/API key is not configured");
-  // RB100 and BOOM100 enter a monitored live-market alert pilot. This changes
-  // notification labelling/routing only; it never enables order execution.
-  const pilotMarket = ["RB100", "BOOM100"].includes(String(alert.marketId));
-  const payload = pilotMarket ? {
+function createDeliveryPayload(alert) {
+  const pilotMarket = ["RB100", "BOOM100"].includes(String(alert?.marketId || ""));
+  return pilotMarket ? {
     ...alert, source: "RESEARCH_LIVE_ALERT_PILOT", status: "PILOT",
     paper: false, live: false, alertMode: "LIVE_MARKET_PILOT",
     executionMode: "DEMO_MANUAL", pilot: true
   } : alert;
+}
+async function deliver(alert, env) {
+  if (!env.TELEGRAM_WORKER_URL || !env.SIGNAL_API_KEY) throw new Error("Telegram worker URL/API key is not configured");
+  // RB100 and BOOM100 enter a monitored live-market alert pilot. This changes
+  // notification labelling/routing only; it never enables order execution.
+  const payload = createDeliveryPayload(alert);
   const endpoint = env.TELEGRAM_WORKER_URL;
   const response = await fetch(endpoint, {
     method: "POST",
@@ -398,4 +401,4 @@ async function main(env = process.env, options = {}) {
   }
 }
 if (require.main === module) main().catch(error => { console.error(JSON.stringify({ event: "research_shadow_collector_failed", message: error.message })); process.exitCode = 1; });
-module.exports = { MARKETS, FRAMES, normalizeCandles, newSignals, toAlert, main };
+module.exports = { MARKETS, FRAMES, normalizeCandles, newSignals, toAlert, createDeliveryPayload, main };
