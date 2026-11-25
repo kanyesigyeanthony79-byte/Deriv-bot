@@ -53,6 +53,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <button class="btn system-tab" type="button" data-system-tab="r10" aria-pressed="false">Volatility 10 · R10</button>
     <button class="btn system-tab" type="button" data-system-tab="original" aria-pressed="false">Original System</button>
     <button class="btn system-tab" type="button" data-system-tab="research" aria-pressed="false">Research &amp; Forward Shadow</button>
+    <button class="btn system-tab" type="button" data-system-tab="newmarkets" aria-pressed="false">New Markets</button>
   </nav>
 
   <section id="promoted-system" class="hero system-view" data-system-view="promoted" style="margin-top:12px">
@@ -177,8 +178,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <tbody id="strategyMarkets"><tr><td colspan="10" class="muted">Waiting for comparison data…</td></tr></tbody></table>
     </div>
     <h2 style="margin-top:18px">Three-candidate entry comparison · forward shadow</h2>
-    <div class="muted">All three use the same 2R target and one-hour outcome window for an apples-to-apples entry comparison. M1 breakout/retest is the historical research benchmark; M15 trend + M5 EMA pullback is the existing M5/M15 candidate; M5 breakout/retest adds a separate M15 directional filter. No candidate is promoted automatically.</div>
-    <div class="card mtf-table-wrap" style="margin-top:10px">
+    <div class="muted">All three use the same 2R target and one-hour outcome window for an apples-to-apples entry comparison. M1 breakout/retest is the historical research benchmark; M15 trend + M5 EMA pullback is the existing M5/M15 candidate; M5 breakout/retest adds a separate M15 directional filter. No candidate is promoted automatically.</div>    <div class="card mtf-table-wrap" style="margin-top:10px">
       <table><thead><tr><th>Candidate</th><th>Entry</th><th>Confirmation</th><th>Signals</th><th>Resolved</th><th>Pending</th><th>Target before SL</th><th>Average R</th></tr></thead>
       <tbody id="breakoutRetestComparison"><tr><td colspan="8" class="muted">Waiting for candidate results…</td></tr></tbody></table>
     </div>
@@ -256,6 +256,21 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 
   <div class="notice"><b>Important:</b> Signal observations are based on market prices and do not prove a trade was executed. MT5 trade status and realized P/L appear only after broker-confirmed deal closures. Use demo observation only; historical outcomes do not establish future profitability.</div>
   <div class="foot">Hosted scanner: eight synthetic markets · M5/M15/M30 multi-timeframe analysis · scheduled every five minutes. MT5 execution outcomes appear only after broker deal-history confirmation. No private API key is required in this page.</div>
+
+  <section id="new-markets-system" class="hero system-view" data-system-view="newmarkets" style="margin-top:12px">
+    <div class="top"><h2 style="margin:0">New markets · research monitor</h2><span class="pill">SHADOW · OBSERVATION ONLY</span></div>
+    <p style="margin-top:8px">Dedicated view for the eight expanded markets. This tab reports evidence from the research-shadow collection snapshot; it does not imply production approval, live execution, or per-market Telegram delivery.</p>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn primary smallbtn" id="newMarketsRefresh" type="button">Refresh new markets</button><span class="status" id="newMarketsUpdated" aria-live="polite">Loading latest research scan…</span></div>
+    <div class="grid" id="newMarketsSummary">
+      <div class="card"><div class="detail">MARKETS IN THIS TAB</div><div class="signal">8</div></div>
+      <div class="card"><div class="detail">CYCLE STATUS</div><div class="signal none">LOADING</div></div>
+      <div class="card"><div class="detail">SHADOW TELEGRAM SENT</div><div class="signal">—</div></div>
+      <div class="card"><div class="detail">SHADOW TELEGRAM FAILED</div><div class="signal">—</div></div>
+    </div>
+    <div class="notice">Research-only status: a market is marked scanned only when it appears in the latest saved collection snapshot. Telegram totals are cycle-wide and are not attributed to individual markets. These markets are not added to the four production signal systems by this tab.</div>
+    <h3 style="margin-top:16px">Expanded market coverage</h3>
+    <div class="card mtf-table-wrap"><table><thead><tr><th>Market</th><th>Collection status</th><th>M1 candles</th><th>M5 candles</th><th>M15 candles</th><th>Shadow signals · M1 / EMA / M5+M15</th><th>Telegram delivery</th><th>Last collection</th><th>Details</th></tr></thead><tbody id="newMarketsRows"><tr><td colspan="9" class="muted">Waiting for research collection snapshot…</td></tr></tbody></table></div>
+  </section>
 </main>
 <script>
 (() => {
@@ -357,8 +372,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
         '<br>' + priceState + ' · Last check: ' +
         esc(item.lastCheckedEpoch ? time(new Date(item.lastCheckedEpoch * 1000).toISOString()) : "—") +
         '</div></article>';
-    }).join("") : '<div class="signal-empty">No open ' +
-      (promotedFilter === "active" ? "active VALID or STRONG" : promotedFilter.toUpperCase()) +
+    }).join("") : '<div class="signal-empty">No open ' +      (promotedFilter === "active" ? "active VALID or STRONG" : promotedFilter.toUpperCase()) +
       ' production signals right now.</div>';
   }
 
@@ -537,8 +551,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     const lines=[columns.map(quote).join(",")];
     latestSignals.slice().sort((a,b)=>(b.candleEpoch||0)-(a.candleEpoch||0)).forEach(s=>{
       lines.push([time(s.createdAt),s.market,s.direction,s.entry,s.score??"",outcomeLabel(s),s.signalId].map(quote).join(","));
-    });
-    const blob=new Blob(["\uFEFF"+lines.join("\r\n")],{type:"text/csv;charset=utf-8;"});
+    });    const blob=new Blob(["\uFEFF"+lines.join("\r\n")],{type:"text/csv;charset=utf-8;"});
     const url=URL.createObjectURL(blob);
     const link=document.createElement("a");
     link.href=url;
@@ -741,6 +754,64 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   $("researchAnalyticsRefresh").addEventListener("click",refreshResearchAnalytics);
   refreshResearchAnalytics();
   setInterval(refreshResearchAnalytics,120000);
+  })();
+
+
+  (() => {
+    const ids=[
+      ["1HZ10V","Volatility 10 (1s) Index"],
+      ["1HZ75V","Volatility 75 (1s) Index"],
+      ["R_100","Volatility 100 Index"],
+      ["JD75","Jump 75 Index"],
+      ["JD25","Jump 25 Index"],
+      ["JD50","Jump 50 Index"],
+      ["CRASH100","Crash 100 Index"],
+      ["BOOM100","Boom 100 Index"]
+    ];
+    const $=id=>document.getElementById(id);
+    const esc=s=>String(s??"—").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    async function refreshNewMarkets(){
+      const status=$("newMarketsUpdated"), body=$("newMarketsRows");
+      status.textContent="Checking latest saved research collection…";
+      try{
+        const response=await fetch("./research_shadow_collection.json?v="+Date.now(),{cache:"no-store"});
+        if(!response.ok)throw new Error("Research snapshot HTTP "+response.status);
+        const snapshot=await response.json(), markets=snapshot.markets||{}, summary=snapshot.summary||{};
+        const cycle=String(snapshot.cycleStatus||"unknown").toUpperCase();
+        const stamp=snapshot.generatedAt?new Date(snapshot.generatedAt).toLocaleString():"—";
+        const strategies=summary.strategies||{};
+        $("newMarketsSummary").innerHTML=[
+          ["MARKETS IN THIS TAB","8"],
+          ["LATEST CYCLE",cycle],
+          ["SHADOW TELEGRAM SENT",summary.telegramSent??0],
+          ["SHADOW TELEGRAM FAILED",summary.telegramFailed??0]
+        ].map(([label,value],i)=>'<div class="card"><div class="detail">'+esc(label)+'</div><div class="signal '+(i===1&&cycle!=="SUCCESS"&&cycle!=="COMPLETED"?"none":"")+'">'+esc(value)+'</div></div>').join("");
+        body.innerHTML=ids.map(([id,name])=>{
+          const m=markets[id];
+          if(!m){
+            const state=cycle==="FAILED"?"NOT UPDATED · CYCLE FAILED":"NOT IN LATEST SNAPSHOT";
+            return '<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal none">'+state+'</td><td>—</td><td>—</td><td>—</td><td>—</td><td>Not attributed per market</td><td>'+esc(stamp)+'</td><td>'+esc(snapshot.lastError||"No market record in this snapshot")+'</td></tr>';
+          }
+          const frames=m.timeframes||{}, errors=Array.isArray(m.errors)?m.errors:[];
+          const count=tf=>Array.isArray(frames[tf])?frames[tf].length:"—";
+          const signals=[
+            strategies.breakoutM1?.markets?.[id]?.signalsGenerated??strategies.breakoutM1?.markets?.[id]?.signals??0,
+            strategies.emaPullback?.markets?.[id]?.signals??0,
+            strategies.breakoutM5M15?.markets?.[id]?.signals??0
+          ].join(" / ");
+          const state=cycle==="FAILED"?"LAST CYCLE FAILED":errors.length?"COLLECTED · PARTIAL":"COLLECTED";
+          const detail=errors.map(e=>(e.timeframe||"data")+": "+e.message).join("; ")||"Market data retrieved";
+          return '<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal '+(errors.length||cycle==="FAILED"?"none":"buy")+'">'+state+'</td><td>'+esc(count("M1"))+'</td><td>'+esc(count("M5"))+'</td><td>'+esc(count("M15"))+'</td><td>'+esc(signals)+'</td><td>Cycle total only · '+esc(summary.telegramSent??0)+' sent / '+esc(summary.telegramFailed??0)+' failed</td><td>'+esc(stamp)+'</td><td>'+esc(detail)+'</td></tr>';
+        }).join("");
+        status.textContent="Snapshot "+stamp+" · "+Object.keys(markets).length+" markets recorded · cycle "+cycle+" · refreshed "+new Date().toLocaleTimeString();
+      }catch(error){
+        $("newMarketsSummary").innerHTML='<div class="signal-empty">Research collection status unavailable. No market is assumed to be scanning.</div>';
+        body.innerHTML=ids.map(([id,name])=>'<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal none">STATUS UNAVAILABLE</td><td>—</td><td>—</td><td>—</td><td>—</td><td>Not verified</td><td>—</td><td>'+esc(error.message)+'</td></tr>').join("");
+        status.textContent="Could not verify latest research snapshot: "+error.message;
+      }
+    }
+    const button=$("newMarketsRefresh");
+    if(button){button.addEventListener("click",refreshNewMarkets);refreshNewMarkets();setInterval(refreshNewMarkets,60000);}
   })();
 
 </script>
