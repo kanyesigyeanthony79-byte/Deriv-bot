@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
-  updateM15ExpansionForwardShadowJournal, buildExpansionAlert, summarize
+  calculateAtr, updateM15ExpansionForwardShadowJournal, buildExpansionAlert, summarize
 } = require("../m15_expansion_forward_shadow");
 
 function candle(epoch, open, high, low, close) {
@@ -11,6 +11,11 @@ function candle(epoch, open, high, low, close) {
 function flatHistory(count=100) {
   return Array.from({length:count}, (_,i) => candle(i*900,100,101,99,100.2));
 }
+
+test("ATR(14) uses the same Wilder smoothing as the historical expansion replay", () => {
+  const rows = Array.from({length:20},(_,i)=>candle(i*900,100,102,99,101));
+  assert.equal(calculateAtr(rows,14),3);
+});
 
 test("first observation establishes a forward cursor without backfilling historical signals", () => {
   const rows = flatHistory();
