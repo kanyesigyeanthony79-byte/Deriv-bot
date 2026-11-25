@@ -31,13 +31,16 @@ function aggregateM1(m1, intervalSeconds) {
   if (![M5,H1,H4].includes(intervalSeconds)) throw new Error("Unsupported aggregation interval");
   if (validateSeries(m1,M1)) return [];
   const count=intervalSeconds/M1, out=[];
-  for(let i=0;i+count<=m1.length;i+=count){
-    const chunk=m1.slice(i,i+count),start=Number(chunk[0].epoch);
-    if(start%intervalSeconds!==0 || chunk.some((c,j)=>Number(c.epoch)!==start+j*M1)) continue;
+  for(let i=0;i+count<=m1.length;i++){
+    const start=Number(m1[i].epoch);
+    if(start%intervalSeconds!==0) continue;
+    const chunk=m1.slice(i,i+count);
+    if(chunk.some((c,j)=>Number(c.epoch)!==start+j*M1)) continue;
     out.push({epoch:start,open:Number(chunk[0].open),
       high:Math.max(...chunk.map(c=>Number(c.high))),
       low:Math.min(...chunk.map(c=>Number(c.low))),
       close:Number(chunk[count-1].close)});
+    i+=count-1;
   }
   return out;
 }
