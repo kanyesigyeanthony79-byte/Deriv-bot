@@ -231,4 +231,4 @@ if(require.main===module)main().catch(error=>{
  console.error(JSON.stringify({event:"r10_transition_scanner_failed",error:String(error.message||"scanner_error").slice(0,240)}));
  process.exitCode=1;
 });
-module.exports={connect,latestContinuousSegment,splitCandles,collect,deliverForwardSignal,validateEntryQuote,journalRecord,updateActiveOutcome,processSnapshot};
+module.exports={connect,latestContinuousSegment,splitCandles,fetchCandleHistory,collect,deliverForwardSignal,validateEntryQuote,journalRecord,updateActiveOutcome,processSnapshot};
