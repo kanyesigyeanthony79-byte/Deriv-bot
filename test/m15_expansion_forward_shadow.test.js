@@ -101,11 +101,11 @@ test("records TP1 as a milestone and resolves the later TP2 at +3R", () => {
   });
   rows[69] = candle(rows[69].epoch,100,105,100,104.5);
   const updated = updateM15ExpansionForwardShadowJournal(journal, {
-    RB100:{marketName:"Range Break 100 Index",timeframes:rows},
-    RB200:{marketName:"Range Break 200 Index",timeframes:rows}
+    RB100:{marketName:"Range Break 100 Index",timeframes:{M15:rows}},
+    RB200:{marketName:"Range Break 200 Index",timeframes:{M15:rows}}
   }, 200300);
   const trade = updated.signals.find(s => s.signalId === "M15EXP-RB100-TEST");
-  assert.equal(trade.status,"TP2",JSON.stringify({trade,state:updated.markets.RB100}));
+  assert.equal(trade.status,"TP2");
   assert.equal(trade.r,3);
   assert.ok(trade.tp1ReachedAt);
 });
