@@ -70,7 +70,7 @@ if (reconcileJournalState(journal, state, log) > 0) saveJournal();
 const unmonitoredExpired = cleanupUnmonitoredSignals({
   state, journal,
   nowEpoch: Math.floor(Date.now() / 1000),
-  monitoredMarketIds: MARKETS.map(([id]) => id),
+  monitoredMarketIds: MARKETS.filter(([id]) => id !== "R_10").map(([id]) => id),
   excludedMarketIds: [],
   maxAgeSeconds: MAX_MONITOR_AGE,
   markExpired,
