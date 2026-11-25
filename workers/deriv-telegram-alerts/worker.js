@@ -293,7 +293,8 @@ export default {
         "M5_BREAKOUT_M5_RETEST_M15_CONFIRM"
       ]);
       if (d.source !== "RESEARCH_SHADOW" || d.event !== "new_signal" ||
-          d.paper !== true || d.live !== false || d.status !== "SHADOW") {
+          d.paper !== true || d.live !== false || d.status !== "SHADOW" ||
+          d.marketMode !== "LIVE_MARKET" || d.executionMode !== "DEMO_MANUAL") {
         return reply({ error: "Research shadow route accepts shadow-only demo events" }, 403);
       }
       if (!allowedMarkets.has(String(d.marketId || "")) || isVolatility10Alert(d)) {
@@ -320,8 +321,8 @@ export default {
         return reply({ error: "Telegram secrets are not configured" }, 500);
       }
       const message = [
-        "🧪 DERIV SIGNAL ASSISTANT — RESEARCH / SHADOW",
-        "DEMO ONLY — OBSERVATION SIGNAL, NO TRADE EXECUTED",
+        "📡 DERIV SIGNAL ASSISTANT — LIVE MARKET SIGNAL",
+        "LIVE MARKET DATA • MANUAL EXECUTION ON YOUR DEMO ACCOUNT",
         "━━━━━━━━━━━━━━━━",
         "Strategy: " + String(d.strategyLabel || d.strategyId).slice(0, 100),
         "Market: " + String(d.market).slice(0, 80),
@@ -334,7 +335,7 @@ export default {
           String(d.setupTimeframe || "?") + " setup / " + String(d.confirmationTimeframe || "?") + " confirmation",
         "Signal: " + String(d.signalId).slice(0, 100),
         "━━━━━━━━━━━━━━━━",
-        "Research alert only. No MT5 order or live trade has been placed."
+        "Manual demo trading only. No real-money order or automatic trade has been placed."
       ].join("\n");
       const telegramResponse = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: "POST", headers: { "Content-Type": "application/json" },
