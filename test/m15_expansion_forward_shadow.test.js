@@ -104,7 +104,8 @@ test("records TP1 as a milestone and resolves the later TP2 at +3R", () => {
     stopLoss:98.5, tp1:103, tp2:104.5, tp1ReachedAt:null,
     outcomeEpoch:null, r:null, barsObserved:0, horizonCandles:96
   });
-  rows[69] = candle(rows[69].epoch,100,103.5,100,103.2);\n  rows[70] = candle(rows[70].epoch,100,105,103,104.5);
+  rows[69] = candle(rows[69].epoch,100,103.5,100,103.2);
+  rows[70] = candle(rows[70].epoch,100,105,103,104.5);
   const updated = updateM15ExpansionForwardShadowJournal(journal, {
     RB100:{marketName:"Range Break 100 Index",timeframes:{M15:rows}},
     RB200:{marketName:"Range Break 200 Index",timeframes:{M15:rows}}
