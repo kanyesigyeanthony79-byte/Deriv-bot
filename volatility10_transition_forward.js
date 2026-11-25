@@ -167,7 +167,7 @@ function resolveM1Outcome(signal,m1Rows) {
     expectedEpoch+=M1;
     if(observed>=maxBars) return {outcome:"EXPIRED",reason:"24_M5_CANDLE_TIMEOUT",exitEpoch:epoch,exitPrice:Number(candle.close)};
   }
-  return {outcome:"UNRESOLVED",reason:"INSUFFICIENT_FUTURE_M1_DATA",exitEpoch:null,exitPrice:null};
+  return {outcome:"PENDING",reason:"WAITING_FOR_M1_OUTCOME",exitEpoch:null,exitPrice:null};
 }
 function isTerminalOutcome(value) { return TERMINAL_OUTCOMES.has(value); }
 module.exports={STRATEGY_VERSION,MARKET_ID,M1,M5,H1,H4,ATR_PERIOD,ATR_RANK_LOOKBACK,SWING_LEFT,SWING_RIGHT,
