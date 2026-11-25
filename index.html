@@ -579,15 +579,18 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       if(!response.ok)throw new Error("HTTP "+response.status);
       const snapshot=await response.json(), markets=snapshot.markets||{}, summary=snapshot.summary||{};
       const stamp=snapshot.generatedAt?new Date(snapshot.generatedAt).toLocaleString():"—";
+      const cycle=snapshot.cycleStatus||"unknown";
+      const failedCycle=cycle==="failed";
       body.innerHTML=RESEARCH_SCAN_MARKETS.map(([id,name])=>{
         const m=markets[id];
-        if(!m)return '<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal none">NOT IN SNAPSHOT</td><td>—</td><td>—</td><td>—</td><td>—</td><td>'+esc(stamp)+'</td><td>Awaiting next collector run</td></tr>';
+        if(!m)return '<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal none">'+(failedCycle?"CYCLE FAILED":"NOT IN SNAPSHOT")+'</td><td>—</td><td>—</td><td>—</td><td>—</td><td>'+esc(stamp)+'</td><td>'+esc(snapshot.lastError||"Awaiting next collector run")+'</td></tr>';
         const frames=m.timeframes||{}, errors=Array.isArray(m.errors)?m.errors:[];
-        const failed=errors.length>0, counts=["M1","M5","M15"].map(tf=>Array.isArray(frames[tf])?frames[tf].length:"—");
+        const partial=errors.length>0, counts=["M1","M5","M15"].map(tf=>Array.isArray(frames[tf])?frames[tf].length:"—");
+        const marketStatus=failedCycle?"STALE · LAST CYCLE FAILED":partial?"PARTIAL / ERROR":cycle==="partial"?"SCANNED · PARTIAL CYCLE":"SCANNED";
         const telegram=summary.telegramSent!==undefined?(summary.telegramSent+" sent / "+(summary.telegramFailed||0)+" failed overall"):"No delivery summary";
-        return '<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal '+(failed?"none":"buy")+'">'+(failed?"PARTIAL / ERROR":"SCANNED")+'</td><td>'+esc(counts[0])+'</td><td>'+esc(counts[1])+'</td><td>'+esc(counts[2])+'</td><td>'+esc(telegram)+'</td><td>'+esc(stamp)+'</td><td>'+esc(errors.map(e=>(e.timeframe||"data")+": "+e.message).join("; ")||"Market data retrieved")+'</td></tr>';
+        return '<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal '+(failedCycle||partial?"none":"buy")+'">'+marketStatus+'</td><td>'+esc(counts[0])+'</td><td>'+esc(counts[1])+'</td><td>'+esc(counts[2])+'</td><td>'+esc(telegram)+'</td><td>'+esc(stamp)+'</td><td>'+esc((failedCycle?snapshot.lastError+" · ":"")+errors.map(e=>(e.timeframe||"data")+": "+e.message).join("; ")||"Market data retrieved")+'</td></tr>';
       }).join("");
-      status.textContent="Snapshot "+stamp+" · "+Object.keys(markets).length+" research markets · "+(summary.telegramSent??0)+" Telegram shadow alerts sent / "+(summary.telegramFailed??0)+" failed in this cycle.";
+      status.textContent="Last successful snapshot "+stamp+" · "+Object.keys(markets).length+" research markets · cycle "+cycle.toUpperCase()+(snapshot.lastAttemptAt?" · last attempt "+new Date(snapshot.lastAttemptAt).toLocaleString():"")+(snapshot.lastError?" · "+snapshot.lastError:"")+" · "+(summary.telegramSent??0)+" Telegram shadow alerts sent / "+(summary.telegramFailed??0)+" failed in recorded cycle.";
     }catch(error){
       body.innerHTML=RESEARCH_SCAN_MARKETS.map(([id,name])=>'<tr><td>'+esc(name)+' ('+esc(id)+')</td><td class="signal none">STATUS UNAVAILABLE</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>'+esc(error.message)+'</td></tr>').join("");
       status.textContent="Research scanner status unavailable. No market is assumed to be scanning.";
