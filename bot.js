@@ -29,9 +29,13 @@ try { S = {...S, ...JSON.parse(fs.readFileSync(STATE, "utf8"))}; } catch (e) {}
 const save = () => { try { fs.writeFileSync(STATE, JSON.stringify(S)); } catch (e) { log({ev:"state_save_failed"}); } };
 
 async function tgSend(text) {
-  if (!E.TELEGRAM_BOT_TOKEN || !E.TELEGRAM_CHAT_ID) return;
-  try { const r = await fetch("https://api.telegram.org/bot" + E.TELEGRAM_BOT_TOKEN + "/sendMessage", {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({chat_id:E.TELEGRAM_CHAT_ID, text}), signal:AbortSignal.timeout(10000)}); if (!r.ok) log({ev:"telegram_failed", status:r.status}); }
-  catch (e) { log({ev:"telegram_failed", msg:"network"}); }
+  if (!E.TELEGRAM_BOT_TOKEN || !E.TELEGRAM_CHAT_ID) return false;
+  try {
+    const r = await fetch("https://api.telegram.org/bot" + E.TELEGRAM_BOT_TOKEN + "/sendMessage", {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({chat_id:E.TELEGRAM_CHAT_ID, text}), signal:AbortSignal.timeout(10000)});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.ok === false) { log({ev:"telegram_failed", status:r.status}); return false; }
+    return true;
+  } catch (e) { log({ev:"telegram_failed", msg:"network"}); return false; }
 }
 
 const open = url => new Promise((res, rej) => {
@@ -150,12 +154,10 @@ async function cycle() {
           if (!entry) {
             log({ev:"step300_waiting_for_next_open", signal_epoch:r.c.epoch, note:"next M5 candle not available yet"});
           } else {
-            S.step300LastSignalEpoch = r.c.epoch;
-            save();
-            log({ev:"signal", market:"Step Index 300", timeframe:"M5", strategy:"STEP300_0P50_THRESHOLD", signal:r.signal,
+            log({ev:"signal_candidate", market:"Step Index 300", timeframe:"M5", strategy:"STEP300_0P50_THRESHOLD", signal:r.signal,
               entry:entry.open, body_ratio:r.bodyRatio, ema_separation_median_ranges:r.emaSeparationMedianRanges,
               signal_epoch:r.c.epoch, entry_epoch:entry.epoch, hold_candles:6});
-            tgSend("🆕 STEP INDEX 300 — M5 FORWARD-TEST SIGNAL\n"
+            const delivered = await tgSend("🆕 STEP INDEX 300 — M5 FORWARD-TEST SIGNAL\n"
               + "Direction: " + r.signal + "\n"
               + "Entry: " + entry.open + " (next M5 candle open)\n"
               + "Model: five consecutive same-direction candles\n"
@@ -163,6 +165,13 @@ async function cycle() {
               + "EMA20/EMA50: aligned; separation " + r.emaSeparationMedianRanges.toFixed(2) + " median candle ranges\n"
               + "Research holding window: 6 M5 candles (30 minutes)\n"
               + "Forward-test only. No automatic order placed.");
+            if (delivered) {
+              S.step300LastSignalEpoch = r.c.epoch;
+              save();
+              log({ev:"telegram_delivered", market:"Step Index 300", timeframe:"M5", signal_epoch:r.c.epoch});
+            } else {
+              log({ev:"telegram_delivery_not_confirmed", market:"Step Index 300", timeframe:"M5", signal_epoch:r.c.epoch});
+            }
           }
         }
       } catch (e) { log({ev:"scan_error", market:"Step Index 300", timeframe:"M5", msg:e.message}); }
