@@ -7,6 +7,7 @@ const breakoutM1 = require("../breakout_retest_shadow");
 const emaPullback = require("../m5_ema_pullback_shadow");
 const breakoutM5M15 = require("../breakout_retest_m5_m15_shadow");
 const collector = require("../research_shadow_telegram_collector");
+const { evaluateStep300 } = require("../step300");
 
 test("shadow collector excludes standard Volatility 10 and includes both distinct 1-second products", () => {
   assert.equal(collector.MARKETS.some(([id]) => id === "R_10"), false);
@@ -107,4 +108,47 @@ test("all seven expansion markets can generate explicitly research-only Telegram
     assert.equal(alert.status, "SHADOW");
     assert.equal(alert.strategyId, "M5_BREAKOUT_M1_RETEST");
   }
+});
+
+test("Step Index 300 model accepts only the frozen five-candle M5 continuation setup", () => {
+  const candles = Array.from({ length: 70 }, (_, i) => {
+    const open = 100 + i;
+    return { epoch: i * 300, open, high: open + 0.8, low: open - 0.2, close: open + 0.6 };
+  });
+  const evaluation = evaluateStep300(candles);
+  assert.equal(evaluation.signal, "BUY");
+  assert.ok(evaluation.bodyRatio >= 0.50 && evaluation.bodyRatio <= 0.80);
+  assert.ok(evaluation.emaSeparationMedianRanges >= 0.50);
+  const forming = { epoch: candles.at(-1).epoch + 300, open: 170.6, high: 171, low: 170, close: 170.6 };
+  const alert = collector.createStep300Alert(evaluation, forming, "stpRNG3");
+  assert.equal(alert.marketId, "stpRNG3");
+  assert.equal(alert.strategyId, "STEP300_0P50_THRESHOLD");
+  assert.equal(alert.source, "STEP300_FORWARD_TEST");
+  assert.equal(alert.status, "PAPER");
+  assert.equal(alert.paper, true);
+  assert.equal(alert.live, false);
+  assert.equal(alert.entry, forming.open);
+  assert.equal(alert.holdingCandles, 6);
+  assert.equal(alert.brokerExecutionAllowed, false);
+});
+
+test("Step Index 300 alert requires the immediate next M5 candle open", () => {
+  const candles = Array.from({ length: 70 }, (_, i) => {
+    const open = 100 + i;
+    return { epoch: i * 300, open, high: open + 0.8, low: open - 0.2, close: open + 0.6 };
+  });
+  const evaluation = evaluateStep300(candles);
+  assert.equal(collector.createStep300Alert(evaluation, {
+    epoch: candles.at(-1).epoch + 600, open: 200
+  }, "stpRNG3"), null);
+});
+
+test("Step Index 300 symbol is resolved from Deriv active_symbols, not guessed", async () => {
+  const client = { ask: async request => {
+    assert.deepEqual(request, { active_symbols: "brief" });
+    return { active_symbols: [
+      { underlying_symbol: "stpRNG3", underlying_symbol_name: "Step Index 300" }
+    ] };
+  }};
+  assert.equal(await collector.resolveStep300Symbol(client), "stpRNG3");
 });

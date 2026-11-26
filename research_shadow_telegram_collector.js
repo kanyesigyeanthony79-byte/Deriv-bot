@@ -9,6 +9,7 @@ const { updateBreakoutRetestJournal } = require("./breakout_retest_shadow");
 const { updateM5PullbackJournal } = require("./m5_ema_pullback_shadow");
 const { updateJournal: updateBreakoutM5M15Journal } = require("./breakout_retest_m5_m15_shadow");
 const { evaluateMarketRegime } = require("./market_regime_filter_shadow");
+const { evaluateStep300 } = require("./step300");
 
 const DATA_DIR = getDataDir();
 // The 1-second products are part of this shared collector and use their canonical Deriv API symbol codes (not standard R_* aliases).
@@ -32,7 +33,8 @@ const JOURNALS = {
   breakoutM1: "breakout_retest_shadow_journal.json",
   emaPullback: "m5_ema_pullback_shadow_journal.json",
   breakoutM5M15: "breakout_retest_m5_m15_shadow_journal.json",
-  delivery: "shadow_telegram_delivery_journal.json"
+  delivery: "shadow_telegram_delivery_journal.json",
+  step300: "step300_forward_shadow_journal.json"
 };
 const PUBLIC_WS = "wss://api.derivws.com/trading/v1/options/ws/public";
 
@@ -116,6 +118,54 @@ async function fetchFormingCandle(client, symbol, granularity, nowEpoch) {
   return rows.filter(c => c.epoch > lastClosedEpoch && c.epoch <= Math.floor(nowEpoch/granularity)*granularity)
     .sort((a,b) => a.epoch-b.epoch).at(-1) || null;
 }
+async function resolveStep300Symbol(client, symbols = {}) {
+  const supplied = symbols.STEP300 || symbols.Step_Index_300 || symbols["Step Index 300"];
+  if (supplied) return String(supplied);
+  const response = await client.ask({ active_symbols: "brief" });
+  const rows = response.active_symbols || [];
+  const normalize = value => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const found = rows.find(row => normalize(row.underlying_symbol_name || row.display_name) === "stepindex300")
+    || rows.find(row => ["stprng3", "stpidx300"].includes(normalize(row.underlying_symbol || row.symbol)));
+  const symbol = found && (found.underlying_symbol || found.symbol);
+  if (!symbol) throw new Error("Deriv active_symbols did not confirm Step Index 300");
+  return String(symbol);
+}
+
+function createStep300Alert(evaluation, formingCandle, marketId) {
+  if (!evaluation || !evaluation.signal || !evaluation.c || !formingCandle) return null;
+  if (Number(formingCandle.epoch) !== Number(evaluation.c.epoch) + 300) return null;
+  const signalId = "STEP300-M5-" + Number(evaluation.c.epoch) + "-" + evaluation.signal;
+  return {
+    event: "new_signal",
+    source: "STEP300_FORWARD_TEST",
+    paper: true,
+    live: false,
+    status: "PAPER",
+    marketMode: "LIVE_MARKET",
+    executionMode: "DEMO_MANUAL",
+    signalId,
+    strategyId: "STEP300_0P50_THRESHOLD",
+    strategyLabel: "Step Index 300 M5 — 0.50 threshold",
+    marketId: String(marketId),
+    market: "Step Index 300",
+    direction: evaluation.signal,
+    entry: Number(formingCandle.open),
+    entryTimeframe: "M5",
+    timeframe: "M5",
+    signalEpoch: Number(evaluation.c.epoch),
+    entryEpoch: Number(formingCandle.epoch),
+    fifthCandleBodyRatio: Number(evaluation.bodyRatio),
+    ema20: Number(evaluation.ema20),
+    ema50: Number(evaluation.ema50),
+    emaSeparationMedianRanges: Number(evaluation.emaSeparationMedianRanges),
+    medianCandleRange: Number(evaluation.medianRange),
+    holdingCandles: 6,
+    holdingMinutes: 30,
+    forwardTest: true,
+    brokerExecutionAllowed: false
+  };
+}
+
 function newSignals(before, after) {
   const oldIds = new Set((before || []).map(s => s.signalId));
   return (after || []).filter(s => s.signalId && !oldIds.has(s.signalId));
@@ -218,6 +268,71 @@ async function main(env = process.env, options = {}) {
       if (market.errors.length) output.errors.push({ marketId, errors: market.errors });
     }
 
+    // Step Index 300 has its own frozen M5 continuation model and journal.
+    // It is intentionally excluded from the three generic shadow strategies and from MT5 routing.
+    const step300Journal = readJson(JOURNALS.step300, { version: 1, updatedAt: null, signals: [] });
+    step300Journal.signals ||= [];
+    let step300Sent = 0, step300Failed = 0, step300Symbol = null;
+    try {
+      step300Symbol = await resolveStep300Symbol(client, symbols);
+      const candles = await fetchCandles(client, step300Symbol, 300, 200, now);
+      const forming = await fetchFormingCandle(client, step300Symbol, 300, now);
+      const evaluation = evaluateStep300(candles);
+      output.step300ForwardTest = {
+        market: "Step Index 300", marketId: step300Symbol, timeframe: "M5",
+        candles: candles.length, state: evaluation.state,
+        candidateDirection: evaluation.signal || null,
+        fifthCandleBodyRatio: evaluation.bodyRatio ?? null,
+        emaSeparationMedianRanges: evaluation.emaSeparationMedianRanges ?? null,
+        holdingCandles: 6, holdingMinutes: 30,
+        execution: "TELEGRAM_ONLY_NO_MT5"
+      };
+      const alert = createStep300Alert(evaluation, forming, step300Symbol);
+      if (alert && !step300Journal.signals.some(record => record.signalId === alert.signalId)) {
+        step300Journal.signals.push({
+          ...alert, deliveryStatus: "pending",
+          detectedAt: new Date(now * 1000).toISOString(),
+          attempts: 0
+        });
+      }
+    } catch (error) {
+      output.errors.push({ marketId: "STEP300", errors: [{ timeframe: "M5", message: error.message }] });
+      output.step300ForwardTest = {
+        market: "Step Index 300", timeframe: "M5", state: "error",
+        error: String(error.message || error).slice(0, 200),
+        execution: "TELEGRAM_ONLY_NO_MT5"
+      };
+    }
+
+    for (const record of step300Journal.signals.filter(item => ["pending", "failed"].includes(item.deliveryStatus))) {
+      if (now - Number(record.entryEpoch) > 360) {
+        record.deliveryStatus = "stale";
+        record.lastError = "Signal exceeded the six-minute Telegram freshness window";
+        continue;
+      }
+      record.attempts = Number(record.attempts || 0) + 1;
+      record.lastAttemptAt = new Date(now * 1000).toISOString();
+      try {
+        await deliver(record, env);
+        record.deliveryStatus = "sent";
+        record.sentAt = new Date().toISOString();
+        delete record.lastError;
+        step300Sent += 1;
+      } catch (error) {
+        record.deliveryStatus = "failed";
+        record.lastError = String(error.message || error).slice(0, 200);
+        step300Failed += 1;
+      }
+    }
+    step300Journal.updatedAt = new Date(now * 1000).toISOString();
+    writeJson(JOURNALS.step300, step300Journal);
+    if (output.step300ForwardTest) {
+      output.step300ForwardTest.signalsRecorded = step300Journal.signals.length;
+      output.step300ForwardTest.telegramSentThisCycle = step300Sent;
+      output.step300ForwardTest.telegramFailedThisCycle = step300Failed;
+      output.step300ForwardTest.mt5ExecutionEnabled = false;
+    }
+
     // RB100 and RB200 are active expansion markets in forward-shadow scanning.
     const priorA = readJson(JOURNALS.breakoutM1, { version: 1, updatedAt: null, markets: {}, signals: [] });
     const priorB = readJson(JOURNALS.emaPullback, { version: 1, updatedAt: null, markets: {}, signals: [] });
@@ -301,6 +416,12 @@ async function main(env = process.env, options = {}) {
         breakoutM1: nextA.summary || null,
         emaPullback: nextB.summary || null,
         breakoutM5M15: nextC.summary || null
+      },
+      step300ForwardTest: {
+        signalsRecorded: step300Journal.signals.length,
+        telegramSentThisCycle: step300Sent,
+        telegramFailedThisCycle: step300Failed,
+        mt5ExecutionEnabled: false
       },
       activeExpansionMarkets: ["1HZ10V", "1HZ75V", "R_100", "JD75", "JD25", "JD50", "CRASH100", "BOOM100"],
       r10Excluded: true, mtfEnabled: false, mt5ExecutionEnabled: false
@@ -401,4 +522,4 @@ async function main(env = process.env, options = {}) {
   }
 }
 if (require.main === module) main().catch(error => { console.error(JSON.stringify({ event: "research_shadow_collector_failed", message: error.message })); process.exitCode = 1; });
-module.exports = { MARKETS, FRAMES, normalizeCandles, newSignals, toAlert, createDeliveryPayload, main };
+module.exports = { MARKETS, FRAMES, normalizeCandles, newSignals, toAlert, createDeliveryPayload, resolveStep300Symbol, createStep300Alert, main };
