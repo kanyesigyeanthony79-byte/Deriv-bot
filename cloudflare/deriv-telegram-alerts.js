@@ -1,5 +1,24 @@
-function shouldDeliverTelegramAlert(data = {}) {
+function isVolatility10Alert(data = {}) {
+  const marketId = String(data.marketId || "").trim().toUpperCase();
+  const normalized = [data.marketId, data.market, data.instrument].map(value => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "")).join("|");
+  // Keep the distinct Volatility 10 (1s) product out of the exclusive R_10 route.
+  if (marketId === "R_10_1S" || normalized.includes("1hz10v") || normalized.includes("volatility101s")) return false;
+  return ["R_10", "R10"].includes(marketId) ||
+    ["volatility10", "volatility10index", "volatility10indexm1"].some(alias => normalized.includes(alias));
+}
+
+function shouldDeliverTelegramAlert(data = {}, env = {}) {
   if (data.event === "daily_summary") return true;
+  if (isVolatility10Alert(data)) {
+    if (env.R10_LEGACY_ROLLBACK_ENABLED === "true") return env.R10_PAPER_ROUTE_ENABLED === "true" && env.R10_EMERGENCY_KILL_SWITCH === "false";
+    return env.R10_PAPER_ROUTE_ENABLED === "true" &&
+      env.R10_EMERGENCY_KILL_SWITCH === "false" &&
+      data.providerId === "volatility10_transition_lowvol_1r_forward_v1" &&
+      data.strategyVersion === "volatility10_transition_lowvol_1r_forward_v1" &&
+      data.timeframe === "M5" && data.forwardTest === true &&
+      data.event === "new_signal" && data.status === "PAPER" && data.paper === true &&
+      data.live === false && data.brokerExecutionAllowed === false && data.historicalCatchup !== true;
+  }
   const marketId = String(data.marketId || "").trim().toUpperCase();
   const market = String(data.market || "");
   const isR50 = marketId === "R_50" || /\bvolatility\s*50(?:\s+index)?\b/i.test(market);
@@ -7,13 +26,11 @@ function shouldDeliverTelegramAlert(data = {}) {
   return data.source === "LEGACY_15M" && data.priorityTier === "RESEARCH_PRIORITY";
 }
 
-
 const MT5_ALLOWED_MARKETS=new Set(["R_25","R_50","R_75","JD100","CRASH500","BOOM500"]);
 const MT5_MAX_AGE={SCALP:600,SHORT_TERM:1800,POSITION:14400};
 function validateMt5Signal(d){
  if(!d||d.event!=="new_signal")return "Only new_signal events can be queued";
  if(!d.signalId||!/^[A-Za-z0-9._:-]{1,120}$/.test(String(d.signalId)))return "Invalid signalId";
- if(String(d.marketId||"").trim().toUpperCase()==="R_10")return "R_10 is forward-test-only and cannot be queued for MT5";
  if(!MT5_ALLOWED_MARKETS.has(String(d.marketId||"")))return "Market is not on the synthetic allow-list";
  const marketId=String(d.marketId||"").trim().toUpperCase();
  if(marketId==="R_50"&&!(d.source==="LEGACY_15M"&&d.priorityTier==="RESEARCH_PRIORITY"))return "R_50 is restricted to LEGACY_15M RESEARCH_PRIORITY signals";
@@ -137,8 +154,39 @@ export class ExecutionQueue{
  constructor(ctx,env){this.ctx=ctx;}
  async fetch(request){
   const u=new URL(request.url);
+  if(request.method==="POST"&&u.pathname==="/r10-delivery-reserve"){
+   const b=await request.json(),id=String(b.signalId||"");
+   if(!/^[A-Za-z0-9._:-]{1,120}$/.test(id))return Response.json({success:false,error:"invalid_signal_id"},{status:400});
+   const now=Math.floor(Date.now()/1000);
+   const result=await this.ctx.storage.transaction(async t=>{
+    const key="r10-delivery:"+id,rec=await t.get(key);
+    if(rec&&rec.status==="sent")return {success:true,duplicate:true,inFlight:false};
+    if(rec&&rec.status==="pending"&&rec.leaseUntil>now)return {success:true,duplicate:false,inFlight:true};
+    await t.put(key,{status:"pending",reservedAt:now,leaseUntil:now+90});
+    return {success:true,duplicate:false,inFlight:false};
+   });
+   return Response.json(result);
+  }
+  if(request.method==="POST"&&u.pathname==="/r10-delivery-ack"){
+   const b=await request.json(),id=String(b.signalId||"");
+   const result=await this.ctx.storage.transaction(async t=>{
+    const key="r10-delivery:"+id,rec=await t.get(key);if(!rec)return {success:false};
+    rec.status="sent";rec.sentAt=Math.floor(Date.now()/1000);rec.leaseUntil=0;await t.put(key,rec);return {success:true};
+   });
+   return Response.json(result,{status:result.success?200:404});
+  }
+  if(request.method==="POST"&&u.pathname==="/r10-delivery-release"){
+   const b=await request.json(),id=String(b.signalId||"");
+   const result=await this.ctx.storage.transaction(async t=>{
+    const key="r10-delivery:"+id,rec=await t.get(key);if(!rec||rec.status==="sent")return {success:false};
+    await t.delete(key);return {success:true,retryable:true};
+   });
+   return Response.json(result,{status:result.success?200:404});
+  }
   if(request.method==="POST"&&u.pathname==="/enqueue"){
-   const payload=await request.json(),id=String(payload.signalId),now=Math.floor(Date.now()/1000);
+   const payload=await request.json();
+   if(isVolatility10Alert(payload))return Response.json({success:false,error:"R_10 is forward-test-only and cannot enter the broker execution queue"},{status:403});
+   const id=String(payload.signalId),now=Math.floor(Date.now()/1000);
    const r=await this.ctx.storage.transaction(async t=>{
     const k="signal:"+id,old=await t.get(k);if(old)return {queued:old.status==="pending",duplicate:true,status:old.status};
     await t.put(k,{payload,queuedAt:now,status:"pending",leaseClient:"",leaseUntil:0,ackAt:0,result:null});
@@ -151,6 +199,7 @@ export class ExecutionQueue{
    const r=await this.ctx.storage.transaction(async t=>{
     const ids=(await t.get("queue_ids"))||[];
     for(const id of ids){const k="signal:"+id,rec=await t.get(k);if(!rec||rec.status!=="pending")continue;
+     if(isVolatility10Alert(rec.payload)){rec.status="rejected";rec.ackAt=now;rec.result="volatility10_paper_only";await t.put(k,rec);continue;}
      const max=MT5_MAX_AGE[String(rec.payload.category||"").toUpperCase()]||0,age=Number(rec.payload.signalAgeSeconds||0)+Math.max(0,now-rec.queuedAt);
      if(!max||age>max){rec.status="expired";rec.ackAt=now;rec.result="expired_before_execution";await t.put(k,rec);continue;}
      if(rec.leaseUntil>now&&rec.leaseClient!==client)return {signal:null,reason:"leased_to_another_client"};
@@ -264,6 +313,80 @@ export default {
     if (request.headers.get("X-API-Key") !== env.SIGNAL_API_KEY) return reply({ error: "Unauthorized" }, 401);
 
     const url = new URL(request.url);
+    // Separate research-shadow notification path. It cannot authorize R10, production,
+    // MT5, or ordinary signal events and does not alter the production R10 provider gate.
+    if (url.pathname === "/shadow/research" && request.method === "POST") {
+      let d;
+      try { d = await request.json(); } catch { return reply({ error: "Invalid JSON" }, 400); }
+      const allowedMarkets = new Set(["R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "frxXAUUSD", "1HZ10V", "1HZ75V", "R_100", "JD25", "JD50", "CRASH100", "BOOM100", "RB100", "RB200"]);
+      const allowedStrategies = new Set([
+        "M15_M5_EMA_PULLBACK",
+        "M5_BREAKOUT_M1_RETEST",
+        "M5_BREAKOUT_M5_RETEST_M15_CONFIRM"
+      ]);
+      const pilotMarket = ["RB100", "BOOM100"].includes(String(d.marketId || ""));
+      const liveAlertPilot = d.source === "RESEARCH_LIVE_ALERT_PILOT" &&
+        d.event === "new_signal" && d.pilot === true && d.alertMode === "LIVE_MARKET_PILOT" &&
+        d.paper === false && d.live === false && d.status === "PILOT" &&
+        d.marketMode === "LIVE_MARKET" && d.executionMode === "DEMO_MANUAL" && pilotMarket;
+      const shadowAlert = d.source === "RESEARCH_SHADOW" && d.event === "new_signal" &&
+        d.paper === true && d.live === false && d.status === "SHADOW" &&
+        d.marketMode === "LIVE_MARKET" && d.executionMode === "DEMO_MANUAL";
+      if (!liveAlertPilot && !shadowAlert) {
+        return reply({ error: "Research route accepts approved shadow alerts or RB100/BOOM100 live-alert pilot events" }, 403);
+      }
+      if (!allowedMarkets.has(String(d.marketId || "")) || isVolatility10Alert(d)) {
+        return reply({ error: "Market is not allowed on the research route" }, 403);
+      }
+      if (liveAlertPilot && !pilotMarket) {
+        return reply({ error: "Live-alert pilot is restricted to RB100 and BOOM100" }, 403);
+      }
+      if (!allowedStrategies.has(String(d.strategyId || ""))) {
+        return reply({ error: "Unapproved research strategy" }, 403);
+      }
+      if (!d.signalId || !/^[A-Za-z0-9._:-]{1,120}$/.test(String(d.signalId))) {
+        return reply({ error: "Invalid signalId" }, 400);
+      }
+      if (!["BUY", "SELL"].includes(String(d.direction || ""))) return reply({ error: "Invalid direction" }, 400);
+      for (const field of ["entry", "stopLoss", "tp1", "tp2"]) {
+        if (!Number.isFinite(Number(d[field])) || Number(d[field]) <= 0) {
+          return reply({ error: "Invalid price: " + field }, 400);
+        }
+      }
+      const entry = Number(d.entry), stop = Number(d.stopLoss), tp1 = Number(d.tp1), tp2 = Number(d.tp2);
+      if (d.direction === "BUY" ? !(stop < entry && tp1 > entry && tp2 >= tp1) :
+          !(stop > entry && tp1 < entry && tp2 <= tp1)) {
+        return reply({ error: "Shadow price levels are inconsistent" }, 400);
+      }
+      if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
+        return reply({ error: "Telegram secrets are not configured" }, 500);
+      }
+      const message = [
+        (liveAlertPilot ? "📡 DERIV SIGNAL ASSISTANT — LIVE ALERT PILOT" : "📡 DERIV SIGNAL ASSISTANT — SHADOW MARKET ALERT"),
+        (liveAlertPilot ? "RB100 / BOOM100 • LIVE MARKET DATA • PILOT UNDER VALIDATION" : "LIVE MARKET DATA • SHADOW / DEMO OBSERVATION"),
+        "━━━━━━━━━━━━━━━━",
+        "Strategy: " + String(d.strategyLabel || d.strategyId).slice(0, 100),
+        "Market: " + String(d.market).slice(0, 80),
+        "Direction: " + d.direction,
+        "Entry: " + entry,
+        "Stop Loss: " + stop,
+        "Take Profit 1: " + tp1,
+        "Take Profit 2: " + tp2,
+        "Timeframes: " + String(d.entryTimeframe || "?") + " entry / " +
+          String(d.setupTimeframe || "?") + " setup / " + String(d.confirmationTimeframe || "?") + " confirmation",
+        "Signal: " + String(d.signalId).slice(0, 100),
+        "━━━━━━━━━━━━━━━━",
+        (liveAlertPilot ? "PILOT ALERT ONLY. Verify independently; demo/manual use only. No automatic or real-money order has been placed." : "Shadow observation only. No real-money order or automatic trade has been placed.")
+      ].join("\n");
+      const telegramResponse = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text: message })
+      });
+      let telegramResult = {};
+      try { telegramResult = await telegramResponse.json(); } catch {}
+      if (!telegramResponse.ok || !telegramResult.ok) return reply({ error: "Telegram delivery failed" }, 502);
+      return reply({ success: true, message: "Research shadow alert delivered" });
+    }
     if (url.pathname.startsWith("/mt5/")) {
       if (["/mt5/ingest", "/mt5/next", "/mt5/ack"].includes(url.pathname) &&
           env.MT5_EXECUTION_ENABLED !== "true" && env.MT5_OBSERVATION_ENABLED !== "true") {
@@ -334,8 +457,119 @@ export default {
       const data = await request.json();
       // R_50 Telegram is reserved for tagged Original M15 Priority Pair alerts.
       // This filter affects notification delivery only, not scanning or MT5 routes.
-      if (!shouldDeliverTelegramAlert(data)) {
-        return reply({ success: true, suppressed: true, reason: "R_50_PRIORITY_PAIR_ONLY" });
+      if (!shouldDeliverTelegramAlert(data, env)) {
+        const reason = isVolatility10Alert(data) ? "R10_EXCLUSIVE_PROVIDER_PAPER_ONLY" : "R_50_PRIORITY_PAIR_ONLY";
+        return reply({ success: true, suppressed: true, reason });
+      }
+      if (isVolatility10Alert(data) && env.R10_LEGACY_ROLLBACK_ENABLED === "true") {
+        const legacyRequired = ["instrument","timeframe","direction","signalTimestamp","strategyVersion",
+          "ema12","ema26","ema100","atr14","referenceEntryPrice","stopLoss","takeProfit","providerId"];
+        for (const field of legacyRequired) {
+          if (data[field] === undefined || data[field] === null || data[field] === "")
+            return reply({error:"Missing legacy Volatility 10 field: "+field},400);
+        }
+        if (data.status !== "PAPER" || data.paper !== true || data.live === true)
+          return reply({error:"Legacy rollback route accepts paper signals only"},403);
+        const message = [
+          "DERIV SIGNAL ASSISTANT — VOLATILITY 10",
+          "LEGACY ROLLBACK — PAPER SIGNAL — NO LIVE EXECUTION",
+          "━━━━━━━━━━━━━━━━",
+          "Instrument: "+data.instrument,
+          "Timeframe: "+data.timeframe,
+          "Direction: "+data.direction,
+          "Signal time (UTC): "+data.signalTimestamp,
+          "Strategy: "+data.strategyVersion,
+          "EMA 12 / 26 / 100: "+[data.ema12,data.ema26,data.ema100].join(" / "),
+          "ATR 14: "+data.atr14,
+          "Reference entry: "+data.referenceEntryPrice,
+          "Stop loss: "+data.stopLoss,
+          "Take profit: "+data.takeProfit,
+          "Provider: "+data.providerId,
+          "Status: PAPER",
+          "━━━━━━━━━━━━━━━━",
+          "Legacy rollback notification only. No broker order was placed."
+        ].join("\n");
+        const telegramURL=`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+        const telegramResponse=await fetch(telegramURL,{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID,text:message})});
+        const result=await telegramResponse.json();
+        if(!telegramResponse.ok||!result.ok)return reply({error:"Telegram delivery failed"},502);
+        return reply({success:true,message:"Legacy Volatility 10 paper alert delivered"});
+      }
+      if (isVolatility10Alert(data) && env.R10_LEGACY_ROLLBACK_ENABLED !== "true") {
+        const required = ["timeframe", "direction", "signalTimestamp", "strategyVersion", "signalId",
+          "entry", "stopLoss", "target", "atr14", "atrPercentile", "h4Structure", "h1Structure", "providerId", "utcHour"];
+        for (const field of required) {
+          if (data[field] === undefined || data[field] === null || data[field] === "") {
+            return reply({ error: "Missing Volatility 10 field: " + field }, 400);
+          }
+        }
+        if (data.status !== "PAPER" || data.paper !== true || data.live !== false ||
+            data.brokerExecutionAllowed !== false || data.forwardTest !== true ||
+            data.strategyVersion !== "volatility10_transition_lowvol_1r_forward_v1" ||
+            data.providerId !== "volatility10_transition_lowvol_1r_forward_v1" ||
+            data.timeframe !== "M5" || data.event !== "new_signal" ||
+            !["BUY","SELL"].includes(String(data.direction)) ||
+            !Number.isFinite(Number(data.entry)) || !Number.isFinite(Number(data.stopLoss)) ||
+            !Number.isFinite(Number(data.target)) || Number(data.atrPercentile) >= 0.33) {
+          return reply({ error: "Volatility 10 route accepts only the frozen forward-test paper schema" }, 403);
+        }
+        if (data.direction === "BUY" ? !(Number(data.stopLoss)<Number(data.entry) && Number(data.target)>Number(data.entry)) :
+            !(Number(data.stopLoss)>Number(data.entry) && Number(data.target)<Number(data.entry))) {
+          return reply({ error: "R10 entry, stop and 1R target are inconsistent" }, 400);
+        }
+        if (!env.EXECUTION_QUEUE) return reply({ error: "R10 idempotency store is unavailable" }, 503);
+        const q = env.EXECUTION_QUEUE.get(env.EXECUTION_QUEUE.idFromName("global-synthetic-signal-queue"));
+        const reserve = await q.fetch("https://queue/r10-delivery-reserve", {
+          method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({signalId:data.signalId})
+        });
+        const reservation = await reserve.json();
+        if (!reserve.ok || !reservation.success) return reply({ error:"R10 delivery reservation failed" },503);
+        if (reservation.duplicate || reservation.inFlight)
+          return reply({ success:true, duplicate:Boolean(reservation.duplicate), inFlight:Boolean(reservation.inFlight), message:"R10 Telegram delivery already reserved or sent" });
+        const setup = data.m5Setup || {};
+        const message = [
+          "VOLATILITY 10 — FORWARD TEST — NO TRADE EXECUTED",
+          "━━━━━━━━━━━━━━━━",
+          "Market: Volatility 10 Index (R_10)",
+          "Direction: " + data.direction,
+          "Signal ID: " + String(data.signalId).slice(0,100),
+          "Signal timestamp (UTC): " + data.signalTimestamp,
+          "Entry/reference price: " + data.entry,
+          "Stop loss: " + data.stopLoss,
+          "1R target: " + data.target,
+          "H4 structure: " + data.h4Structure,
+          "H1 structure: " + data.h1Structure,
+          "M5 setup: " + JSON.stringify(setup).slice(0,400),
+          "M5 ATR(14): " + data.atr14,
+          "ATR percentile: " + data.atrPercentile,
+          "UTC hour: " + data.utcHour,
+          "Strategy version: " + data.strategyVersion,
+          "Spread: " + (data.spread == null ? "unavailable" : data.spread),
+          "Quote age: " + (data.quoteAgeSeconds == null ? "unavailable" : data.quoteAgeSeconds + "s"),
+          "Entry delay: " + (data.entryDelaySeconds == null ? "unavailable" : data.entryDelaySeconds + "s"),
+          "━━━━━━━━━━━━━━━━",
+          "FORWARD TEST / PAPER ONLY. No broker order was placed, queued, authorized, or executed."
+        ].join("\n");
+        try {
+          const telegramURL = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+          const telegramResponse = await fetch(telegramURL, {
+            method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID,text:message})
+          });
+          const result = await telegramResponse.json();
+          if (!telegramResponse.ok || !result.ok) throw new Error("Telegram delivery failed");
+          const ack = await q.fetch("https://queue/r10-delivery-ack", {
+            method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({signalId:data.signalId})
+          });
+          if (!ack.ok) throw new Error("R10 delivery acknowledgement failed");
+          return reply({success:true,message:"R10 forward-test Telegram alert delivered"});
+        } catch (error) {
+          await q.fetch("https://queue/r10-delivery-release", {
+            method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({signalId:data.signalId})
+          });
+          return reply({error:"R10 Telegram delivery failed; reservation released for retry"},502);
+        }
       }
       let message;
 
@@ -456,26 +690,10 @@ export default {
       }
 
       const telegramURL = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
-      const telegramPayload = { chat_id: env.TELEGRAM_CHAT_ID, text: message };
-      // Attach review navigation only to new MTF signal messages that explicitly opt in.
-      // Preserve all existing production routing, MT5 reporting and safety checks.
-      if (data.event === "new_signal" && data.reviewAvailable === true && data.signalId && env.REVIEW_PAGE_URL) {
-        try {
-          const reviewUrl = new URL(String(env.REVIEW_PAGE_URL));
-          if (reviewUrl.protocol === "https:") {
-            reviewUrl.searchParams.set("signalId", String(data.signalId));
-            telegramPayload.reply_markup = {
-              inline_keyboard: [[{ text: "REVIEW SIGNAL STATUS", url: reviewUrl.toString() }]]
-            };
-          }
-        } catch (error) {
-          // Invalid optional review-page configuration must not block signal delivery.
-        }
-      }
       const telegramResponse = await fetch(telegramURL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(telegramPayload)
+        body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text: message })
       });
       const result = await telegramResponse.json();
       if (!telegramResponse.ok || !result.ok) return reply({ error: "Telegram delivery failed" }, 502);
