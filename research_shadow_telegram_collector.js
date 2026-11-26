@@ -305,6 +305,11 @@ async function main(env = process.env, options = {}) {
     }
 
     for (const record of step300Journal.signals.filter(item => ["pending", "failed"].includes(item.deliveryStatus))) {
+      if (now - Number(record.entryEpoch) > 360) {
+        record.deliveryStatus = "stale";
+        record.lastError = "Signal exceeded the six-minute Telegram freshness window";
+        continue;
+      }
       record.attempts = Number(record.attempts || 0) + 1;
       record.lastAttemptAt = new Date(now * 1000).toISOString();
       try {
