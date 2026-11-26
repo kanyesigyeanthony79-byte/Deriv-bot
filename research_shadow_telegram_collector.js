@@ -418,6 +418,7 @@ async function main(env = process.env, options = {}) {
         breakoutM5M15: nextC.summary || null
       },
       step300ForwardTest: {
+        ...(output.step300ForwardTest || { state: "not_run" }),
         signalsRecorded: step300Journal.signals.length,
         telegramSentThisCycle: step300Sent,
         telegramFailedThisCycle: step300Failed,
