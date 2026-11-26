@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-26T12:50:03.000Z",
+  "updatedAt": "2026-11-26T12:54:50.000Z",
   "markets": {
     "R_10": {
       "lastProcessedM5Epoch": 1795413300,
@@ -176,7 +176,7 @@
     "frxXAUUSD": {
       "lastProcessedM5Epoch": 1795697100,
       "pendingSetups": [],
-      "cooldownUntilEpoch": 1795638780,
+      "cooldownUntilEpoch": 1795689900,
       "initializedAt": "2026-11-24T19:05:38.000Z",
       "dataQuality": "ok",
       "stats": {
@@ -203,21 +203,13 @@
     },
     "JD25": {
       "lastProcessedM5Epoch": 1795697100,
-      "pendingSetups": [
-        {
-          "setupCloseEpoch": 1795697100,
-          "direction": -1,
-          "boundary": 125031.6,
-          "atr5": 204.34269707874572,
-          "contextM15": "down"
-        }
-      ],
+      "pendingSetups": [],
       "cooldownUntilEpoch": 1795691280,
       "initializedAt": "2026-11-25T09:09:16.000Z",
       "dataQuality": "ok",
       "stats": {
         "setupsDetected": 56,
-        "signalsGenerated": 19,
+        "signalsGenerated": 20,
         "riskRejected": 5,
         "overlapSuppressed": 1,
         "confirmationExpired": 30
@@ -312,6 +304,36 @@
   },
   "signals": [
     {
+      "signalId": "JD25-BREAKOUT_RETEST-1795697100",
+      "strategyId": "M5_BREAKOUT_M1_RETEST",
+      "strategyLabel": "M5 breakout / M1 retest",
+      "marketId": "JD25",
+      "market": "Jump 25 Index",
+      "direction": "SELL",
+      "setupTimeframe": "M5",
+      "entryTimeframe": "M1",
+      "confirmationTimeframe": "M1",
+      "setupCloseEpoch": 1795697100,
+      "triggerEpoch": 1795697340,
+      "entryCandleEpoch": 1795697400,
+      "entry": 124984.42,
+      "stopLoss": 125098.80644546101,
+      "tp2": 124755.64710907797,
+      "riskDistance": 114.38644546101568,
+      "riskReward": {
+        "target": 2
+      },
+      "contextM15": "down",
+      "status": "pending",
+      "evaluationSource": "forward_shadow",
+      "lastProcessedEpoch": 1795697340,
+      "outcomeCandles": 0,
+      "maxFavourableR": 0,
+      "maxAdverseR": 0,
+      "realizedR": null,
+      "createdAt": "2026-11-26T12:45:00.000Z"
+    },
+    {
       "signalId": "R_75-BREAKOUT_RETEST-1795696200",
       "strategyId": "M5_BREAKOUT_M1_RETEST",
       "strategyLabel": "M5 breakout / M1 retest",
@@ -365,9 +387,9 @@
       "contextM15": "up",
       "status": "pending",
       "evaluationSource": "forward_shadow",
-      "lastProcessedEpoch": 1795697340,
-      "outcomeCandles": 17,
-      "maxFavourableR": 1.6974161017982414,
+      "lastProcessedEpoch": 1795697580,
+      "outcomeCandles": 21,
+      "maxFavourableR": 1.916687178778229,
       "maxAdverseR": 0.37920998018896696,
       "realizedR": null,
       "createdAt": "2026-11-26T12:30:00.000Z"
@@ -1044,14 +1066,15 @@
         "target": 2
       },
       "contextM15": "unknown",
-      "status": "pending",
+      "status": "tp2_hit",
       "evaluationSource": "forward_shadow",
-      "lastProcessedEpoch": 1795688820,
-      "outcomeCandles": 0,
-      "maxFavourableR": 0,
-      "maxAdverseR": 0,
-      "realizedR": null,
-      "createdAt": "2026-11-26T10:25:00.000Z"
+      "lastProcessedEpoch": 1795689660,
+      "outcomeCandles": 14,
+      "maxFavourableR": 2.1846499150924434,
+      "maxAdverseR": 0.9670902490376182,
+      "realizedR": 2,
+      "createdAt": "2026-11-26T10:25:00.000Z",
+      "exitEpoch": 1795689660
     },
     {
       "signalId": "R_25-BREAKOUT_RETEST-1795688100",
@@ -32430,15 +32453,15 @@
     "mode": "forward_shadow_observation_only",
     "strategy": "M5 breakout beyond prior 12-bar range; M1 retest confirmation; next-M1-open entry",
     "marketsMonitored": 18,
-    "signalsGenerated": 1036,
-    "resolvedSignals": 1034,
+    "signalsGenerated": 1037,
+    "resolvedSignals": 1035,
     "pendingSignals": 2,
-    "targetBeforeStop": 366,
+    "targetBeforeStop": 367,
     "stopBeforeTarget": 642,
     "timeExit": 24,
     "ambiguous": 2,
-    "targetRatePct": 36.3,
-    "averageRealizedR": 0.097,
+    "targetRatePct": 36.4,
+    "averageRealizedR": 0.099,
     "markets": {
       "R_10": {
         "dataQuality": "insufficient_or_discontinuous_candles",
@@ -32613,14 +32636,14 @@
       "frxXAUUSD": {
         "dataQuality": "ok",
         "signals": 10,
-        "resolved": 9,
-        "pending": 1,
-        "targetBeforeStop": 4,
+        "resolved": 10,
+        "pending": 0,
+        "targetBeforeStop": 5,
         "stopBeforeTarget": 5,
         "ambiguous": 0,
         "timeExit": 0,
-        "targetRatePct": 44.4,
-        "averageRealizedR": 0.333,
+        "targetRatePct": 50,
+        "averageRealizedR": 0.5,
         "setupsDetected": 55,
         "signalsGenerated": 10,
         "riskRejected": 2,
@@ -32646,9 +32669,9 @@
       },
       "JD25": {
         "dataQuality": "ok",
-        "signals": 19,
+        "signals": 20,
         "resolved": 19,
-        "pending": 0,
+        "pending": 1,
         "targetBeforeStop": 4,
         "stopBeforeTarget": 14,
         "ambiguous": 0,
@@ -32656,7 +32679,7 @@
         "targetRatePct": 22.2,
         "averageRealizedR": -0.312,
         "setupsDetected": 56,
-        "signalsGenerated": 19,
+        "signalsGenerated": 20,
         "riskRejected": 5,
         "overlapSuppressed": 1,
         "confirmationExpired": 30
