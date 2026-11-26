@@ -356,6 +356,47 @@ export default {
         return reply({ error: "Invalid signalId" }, 400);
       }
       if (!["BUY", "SELL"].includes(String(d.direction || ""))) return reply({ error: "Invalid direction" }, 400);
+      if (step300ForwardAlert) {
+        const entry = Number(d.entry);
+        const bodyRatio = Number(d.fifthCandleBodyRatio);
+        const separation = Number(d.emaSeparationMedianRanges);
+        const signalEpoch = Number(d.signalEpoch);
+        const entryEpoch = Number(d.entryEpoch);
+        if (!Number.isFinite(entry) || entry <= 0 ||
+            !Number.isFinite(bodyRatio) || bodyRatio < 0.50 || bodyRatio > 0.80 ||
+            !Number.isFinite(separation) || separation < 0.50 ||
+            Number(d.holdingCandles) !== 6 || Number(d.holdingMinutes) !== 30 ||
+            !Number.isFinite(signalEpoch) || !Number.isFinite(entryEpoch) || entryEpoch !== signalEpoch + 300) {
+          return reply({ error: "Step Index 300 alert does not match the frozen M5 forward-test schema" }, 400);
+        }
+        if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
+          return reply({ error: "Telegram secrets are not configured" }, 500);
+        }
+        const message = [
+          "📊 DERIV SIGNAL ASSISTANT — STEP INDEX 300",
+          "M5 • LIVE MARKET DATA • FORWARD TEST",
+          "━━━━━━━━━━━━━━━━",
+          "Strategy: " + String(d.strategyLabel || d.strategyId).slice(0, 100),
+          "Market: Step Index 300",
+          "Direction: " + d.direction,
+          "Entry: " + entry + " (next M5 candle open)",
+          "Fifth candle body/range: " + (bodyRatio * 100).toFixed(1) + "%",
+          "EMA20/EMA50: aligned",
+          "EMA separation: " + separation.toFixed(2) + " median candle ranges",
+          "Research holding window: 6 M5 candles (30 minutes)",
+          "Signal ID: " + String(d.signalId).slice(0, 100),
+          "━━━━━━━━━━━━━━━━",
+          "FORWARD TEST / PAPER ONLY. No MT5, broker queue, or automatic order execution is enabled."
+        ].join("\n");
+        const telegramResponse = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text: message })
+        });
+        let telegramResult = {};
+        try { telegramResult = await telegramResponse.json(); } catch {}
+        if (!telegramResponse.ok || !telegramResult.ok) return reply({ error: "Telegram delivery failed" }, 502);
+        return reply({ success: true, message: "Step Index 300 forward-test alert delivered" });
+      }
       for (const field of ["entry", "stopLoss", "tp1", "tp2"]) {
         if (!Number.isFinite(Number(d[field])) || Number(d[field]) <= 0) {
           return reply({ error: "Invalid price: " + field }, 400);
