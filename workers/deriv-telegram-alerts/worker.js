@@ -318,11 +318,12 @@ export default {
     if (url.pathname === "/shadow/research" && request.method === "POST") {
       let d;
       try { d = await request.json(); } catch { return reply({ error: "Invalid JSON" }, 400); }
-      const allowedMarkets = new Set(["R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "frxXAUUSD", "1HZ10V", "1HZ75V", "R_100", "JD25", "JD50", "CRASH100", "BOOM100", "RB100", "RB200"]);
+      const allowedMarkets = new Set(["R_25", "R_50", "R_75", "JD75", "JD100", "CRASH500", "BOOM500", "frxXAUUSD", "1HZ10V", "1HZ75V", "R_100", "JD25", "JD50", "CRASH100", "BOOM100", "RB100", "RB200", "stpRNG3", "STPIDX300"]);
       const allowedStrategies = new Set([
         "M15_M5_EMA_PULLBACK",
         "M5_BREAKOUT_M1_RETEST",
-        "M5_BREAKOUT_M5_RETEST_M15_CONFIRM"
+        "M5_BREAKOUT_M5_RETEST_M15_CONFIRM",
+        "STEP300_0P50_THRESHOLD"
       ]);
       const pilotMarket = ["RB100", "BOOM100"].includes(String(d.marketId || ""));
       const liveAlertPilot = d.source === "RESEARCH_LIVE_ALERT_PILOT" &&
@@ -332,8 +333,15 @@ export default {
       const shadowAlert = d.source === "RESEARCH_SHADOW" && d.event === "new_signal" &&
         d.paper === true && d.live === false && d.status === "SHADOW" &&
         d.marketMode === "LIVE_MARKET" && d.executionMode === "DEMO_MANUAL";
-      if (!liveAlertPilot && !shadowAlert) {
-        return reply({ error: "Research route accepts approved shadow alerts or RB100/BOOM100 live-alert pilot events" }, 403);
+      const step300ForwardAlert = d.source === "STEP300_FORWARD_TEST" &&
+        d.event === "new_signal" && d.strategyId === "STEP300_0P50_THRESHOLD" &&
+        ["stpRNG3", "STPIDX300"].includes(String(d.marketId || "")) &&
+        d.paper === true && d.live === false && d.status === "PAPER" &&
+        d.marketMode === "LIVE_MARKET" && d.executionMode === "DEMO_MANUAL" &&
+        d.timeframe === "M5" && d.entryTimeframe === "M5" &&
+        d.forwardTest === true && d.brokerExecutionAllowed === false;
+      if (!liveAlertPilot && !shadowAlert && !step300ForwardAlert) {
+        return reply({ error: "Research route accepts approved shadow alerts, Step Index 300 forward-test events, or RB100/BOOM100 live-alert pilot events" }, 403);
       }
       if (!allowedMarkets.has(String(d.marketId || "")) || isVolatility10Alert(d)) {
         return reply({ error: "Market is not allowed on the research route" }, 403);
