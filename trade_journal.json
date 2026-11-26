@@ -31685,8 +31685,8 @@
       ],
       "status": "sent",
       "tp1Hit": true,
-      "tp2Hit": false,
-      "finalOutcome": null,
+      "tp2Hit": true,
+      "finalOutcome": "TP2",
       "events": [
         {
           "outcome": "TP1_HIT",
@@ -31698,12 +31698,23 @@
             "low": 83458.87,
             "close": 83661.99
           }
+        },
+        {
+          "outcome": "TP2_HIT",
+          "observedAt": "2026-11-26T17:50:02.923Z",
+          "candleEpoch": 1795714200,
+          "candle": {
+            "open": 84056.76,
+            "high": 84462.51,
+            "low": 84015.01,
+            "close": 84251.8
+          }
         }
       ],
-      "maxFavourablePrice": 84261.97,
-      "maxFavourablePoints": 1845.51,
-      "maxFavourablePct": 2.23925,
-      "maxFavourableEpoch": 1795713300,
+      "maxFavourablePrice": 84462.51,
+      "maxFavourablePoints": 2046.05,
+      "maxFavourablePct": 2.48257,
+      "maxFavourableEpoch": 1795714200,
       "entryTriggered": true,
       "entryTriggeredAt": "2026-11-26T10:30:00.000Z"
     },
@@ -32488,10 +32499,10 @@
       "tp2Hit": false,
       "finalOutcome": null,
       "events": [],
-      "maxFavourablePrice": 84261.97,
-      "maxFavourablePoints": 660.73,
-      "maxFavourablePct": 0.79034,
-      "maxFavourableEpoch": 1795713300,
+      "maxFavourablePrice": 84462.51,
+      "maxFavourablePoints": 861.27,
+      "maxFavourablePct": 1.03021,
+      "maxFavourableEpoch": 1795714200,
       "entryTriggered": true,
       "entryTriggeredAt": "2026-11-26T14:15:00.000Z"
     },
@@ -33017,6 +33028,79 @@
         {
           "passed": true,
           "reason": "Not extended from EMA20 (1.5 ATR)"
+        },
+        {
+          "passed": true,
+          "reason": "No spike candle"
+        },
+        {
+          "passed": true,
+          "reason": "Candle closes strongly in the signal direction"
+        }
+      ],
+      "status": "sent",
+      "tp1Hit": false,
+      "tp2Hit": false,
+      "finalOutcome": null,
+      "events": [],
+      "maxFavourablePrice": 84462.51,
+      "maxFavourablePoints": 423.05,
+      "maxFavourablePct": 0.50339,
+      "maxFavourableEpoch": 1795714200,
+      "entryTriggered": true,
+      "entryTriggeredAt": "2026-11-26T17:30:00.000Z"
+    },
+    {
+      "signalId": "BOOM100-1795714200",
+      "marketId": "BOOM100",
+      "market": "Boom 100 Index",
+      "direction": "BUY",
+      "localDate": "2026-11-26",
+      "createdAt": "2026-11-26T17:30:00.000Z",
+      "candleEpoch": 1795714200,
+      "score": 64,
+      "entry": 96586.777,
+      "metrics": {
+        "ema20": 96572.50854359152,
+        "ema50": 96558.75795284836,
+        "ema50Previous": 96555.37269319507,
+        "atr": 38.350229757647604,
+        "emaSeparationAtr": 0.3585530211959225,
+        "emaSlopeAtr": 0.0882722130920485,
+        "bodyRatio": 0.8173334182702496,
+        "closeLocation": 0.9663651420564059,
+        "extensionAtr": 0.3720566082301544,
+        "swingAtr": 0.5569718913024525,
+        "candleRange": 31.395999999993364
+      },
+      "checks": [
+        {
+          "passed": true,
+          "reason": "EMA20/EMA50 trend up, gap 0.36 ATR"
+        },
+        {
+          "passed": true,
+          "reason": "Close on the trend side of EMA20"
+        },
+        {
+          "passed": true,
+          "reason": "EMA50 sloping with the trend"
+        },
+        {
+          "passed": true,
+          "reason": "RSI 53.2 inside 50-68"
+        },
+        {
+          "passed": true,
+          "reason": "Bullish candle, body 82% of range"
+        },
+        {
+          "passed": true,
+          "reason": "Higher low formed"
+        },
+        {
+          "passed": true,
+          "reason": "Not extended from EMA20 (0.4 ATR)"
         },
         {
           "passed": true,
