@@ -30245,8 +30245,20 @@
       "status": "sent",
       "tp1Hit": false,
       "tp2Hit": false,
-      "finalOutcome": null,
-      "events": [],
+      "finalOutcome": "SL",
+      "events": [
+        {
+          "outcome": "SL_HIT",
+          "observedAt": "2026-11-26T13:04:51.219Z",
+          "candleEpoch": 1795697100,
+          "candle": {
+            "open": 77.8977,
+            "high": 78.0497,
+            "low": 77.685,
+            "close": 78.0313
+          }
+        }
+      ],
       "maxFavourablePrice": 79.1592,
       "maxFavourablePoints": 0.8406,
       "maxFavourablePct": 1.07331,
@@ -31222,10 +31234,10 @@
           }
         }
       ],
-      "maxFavourablePrice": 83714.38,
-      "maxFavourablePoints": 1466.77,
-      "maxFavourablePct": 1.78336,
-      "maxFavourableEpoch": 1795694400,
+      "maxFavourablePrice": 83950.11,
+      "maxFavourablePoints": 1702.5,
+      "maxFavourablePct": 2.06997,
+      "maxFavourableEpoch": 1795697100,
       "entryTriggered": true,
       "entryTriggeredAt": "2026-11-26T08:30:00.000Z"
     },
@@ -31637,14 +31649,26 @@
         }
       ],
       "status": "sent",
-      "tp1Hit": false,
+      "tp1Hit": true,
       "tp2Hit": false,
       "finalOutcome": null,
-      "events": [],
-      "maxFavourablePrice": 83714.38,
-      "maxFavourablePoints": 1297.92,
-      "maxFavourablePct": 1.57483,
-      "maxFavourableEpoch": 1795694400,
+      "events": [
+        {
+          "outcome": "TP1_HIT",
+          "observedAt": "2026-11-26T13:04:52.851Z",
+          "candleEpoch": 1795697100,
+          "candle": {
+            "open": 83550.68,
+            "high": 83950.11,
+            "low": 83458.87,
+            "close": 83661.99
+          }
+        }
+      ],
+      "maxFavourablePrice": 83950.11,
+      "maxFavourablePoints": 1533.65,
+      "maxFavourablePct": 1.86085,
+      "maxFavourableEpoch": 1795697100,
       "entryTriggered": true,
       "entryTriggeredAt": "2026-11-26T10:30:00.000Z"
     },
@@ -31894,6 +31918,79 @@
         {
           "passed": true,
           "reason": "Lower high formed"
+        },
+        {
+          "passed": true,
+          "reason": "Not extended from EMA20 (1.1 ATR)"
+        },
+        {
+          "passed": true,
+          "reason": "No spike candle"
+        },
+        {
+          "passed": true,
+          "reason": "Candle closes strongly in the signal direction"
+        }
+      ],
+      "status": "sent",
+      "tp1Hit": false,
+      "tp2Hit": false,
+      "finalOutcome": null,
+      "events": [],
+      "maxFavourablePrice": 124559.24,
+      "maxFavourablePoints": 410,
+      "maxFavourablePct": 0.32808,
+      "maxFavourableEpoch": 1795697100,
+      "entryTriggered": true,
+      "entryTriggeredAt": "2026-11-26T12:45:00.000Z"
+    },
+    {
+      "signalId": "BOOM500-1795697100",
+      "marketId": "BOOM500",
+      "market": "Boom 500 Index",
+      "direction": "BUY",
+      "localDate": "2026-11-26",
+      "createdAt": "2026-11-26T12:45:00.000Z",
+      "candleEpoch": 1795697100,
+      "score": 93,
+      "entry": 5743.654,
+      "metrics": {
+        "ema20": 5731.428628626206,
+        "ema50": 5714.218988718259,
+        "ema50Previous": 5708.986841477384,
+        "atr": 11.253657580678388,
+        "emaSeparationAtr": 1.529248582922408,
+        "emaSlopeAtr": 0.464928597957247,
+        "bodyRatio": 0.4398960945897316,
+        "closeLocation": 0.8024901469007708,
+        "extensionAtr": 1.086346486566692,
+        "swingAtr": 1.0323754669724048,
+        "candleRange": 11.16400000000067
+      },
+      "checks": [
+        {
+          "passed": true,
+          "reason": "EMA20/EMA50 trend up, gap 1.53 ATR"
+        },
+        {
+          "passed": true,
+          "reason": "Close on the trend side of EMA20"
+        },
+        {
+          "passed": true,
+          "reason": "EMA50 sloping with the trend"
+        },
+        {
+          "passed": true,
+          "reason": "RSI 60.2 inside 50-68"
+        },
+        {
+          "passed": true,
+          "reason": "Bullish candle, body 44% of range"
+        },
+        {
+          "passed": true,
+          "reason": "Higher low formed"
         },
         {
           "passed": true,
