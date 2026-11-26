@@ -690,10 +690,25 @@ export default {
       }
 
       const telegramURL = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+      const telegramPayload = { chat_id: env.TELEGRAM_CHAT_ID, text: message };
+      // Keep signal review navigation on eligible production alerts.
+      if (data.event === "new_signal" && data.reviewAvailable === true && data.signalId && env.REVIEW_PAGE_URL) {
+        try {
+          const reviewUrl = new URL(String(env.REVIEW_PAGE_URL));
+          if (reviewUrl.protocol === "https:") {
+            reviewUrl.searchParams.set("signalId", String(data.signalId));
+            telegramPayload.reply_markup = {
+              inline_keyboard: [[{ text: "REVIEW SIGNAL STATUS", url: reviewUrl.toString() }]]
+            };
+          }
+        } catch {
+          // Invalid optional review-page configuration must not block alert delivery.
+        }
+      }
       const telegramResponse = await fetch(telegramURL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text: message })
+        body: JSON.stringify(telegramPayload)
       });
       const result = await telegramResponse.json();
       if (!telegramResponse.ok || !result.ok) return reply({ error: "Telegram delivery failed" }, 502);
