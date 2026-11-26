@@ -48,6 +48,7 @@ const MARKETS=[
 const SOURCES=[
 ["Original 15-minute system","./trade_journal.json","original"],
 ["Volatility 10 · R10 paper system","./volatility10_paper_journal.json","r10"],
+["Volatility 10 · transition forward test","./volatility10_transition_forward_journal.json","r10-transition"],
 ["Promoted multi-timeframe system","./multi_timeframe_journal.json","mtf"],
 ["M5 breakout / M1 retest","./breakout_retest_shadow_journal.json","shadow"],
 ["M15 trend + M5 EMA pullback","./m5_ema_pullback_shadow_journal.json","shadow"],
@@ -98,8 +99,11 @@ try{const researchRes=await fetch("./research_shadow_collection.json?v="+Date.no
 try{renderResearchDiagnostics(researchSnapshot);}catch(diagnosticError){$("researchUpdated").textContent="Research diagnostics failed to render: "+diagnosticError.message;$("researchDiagnostics").innerHTML='<tr><td colspan="9" class="empty">Research diagnostics could not be displayed. The delivered-signal register will still load independently.</td></tr>';}
 const byId=new Map();
 function normalizedOutcome(s){
- const final=String(s.finalOutcome||"").toUpperCase(),state=String(s.status||"").toLowerCase();
- if(final==="TP2"||state==="tp2_hit"||s.tp2Hit===true)return "tp2_hit";
+ const final=String(s.finalOutcome||s.outcome||"").toUpperCase(),state=String(s.status||"").toLowerCase();
+ if(final==="TP2"||final==="WIN"||state==="tp2_hit"||s.tp2Hit===true)return "tp2_hit";
+ if(final==="LOSS"||state==="loss")return "stopped";
+ if(final==="TIME_EXIT"||state==="time_exit")return "time_exit";
+ if(final==="UNRESOLVED"||state==="unresolved")return "unknown";
  if(final==="SL_AFTER_TP1"||state==="stopped_after_tp1")return "stopped_after_tp1";
  if(final==="SL"||state==="sl_hit"||state==="stopped")return "stopped";
  if(final==="EXPIRED"||state==="expired")return "expired";
@@ -114,8 +118,9 @@ function addRecord(s,label,deliveryInfo,forcedId){
  if(!s||!signalId||byId.has(signalId))return;
  const outcome=normalizedOutcome(s);
  byId.set(signalId,{...s,signalId,marketId:s.marketId||"UNKNOWN",market:s.market||s.marketName||s.marketId||"UNKNOWN",entry:s.entry??s.referenceEntryPrice??s.entryPrice??null,
+ tp2:s.tp2??s.target??s.takeProfit??null,
  strategyId:s.strategyId||s.strategyVersion||label,strategyLabel:s.strategyLabel||s.categoryLabel||s.category||s.strategyId||s.strategyVersion||label,
- sourceLabel:label,outcome,sentAt:deliveryInfo?.sentAt||deliveryInfo?.deliveredAt||deliveryInfo?.createdAt||s.sentAt||s.createdAt||null,
+ sourceLabel:label,outcome,sentAt:deliveryInfo?.sentAt||deliveryInfo?.deliveredAt||deliveryInfo?.createdAt||s.sentAt||s.createdAt||s.recordedAtUTC||null,
  deliveryAttempts:deliveryInfo?.attempts??null});
 }
 // Original 15-minute production journal: only records marked sent count.
@@ -127,6 +132,13 @@ for(const s of r10.signals){
  if(s.telegram&&s.telegram.sent===true){
   const stableId=s.signalId||[s.marketId||"R_10",s.signalEpoch||s.entryTimestamp||s.signalTimestamp||"unknown",s.strategyVersion||"r10"].join("-");
   addRecord(s,r10.label,{sentAt:s.telegram.sentAt||s.signalTimestamp||s.entryTimestamp},stableId);
+ }
+}
+// Frozen R10 transition forward-test: count only the scanner's explicit SENT acknowledgement.
+const r10Transition=loaded.find(x=>x.kind==="r10-transition");
+for(const s of r10Transition.signals){
+ if(String(s.deliveryStatus||"").toUpperCase()==="SENT"){
+  addRecord(s,r10Transition.label,{sentAt:s.deliveryDetails?.deliveredAt||s.recordedAtUTC});
  }
 }
 // Multi-timeframe system: use its own confirmed Telegram status, not MT5 queue state.
@@ -141,7 +153,7 @@ rows=[...byId.values()].filter(r=>MARKETS.some(([id])=>id===r.marketId))
 const filter=$("marketFilter"),previous=filter.value;
 filter.innerHTML='<option value="">All '+MARKETS.length+' markets</option>'+MARKETS.map(([id,name])=>'<option value="'+esc(id)+'">'+esc(id)+' · '+esc(name)+'</option>').join("");filter.value=previous;
 render();
-const sourceCounts=loaded.map(x=>x.label+": "+(x.kind==="original"?x.signals.filter(s=>String(s.status||"").toLowerCase()==="sent").length:x.kind==="r10"?x.signals.filter(s=>s.telegram&&s.telegram.sent===true).length:x.kind==="mtf"?x.signals.filter(s=>String(s.telegramStatus||"").toLowerCase()==="sent").length:x.signals.filter(s=>deliveryMap[s.signalId]&&String(deliveryMap[s.signalId].status||"").toLowerCase()==="sent").length)).join(" · ");
+const sourceCounts=loaded.map(x=>x.label+": "+(x.kind==="original"?x.signals.filter(s=>String(s.status||"").toLowerCase()==="sent").length:x.kind==="r10"?x.signals.filter(s=>s.telegram&&s.telegram.sent===true).length:x.kind==="r10-transition"?x.signals.filter(s=>String(s.deliveryStatus||"").toUpperCase()==="SENT").length:x.kind==="mtf"?x.signals.filter(s=>String(s.telegramStatus||"").toLowerCase()==="sent").length:x.signals.filter(s=>deliveryMap[s.signalId]&&String(deliveryMap[s.signalId].status||"").toLowerCase()==="sent").length)).join(" · ");
 const sourceErrors=loaded.filter(x=>x.error).map(x=>x.label+" unavailable ("+x.error+")");
 if(deliveryError)sourceErrors.push("Shadow Telegram delivery journal unavailable ("+deliveryError+")");
 if(researchError)sourceErrors.push("Research diagnostics unavailable ("+researchError+")");
