@@ -4,7 +4,6 @@
 // Fixed stake, no martingale, no loss recovery. Tokens come from environment variables only and are never logged.
 const fs = require("fs"), path = require("path");
 const { evaluate, DEF } = require("./engine");
-const { evaluateStep300 } = require("./step300");
 try { fs.readFileSync(path.join(__dirname, ".env"), "utf8").split(/\r?\n/).forEach(l => { const m = l.match(/^\s*([A-Z_0-9]+)\s*=\s*(.*?)\s*$/); if (m && !(m[1] in process.env)) process.env[m[1]] = m[2].replace(/^["']|["']$/g, ""); }); } catch (e) {}
 const E = process.env, GRAN = 900, PUBLIC = "wss://api.derivws.com/trading/v1/options/ws/public";
 const MODE = (E.TRADE_MODE || "demo").toLowerCase(), TRADING = E.TRADE_ENABLED === "true";
@@ -24,18 +23,14 @@ if (TRADING) {
 
 const LOG = path.join(__dirname, "bot.log"), STATE = path.join(__dirname, "bot_state.json");
 const log = o => { const l = JSON.stringify({t:new Date().toISOString(), ...o}); console.log(l); try { fs.appendFileSync(LOG, l + "\n"); } catch (e) {} };
-let S = {lastSig:{}, step300LastSignalEpoch:0, day:"", trades:0, startBal:null, balance:null, open:[], mkt:{}};
+let S = {lastSig:{}, day:"", trades:0, startBal:null, balance:null, open:[], mkt:{}};
 try { S = {...S, ...JSON.parse(fs.readFileSync(STATE, "utf8"))}; } catch (e) {}
 const save = () => { try { fs.writeFileSync(STATE, JSON.stringify(S)); } catch (e) { log({ev:"state_save_failed"}); } };
 
 async function tgSend(text) {
-  if (!E.TELEGRAM_BOT_TOKEN || !E.TELEGRAM_CHAT_ID) return false;
-  try {
-    const r = await fetch("https://api.telegram.org/bot" + E.TELEGRAM_BOT_TOKEN + "/sendMessage", {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({chat_id:E.TELEGRAM_CHAT_ID, text}), signal:AbortSignal.timeout(10000)});
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok || j.ok === false) { log({ev:"telegram_failed", status:r.status}); return false; }
-    return true;
-  } catch (e) { log({ev:"telegram_failed", msg:"network"}); return false; }
+  if (!E.TELEGRAM_BOT_TOKEN || !E.TELEGRAM_CHAT_ID) return;
+  try { const r = await fetch("https://api.telegram.org/bot" + E.TELEGRAM_BOT_TOKEN + "/sendMessage", {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({chat_id:E.TELEGRAM_CHAT_ID, text}), signal:AbortSignal.timeout(10000)}); if (!r.ok) log({ev:"telegram_failed", status:r.status}); }
+  catch (e) { log({ev:"telegram_failed", msg:"network"}); }
 }
 
 const open = url => new Promise((res, rej) => {
@@ -98,21 +93,7 @@ async function onSignal(id, name, sym, r, now) {
   if (TRADING) await trade(id, name, sym, r, now);
 }
 
-let pub = null, syms = {}, step300Sym = null, busy = false;
-async function resolveStep300Symbol(c) {
-  for (const mode of ["brief", "full"]) {
-    const d = await c.ask({active_symbols:mode}), L = d.active_symbols || [];
-    const h = L.find(x => norm(nm(x)) === norm("Step Index 300"))
-      || L.find(x => ["stpRNG3", "STPIDX300"].includes(cd(x)));
-    if (h && cd(h)) {
-      log({ev:"symbol_resolved", market:"Step Index 300", symbol:cd(h), timeframe:"M5"});
-      return cd(h);
-    }
-  }
-  log({ev:"symbol_not_confirmed", market:"Step Index 300", timeframe:"M5", note:"skipped; no symbol guessed"});
-  return null;
-}
-
+let pub = null, syms = {}, busy = false;
 async function resolveSymbols(c) {
   const out = {};
   for (const mode of ["brief", "full"]) {
@@ -126,7 +107,7 @@ async function resolveSymbols(c) {
 async function cycle() {
   if (busy) return; busy = true;
   try {
-    if (!pub || pub.ws.readyState !== 1) { pub = await open(PUBLIC); syms = await resolveSymbols(pub); step300Sym = await resolveStep300Symbol(pub); }
+    if (!pub || pub.ws.readyState !== 1) { pub = await open(PUBLIC); syms = await resolveSymbols(pub); }
     const t = await pub.ask({time:1}), now = typeof t.time === "number" ? t.time : Math.floor(Date.now() / 1000);
     for (const [id, name] of MARKETS) {
       const sym = syms[id]; if (!sym) continue;
@@ -137,44 +118,6 @@ async function cycle() {
         const r = evaluate(cs);
         if (r.state === "ok" && r.signal !== "NO TRADE") await onSignal(id, name, sym, r, now);
       } catch (e) { log({ev:"scan_error", market:name, msg:e.message}); }
-    }
-
-    // Independent Step Index 300 M5 forward-test scanner. It never calls trade().
-    if (step300Sym) {
-      try {
-        const d = await pub.ask({ticks_history:step300Sym, adjust_start_time:1, count:200, end:"latest", granularity:300, style:"candles"});
-        if (d.error) throw new Error(d.error.message);
-        const raw = (d.candles || []).map(x => ({epoch:+x.epoch, open:+x.open, high:+x.high, low:+x.low, close:+x.close}))
-          .filter(x => [x.epoch, x.open, x.high, x.low, x.close].every(isFinite))
-          .sort((a,b) => a.epoch-b.epoch);
-        const complete = raw.filter(x => x.epoch + 300 <= now);
-        const r = evaluateStep300(complete);
-        if (r.state === "ok" && r.signal && r.c.epoch > (S.step300LastSignalEpoch || 0)) {
-          const entry = raw.find(x => x.epoch === r.c.epoch + 300);
-          if (!entry) {
-            log({ev:"step300_waiting_for_next_open", signal_epoch:r.c.epoch, note:"next M5 candle not available yet"});
-          } else {
-            log({ev:"signal_candidate", market:"Step Index 300", timeframe:"M5", strategy:"STEP300_0P50_THRESHOLD", signal:r.signal,
-              entry:entry.open, body_ratio:r.bodyRatio, ema_separation_median_ranges:r.emaSeparationMedianRanges,
-              signal_epoch:r.c.epoch, entry_epoch:entry.epoch, hold_candles:6});
-            const delivered = await tgSend("🆕 STEP INDEX 300 — M5 FORWARD-TEST SIGNAL\n"
-              + "Direction: " + r.signal + "\n"
-              + "Entry: " + entry.open + " (next M5 candle open)\n"
-              + "Model: five consecutive same-direction candles\n"
-              + "Fifth candle body/range: " + (r.bodyRatio*100).toFixed(1) + "% (allowed 50–80%)\n"
-              + "EMA20/EMA50: aligned; separation " + r.emaSeparationMedianRanges.toFixed(2) + " median candle ranges\n"
-              + "Research holding window: 6 M5 candles (30 minutes)\n"
-              + "Forward-test only. No automatic order placed.");
-            if (delivered) {
-              S.step300LastSignalEpoch = r.c.epoch;
-              save();
-              log({ev:"telegram_delivered", market:"Step Index 300", timeframe:"M5", signal_epoch:r.c.epoch});
-            } else {
-              log({ev:"telegram_delivery_not_confirmed", market:"Step Index 300", timeframe:"M5", signal_epoch:r.c.epoch});
-            }
-          }
-        }
-      } catch (e) { log({ev:"scan_error", market:"Step Index 300", timeframe:"M5", msg:e.message}); }
     }
   } catch (e) { log({ev:"cycle_error", msg:e.message}); if (pub) { pub.close(); pub = null; } }
   busy = false;
