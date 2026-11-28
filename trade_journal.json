@@ -42254,8 +42254,20 @@
       "status": "sent",
       "tp1Hit": false,
       "tp2Hit": false,
-      "finalOutcome": null,
-      "events": [],
+      "finalOutcome": "SL",
+      "events": [
+        {
+          "outcome": "SL_HIT",
+          "observedAt": "2026-11-28T02:49:55.007Z",
+          "candleEpoch": 1795833000,
+          "candle": {
+            "open": 43735.4129,
+            "high": 43973.3045,
+            "low": 43687.4165,
+            "close": 43973.3045
+          }
+        }
+      ],
       "maxFavourablePrice": 43519.8764,
       "maxFavourablePoints": 60.0262,
       "maxFavourablePct": 0.13774,
@@ -42382,6 +42394,73 @@
         {
           "passed": true,
           "reason": "Not extended from EMA20 (0.5 ATR)"
+        },
+        {
+          "passed": true,
+          "reason": "No spike candle"
+        },
+        {
+          "passed": true,
+          "reason": "Candle closes strongly in the signal direction"
+        }
+      ],
+      "status": "sent",
+      "tp1Hit": false,
+      "tp2Hit": false,
+      "finalOutcome": null,
+      "events": []
+    },
+    {
+      "signalId": "BOOM100-1795833000",
+      "marketId": "BOOM100",
+      "market": "Boom 100 Index",
+      "direction": "SELL",
+      "localDate": "2026-11-28",
+      "createdAt": "2026-11-28T02:30:00.000Z",
+      "candleEpoch": 1795833000,
+      "score": 89,
+      "entry": 96674.273,
+      "metrics": {
+        "ema20": 96709.35186201055,
+        "ema50": 96757.29089515258,
+        "ema50Previous": 96774.57387486042,
+        "atr": 36.50652137402962,
+        "emaSeparationAtr": 1.3131635482566804,
+        "emaSlopeAtr": 0.47342170815923673,
+        "bodyRatio": 1,
+        "closeLocation": 1,
+        "extensionAtr": 0.9608930319912579,
+        "swingAtr": 0.2534067791671425,
+        "candleRange": 38.088999999992666
+      },
+      "checks": [
+        {
+          "passed": true,
+          "reason": "EMA20/EMA50 trend down, gap 1.31 ATR"
+        },
+        {
+          "passed": true,
+          "reason": "Close on the trend side of EMA20"
+        },
+        {
+          "passed": true,
+          "reason": "EMA50 sloping with the trend"
+        },
+        {
+          "passed": true,
+          "reason": "RSI 41.3 inside 32-50"
+        },
+        {
+          "passed": true,
+          "reason": "Bearish candle, body 100% of range"
+        },
+        {
+          "passed": true,
+          "reason": "Lower high formed"
+        },
+        {
+          "passed": true,
+          "reason": "Not extended from EMA20 (1.0 ATR)"
         },
         {
           "passed": true,
